@@ -1,0 +1,8 @@
+# - Configuration file for the Rendering library
+# It defines the target "Rendering".
+#
+
+@PACKAGE_INIT@
+
+# Import the exported targets
+include("@PACKAGE_CMAKE_INSTALL_CMAKECONFIGDIR@/RenderingTargets.cmake")
