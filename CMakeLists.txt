@@ -100,6 +100,8 @@ endif()
 # Set version of library
 set_target_properties(Rendering PROPERTIES VERSION ${RENDERING_VERSION_STRING}
                                            SOVERSION ${RENDERING_VERSION_MAJOR})
+                                           
+add_subdirectory(tests)
 
 # Install the header files
 file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Mesh/*.h")
