@@ -46,7 +46,7 @@ void BufferObjectTest::test() {
 		boA.prepare();
 		boB.prepare();
 		boB = std::move(boA);
-		CPPUNIT_ASSERT(!boA.isValid());
+		CPPUNIT_ASSERT(boA.isValid());
 		CPPUNIT_ASSERT(boB.isValid());
 	}
 }

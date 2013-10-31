@@ -34,17 +34,14 @@ BufferObject & BufferObject::operator=(BufferObject && other) {
 	if(this == &other) {
 		return *this;
 	}
-	bufferId = other.bufferId;
-	// Make sure the other buffer object does not free the handle.
-	other.bufferId = 0;
+	// Make sure the other buffer object frees the handle.
+	std::swap(other.bufferId, bufferId);
 	return *this;
 }
-
 
 void BufferObject::swap(BufferObject & other){
 	std::swap(other.bufferId,bufferId);
 }
-
 
 void BufferObject::prepare() {
 	if(bufferId == 0) {
