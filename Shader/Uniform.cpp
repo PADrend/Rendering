@@ -14,6 +14,9 @@
 #include <Geometry/Matrix3x3.h>
 #include <Geometry/Matrix4x4.h>
 #include <Geometry/Vec2.h>
+#include <Geometry/Vec3.h>
+#include <Geometry/Vec4.h>
+#include <algorithm>
 #include <cstdint>
 #include <sstream>
 #include <vector>

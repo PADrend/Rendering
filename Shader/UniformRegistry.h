@@ -12,8 +12,10 @@
 #define UNIFORMSET_H
 
 #include "Uniform.h"
-#include <unordered_map>
+#include <Util/StringIdentifier.h>
+#include <cstdint>
 #include <list>
+#include <unordered_map>
 
 namespace Rendering {
 class Shader;

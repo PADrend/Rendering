@@ -11,6 +11,7 @@
 #include "ShaderUtils.h"
 #include "Shader.h"
 #include <Util/References.h>
+#include <string>
 
 namespace Rendering {
 namespace ShaderUtils {

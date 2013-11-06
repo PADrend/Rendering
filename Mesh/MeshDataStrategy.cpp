@@ -10,8 +10,11 @@
 */
 #include "MeshDataStrategy.h"
 #include "Mesh.h"
+#include "MeshIndexData.h"
+#include "MeshVertexData.h"
 #include "../GLHeader.h"
 #include <Util/Macros.h>
+#include <iostream>
 
 namespace Rendering {
 

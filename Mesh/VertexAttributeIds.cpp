@@ -9,6 +9,7 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "VertexAttributeIds.h"
+#include <Util/StringIdentifier.h>
 #include <stdexcept>
 
 namespace Rendering {

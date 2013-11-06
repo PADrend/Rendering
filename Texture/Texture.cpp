@@ -12,7 +12,11 @@
 #include "../GLHeader.h"
 #include "../Helper.h"
 #include "../RenderingContext/RenderingContext.h"
-#include <Util/Graphics/PixelAccessor.h>
+#include <Util/Graphics/Bitmap.h>
+#include <Util/Graphics/PixelFormat.h>
+#include <Util/Macros.h>
+#include <Util/References.h>
+#include <cstddef>
 
 #ifdef LIB_GL
 # ifdef __APPLE__

@@ -12,6 +12,7 @@
 #include "RenderingContext/ParameterStructs.h"
 #include "RenderingContext/RenderingContext.h"
 #include "GLHeader.h"
+#include <cstdint>
 
 namespace Rendering {
 

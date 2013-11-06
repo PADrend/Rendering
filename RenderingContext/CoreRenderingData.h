@@ -12,9 +12,8 @@
 #define CORE_RENDERING_DATA_H_
 
 #include "ParameterStructs.h"
-#include <cstddef>
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 namespace Rendering {
 

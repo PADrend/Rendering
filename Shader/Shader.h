@@ -14,11 +14,11 @@
 #include "ShaderObjectInfo.h"
 #include <Util/ReferenceCounter.h>
 #include <Util/StringIdentifier.h>
-#include <vector>
-#include <string>
+#include <cstdint>
 #include <memory>
-#include <deque>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 // Forward declarations
 namespace Geometry {

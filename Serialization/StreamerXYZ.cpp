@@ -10,11 +10,9 @@
 #include "Serialization.h"
 #include "../Mesh/Mesh.h"
 #include "../Mesh/VertexDescription.h"
-#include "../Mesh/MeshDataStrategy.h"
 #include "../MeshUtils/MeshBuilder.h"
 #include <Geometry/Vec3.h>
 #include <Geometry/PointOctree.h>
-#include <Util/Graphics/Color.h>
 #include <Util/GenericAttribute.h>
 #include <Util/IO/FileUtils.h>
 #include <Util/Macros.h>

@@ -12,6 +12,7 @@
 #define RENDERING_MESHINDEXDATA_H
 
 #include "../BufferObject.h"
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 

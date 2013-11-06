@@ -10,15 +10,12 @@
 */
 #include "MarchingCubesMeshBuilder.h"
 #include "MeshBuilder.h"
-#include "../Mesh/VertexAttributeIds.h"
-
-#include <Geometry/Vec2.h>
-#include <Geometry/Vec3.h>
+#include "../Mesh/VertexDescription.h"
 #include <Geometry/Vec4.h>
-
+#include <Util/Graphics/Color.h>
 #include <Util/Graphics/PixelAccessor.h>
-
-#include <map>
+#include <Util/Macros.h>
+#include <cmath>
 #include <vector>
 
 namespace Rendering {

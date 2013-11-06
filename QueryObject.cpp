@@ -12,6 +12,7 @@
 #include "GLHeader.h"
 #include "Helper.h"
 #include <Util/Macros.h>
+#include <algorithm>
 #include <deque>
 
 namespace Rendering {

@@ -13,9 +13,6 @@
 #include "../Mesh/Mesh.h"
 #include "../Mesh/VertexAttributeAccessors.h"
 #include "../Mesh/VertexAttributeIds.h"
-#include "../Mesh/VertexDescription.h"
-#include "../GLHeader.h"
-#include <Geometry/Convert.h>
 #include <Geometry/Point.h>
 #include <Geometry/PointOctree.h>
 #include <Geometry/Sphere.h>

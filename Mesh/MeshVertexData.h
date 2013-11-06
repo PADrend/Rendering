@@ -13,14 +13,13 @@
 
 #include "../BufferObject.h"
 #include <Geometry/Box.h>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
 namespace Rendering {
 
 class RenderingContext;
-class Shader;
-class VertexAttribute;
 class VertexDescription;
 
 /*! VertexData-Class.

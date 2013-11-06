@@ -12,12 +12,9 @@
 #include "../Mesh/Mesh.h"
 #include "../Mesh/MeshIndexData.h"
 #include "../Mesh/MeshVertexData.h"
-#include "../Mesh/VertexAttributeIds.h"
 #include "../Mesh/VertexDescription.h"
-#include "../GLHeader.h"
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <functional>
 #include <map>
 #include <utility>

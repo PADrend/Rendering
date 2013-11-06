@@ -22,7 +22,6 @@ namespace Util {
 class Bitmap;
 class Color4f;
 struct FontInfo;
-struct GlyphInfo;
 }
 namespace Rendering {
 class RenderingContext;

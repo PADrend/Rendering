@@ -17,10 +17,12 @@
 #include "Texture/Texture.h"
 #include "Texture/TextureUtils.h"
 #include "Draw.h"
-#include "MeshUtils/MeshBuilder.h"
-#include <Util/Graphics/Bitmap.h>
+#include <Geometry/Rect.h>
+#include <Geometry/Vec2.h>
+#include <Util/Graphics/Color.h>
 #include <Util/Graphics/FontRenderer.h>
 #include <Util/References.h>
+#include <cstdint>
 #include <string>
 
 namespace Rendering {

@@ -12,6 +12,7 @@
 #define RENDERING_TEXTUREUTILS_H
 
 #include "Texture.h"
+#include <Util/References.h>
 #include <cstdint>
 #include <vector>
 

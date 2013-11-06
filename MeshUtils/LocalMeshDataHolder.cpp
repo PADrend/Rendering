@@ -10,6 +10,7 @@
 #include "../Mesh/Mesh.h"
 #include "../Mesh/MeshDataStrategy.h"
 #include <Util/Macros.h>
+#include <Util/References.h>
 
 namespace Rendering {
 namespace MeshUtils {

@@ -13,13 +13,12 @@
 
 #include "../Mesh/VertexAttribute.h"
 #include "../Mesh/VertexDescription.h"
-#include <Geometry/Vec2.h>
 #include <Util/ReferenceCounter.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
-#include <vector>
 #include <memory>
 
 namespace Geometry {
@@ -45,7 +44,6 @@ class Bitmap;
 
 namespace Rendering {
 class Mesh;
-class Texture;
 
 namespace MeshUtils {
 

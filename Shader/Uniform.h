@@ -12,8 +12,9 @@
 #define RENDERING_UNIFORM_H
 
 #include <Util/StringIdentifier.h>
-#include <deque>
+#include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <string>
 #include <vector>
 

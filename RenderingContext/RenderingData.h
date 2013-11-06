@@ -15,7 +15,6 @@
 #include <Geometry/Matrix4x4.h>
 #include <bitset>
 #include <cassert>
-#include <cstddef>
 #include <deque>
 #include <vector>
 #include <cstdint>

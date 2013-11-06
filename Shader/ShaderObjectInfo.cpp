@@ -13,6 +13,8 @@
 #include "../Helper.h"
 #include <Util/IO/FileUtils.h>
 #include <Util/Macros.h>
+#include <cstddef>
+#include <vector>
 
 namespace Rendering {
 

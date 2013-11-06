@@ -12,7 +12,6 @@
 #define RENDERING_FBO_H
 
 #include <Util/ReferenceCounter.h>
-#include <cstddef>
 #include <cstdint>
 
 namespace Rendering {

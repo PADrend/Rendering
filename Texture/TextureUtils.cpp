@@ -18,27 +18,25 @@
 #include "../Mesh/VertexDescription.h"
 #include "../RenderingContext/ParameterStructs.h"
 #include "../RenderingContext/RenderingContext.h"
-#include "../Serialization/Serialization.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
+#include <Geometry/Definitions.h>
 #include <Geometry/Matrix4x4.h>
 #include <Geometry/Rect.h>
 #include <Geometry/Vec2.h>
 #include <Util/IO/FileName.h>
 #include <Util/IO/FileUtils.h>
 #include <Util/Graphics/Bitmap.h>
-#include <Util/Graphics/BitmapUtils.h>
+#include <Util/Graphics/PixelFormat.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Graphics/NoiseGenerator.h>
 #include <Util/Graphics/PixelAccessor.h>
-#include <Util/Serialization/Serialization.h>
 #include <Util/Macros.h>
 #include <Util/References.h>
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
-#include <stdexcept>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 namespace Rendering {

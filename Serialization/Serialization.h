@@ -12,6 +12,7 @@
 #define RENDERING_SERIALIZATION_H
 
 #include "../Mesh/Mesh.h"
+#include <Util/StringIdentifier.h>
 #include <ostream>
 #include <string>
 
@@ -23,6 +24,7 @@ template<class ObjType> class ReferenceAttribute;
 }
 
 namespace Rendering {
+class RenderingContext;
 class Texture;
 
 /**

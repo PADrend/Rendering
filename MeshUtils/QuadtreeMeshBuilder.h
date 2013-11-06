@@ -15,9 +15,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <limits>
 #include <memory>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -29,7 +27,6 @@ namespace Rendering {
 class VertexDescription;
 class Mesh;
 namespace MeshUtils {
-class MeshBuilder;
 
 /**
  * class QuadtreeMeshBuilder provides a static function for creating a mesh from the specified

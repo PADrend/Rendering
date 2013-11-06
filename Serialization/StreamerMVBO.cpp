@@ -11,7 +11,6 @@
 #include "StreamerMVBO.h"
 #include "Serialization.h"
 #include "../Mesh/Mesh.h"
-#include "../Mesh/VertexAttributeIds.h"
 #include "../Mesh/VertexDescription.h"
 #include <Util/GenericAttribute.h>
 
