@@ -40,9 +40,10 @@
 #include <string>
 
 namespace Rendering {
+namespace TextureUtils {
 
 /*! (static) Factory */
-Texture * TextureUtils::createStdTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps, bool clampToEdge) {
+Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps, bool clampToEdge) {
 	Texture::Format f;
 	f.glTextureType=GL_TEXTURE_2D;
 	f.width=width;
@@ -62,7 +63,7 @@ Texture * TextureUtils::createStdTexture(uint32_t width, uint32_t height, bool a
 	return new Texture(f);
 }
 
-Texture * TextureUtils::createNoiseTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps, float scaling) {
+Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps, float scaling) {
 	Texture::Format format;
 	format.glTextureType = GL_TEXTURE_2D;
 	format.width = width;
@@ -95,7 +96,7 @@ Texture * TextureUtils::createNoiseTexture(uint32_t width, uint32_t height, bool
 }
 
 
-Texture * TextureUtils::createTextureDataArray_Vec4(const uint32_t size) {
+Texture * createTextureDataArray_Vec4(const uint32_t size) {
 #if defined(LIB_GL)
 	Texture::Format f;
 	f.glTextureType = GL_TEXTURE_1D;
@@ -116,7 +117,7 @@ Texture * TextureUtils::createTextureDataArray_Vec4(const uint32_t size) {
 
 #ifdef LIB_GL
 /*! (static) Factory */
-Texture * TextureUtils::createHDRTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps) {
+Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps) {
 	Texture::Format f;
 	f.glTextureType=GL_TEXTURE_2D;
 	f.width=width;
@@ -130,7 +131,7 @@ Texture * TextureUtils::createHDRTexture(uint32_t width, uint32_t height, bool a
 	return new Texture(f);
 }
 /*! (static) Factory */
-Texture * TextureUtils::createRedTexture(uint32_t width, uint32_t height, bool useByte, bool useMipmaps) {
+Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte, bool useMipmaps) {
 	Texture::Format f;
 	f.glTextureType = GL_TEXTURE_2D;
 	f.width = width;
@@ -144,7 +145,7 @@ Texture * TextureUtils::createRedTexture(uint32_t width, uint32_t height, bool u
 }
 
 /*! (static) Factory */
-Texture * TextureUtils::createDepthStencilTexture(uint32_t width, uint32_t height) {
+Texture * createDepthStencilTexture(uint32_t width, uint32_t height) {
 	Texture::Format depthStencilFormat;
 	depthStencilFormat.glTextureType = GL_TEXTURE_2D;
 	depthStencilFormat.width = width;
@@ -160,7 +161,7 @@ Texture * TextureUtils::createDepthStencilTexture(uint32_t width, uint32_t heigh
 #endif
 
 /*! (static) Factory */
-Texture * TextureUtils::createDepthTexture(uint32_t width, uint32_t height) {
+Texture * createDepthTexture(uint32_t width, uint32_t height) {
 	Texture::Format depthFormat;
 	depthFormat.glTextureType = GL_TEXTURE_2D;
 	depthFormat.width = width;
@@ -175,7 +176,7 @@ Texture * TextureUtils::createDepthTexture(uint32_t width, uint32_t height) {
 }
 
 //! [static] Factory
-Texture * TextureUtils::createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo, bool useMipmaps) {
+Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo, bool useMipmaps) {
 	Texture::Format f=Texture::Format();
 	f.glTextureType=GL_TEXTURE_2D;
 	f.width = width;
@@ -205,7 +206,7 @@ Texture * TextureUtils::createChessTexture(uint32_t width, uint32_t height, int 
 	return t;
 }
 
-Texture * TextureUtils::createTextureFromBitmap(Util::Bitmap * bitmap, bool useMipmaps, bool clampToEdge) {
+Texture * createTextureFromBitmap(Util::Bitmap * bitmap, bool useMipmaps, bool clampToEdge) {
 	const Util::PixelFormat & bFormat=bitmap->getPixelFormat();
 
 	const uint32_t height = bitmap->getHeight();
@@ -268,7 +269,7 @@ Texture * TextureUtils::createTextureFromBitmap(Util::Bitmap * bitmap, bool useM
  * @Note: Used for importing hight-maps e.g. created with terragen.
  * @todo Create a Streamer class instead of this function.
  */
-Texture * TextureUtils::createTextureFromRAW(const Util::FileName & filename, unsigned int type, bool useMipmaps, bool clampToEdge, bool flip_h) {
+Texture * createTextureFromRAW(const Util::FileName & filename, unsigned int type, bool useMipmaps, bool clampToEdge, bool flip_h) {
 	if (type!=RAW_16BIT_BW) {
 		WARN(std::string("RAW-Image has unimplemented color format for file ") + filename);
 		return nullptr;
@@ -320,7 +321,7 @@ Texture * TextureUtils::createTextureFromRAW(const Util::FileName & filename, un
 }
 
 //! [static]
-bool TextureUtils::compareTextures(Texture *t1, Texture *t2) {
+bool compareTextures(Texture *t1, Texture *t2) {
 	if(t1 == t2)
 		return true;
 	if(t1 == nullptr || t2 == nullptr
@@ -340,7 +341,7 @@ bool TextureUtils::compareTextures(Texture *t1, Texture *t2) {
 }
 
 //! [static]
-Texture * TextureUtils::createTextureFromScreen(int xpos, int ypos, const Texture::Format & format) {
+Texture * createTextureFromScreen(int xpos, int ypos, const Texture::Format & format) {
 	auto texture = new Texture(format);
 	texture->allocateLocalData();
 	glReadPixels(xpos, ypos, static_cast<GLsizei>(format.width), static_cast<GLsizei>(format.height), format.glFormat, format.glDataType, texture->getLocalData());
@@ -348,7 +349,7 @@ Texture * TextureUtils::createTextureFromScreen(int xpos, int ypos, const Textur
 }
 
 //! [static]
-Texture * TextureUtils::createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/, int width/*=-1*/, int height/*=-1*/,bool useAlpha){
+Texture * createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/, int width/*=-1*/, int height/*=-1*/,bool useAlpha){
 	 if(width < 0 || height <0){
 		GLint viewport[4];
 		glGetIntegerv(GL_VIEWPORT, viewport);
@@ -366,7 +367,7 @@ Texture * TextureUtils::createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/, 
 }
 
 //! [static]
-void  TextureUtils::updateTextureFromScreen(RenderingContext & context,Texture * t,const Geometry::Rect_i & textureRect, int screenPosX/*=0*/, int screenPosY/*=0*/){
+void  updateTextureFromScreen(RenderingContext & context,Texture * t,const Geometry::Rect_i & textureRect, int screenPosX/*=0*/, int screenPosY/*=0*/){
 	const Texture::Format & f=t->getFormat();
 	const int width=textureRect.getWidth()>static_cast<int>(f.width) ? static_cast<int>(f.width) : textureRect.getWidth();
 	const int height=textureRect.getHeight()>static_cast<int>(f.height) ? static_cast<int>(f.height) : textureRect.getHeight();
@@ -377,14 +378,14 @@ void  TextureUtils::updateTextureFromScreen(RenderingContext & context,Texture *
 }
 
 //! [static]
-void  TextureUtils::updateTextureFromScreen(RenderingContext & context,Texture * t){
+void  updateTextureFromScreen(RenderingContext & context,Texture * t){
 	updateTextureFromScreen(context,t,Geometry::Rect_i(0,0,t->getFormat().width,t->getFormat().height));
 }
 
 #ifdef LIB_GL
 
 //! [static]
-void  TextureUtils::drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect,Texture * t,const Geometry::Rect_f & textureRect){
+void  drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect,Texture * t,const Geometry::Rect_f & textureRect){
 	if(!t)
 		return;
 	std::vector<Texture *> textures;
@@ -392,11 +393,11 @@ void  TextureUtils::drawTextureToScreen(RenderingContext&rc,const Geometry::Rect
 	std::vector<Geometry::Rect_f> rects;
 	rects.push_back(textureRect);
 
-	TextureUtils::drawTextureToScreen(rc,screenRect,textures,rects);
+	drawTextureToScreen(rc,screenRect,textures,rects);
 }
 
 //! (static)
-void TextureUtils::drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenRect, const std::vector<Texture *> & textures,
+void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenRect, const std::vector<Texture *> & textures,
 		const std::vector<Geometry::Rect_f> & textureRects) {
 
 	uint8_t numTextures = textures.size() < textureRects.size() ? textures.size() : textureRects.size();
@@ -496,7 +497,7 @@ void TextureUtils::drawTextureToScreen(RenderingContext & rc, const Geometry::Re
 }
 #endif
 
-Util::Bitmap * TextureUtils::createBitmapFromTexture(RenderingContext & context,Texture * texture) {
+Util::Bitmap * createBitmapFromTexture(RenderingContext & context,Texture * texture) {
 	if (texture == nullptr){
 		WARN("Error creating bitmap: texture was null");
 		return nullptr;
@@ -511,7 +512,7 @@ Util::Bitmap * TextureUtils::createBitmapFromTexture(RenderingContext & context,
 	return createBitmapFromLocalTexture(texture);
 }
 
-Util::Bitmap * TextureUtils::createBitmapFromLocalTexture(Texture * texture) {
+Util::Bitmap * createBitmapFromLocalTexture(Texture * texture) {
 	if (texture == nullptr) {
 		return nullptr;
 	}
@@ -582,12 +583,12 @@ Util::Bitmap * TextureUtils::createBitmapFromLocalTexture(Texture * texture) {
 	return bitmap;
 }
 
-Util::Reference<Util::PixelAccessor> TextureUtils::createColorPixelAccessor(RenderingContext & context, Texture * texture) {
+Util::Reference<Util::PixelAccessor> createColorPixelAccessor(RenderingContext & context, Texture * texture) {
 	texture->openLocalData(context);
 	return Util::PixelAccessor::create(texture->getLocalBitmap());
 }
 
-Util::Reference<Util::PixelAccessor> TextureUtils::createDepthPixelAccessor(RenderingContext & context, Texture * texture) {
+Util::Reference<Util::PixelAccessor> createDepthPixelAccessor(RenderingContext & context, Texture * texture) {
 	class DepthAccessor : public Util::PixelAccessor {
 		public:
 			DepthAccessor(Util::Reference<Util::Bitmap> bitmap) : 
@@ -647,7 +648,7 @@ Util::Reference<Util::PixelAccessor> TextureUtils::createDepthPixelAccessor(Rend
 #endif /* LIB_GL */
 }
 
-Util::Reference<Util::PixelAccessor> TextureUtils::createStencilPixelAccessor(RenderingContext & context, Texture * texture) {
+Util::Reference<Util::PixelAccessor> createStencilPixelAccessor(RenderingContext & context, Texture * texture) {
 	class StencilAccessor : public Util::PixelAccessor {
 		public:
 			StencilAccessor(Util::Reference<Util::Bitmap> bitmap) : 
@@ -704,7 +705,7 @@ Util::Reference<Util::PixelAccessor> TextureUtils::createStencilPixelAccessor(Re
 #endif /* LIB_GL */
 }
 
-float TextureUtils::minDepthDistance(RenderingContext & context, Texture * firstTex, Texture * secondTex) {
+float minDepthDistance(RenderingContext & context, Texture * firstTex, Texture * secondTex) {
 	// check parameter validity
 	if(firstTex == nullptr) {
 		INVALID_ARGUMENT_EXCEPTION("Texture firstTex may not be nullptr.");
@@ -757,4 +758,5 @@ float TextureUtils::minDepthDistance(RenderingContext & context, Texture * first
 	}
 }
 
+}
 }
