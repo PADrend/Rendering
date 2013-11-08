@@ -60,9 +60,10 @@ struct TextRenderer::Implementation {
 	Util::FontInfo fontInfo;
 };
 
-TextRenderer::TextRenderer(Util::Bitmap * glyphBitmap, const Util::FontInfo & fontInfo) :
+TextRenderer::TextRenderer(const Util::Bitmap & glyphBitmap, 
+						   const Util::FontInfo & fontInfo) :
 		impl(new Implementation) {
-	impl->texture = TextureUtils::createTextureFromBitmap(*glyphBitmap, false, false);
+	impl->texture = TextureUtils::createTextureFromBitmap(glyphBitmap, false, false);
 	impl->fontInfo = fontInfo;
 }
 

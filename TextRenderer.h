@@ -50,7 +50,7 @@ class TextRenderer {
 		 * characters to information about the glyphs
 		 * @see Util::BitmapFont
 		 */
-		TextRenderer(Util::Bitmap * glyphBitmap, 
+		TextRenderer(const Util::Bitmap & glyphBitmap, 
 					 const Util::FontInfo & fontInfo);
 
 		//! Free resources
