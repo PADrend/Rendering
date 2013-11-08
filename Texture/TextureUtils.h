@@ -47,7 +47,7 @@ Texture * createDepthTexture(uint32_t width, uint32_t height);
 Texture * createTextureDataArray_Vec4(const uint32_t size);
 
 Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo=8, bool useMipmaps = false);
-Texture * createTextureFromBitmap(Util::Bitmap * bitmap, bool useMipmaps = true, bool clampToEdge = false);
+Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool useMipmaps = true, bool clampToEdge = false);
 Texture * createTextureFromRAW(const Util::FileName & filename,unsigned int type=RAW_16BIT_BW, bool useMipmaps = false, bool clampToEdge = false, bool flip_h = true);
 Texture * createTextureFromScreen(int xpos, int ypos, const Texture::Format & format);
 Texture * createTextureFromScreen(int xpos=0, int ypos=0, int width=-1, int height=-1,bool useAlpha = true);

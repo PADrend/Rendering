@@ -206,11 +206,9 @@ Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powO
 	return t;
 }
 
-Texture * createTextureFromBitmap(Util::Bitmap * bitmap, bool useMipmaps, bool clampToEdge) {
-	const Util::PixelFormat & bFormat=bitmap->getPixelFormat();
-
-	const uint32_t height = bitmap->getHeight();
-	const uint32_t width = bitmap->getWidth();
+Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool useMipmaps, bool clampToEdge) {
+	const uint32_t height = bitmap.getHeight();
+	const uint32_t width = bitmap.getWidth();
 
 	Texture::Format tFormat;
 	tFormat.glTextureType = GL_TEXTURE_2D;
@@ -218,20 +216,21 @@ Texture * createTextureFromBitmap(Util::Bitmap * bitmap, bool useMipmaps, bool c
 	tFormat.height = height;
 	tFormat.width = width;
 
-	if(bFormat==Util::PixelFormat::RGBA){
+	const Util::PixelFormat & pixelFormat = bitmap.getPixelFormat();
+	if(pixelFormat==Util::PixelFormat::RGBA){
 		tFormat.glFormat = GL_RGBA;
 		tFormat.glInternalFormat = GL_RGBA;
-	}else if(bFormat==Util::PixelFormat::RGB){
+	}else if(pixelFormat==Util::PixelFormat::RGB){
 		tFormat.glFormat = GL_RGB;
 		tFormat.glInternalFormat = GL_RGB;
 #ifdef LIB_GL
-	}else if(bFormat==Util::PixelFormat::BGRA){
+	}else if(pixelFormat==Util::PixelFormat::BGRA){
 		tFormat.glFormat = GL_BGRA;
 		tFormat.glInternalFormat = GL_RGBA;
-	}else if(bFormat==Util::PixelFormat::BGR){
+	}else if(pixelFormat==Util::PixelFormat::BGR){
 		tFormat.glFormat = GL_BGR;
 		tFormat.glInternalFormat = GL_RGB;
-	}else if(bFormat==Util::PixelFormat::MONO){
+	}else if(pixelFormat==Util::PixelFormat::MONO){
 		tFormat.glFormat = GL_RED;
 		tFormat.glInternalFormat = GL_RED;
 #endif /* LIB_GL */
@@ -249,10 +248,10 @@ Texture * createTextureFromBitmap(Util::Bitmap * bitmap, bool useMipmaps, bool c
 
 	auto texture = new Texture(tFormat);
 	texture->allocateLocalData();
-	const uint8_t * pixels = bitmap->data();
+	const uint8_t * pixels = bitmap.data();
 
 	// Flip the rows.
-	const uint32_t rowSize = width * bFormat.getBytesPerPixel();
+	const uint32_t rowSize = width * pixelFormat.getBytesPerPixel();
 	for (uint_fast16_t row = 0; row < height; ++row) {
 		const uint32_t offset = row * rowSize;
 		const uint16_t reverseRow = height - 1 - row;

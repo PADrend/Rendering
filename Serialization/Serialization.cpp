@@ -155,7 +155,7 @@ Texture * loadTexture(const Util::FileName & url, bool useMipmaps, bool clampToE
 		// Try Util::Serialization
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(url);
 		if(bitmap.isNotNull()) {
-			Util::Reference<Texture> texture = TextureUtils::createTextureFromBitmap(bitmap.get(), useMipmaps, clampToEdge);
+			Util::Reference<Texture> texture = TextureUtils::createTextureFromBitmap(*bitmap.get(), useMipmaps, clampToEdge);
 			if(texture.isNotNull()) {
 				texture->setFileName(url);
 			}
@@ -177,7 +177,7 @@ Texture * loadTexture(const std::string & extension, const std::string & data, b
 		// Try Util::Serialization.
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(extension, data);
 		if(bitmap.isNotNull()) {
-			return TextureUtils::createTextureFromBitmap(bitmap.get(), useMipmaps, clampToEdge);
+			return TextureUtils::createTextureFromBitmap(*bitmap.get(), useMipmaps, clampToEdge);
 		}
 
 		WARN("Unsupported file extension \"" + extension + "\".");
