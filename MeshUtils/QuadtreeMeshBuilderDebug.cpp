@@ -190,10 +190,10 @@ void QuadtreeMeshBuilder::createDebugOutput(const std::deque<QuadtreeMeshBuilder
 				destColor->writeColor(x, bitmapHeight - y - 1, sourceColor->readColor4f(x, y));
 			}
 		}
-		Util::Serialization::saveBitmap(colorDebugBitmap.get(), Util::FileName("screens/QuadTreeMeshBuilder_" + currentTime + "_Color.png"));
+		Util::Serialization::saveBitmap(*colorDebugBitmap.get(), Util::FileName("screens/QuadTreeMeshBuilder_" + currentTime + "_Color.png"));
 	}
-	Util::Serialization::saveBitmap(depthDebugBitmap.get(), Util::FileName("screens/QuadTreeMeshBuilder_" + currentTime + "_Depth.png"));
-	Util::Serialization::saveBitmap(quadTreeDebugBitmap.get(), Util::FileName("screens/QuadTreeMeshBuilder_" + currentTime + "_QuadTree.png"));
+	Util::Serialization::saveBitmap(*depthDebugBitmap.get(), Util::FileName("screens/QuadTreeMeshBuilder_" + currentTime + "_Depth.png"));
+	Util::Serialization::saveBitmap(*quadTreeDebugBitmap.get(), Util::FileName("screens/QuadTreeMeshBuilder_" + currentTime + "_QuadTree.png"));
 	std::ofstream textDebug("screens/QuadTreeMeshBuilder_Information.txt", std::ios_base::out | std::ios_base::app);
 	textDebug << currentTime << '\t' << leaves.size() << '\t' << depthMin << '\t' << depthMax << '\n';
 //	sleep(1);

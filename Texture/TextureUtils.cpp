@@ -590,7 +590,8 @@ Util::Reference<Util::PixelAccessor> TextureUtils::createColorPixelAccessor(Rend
 Util::Reference<Util::PixelAccessor> TextureUtils::createDepthPixelAccessor(RenderingContext & context, Texture * texture) {
 	class DepthAccessor : public Util::PixelAccessor {
 		public:
-			DepthAccessor(Util::Bitmap * bitmap) : Util::PixelAccessor(bitmap) {
+			DepthAccessor(Util::Reference<Util::Bitmap> bitmap) : 
+				Util::PixelAccessor(std::move(bitmap)) {
 			}
 			virtual ~DepthAccessor(){
 			}
@@ -649,7 +650,8 @@ Util::Reference<Util::PixelAccessor> TextureUtils::createDepthPixelAccessor(Rend
 Util::Reference<Util::PixelAccessor> TextureUtils::createStencilPixelAccessor(RenderingContext & context, Texture * texture) {
 	class StencilAccessor : public Util::PixelAccessor {
 		public:
-			StencilAccessor(Util::Bitmap * bitmap) : Util::PixelAccessor(bitmap) {
+			StencilAccessor(Util::Reference<Util::Bitmap> bitmap) : 
+				Util::PixelAccessor(std::move(bitmap)) {
 			}
 			virtual ~StencilAccessor(){
 			}

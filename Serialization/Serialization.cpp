@@ -209,7 +209,7 @@ bool saveTexture(RenderingContext & context,Texture * texture, const Util::FileN
 			WARN("Error saving texture: internal bitmap was null");
 			return false;
 		}
-		bool success = Util::Serialization::saveBitmap(bitmap.get(), url);
+		bool success = Util::Serialization::saveBitmap(*bitmap.get(), url);
 		if(success) {
 			return true;
 		}
@@ -232,7 +232,11 @@ bool saveTexture(RenderingContext &context,Texture * texture, const std::string 
 	} else {
 		// Try Util::Serialization.
 		Util::Reference<Util::Bitmap> bitmap = TextureUtils::createBitmapFromTexture(context,texture);
-		bool success = Util::Serialization::saveBitmap(bitmap.get(), extension, output);
+		if(bitmap.isNull()){
+			WARN("Error saving texture: internal bitmap was null");
+			return false;
+		}
+		bool success = Util::Serialization::saveBitmap(*bitmap.get(), extension, output);
 		if(success) {
 			return true;
 		}
