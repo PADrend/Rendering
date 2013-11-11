@@ -117,8 +117,9 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		bool isGLTextureValid()const;
 		bool isGLTextureResident()const;
 
-		Util::Bitmap * getLocalBitmap()				{	return localBitmap.get();	}
-		const Util::Bitmap * getLocalBitmap()const	{	return localBitmap.get();	}
+		const Util::Reference<Util::Bitmap> & getLocalBitmap() const {
+			return localBitmap;
+		}
 
 		/*!	@name Filename */
 		// @{
