@@ -111,8 +111,8 @@ bool saveMesh(Mesh * mesh, const Util::FileName & url) {
 		WARN("Unsupported file extension \"" + url.getEnding() + "\".");
 		return false;
 	}
-	std::unique_ptr<std::ostream> stream(Util::FileUtils::openForWriting(url));
-	if(stream.get() == nullptr) {
+	auto stream = Util::FileUtils::openForWriting(url);
+	if(!stream) {
 		WARN("Error opening stream for writing. Path: " + url.toString());
 		return false;
 	}
@@ -192,8 +192,8 @@ bool saveTexture(RenderingContext & context,Texture * texture, const Util::FileN
 	}
 	std::unique_ptr<AbstractRenderingStreamer> saver(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_SAVE_TEXTURE));
 	if (saver.get() != nullptr){
-		std::unique_ptr<std::ostream> stream(Util::FileUtils::openForWriting(url));
-		if(stream.get() == nullptr) {
+		auto stream = Util::FileUtils::openForWriting(url);
+		if(!stream) {
 			WARN("Error opening stream for writing. Path: " + url.toString());
 			return false;
 		}

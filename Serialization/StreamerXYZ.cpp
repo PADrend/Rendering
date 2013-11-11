@@ -103,9 +103,8 @@ void StreamerXYZ::clusterPoints( const Util::FileName & inputFile, size_t number
 	for(size_t i=0;i<numberOfClusters;++i){
 		std::ostringstream outFileName;
 		outFileName<<baseFileName<<"_"<<i<<".xyz";
-		auto handler = Util::FileUtils::openForWriting(Util::FileName(outFileName.str()));
-		outputHolder.emplace_back(handler);
-		outputs.push_back(handler);
+		outputHolder.emplace_back(Util::FileUtils::openForWriting(Util::FileName(outFileName.str())));
+		outputs.push_back(outputHolder.back().get());
 	}
 	clusterPoints(*input,outputs);
 }
