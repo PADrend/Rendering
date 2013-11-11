@@ -63,10 +63,10 @@ void drawTextureToScreen(RenderingContext & rc,
 bool compareTextures(Texture *t1, Texture *t2);
 
 //! the texture is downloaded to memory (if necessary), the proper Util-color format is chosen and the texture is flipped vertically.
-Util::Bitmap * createBitmapFromTexture(RenderingContext & context,Texture * texture);
+Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context,Texture * texture);
 
 //! like createBitmapFromTexture, but the texture is NOT downloaded, but a warning is issued if it should have been.
-Util::Bitmap * createBitmapFromLocalTexture(Texture * texture);
+Util::Reference<Util::Bitmap> createBitmapFromLocalTexture(Texture * texture);
 
 //! Create a standard pixel accessor for reading color values.
 Util::Reference<Util::PixelAccessor> createColorPixelAccessor(RenderingContext & context, Texture * texture);

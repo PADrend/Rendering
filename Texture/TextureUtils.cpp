@@ -496,7 +496,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 }
 #endif
 
-Util::Bitmap * createBitmapFromTexture(RenderingContext & context,Texture * texture) {
+Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context,Texture * texture) {
 	if (texture == nullptr){
 		WARN("Error creating bitmap: texture was null");
 		return nullptr;
@@ -508,10 +508,10 @@ Util::Bitmap * createBitmapFromTexture(RenderingContext & context,Texture * text
 		}
 		texture->downloadGLTexture(context);
 	}
-	return createBitmapFromLocalTexture(texture);
+	return std::move(createBitmapFromLocalTexture(texture));
 }
 
-Util::Bitmap * createBitmapFromLocalTexture(Texture * texture) {
+Util::Reference<Util::Bitmap> createBitmapFromLocalTexture(Texture * texture) {
 	if (texture == nullptr) {
 		return nullptr;
 	}
@@ -527,7 +527,7 @@ Util::Bitmap * createBitmapFromLocalTexture(Texture * texture) {
 		return nullptr;
 	}
 
-	Util::Bitmap * bitmap = nullptr;
+	Util::Reference<Util::Bitmap> bitmap;
 
 	switch (tFormat.glFormat) {
 #ifdef LIB_GL
@@ -569,7 +569,7 @@ Util::Bitmap * createBitmapFromLocalTexture(Texture * texture) {
 		default:
 			break;
 	}
-	if(bitmap==nullptr){
+	if(bitmap.isNull()){
 		WARN("createBitmapFromTexture: The texture format is not supported");
 		return nullptr;
 	}
@@ -579,7 +579,7 @@ Util::Bitmap * createBitmapFromLocalTexture(Texture * texture) {
 	std::copy(textureData, textureData + bitmap->getDataSize(), pixels);
 	bitmap->flipVertically();
 
-	return bitmap;
+	return std::move(bitmap);
 }
 
 Util::Reference<Util::PixelAccessor> createColorPixelAccessor(RenderingContext & context, Texture * texture) {
