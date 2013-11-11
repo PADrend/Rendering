@@ -83,8 +83,8 @@ Mesh * loadMesh(const Util::FileName & url) {
 		WARN("Unsupported file extension \"" + url.getEnding() + "\".");
 		return nullptr;
 	}
-	std::unique_ptr<std::istream> stream(Util::FileUtils::openForReading(url));
-	if(stream.get() == nullptr) {
+	auto stream = Util::FileUtils::openForReading(url);
+	if(!stream) {
 		WARN("Error opening stream for reading. Path: " + url.toString());
 		return nullptr;
 	}
@@ -141,8 +141,8 @@ Texture * loadTexture(const Util::FileName & url, bool useMipmaps, bool clampToE
 
 	// Rendering streamer found?
 	if (loader.get() != nullptr) {
-		std::unique_ptr<std::istream> stream(Util::FileUtils::openForReading(url));
-		if(stream.get() == nullptr) {
+		auto stream = Util::FileUtils::openForReading(url);
+		if(!stream) {
 			WARN("Error opening stream for reading. Path: " + url.toString());
 			return nullptr;
 		}
@@ -252,8 +252,8 @@ Util::GenericAttributeList * loadGeneric(const Util::FileName & url) {
 		WARN("Unsupported file extension \"" + url.getEnding() + "\".");
 		return nullptr;
 	}
-	std::unique_ptr<std::istream> stream(Util::FileUtils::openForReading(url));
-	if(stream.get() == nullptr) {
+	auto stream = Util::FileUtils::openForReading(url);
+	if(!stream) {
 		WARN("Error opening stream for reading. Path: " + url.toString());
 		return nullptr;
 	}

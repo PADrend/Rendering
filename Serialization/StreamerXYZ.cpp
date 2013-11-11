@@ -87,7 +87,7 @@ uint8_t StreamerXYZ::queryCapabilities(const std::string & extension) {
 
 //! (static)
 void StreamerXYZ::clusterPoints( const Util::FileName & inputFile, size_t numberOfClusters ){
-	std::unique_ptr<std::istream> input(Util::FileUtils::openForReading(inputFile));
+	auto input = Util::FileUtils::openForReading(inputFile);
 	FAIL_IF(!input->good());
 
 	std::vector<std::unique_ptr<std::ostream> > outputHolder;
