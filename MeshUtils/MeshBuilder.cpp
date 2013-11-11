@@ -429,25 +429,30 @@ Mesh * MeshBuilder::createRectangle(const VertexDescription & desc,float width, 
 
 //! (static)
 Mesh * MeshBuilder::createMeshFromBitmaps(const VertexDescription & d,
-											Util::Bitmap * depth, Util::Bitmap * color/*=nullptr*/, Util::Bitmap * normals/*=nullptr*/ ){
+										  Util::Reference<Util::Bitmap> depth,
+										  Util::Reference<Util::Bitmap> color,
+										  Util::Reference<Util::Bitmap> normals) {
 	using namespace Geometry;
 
-	Util::Reference<Util::PixelAccessor> depthReader = Util::PixelAccessor::create(depth);
+	const uint32_t width = depth->getWidth();
+	const uint32_t height = depth->getHeight();
+
+	Util::Reference<Util::PixelAccessor> depthReader = Util::PixelAccessor::create(std::move(depth));
 	if( depthReader.isNull() || depthReader->getPixelFormat()!=Util::PixelFormat::MONO_FLOAT ){
 		WARN("createMeshFromBitmaps: unsupported depth texture format");
 		return nullptr;
 	}
 	Util::Reference<Util::PixelAccessor> colorReader;
-	if(color != nullptr) {
-		colorReader = Util::PixelAccessor::create(color);
+	if(color.isNotNull()) {
+		colorReader = Util::PixelAccessor::create(std::move(color));
 		if(colorReader.isNull() || (colorReader->getPixelFormat() != Util::PixelFormat::RGBA && colorReader->getPixelFormat() != Util::PixelFormat::RGB)) {
 			WARN("createMeshFromBitmaps: unsupported color texture format");
 			return nullptr;
 		}
 	}
 	Util::Reference<Util::PixelAccessor> normalReader;
-	if( normals!=nullptr ){
-		normalReader =  Util::PixelAccessor::create(normals);
+	if(normals.isNotNull()) {
+		normalReader =  Util::PixelAccessor::create(std::move(normals));
 		if(normalReader.isNull()){
 			WARN("createMeshFromBitmaps: unsupported normal texture format");
 			return nullptr;
@@ -455,11 +460,9 @@ Mesh * MeshBuilder::createMeshFromBitmaps(const VertexDescription & d,
 	}
 
 	MeshBuilder builder(d);
-	const uint32_t width=static_cast<uint32_t>(depth->getWidth());
-	const uint32_t height=static_cast<uint32_t>(depth->getHeight());
 
-	const float xScale=2.0/width;
-	const float yScale=2.0/depth->getHeight();
+	const float xScale=2.0 / width;
+	const float yScale=2.0 / height;
 	const float cut=1;
 
 	for(uint32_t y=0; y<height; ++y){

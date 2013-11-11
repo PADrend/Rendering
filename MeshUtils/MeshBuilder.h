@@ -167,8 +167,10 @@ class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
 		static Mesh * createRectangle(const VertexDescription & desc,float width, float height);
 
 //		// transMat = inverseModelViewProjection
-		static Mesh * createMeshFromBitmaps(const VertexDescription & d, Util::Bitmap * depth,
-											Util::Bitmap * color=nullptr, Util::Bitmap * normals=nullptr );
+		static Mesh * createMeshFromBitmaps(const VertexDescription & d,
+											Util::Reference<Util::Bitmap> depth,
+											Util::Reference<Util::Bitmap> color = nullptr,
+											Util::Reference<Util::Bitmap> normals = nullptr );
 
 	// @}
 	// -----
