@@ -203,7 +203,7 @@ class RenderingData {
 			return (checkNumbers[MODELVIEW] == actual.checkNumbers[MODELVIEW]) ? false :
 					modelViewMatrix != actual.modelViewMatrix;
 		}
-		void multModelViewMatrix(Geometry::Matrix4x4f matrix) {
+		void multModelViewMatrix(const Geometry::Matrix4x4f & matrix) {
 			modelViewMatrix *= matrix;
 			++checkNumbers[MODELVIEW];
 		}
