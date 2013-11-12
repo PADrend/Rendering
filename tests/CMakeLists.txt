@@ -12,6 +12,7 @@ option(RENDERING_BUILD_TESTS "Defines if CppUnit tests for the Rendering library
 if(RENDERING_BUILD_TESTS)
 	add_executable(RenderingTest 
 		BufferObjectTest.cpp
+		DrawTest.cpp
 		RenderingTestMain.cpp
 	)
 
