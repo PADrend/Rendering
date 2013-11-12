@@ -762,7 +762,7 @@ void RenderingContext::popBlending() {
 }
 
 void RenderingContext::pushBlending() {
-	state->blendingParameterStack.push(state->actualCoreRenderingData.getBlendingParameters());
+	state->blendingParameterStack.emplace(state->actualCoreRenderingData.getBlendingParameters());
 }
 
 void RenderingContext::setBlending(const BlendingParameters & p) {
@@ -785,7 +785,7 @@ void RenderingContext::popColorBuffer() {
 }
 
 void RenderingContext::pushColorBuffer() {
-	state->colorBufferParameterStack.push(state->actualCoreRenderingData.getColorBufferParameters());
+	state->colorBufferParameterStack.emplace(state->actualCoreRenderingData.getColorBufferParameters());
 }
 
 void RenderingContext::pushAndSetColorBuffer(const ColorBufferParameters & p) {
@@ -819,7 +819,7 @@ void RenderingContext::popCullFace() {
 }
 
 void RenderingContext::pushCullFace() {
-	state->cullFaceParameterStack.push(state->actualCoreRenderingData.getCullFaceParameters());
+	state->cullFaceParameterStack.emplace(state->actualCoreRenderingData.getCullFaceParameters());
 }
 
 void RenderingContext::pushAndSetCullFace(const CullFaceParameters & p) {
@@ -847,7 +847,7 @@ void RenderingContext::popDepthBuffer() {
 }
 
 void RenderingContext::pushDepthBuffer() {
-	state->depthBufferParameterStack.push(state->actualCoreRenderingData.getDepthBufferParameters());
+	state->depthBufferParameterStack.emplace(state->actualCoreRenderingData.getDepthBufferParameters());
 }
 
 void RenderingContext::pushAndSetDepthBuffer(const DepthBufferParameters & p) {
@@ -885,7 +885,7 @@ void RenderingContext::popAlphaTest() {
 }
 
 void RenderingContext::pushAlphaTest() {
-	state->alphaTestParameterStack.push(state->actualCoreRenderingData.getAlphaTestParameters());
+	state->alphaTestParameterStack.emplace(state->actualCoreRenderingData.getAlphaTestParameters());
 }
 
 void RenderingContext::pushAndSetAlphaTest(const AlphaTestParameters & p) {
@@ -913,7 +913,7 @@ void RenderingContext::popLighting() {
 }
 
 void RenderingContext::pushLighting() {
-	state->lightingParameterStack.push(state->actualCoreRenderingData.getLightingParameters());
+	state->lightingParameterStack.emplace(state->actualCoreRenderingData.getLightingParameters());
 }
 
 void RenderingContext::pushAndSetLighting(const LightingParameters & p) {
@@ -943,7 +943,7 @@ void RenderingContext::popLine() {
 }
 
 void RenderingContext::pushLine() {
-	state->lineParameterStack.push(state->actualCoreRenderingData.getLineParameters());
+	state->lineParameterStack.emplace(state->actualCoreRenderingData.getLineParameters());
 }
 
 void RenderingContext::pushAndSetLine(const LineParameters & p) {
@@ -973,7 +973,7 @@ void RenderingContext::popPointParameters() {
 }
 
 void RenderingContext::pushPointParameters() {
-	state->pointParameterStack.push(state->actualRenderingData.getPointParameters());
+	state->pointParameterStack.emplace(state->actualRenderingData.getPointParameters());
 }
 
 void RenderingContext::pushAndSetPointParameters(const PointParameters & p) {
@@ -1001,7 +1001,7 @@ void RenderingContext::popPolygonMode() {
 }
 
 void RenderingContext::pushPolygonMode() {
-	state->polygonModeParameterStack.push(state->actualCoreRenderingData.getPolygonModeParameters());
+	state->polygonModeParameterStack.emplace(state->actualCoreRenderingData.getPolygonModeParameters());
 }
 
 void RenderingContext::pushAndSetPolygonMode(const PolygonModeParameters & p) {
@@ -1029,7 +1029,7 @@ void RenderingContext::popPolygonOffset() {
 }
 
 void RenderingContext::pushPolygonOffset() {
-	state->polygonOffsetParameterStack.push(state->actualCoreRenderingData.getPolygonOffsetParameters());
+	state->polygonOffsetParameterStack.emplace(state->actualCoreRenderingData.getPolygonOffsetParameters());
 }
 
 void RenderingContext::pushAndSetPolygonOffset(const PolygonOffsetParameters & p) {
@@ -1059,7 +1059,7 @@ void RenderingContext::popScissor() {
 }
 
 void RenderingContext::pushScissor() {
-	state->scissorParametersStack.push(getScissor());
+	state->scissorParametersStack.emplace(getScissor());
 }
 
 void RenderingContext::pushAndSetScissor(const ScissorParameters & scissorParameters) {
@@ -1108,7 +1108,7 @@ void RenderingContext::popStencil() {
 }
 
 void RenderingContext::pushStencil() {
-	state->stencilParameterStack.push(state->actualCoreRenderingData.getStencilParameters());
+	state->stencilParameterStack.emplace(state->actualCoreRenderingData.getStencilParameters());
 }
 
 void RenderingContext::setStencil(const StencilParameters & stencilParameter) {
@@ -1139,7 +1139,7 @@ void RenderingContext::popFBO() {
 }
 
 void RenderingContext::pushFBO() {
-	state->fboStack.push(getActiveFBO());
+	state->fboStack.emplace(getActiveFBO());
 }
 
 void RenderingContext::pushAndSetFBO(FBO * fbo) {
@@ -1192,7 +1192,7 @@ void RenderingContext::setShader(Shader * shader) {
 }
 
 void RenderingContext::pushShader() {
-	state->renderingDataStack.push(state->getActiveRenderingData());
+	state->renderingDataStack.emplace(state->getActiveRenderingData());
 }
 
 void RenderingContext::pushAndSetShader(Shader * shader) {
@@ -1240,7 +1240,7 @@ Texture * RenderingContext::getTexture(uint32_t unit) {
 void RenderingContext::pushTexture(uint32_t unit) {
 	if (state->textureStack.size() < unit + 1)
 		state->textureStack.resize(unit + 1);
-	state->textureStack[unit].push(getTexture(unit));
+	state->textureStack[unit].emplace(getTexture(unit));
 }
 
 void RenderingContext::pushAndSetTexture(uint32_t unit, Texture * texture) {
@@ -1320,7 +1320,7 @@ void RenderingContext::popTransformFeedbackBufferStatus(){
 	}
 }
 void RenderingContext::pushTransformFeedbackBufferStatus(){
-	state->feedbackStack.push(state->activeFeedbackStatus);
+	state->feedbackStack.emplace(state->activeFeedbackStatus);
 }
 void RenderingContext::setTransformFeedbackBuffer(CountedBufferObject * buffer){
 	if(requestTransformFeedbackSupport()){
@@ -1391,7 +1391,7 @@ void RenderingContext::popProjectionMatrix() {
 }
 
 void RenderingContext::pushProjectionMatrix() {
-	state->projectionMatrixStack.push(state->actualRenderingData.getProjectionMatrix());
+	state->projectionMatrixStack.emplace(state->actualRenderingData.getProjectionMatrix());
 }
 
 void RenderingContext::setProjectionMatrix(const Geometry::Matrix4x4 & matrix) {
@@ -1431,7 +1431,7 @@ const Geometry::Matrix4x4 & RenderingContext::getMatrix() const {
 }
 
 void RenderingContext::pushMatrix() {
-	state->matrixStack.push(state->actualRenderingData.getModelViewMatrix());
+	state->matrixStack.emplace(state->actualRenderingData.getModelViewMatrix());
 }
 
 void RenderingContext::multMatrix(const Geometry::Matrix4x4 & matrix) {
@@ -1481,7 +1481,7 @@ void RenderingContext::popMaterial() {
 }
 
 void RenderingContext::pushMaterial() {
-	state->materialStack.push(state->actualRenderingData.getMaterialParameters());
+	state->materialStack.emplace(state->actualRenderingData.getMaterialParameters());
 }
 void RenderingContext::pushAndSetMaterial(const MaterialParameters & material) {
 	pushMaterial();
@@ -1519,7 +1519,7 @@ void RenderingContext::popViewport() {
 	state->viewportStack.pop();
 }
 void RenderingContext::pushViewport() {
-	state->viewportStack.push(state->currentViewport);
+	state->viewportStack.emplace(state->currentViewport);
 }
 void RenderingContext::setViewport(const Geometry::Rect_i & viewport) {
 	state->currentViewport = viewport;
@@ -1539,7 +1539,7 @@ void RenderingContext::setWindowClientArea(const Geometry::Rect_i & clientArea) 
 // VBO Client States **********************************************************************************
 
 void RenderingContext::enableClientState(uint32_t clientState) {
-	state->activeClientStates.push(clientState);
+	state->activeClientStates.emplace(clientState);
 #ifdef LIB_GL
 	glEnableClientState(clientState);
 #endif /* LIB_GL */
@@ -1555,7 +1555,7 @@ void RenderingContext::disableAllClientStates() {
 }
 
 void RenderingContext::enableTextureClientState(uint32_t textureUnit) {
-	state->activeTextureClientStates.push(textureUnit);
+	state->activeTextureClientStates.emplace(textureUnit);
 #ifdef LIB_GL
 	glClientActiveTexture(textureUnit);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1577,7 +1577,7 @@ void RenderingContext::enableVertexAttribArray(const VertexAttribute & attr, con
 	GLint location = shader->getVertexAttributeLocation(attr.getNameId());
 	if (location != -1) {
 		GLuint attribLocation = static_cast<GLuint> (location);
-		state->activeVertexAttributeBindings.push(attribLocation);
+		state->activeVertexAttributeBindings.emplace(attribLocation);
 		glVertexAttribPointer(attribLocation, attr.getNumValues(), attr.getDataType(), attr.getDataType() != GL_FLOAT, stride, data + attr.getOffset());
 		glEnableVertexAttribArray(attribLocation);
 	}
