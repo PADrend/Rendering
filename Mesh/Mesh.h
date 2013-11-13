@@ -107,7 +107,6 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 				--> vertexData.bind() & indexData.drawElements(...) OR (if no indexData is present) vertexData.drawArray(...)
 			\note **Attention** The function has to be called from within the GL-thread!	
 			\note Except if you know what you are doing, use renderingContext.displayMesh(mesh) instead. */
-		void _display(RenderingContext & context)				{	_display(context,0,isUsingIndexData()? getIndexCount() : getVertexCount());	}
 		void _display(RenderingContext & context,uint32_t firstElement,uint32_t elementCount);
 
 		/**
