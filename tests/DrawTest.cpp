@@ -26,20 +26,22 @@ void DrawTest::testBox() {
 	const Geometry::Box boxC(Geometry::Vec3f(17.0f, 17.0f, 17.0f), 12.0f);
 
 	RenderingContext context;
+	context.setImmediateMode(false);
 	Rendering::disableGLErrorChecking();
 
 	Util::Timer drawFastBoxTimer;
 	Util::Timer drawBoxTimer;
-	for(uint_fast32_t round = 0; round < 10; ++round) {
+	for(uint_fast32_t round = 0; round < 1000; ++round) {
 		drawFastBoxTimer.resume();
-		for(uint_fast32_t box = 0; box < 100000; ++box) {
+		context.applyChanges();
+		for(uint_fast32_t box = 0; box < 1000; ++box) {
 			drawFastAbsBox(context, boxA);
 			drawFastAbsBox(context, boxB);
 			drawFastAbsBox(context, boxC);
 		}
 		drawFastBoxTimer.stop();
 		drawBoxTimer.resume();
-		for(uint_fast32_t box = 0; box < 100000; ++box) {
+		for(uint_fast32_t box = 0; box < 1000; ++box) {
 			drawAbsBox(context, boxA);
 			drawAbsBox(context, boxB);
 			drawAbsBox(context, boxC);
