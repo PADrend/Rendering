@@ -36,14 +36,6 @@ class MeshDataStrategy {
 
 		// --------------------------------------
 
-		static bool vboInitialized;
-		static void initVBO();
-		static bool VBO_SUPPORTED;
-		static int32_t MAX_VERTICES;
-		static int32_t MAX_INDICES;
-
-		// --------------------------------------
-
 	public:
 		MeshDataStrategy(){}
 		virtual ~MeshDataStrategy(){}

@@ -36,29 +36,6 @@ void MeshDataStrategy::setDefaultStrategy(MeshDataStrategy * newDefault){
 
 // -------------
 
-bool MeshDataStrategy::vboInitialized = false;
-bool MeshDataStrategy::VBO_SUPPORTED = false;
-int32_t MeshDataStrategy::MAX_VERTICES = 0;
-int32_t MeshDataStrategy::MAX_INDICES = 0;
-
-/*! (static) */
-void MeshDataStrategy::initVBO() {
-	vboInitialized = true;
-
-#ifdef LIB_GL
-	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &MAX_VERTICES);
-	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &MAX_INDICES);
-#else
-	MAX_VERTICES = 10000;
-	MAX_INDICES = 5000;
-#endif
-
-	MeshDataStrategy::VBO_SUPPORTED = true;
-	if (!VBO_SUPPORTED) {
-		WARN("Vertex Buffer Objects not supported");
-	}
-}
-
 //! (static,internal)
 void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m,uint32_t startIndex,uint32_t indexCount){
 	if(m->isUsingIndexData()){
@@ -139,11 +116,7 @@ void SimpleMeshDataStrategy::assureLocalIndexData(Mesh * m){
 
 //! ---|> MeshDataStrategy
 void SimpleMeshDataStrategy::prepare(Mesh * m){
-
-	if(!vboInitialized)
-		initVBO();
-
-	if(!VBO_SUPPORTED || !getFlag(USE_VBOS))
+	if(!getFlag(USE_VBOS))
 		return;
 
 	MeshIndexData & id=m->_getIndexData();
