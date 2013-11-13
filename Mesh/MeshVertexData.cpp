@@ -277,7 +277,7 @@ void MeshVertexData::drawArray(RenderingContext & context,bool useVBO,uint32_t d
 
 void MeshVertexData::unbind(RenderingContext & context, bool useVBO) {
 	if (useVBO && isUploaded()) { // unbind vertex VBO
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		bufferObject.unbind(GL_ARRAY_BUFFER);
 	}
 	context.disableAllClientStates();
 	context.disableAllTextureClientStates();
