@@ -104,7 +104,9 @@ class RenderingContext::InternalState {
 };
 
 RenderingContext::RenderingContext() :
-	state(new InternalState), immediate(true), displayMeshFn(&stdDisplayMeshFn) {
+	state(new InternalState), immediate(true), displayMeshFn() {
+
+	resetDisplayMeshFn();
 
 	state->setActiveRenderingData(&(state->openGLRenderingData));
 
@@ -124,8 +126,9 @@ RenderingContext::RenderingContext() :
 
 RenderingContext::~RenderingContext() = default;
 
-void RenderingContext::stdDisplayMeshFn(RenderingContext & rc, Mesh * mesh,uint32_t firstElement,uint32_t elementCount){
-	mesh->_display(rc,firstElement,elementCount);
+void RenderingContext::resetDisplayMeshFn() {
+	using namespace std::placeholders;
+	displayMeshFn = std::bind(&Rendering::Mesh::_display, _2, _1, _3, _4);
 }
 
 void RenderingContext::displayMesh(Mesh * mesh){

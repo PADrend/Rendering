@@ -72,10 +72,9 @@ public:
 	typedef std::function<void (RenderingContext & rc,Mesh * mesh,uint32_t firstElement,uint32_t elementCount)> DisplayMeshFn;
 private:
 	DisplayMeshFn displayMeshFn;
-	static void stdDisplayMeshFn(RenderingContext & rc, Mesh * mesh,uint32_t firstElement,uint32_t elementCount);
 public:
 	void setDisplayMeshFn(DisplayMeshFn fn){ displayMeshFn = fn; };
-	void resetDisplayMeshFn(){ displayMeshFn = &stdDisplayMeshFn; };
+	void resetDisplayMeshFn();
 
 	void displayMesh(Mesh * mesh,uint32_t firstElement,uint32_t elementCount){ displayMeshFn(*this, mesh,firstElement,elementCount); }
 	void displayMesh(Mesh * mesh);
