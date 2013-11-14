@@ -64,7 +64,7 @@ void checkGLError(const char * file, int line) {
 	GLenum errorFlag = glGetError();
 	while (errorFlag != GL_NO_ERROR) {
 #if defined(ANDROID)
-		__android_log_print(ANDROID_LOG_WARN, "MobileRendering", "GL ERROR (%i):%s at %s:%i", errorFlag, getGLErrorString(errorFlag), file, line);
+		__android_log_print(ANDROID_LOG_WARN, "RenderingMobile", "GL ERROR (%i):%s at %s:%i", errorFlag, getGLErrorString(errorFlag), file, line);
 #else
 		std::cerr << "GL ERROR (" << errorFlag << "):" << getGLErrorString(errorFlag) << " at " << file << ":" << line << std::endl;
 #endif
