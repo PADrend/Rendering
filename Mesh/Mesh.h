@@ -67,8 +67,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	// @{
 	public:
 		Mesh();
-		Mesh(MeshIndexData  meshIndexData, MeshVertexData  meshVertexData);
-		Mesh(MeshIndexData && meshIndexData, MeshVertexData && meshVertexData);
+		Mesh(MeshIndexData meshIndexData, MeshVertexData meshVertexData);
 		Mesh(const VertexDescription & desc,uint32_t vertexCount,uint32_t indexCount);
 		Mesh(const Mesh &) = default;
 		Mesh(Mesh &&) = default;
