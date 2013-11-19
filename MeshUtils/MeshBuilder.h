@@ -204,7 +204,7 @@ private:
 	};
 public:
 	MeshBuilder();
-	explicit MeshBuilder(const VertexDescription & description);
+	explicit MeshBuilder(VertexDescription  description);
 	~MeshBuilder();
 
 	/*!	true if no no vertices were added so far.	*/

@@ -661,8 +661,8 @@ MeshBuilder::MeshBuilder() :
 	currentVertex(description.getVertexSize()) {
 }
 
-MeshBuilder::MeshBuilder(const VertexDescription & _description) :
-	description(_description),
+MeshBuilder::MeshBuilder(VertexDescription  _description) :
+	description(std::move(_description)),
 	posAttr(description.getAttribute(VertexAttributeIds::POSITION)),
 	normalAttr(description.getAttribute(VertexAttributeIds::NORMAL)),
 	colorAttr(description.getAttribute(VertexAttributeIds::COLOR)),

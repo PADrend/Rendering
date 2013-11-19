@@ -176,8 +176,8 @@ class PLY_Element {
 		/**
 		 * [ctor PLY_Element]
 		 */
-		PLY_Element(const std::string & _name, format_t _sourceFormat,int _count):
-				name(_name),count(_count),sourceFormat(_sourceFormat){//,numEntries(0),dataSize(0){
+		PLY_Element(std::string  _name, format_t _sourceFormat,int _count):
+				name(std::move(_name)),count(_count),sourceFormat(_sourceFormat){//,numEntries(0),dataSize(0){
 		}
 
 		void addList(const std::string & _countTypeName,const std::string & _typeName,const std::string & _name=""){

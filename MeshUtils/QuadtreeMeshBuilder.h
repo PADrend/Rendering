@@ -233,8 +233,8 @@ public:
 			/**
 			 * @param splitFunctions Array of split functions to use
 			 */
-			MultipleSplitFunction(const std::deque<split_function_t> & splitFunctions) :
-				functions(splitFunctions) {
+			MultipleSplitFunction(std::deque<split_function_t>  splitFunctions) :
+				functions(std::move(splitFunctions)) {
 			}
 
 			/**

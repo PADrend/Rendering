@@ -81,7 +81,7 @@ class Uniform {
 				UniformName() : id(0) {}
 				UniformName(const char * s) : id(Util::StringIdentifier(s)) {}
 				UniformName(const std::string & s) : id(Util::StringIdentifier(s)) {}
-				UniformName(Util::StringIdentifier _id) : id(_id) {}
+				UniformName(Util::StringIdentifier _id) : id(std::move(_id)) {}
 
 				const std::string getString()const				{	return id.toString();	}
 				Util::StringIdentifier getStringId()const				{	return id;	}
@@ -90,67 +90,67 @@ class Uniform {
 		static const Uniform nullUniform;
 
 		Uniform();
-		Uniform(const UniformName & _name, dataType_t _type, size_t arraySize);
-		Uniform(const UniformName & _name, dataType_t _type, size_t arraySize,const std::vector<uint8_t> & data);
+		Uniform(UniformName  _name, dataType_t _type, size_t arraySize);
+		Uniform(UniformName  _name, dataType_t _type, size_t arraySize,std::vector<uint8_t>  data);
 
 		/*! Generic bool-constructor (use another contructor whenever possible)
 			\throw may throw an invalid_argument-exception	*/
-		Uniform(const UniformName & _name, dataType_t _type, const std::deque<bool> & values);
+		Uniform(UniformName  _name, dataType_t _type, const std::deque<bool> & values);
 		/*! Generic float-constructor (use another contructor whenever possible)
 			\throw may throw an invalid_argument-exception	*/
-		Uniform(const UniformName & _name, dataType_t _type, const std::vector<float> & values);
+		Uniform(UniformName  _name, dataType_t _type, const std::vector<float> & values);
 		/*! Generic int-constructor (use another contructor whenever possible)
 			\throw may throw an invalid_argument-exception	*/
-		Uniform(const UniformName & _name, dataType_t _type, const std::vector<int32_t> & values);
+		Uniform(UniformName  _name, dataType_t _type, const std::vector<int32_t> & values);
 
 		//! UNIFORM_BOOL
-		Uniform(const UniformName & _name, bool value);
-		Uniform(const UniformName & _name, const std::deque<bool> & values);
+		Uniform(UniformName  _name, bool value);
+		Uniform(UniformName  _name, const std::deque<bool> & values);
 
 		//! UNIFORM_FLOAT
-		Uniform(const UniformName & _name, float value);
-		Uniform(const UniformName & _name, const std::vector<float> & values);
+		Uniform(UniformName  _name, float value);
+		Uniform(UniformName  _name, const std::vector<float> & values);
 
 		//! UNIFORM_VEC2F
-		Uniform(const UniformName & _name, const Geometry::Vec2 & value);
-		Uniform(const UniformName & _name, const std::vector<Geometry::Vec2> & values);
+		Uniform(UniformName  _name, const Geometry::Vec2 & value);
+		Uniform(UniformName  _name, const std::vector<Geometry::Vec2> & values);
 
 		//! UNIFORM_VEC3F
-		Uniform(const UniformName & _name, const Geometry::Vec3 & value);
-		Uniform(const UniformName & _name, const std::vector<Geometry::Vec3> & values);
+		Uniform(UniformName  _name, const Geometry::Vec3 & value);
+		Uniform(UniformName  _name, const std::vector<Geometry::Vec3> & values);
 
 		//! UNIFORM_VEC4F
-		Uniform(const UniformName & _name, const Geometry::Vec4 & value);
-		Uniform(const UniformName & _name, const std::vector<Geometry::Vec4> & values);
-		Uniform(const UniformName & _name, const Util::Color4f & color);
+		Uniform(UniformName  _name, const Geometry::Vec4 & value);
+		Uniform(UniformName  _name, const std::vector<Geometry::Vec4> & values);
+		Uniform(UniformName  _name, const Util::Color4f & color);
 
 		//! UNIFORM_INT
-		Uniform(const UniformName & _name, int32_t value);
-		Uniform(const UniformName & _name, const std::vector<int32_t> & values);
+		Uniform(UniformName  _name, int32_t value);
+		Uniform(UniformName  _name, const std::vector<int32_t> & values);
 
 		//! UNIFORM_VEC2I
-		Uniform(const UniformName & _name, const Geometry::Vec2i & value);
-		Uniform(const UniformName & _name, const std::vector<Geometry::Vec2i> & values);
+		Uniform(UniformName  _name, const Geometry::Vec2i & value);
+		Uniform(UniformName  _name, const std::vector<Geometry::Vec2i> & values);
 
 		//! UNIFORM_VEC3I
-		Uniform(const UniformName & _name, const Geometry::Vec3i & value);
-		Uniform(const UniformName & _name, const std::vector<Geometry::Vec3i> & values);
+		Uniform(UniformName  _name, const Geometry::Vec3i & value);
+		Uniform(UniformName  _name, const std::vector<Geometry::Vec3i> & values);
 
 		//! UNIFORM_VEC4I
-		Uniform(const UniformName & _name, const Geometry::Vec4i & value);
-		Uniform(const UniformName & _name, const std::vector<Geometry::Vec4i> & values);
+		Uniform(UniformName  _name, const Geometry::Vec4i & value);
+		Uniform(UniformName  _name, const std::vector<Geometry::Vec4i> & values);
 
 		/**
 		 * Create a uniform containing a matrix.
 		 * \note The matrix is transposed and stored in the uniform data.
 		 */
 		//! UNIFORM_MATRIX_3X3F
-		Uniform(const UniformName & _name, const Geometry::Matrix3x3 & value);
-		Uniform(const UniformName & _name, const std::vector<Geometry::Matrix3x3> & values);
+		Uniform(UniformName  _name, const Geometry::Matrix3x3 & value);
+		Uniform(UniformName  _name, const std::vector<Geometry::Matrix3x3> & values);
 
 		//! UNIFORM_MATRIX_4X4F
-		Uniform(const UniformName & _name, const Geometry::Matrix4x4 & value);
-		Uniform(const UniformName & _name, const std::vector<Geometry::Matrix4x4> & values);
+		Uniform(UniformName  _name, const Geometry::Matrix4x4 & value);
+		Uniform(UniformName  _name, const std::vector<Geometry::Matrix4x4> & values);
 
 
 		std::string toString() const;

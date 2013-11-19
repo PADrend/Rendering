@@ -71,8 +71,8 @@ uint32_t Texture::Format::getPixelSize()const{
 // ----------------------------------------------------
 
 //! [ctor]
-Texture::Texture(const Format & _format):
-		glId(0),format(_format),dataHasChanged(false),
+Texture::Texture(Format  _format):
+		glId(0),format(std::move(_format)),dataHasChanged(false),
 		_pixelDataSize(format.getPixelSize()) {
 }
 

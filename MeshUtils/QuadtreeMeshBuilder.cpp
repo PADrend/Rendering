@@ -304,7 +304,7 @@ uint8_t QuadtreeMeshBuilder::QuadTree::collectVertices(std::vector<QuadtreeMeshB
 // ############################################# SplitFunction #########################################################
 
 QuadtreeMeshBuilder::DepthSplitFunction::DepthSplitFunction(Util::Reference<Util::PixelAccessor> depthAccessor, float depthDisruption) :
-		depth(depthAccessor),
+		depth(std::move(depthAccessor)),
 		minDepth(std::numeric_limits<float>::max()),
 		maxDepth(std::numeric_limits<float>::lowest()),
 		disruptionFactor(depthDisruption) {
@@ -370,7 +370,7 @@ bool QuadtreeMeshBuilder::DepthSplitFunction::operator()(QuadtreeMeshBuilder::Qu
 }
 
 QuadtreeMeshBuilder::ColorSplitFunction::ColorSplitFunction(Util::Reference<Util::PixelAccessor> colorAccessor) :
-		color(colorAccessor) {
+		color(std::move(colorAccessor)) {
 	if(color.isNull()) {
 		throw std::invalid_argument("No access to color values.");
 	}
@@ -423,7 +423,7 @@ bool QuadtreeMeshBuilder::ColorSplitFunction::operator()(QuadtreeMeshBuilder::Qu
 }
 
 QuadtreeMeshBuilder::StencilSplitFunction::StencilSplitFunction(Util::Reference<Util::PixelAccessor> stencilAccessor) :
-		stencil(stencilAccessor) {
+		stencil(std::move(stencilAccessor)) {
 	if(stencil.isNull()) {
 		throw std::invalid_argument("No access to stencil values.");
 	}

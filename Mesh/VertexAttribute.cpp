@@ -25,16 +25,16 @@ VertexAttribute::VertexAttribute() :
 //! (ctor)
 VertexAttribute::VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId) :
 		offset(0), dataSize(getGLTypeSize(_dataType) * _numValues),
-		numValues(_numValues), dataType(_dataType), nameId(_nameId), name() {
+		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)), name() {
 	if((dataSize % 4) != 0) {
 		WARN("VertexAttribute is not 4-byte aligned.");
 	}
 }
 
 //! (ctor)
-VertexAttribute::VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,const std::string & _name) :
+VertexAttribute::VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string  _name) :
 		offset(_offset),dataSize(getGLTypeSize(_dataType)*_numValues),
-		numValues(_numValues), dataType(_dataType), nameId(_nameId),name(_name){
+		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)),name(std::move(_name)){
 	if((dataSize % 4) != 0) {
 		WARN("VertexAttribute is not 4-byte aligned.");
 	}

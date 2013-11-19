@@ -121,7 +121,7 @@ class SplitTriangle {
 public:
 	/// Positions of vertices have to be floats, sorry
 	SplitTriangle(RawVertex _a, RawVertex _b, RawVertex _c) :
-		a(_a), b(_b), c(_c) {
+		a(std::move(_a)), b(std::move(_b)), c(std::move(_c)) {
 		Geometry::Vec3 va(reinterpret_cast<const float *> (a.getData()));
 		Geometry::Vec3 vb(reinterpret_cast<const float *> (b.getData()));
 		Geometry::Vec3 vc(reinterpret_cast<const float *> (c.getData()));

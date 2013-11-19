@@ -28,8 +28,8 @@ Mesh::Mesh() :
 		ReferenceCounter_t(), fileName(), dataStrategy(MeshDataStrategy::getDefaultStrategy()),drawMode(DRAW_TRIANGLES), useIndexData(true) {
 }
 
-Mesh::Mesh(const MeshIndexData & meshIndexData, const MeshVertexData & meshVertexData) :
-		ReferenceCounter_t(), indexData(meshIndexData), fileName(), vertexData(meshVertexData), 
+Mesh::Mesh(MeshIndexData  meshIndexData, MeshVertexData  meshVertexData) :
+		ReferenceCounter_t(), indexData(std::move(meshIndexData)), fileName(), vertexData(std::move(meshVertexData)), 
 		dataStrategy(MeshDataStrategy::getDefaultStrategy()), drawMode(DRAW_TRIANGLES), useIndexData(true) {
 }
 

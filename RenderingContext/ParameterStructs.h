@@ -793,7 +793,7 @@ class ScissorParameters {
 		//! Disable the scissor test.
 		ScissorParameters() : rect(), enabled(false) {}
 		//! Enable the scissor test with the given rect.
-		explicit ScissorParameters(const Geometry::Rect_i & scissorRect) : rect(scissorRect), enabled(true) {}
+		explicit ScissorParameters(Geometry::Rect_i  scissorRect) : rect(std::move(scissorRect)), enabled(true) {}
 		bool operator!=(const ScissorParameters & other) const { return enabled != other.enabled || rect != other.rect; }
 		bool operator==(const ScissorParameters & other) const { return enabled == other.enabled && rect == other.rect; }
 

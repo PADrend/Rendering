@@ -32,8 +32,8 @@ class VertexAttributeAccessor : public Util::ReferenceCounter<VertexAttributeAcc
 		uint8_t * const dataPtr;
 	protected:
 
-		VertexAttributeAccessor(MeshVertexData & _vData,const VertexAttribute & _attribute) :
-				ReferenceCounter_t(),vData(_vData),attribute(_attribute),
+		VertexAttributeAccessor(MeshVertexData & _vData,VertexAttribute  _attribute) :
+				ReferenceCounter_t(),vData(_vData),attribute(std::move(_attribute)),
 				vertexSize(_vData.getVertexDescription().getVertexSize()),
 				dataPtr( vData.data() + attribute.getOffset() ) {}
 
