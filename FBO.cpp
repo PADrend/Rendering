@@ -73,7 +73,7 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 						  attachmentPoint,
 						  /*GLenum textureTarget = GL_TEXTURE_2D*/t->getFormat().glTextureType,
 						  textureId,
-						  /*GLint  mipMapLevel=0*/0);
+						  /*GLint mipMapLevel=0*/0);
 	}else{
 #if defined(LIB_GL)
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,

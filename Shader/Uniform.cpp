@@ -46,12 +46,12 @@ Uniform::Uniform() :
 }
 
 //! (ctor)
-Uniform::Uniform(UniformName  _name, dataType_t _type, size_t _numValues) :
+Uniform::Uniform(UniformName _name, dataType_t _type, size_t _numValues) :
 		name(std::move(_name)), type(_type), numValues(_numValues), data(numValues * getValueSize(type)){
 }
 
 //! (ctor)
-Uniform::Uniform(UniformName  _name, dataType_t _type, size_t _numValues,std::vector<uint8_t>  _data) :
+Uniform::Uniform(UniformName _name, dataType_t _type, size_t _numValues,std::vector<uint8_t> _data) :
 		name(std::move(_name)), type(_type), numValues(_numValues), data(std::move(_data)){
 	if(data.size()!=_numValues * getValueSize(type))
 		INVALID_ARGUMENT_EXCEPTION("data is of wrong size");
@@ -62,7 +62,7 @@ Uniform::Uniform(UniformName  _name, dataType_t _type, size_t _numValues,std::ve
 
 
 //! (ctor) UNIFORM_BOOL | UNIFORM_VEC(2|3|4)B *
-Uniform::Uniform(UniformName  _name, dataType_t _type, const std::deque<bool> & values) :
+Uniform::Uniform(UniformName _name, dataType_t _type, const std::deque<bool> & values) :
 		name(std::move(_name)), type(_type),
 		numValues( (values.size()*sizeof(int32_t)) /getValueSize(type)),
 		data(numValues * getValueSize(type)) {
@@ -81,7 +81,7 @@ Uniform::Uniform(UniformName  _name, dataType_t _type, const std::deque<bool> & 
 }
 
 //! (ctor) UNIFORM_FLOAT | UNIFORM_VEC(2|3|4)F | UNIFORM_MATRIX_(2X2|3X3|4X4)F *
-Uniform::Uniform(UniformName  _name, dataType_t _type, const std::vector<float> & values) :
+Uniform::Uniform(UniformName _name, dataType_t _type, const std::vector<float> & values) :
 		name(std::move(_name)), type(_type),
 		numValues( (values.size()*sizeof(float)) /getValueSize(type)),
 		data(numValues * getValueSize(type)) {
@@ -98,7 +98,7 @@ Uniform::Uniform(UniformName  _name, dataType_t _type, const std::vector<float> 
 }
 
 //! (ctor) UNIFORM_INT | UNIFORM_VEC(2|3|4)I *
-Uniform::Uniform(UniformName  _name, dataType_t _type, const std::vector<int32_t> & values) :
+Uniform::Uniform(UniformName _name, dataType_t _type, const std::vector<int32_t> & values) :
 		name(std::move(_name)), type(_type),
 		numValues( (values.size()*sizeof(int32_t)) /getValueSize(type)),
 		data(numValues * getValueSize(type)) {
@@ -117,13 +117,13 @@ Uniform::Uniform(UniformName  _name, dataType_t _type, const std::vector<int32_t
 // bool ---------------------------------------------------------------
 
 //! (ctor) UNIFORM_BOOL
-Uniform::Uniform(UniformName  _name, bool value) :
+Uniform::Uniform(UniformName _name, bool value) :
 		name(std::move(_name)), type(UNIFORM_BOOL), numValues(1), data(numValues * getValueSize(type)) {
 	*reinterpret_cast<int32_t *>(data.data()) = value ? 1 : 0;
 }
 
 //! (ctor) UNIFORM_BOOL *
-Uniform::Uniform(UniformName  _name, const std::deque<bool> & values) :
+Uniform::Uniform(UniformName _name, const std::deque<bool> & values) :
 		name(std::move(_name)), type(UNIFORM_BOOL), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 
@@ -138,25 +138,25 @@ Uniform::Uniform(UniformName  _name, const std::deque<bool> & values) :
 // float ---------------------------------------------------------------
 
 //! (ctor) UNIFORM_FLOAT
-Uniform::Uniform(UniformName  _name, float value) :
+Uniform::Uniform(UniformName _name, float value) :
 		name(std::move(_name)), type(UNIFORM_FLOAT), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(&value), reinterpret_cast<const uint8_t *>(&value) + sizeof(float)) {
 }
 
 //! (ctor) UNIFORM_FLOAT *
-Uniform::Uniform(UniformName  _name, const std::vector<float> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<float> & values) :
 		name(std::move(_name)), type(UNIFORM_FLOAT), numValues(values.size()),
 		data(reinterpret_cast<const uint8_t *>(&values[0]), reinterpret_cast<const uint8_t *>(&values[0]) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC2F
-Uniform::Uniform(UniformName  _name, const Geometry::Vec2 & value) :
+Uniform::Uniform(UniformName _name, const Geometry::Vec2 & value) :
 		name(std::move(_name)), type(UNIFORM_VEC2F), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC2F *
-Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec2> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec2> & values) :
 		name(std::move(_name)), type(UNIFORM_VEC2F), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 	float * ptr = reinterpret_cast<float *>(data.data());
@@ -168,13 +168,13 @@ Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec2> & values)
 }
 
 //! (ctor) UNIFORM_VEC3F
-Uniform::Uniform(UniformName  _name, const Geometry::Vec3 & value) :
+Uniform::Uniform(UniformName _name, const Geometry::Vec3 & value) :
 		name(std::move(_name)), type(UNIFORM_VEC3F), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC3F *
-Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec3> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec3> & values) :
 		name(std::move(_name)), type(UNIFORM_VEC3F), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 
@@ -188,13 +188,13 @@ Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec3> & values)
 }
 
 //! (ctor) UNIFORM_VEC4F
-Uniform::Uniform(UniformName  _name, const Geometry::Vec4 & value) :
+Uniform::Uniform(UniformName _name, const Geometry::Vec4 & value) :
 		name(std::move(_name)), type(UNIFORM_VEC4F), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC4F *
-Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec4> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec4> & values) :
 		name(std::move(_name)), type(UNIFORM_VEC4F), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 
@@ -209,7 +209,7 @@ Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec4> & values)
 }
 
 //! (ctor) UNIFORM_VEC4F (Color)
-Uniform::Uniform(UniformName  _name, const Util::Color4f & color) :
+Uniform::Uniform(UniformName _name, const Util::Color4f & color) :
 		name(std::move(_name)), type(UNIFORM_VEC4F), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(color.data()), reinterpret_cast<const uint8_t *>(color.data()) + numValues * getValueSize(type)) {
 }
@@ -217,25 +217,25 @@ Uniform::Uniform(UniformName  _name, const Util::Color4f & color) :
 // int ---------------------------------------------------------------
 
 //! (ctor) UNIFORM_INT
-Uniform::Uniform(UniformName  _name, int32_t value) :
+Uniform::Uniform(UniformName _name, int32_t value) :
 		name(std::move(_name)), type(UNIFORM_INT), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(&value), reinterpret_cast<const uint8_t *>(&value) + sizeof(int32_t)) {
 }
 
 //! (ctor) UNIFORM_INT *
-Uniform::Uniform(UniformName  _name, const std::vector<int32_t> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<int32_t> & values) :
 		name(std::move(_name)), type(UNIFORM_INT), numValues(values.size()),
 		data(reinterpret_cast<const uint8_t *>(&values[0]), reinterpret_cast<const uint8_t *>(&values[0]) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC2I
-Uniform::Uniform(UniformName  _name, const Geometry::Vec2i & value) :
+Uniform::Uniform(UniformName _name, const Geometry::Vec2i & value) :
 		name(std::move(_name)), type(UNIFORM_VEC2I), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC2I *
-Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec2i> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec2i> & values) :
 		name(std::move(_name)), type(UNIFORM_VEC2I), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 
@@ -248,13 +248,13 @@ Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec2i> & values
 }
 
 //! (ctor) UNIFORM_VEC3I
-Uniform::Uniform(UniformName  _name, const Geometry::Vec3i & value) :
+Uniform::Uniform(UniformName _name, const Geometry::Vec3i & value) :
 		name(std::move(_name)), type(UNIFORM_VEC3I), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC3I *
-Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec3i> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec3i> & values) :
 		name(std::move(_name)), type(UNIFORM_VEC3I), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 
@@ -268,13 +268,13 @@ Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec3i> & values
 }
 
 //! (ctor) UNIFORM_VEC4I
-Uniform::Uniform(UniformName  _name, const Geometry::Vec4i & value) :
+Uniform::Uniform(UniformName _name, const Geometry::Vec4i & value) :
 		name(std::move(_name)), type(UNIFORM_VEC4I), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC4I *
-Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec4i> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec4i> & values) :
 		name(std::move(_name)), type(UNIFORM_VEC4I), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 
@@ -292,7 +292,7 @@ Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Vec4i> & values
 // float matrixes -------------------------------------------------------------------------------
 
 //! (ctor) UNIFORM_MATRIX_3X3F
-Uniform::Uniform(UniformName  _name, const Geometry::Matrix3x3 & value) :
+Uniform::Uniform(UniformName _name, const Geometry::Matrix3x3 & value) :
 		name(std::move(_name)), type(UNIFORM_MATRIX_3X3F), numValues(1),
 		data(numValues * getValueSize(type)) {
 	float * ptr = reinterpret_cast<float *>(data.data());
@@ -306,7 +306,7 @@ Uniform::Uniform(UniformName  _name, const Geometry::Matrix3x3 & value) :
 }
 
 //! (ctor) UNIFORM_MATRIX_3X3F *
-Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Matrix3x3> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Matrix3x3> & values) :
 		name(std::move(_name)), type(UNIFORM_MATRIX_3X3F), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 
@@ -323,7 +323,7 @@ Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Matrix3x3> & va
 }
 
 //! (ctor) UNIFORM_MATRIX_4X4F
-Uniform::Uniform(UniformName  _name, const Geometry::Matrix4x4 & value) :
+Uniform::Uniform(UniformName _name, const Geometry::Matrix4x4 & value) :
 		name(std::move(_name)), type(UNIFORM_MATRIX_4X4F), numValues(1),
 		data(numValues * getValueSize(type)) {
 	const Geometry::Matrix4x4 transposed = value.getTransposed();
@@ -332,7 +332,7 @@ Uniform::Uniform(UniformName  _name, const Geometry::Matrix4x4 & value) :
 }
 
 //! (ctor) UNIFORM_MATRIX_4X4F *
-Uniform::Uniform(UniformName  _name, const std::vector<Geometry::Matrix4x4> & values) :
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Matrix4x4> & values) :
 		name(std::move(_name)), type(UNIFORM_MATRIX_4X4F), numValues(values.size()),
 		data(numValues * getValueSize(type)) {
 

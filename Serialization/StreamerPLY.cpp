@@ -176,7 +176,7 @@ class PLY_Element {
 		/**
 		 * [ctor PLY_Element]
 		 */
-		PLY_Element(std::string  _name, format_t _sourceFormat,int _count):
+		PLY_Element(std::string _name, format_t _sourceFormat,int _count):
 				name(std::move(_name)),count(_count),sourceFormat(_sourceFormat){//,numEntries(0),dataSize(0){
 		}
 

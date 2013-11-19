@@ -322,7 +322,7 @@ static Geometry::Vec4 interpolateVertices(float isolevel, const Geometry::Vec4 &
 	}else if(std::abs(density1 - density2) < 0.00001){
 		result = p1;
 	}else{
-		result =  p1 + (p2-p1)*(isolevel - density1) / (density2 - density1);
+		result = p1 + (p2-p1)*(isolevel - density1) / (density2 - density1);
 	}
 	if(density1<isolevel){
 		result.w( p2.w() );
@@ -340,7 +340,7 @@ static Geometry::Vec4 interpolateVertices(float isolevel, const Geometry::Vec4 &
 //	std::vector<float> density; //! resolutionX*resolutionY*resolutionZ many values.
 //	float isolevel;
 //	uint32_t rangeMinX,rangeMaxX,rangeMinY,rangeMaxY,rangeMinZ,rangeMaxZ;
-//	std::vector<float>  occlusion;
+//	std::vector<float> occlusion;
 //};
 //	
 //! (static)

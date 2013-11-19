@@ -366,7 +366,7 @@ Texture * createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/, int width/*=-1
 }
 
 //! [static]
-void  updateTextureFromScreen(RenderingContext & context,Texture * t,const Geometry::Rect_i & textureRect, int screenPosX/*=0*/, int screenPosY/*=0*/){
+void updateTextureFromScreen(RenderingContext & context,Texture * t,const Geometry::Rect_i & textureRect, int screenPosX/*=0*/, int screenPosY/*=0*/){
 	const Texture::Format & f=t->getFormat();
 	const int width=textureRect.getWidth()>static_cast<int>(f.width) ? static_cast<int>(f.width) : textureRect.getWidth();
 	const int height=textureRect.getHeight()>static_cast<int>(f.height) ? static_cast<int>(f.height) : textureRect.getHeight();
@@ -377,14 +377,14 @@ void  updateTextureFromScreen(RenderingContext & context,Texture * t,const Geome
 }
 
 //! [static]
-void  updateTextureFromScreen(RenderingContext & context,Texture * t){
+void updateTextureFromScreen(RenderingContext & context,Texture * t){
 	updateTextureFromScreen(context,t,Geometry::Rect_i(0,0,t->getFormat().width,t->getFormat().height));
 }
 
 #ifdef LIB_GL
 
 //! [static]
-void  drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect,Texture * t,const Geometry::Rect_f & textureRect){
+void drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect,Texture * t,const Geometry::Rect_f & textureRect){
 	if(!t)
 		return;
 	std::vector<Texture *> textures;

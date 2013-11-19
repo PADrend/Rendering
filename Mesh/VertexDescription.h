@@ -29,7 +29,7 @@ class VertexDescription {
 	public:
 
 		/*! \note This MUST NOT be of type std::vector, as it has to be assured that the Attributes
-				are not re-located in memory when appending additional attributes.  (references may be stored) */
+				are not re-located in memory when appending additional attributes. (references may be stored) */
 		typedef std::deque<VertexAttribute> attributeContainer_t;
 
 		VertexDescription();

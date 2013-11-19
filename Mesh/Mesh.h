@@ -37,7 +37,7 @@ class RenderingContext;
  * - MeshIndexData: The indices of the used vertices stored in local and/or graphics memory
  * - DataStrategy: A strategy that determines where the data is stored and how the
  * 	mesh is rendered (e.g. as VBO or VertexArray)
- * - Filename: (optional) The  filename from which the mesh was loaded.
+ * - Filename: (optional) The filename from which the mesh was loaded.
  *
  * Create a new mesh:
  * \code

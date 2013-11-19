@@ -455,14 +455,14 @@ void shrinkMesh(Mesh * m) {
 	std::unique_ptr<MeshVertexData> newVertices(convertVertices(oldVertices, vdNew));
 
 	if (convertColors) {
-		Util::Reference<ColorAttributeAccessor>  source(ColorAttributeAccessor::create(oldVertices,VertexAttributeIds::COLOR));
-		Util::Reference<ColorAttributeAccessor>  target(ColorAttributeAccessor::create(*newVertices.get(),VertexAttributeIds::COLOR));
+		Util::Reference<ColorAttributeAccessor> source(ColorAttributeAccessor::create(oldVertices,VertexAttributeIds::COLOR));
+		Util::Reference<ColorAttributeAccessor> target(ColorAttributeAccessor::create(*newVertices.get(),VertexAttributeIds::COLOR));
 		for(uint32_t i=0;source->checkRange(i);++i)
 			target->setColor(i,source->getColor4ub(i));
 	}
 	if (convertNormals) {
-		Util::Reference<NormalAttributeAccessor>  source(NormalAttributeAccessor::create(oldVertices,VertexAttributeIds::NORMAL));
-		Util::Reference<NormalAttributeAccessor>  target(NormalAttributeAccessor::create(*newVertices.get(),VertexAttributeIds::NORMAL));
+		Util::Reference<NormalAttributeAccessor> source(NormalAttributeAccessor::create(oldVertices,VertexAttributeIds::NORMAL));
+		Util::Reference<NormalAttributeAccessor> target(NormalAttributeAccessor::create(*newVertices.get(),VertexAttributeIds::NORMAL));
 		for(uint32_t i=0;source->checkRange(i);++i)
 			target->setNormal(i,source->getNormal(i));
 	}

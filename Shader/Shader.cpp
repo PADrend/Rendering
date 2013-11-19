@@ -468,7 +468,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 	delete [] nameBuffer;
 }
 
-void  Shader::setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused, bool forced){
+void Shader::setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused, bool forced){
 	if(!init()){
 		WARN("setUniform: Shader not ready.");
 		return;

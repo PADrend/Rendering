@@ -24,7 +24,7 @@ class RenderingContext;
  */
 class OcclusionQuery : public QueryObject{
 	public:
-		/*! Pushes  the current gl state, disables lighting, color writes and depth writes.
+		/*! Pushes the current gl state, disables lighting, color writes and depth writes.
 			\note After calling enableTestMode() you always have to call disableTestMode(context.getRenderingContext()) eventually
 					(as internally glPushAttrib() / popAttrib() is used). */
 		static void enableTestMode(RenderingContext & renderingContext);

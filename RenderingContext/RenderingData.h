@@ -165,7 +165,7 @@ class RenderingData {
 
 	public:
 		bool isMaterialEnabled()const								{	return materialEnabled;	}
-		const MaterialParameters &  getMaterialParameters()const	{	return material;	}
+		const MaterialParameters & getMaterialParameters()const	{	return material;	}
 		bool materialChanged(const RenderingData & actual) const {
 			return (checkNumbers[MATERIAL] == actual.checkNumbers[MATERIAL]) ? false :
 						(materialEnabled != actual.materialEnabled || material != actual.material);

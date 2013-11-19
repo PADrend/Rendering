@@ -75,7 +75,7 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		};
 		// ---------------------------------------
 
-		Texture(Format  format);
+		Texture(Format format);
 		~Texture();
 
 		Texture * clone() const;

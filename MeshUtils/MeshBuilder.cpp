@@ -452,7 +452,7 @@ Mesh * MeshBuilder::createMeshFromBitmaps(const VertexDescription & d,
 	}
 	Util::Reference<Util::PixelAccessor> normalReader;
 	if(normals.isNotNull()) {
-		normalReader =  Util::PixelAccessor::create(std::move(normals));
+		normalReader = Util::PixelAccessor::create(std::move(normals));
 		if(normalReader.isNull()){
 			WARN("createMeshFromBitmaps: unsupported normal texture format");
 			return nullptr;
@@ -519,13 +519,13 @@ Mesh * MeshBuilder::createMeshFromBitmaps(const VertexDescription & d,
 					_1_0	_0_0
 
 					*/
-					if( z_1_1<cut && z_1_0<cut && z_0_0<cut  ){
+					if( z_1_1<cut && z_1_0<cut && z_0_0<cut ){
 						builder.addIndex( index-width-1);
 						builder.addIndex( index);
 						builder.addIndex( index-1);
 					}
 
-					if( z_1_1<cut && z_0_1<cut && z_0_0<cut  ){
+					if( z_1_1<cut && z_0_1<cut && z_0_0<cut ){
 						builder.addIndex( index);
 						builder.addIndex( index-width-1);
 						builder.addIndex( index-width);
@@ -661,7 +661,7 @@ MeshBuilder::MeshBuilder() :
 	currentVertex(description.getVertexSize()) {
 }
 
-MeshBuilder::MeshBuilder(VertexDescription  _description) :
+MeshBuilder::MeshBuilder(VertexDescription _description) :
 	description(std::move(_description)),
 	posAttr(description.getAttribute(VertexAttributeIds::POSITION)),
 	normalAttr(description.getAttribute(VertexAttributeIds::NORMAL)),

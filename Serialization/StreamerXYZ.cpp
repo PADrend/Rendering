@@ -194,7 +194,7 @@ void StreamerXYZ::clusterPoints( std::istream & input, std::vector<std::ostream*
 				float bestDistance=-1;
 
 				for(auto it = allSamples.begin();it!=allSamples.end();++it){
-					std::deque<Point>  nearest;
+					std::deque<Point> nearest;
 					octree.getClosestPoints(*it, 1, nearest);
 					FAIL_IF(nearest.empty());
 					const float dist = nearest.front().getPosition().distanceSquared(*it);

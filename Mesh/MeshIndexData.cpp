@@ -22,7 +22,7 @@ namespace Rendering {
 /*! (ctor)  */
 MeshIndexData::MeshIndexData() :
 			indexCount(0), minIndex(0), maxIndex(0),
-			bufferObject(),  dataChanged(false) {
+			bufferObject(), dataChanged(false) {
 }
 
 /*! (ctor)  */
@@ -136,7 +136,7 @@ void MeshIndexData::drawElements(bool useVBO,uint32_t drawMode,uint32_t startInd
 		glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*startIndex));
 		bufferObject.unbind(GL_ELEMENT_ARRAY_BUFFER);
 	} else if(hasLocalData()) { // VertexArray
-		glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT,  reinterpret_cast<void*>(data()+startIndex));
+		glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(data()+startIndex));
 	}
 #else
 	if (useVBO && isUploaded()) { // VBO

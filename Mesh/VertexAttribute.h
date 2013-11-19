@@ -42,7 +42,7 @@ class VertexAttribute {
 		Util::StringIdentifier getNameId()const	{	return nameId;	}
 		const std::string & getName()const	{	return name;	}
 	private:
-		VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string  _name);
+		VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name);
 		friend class VertexDescription;
 		uint16_t offset;
 		uint16_t dataSize;

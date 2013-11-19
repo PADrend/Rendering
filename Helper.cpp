@@ -162,7 +162,7 @@ float readDepthValue(int32_t x, int32_t y) {
 #if defined(LIB_GLEW) && defined(LIB_GL) && defined(GL_ARB_debug_output)
 
 #if defined(_WIN32)
-static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *,  void * ) __attribute__((__stdcall__));
+static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, void * ) __attribute__((__stdcall__));
 #endif
 
 static void debugCallback(GLenum source,

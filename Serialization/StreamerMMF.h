@@ -52,7 +52,7 @@ namespace Rendering {
 						0x07:TEX1		(attribute name: "sg_TexCoord1")
 						0xff:custom attribute MMF_CUSTOM_ATTR_ID
 					uint32 numValues -- entrysize of the vertexattribute specified by index,
-					uint32 (=GLuint) type -- type of the  vertexattribute specified by index,
+					uint32 (=GLuint) type -- type of the vertexattribute specified by index,
 					uint32 extLength -- length of the extension for future use,
 					VertexAttributeExtension* (extensions for the vertex attribute)
 

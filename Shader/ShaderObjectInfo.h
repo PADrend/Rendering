@@ -31,7 +31,7 @@ class ShaderObjectInfo {
 		uint32_t type;
 		std::string code;
 
-		ShaderObjectInfo(uint32_t _type, std::string  _code) :
+		ShaderObjectInfo(uint32_t _type, std::string _code) :
 			type(_type), code(std::move(_code)) {
 		}
 

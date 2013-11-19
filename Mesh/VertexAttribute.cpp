@@ -32,7 +32,7 @@ VertexAttribute::VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::S
 }
 
 //! (ctor)
-VertexAttribute::VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string  _name) :
+VertexAttribute::VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name) :
 		offset(_offset),dataSize(getGLTypeSize(_dataType)*_numValues),
 		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)),name(std::move(_name)){
 	if((dataSize % 4) != 0) {
