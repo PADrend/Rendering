@@ -202,18 +202,18 @@ bool Texture::uploadGLTexture(RenderingContext & context) {
 	
 	return true; // todo: return fals on error!
 }
-
-void Texture::_enable(RenderingContext & context) {
-	if (!glId || dataHasChanged) {
-		uploadGLTexture(context);
-	}
-	if (glId) {
-#ifdef LIB_GL
-		glEnable(format.glTextureType);
-#endif /* LIB_GL */
-		glBindTexture(format.glTextureType,glId);
-	}
-}
+//
+//uint32_t Texture::_prepareForBinding(RenderingContext & context) {
+//	if(!glId || dataHasChanged) 
+//		uploadGLTexture(context);
+//	return glId;
+//	if (glId) {
+//#ifdef LIB_GL
+//		glEnable(format.glTextureType);
+//#endif /* LIB_GL */
+//		glBindTexture(format.glTextureType,glId);
+//	}
+//}
 
 void Texture::allocateLocalData(){
 	if(localBitmap.isNotNull()){
@@ -327,13 +327,13 @@ void Texture::allocateLocalData(){
 
 }
 
-void Texture::_disable() {
-#ifdef LIB_GL
-	if (glId) {
-		glDisable(format.glTextureType);
-	}
-#endif /* LIB_GL */
-}
+//void Texture::_disable() {
+//#ifdef LIB_GL
+//	if (glId) {
+//		glDisable(format.glTextureType);
+//	}
+//#endif /* LIB_GL */
+//}
 
 bool Texture::isGLTextureValid()const {
 	return glId==0?false: (glIsTexture(glId)==GL_TRUE) ;

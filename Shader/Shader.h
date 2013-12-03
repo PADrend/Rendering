@@ -32,7 +32,7 @@ class FileName;
 namespace Rendering {
 class Uniform;
 class UniformRegistry;
-class RenderingData;
+class RenderingStatus;
 class RenderingContext;
 
 /*!	Shader */
@@ -59,11 +59,11 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		bool usesSGUniforms()const			{	return usageFlags & USE_UNIFORMS;	}
 		void setUsage(flag_t newUsage)		{	usageFlags=newUsage;	}
 
-		RenderingData * getRenderingData()	{	return renderingData.get();	}
+		RenderingStatus * getRenderingStatus()	{	return renderingData.get();	}
 
 	private:
 		flag_t usageFlags;
-		std::unique_ptr<RenderingData> renderingData; // created when the shader is successfully initialized
+		std::unique_ptr<RenderingStatus> renderingData; // created when the shader is successfully initialized
 
 		Shader(flag_t usage = USE_GL|USE_UNIFORMS);
 		static void printProgramInfoLog(uint32_t obj);

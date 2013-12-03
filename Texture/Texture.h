@@ -80,21 +80,12 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 
 		Texture * clone() const;
 
-		uint32_t getGLId() const {
-			return glId;
-		}
-		const Format & getFormat() const {
-			return format;
-		}
-		uint32_t getWidth() const {
-			return format.width;
-		}
-		uint32_t getHeight() const {
-			return format.height;
-		}
-		uint32_t getDataSize() const {
-			return format.getDataSize();
-		}
+		uint32_t getDataSize() const						{	return format.getDataSize();	}
+		const Format & getFormat() const					{	return format;	}
+		uint32_t getGLTextureType() const					{	return format.glTextureType;	}
+		uint32_t getGLId() const							{	return glId;	}
+		uint32_t getHeight() const							{	return format.height;	}
+		uint32_t getWidth() const							{	return format.width;	}
 
 		bool createGLID(RenderingContext & context);
 		bool uploadGLTexture(RenderingContext & context);
@@ -110,10 +101,15 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 
 		uint8_t * getLocalData();
 		const uint8_t * getLocalData() const;
-		void dataChanged() 							{	dataHasChanged=true;	}
+		void dataChanged() 									{	dataHasChanged=true;	}
 
-		void _enable(RenderingContext & context);
-		void _disable();
+		//! (internal) uploads the texture if necessary; returns the glId or 0 if the texture is invalid.
+		uint32_t _prepareForBinding(RenderingContext & context){
+			if(!glId || dataHasChanged)
+				uploadGLTexture(context);
+			return glId;
+		}
+
 		bool isGLTextureValid()const;
 		bool isGLTextureResident()const;
 
@@ -124,8 +120,8 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		/*!	@name Filename */
 		// @{
 		public:
-			const Util::FileName & getFileName() const				{	return fileName;	}
-			void setFileName(const Util::FileName & f)				{	fileName=f;			}
+			const Util::FileName & getFileName() const		{	return fileName;	}
+			void setFileName(const Util::FileName & f)		{	fileName=f;			}
 
 		private:
 			Util::FileName fileName;

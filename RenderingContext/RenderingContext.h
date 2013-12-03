@@ -49,6 +49,7 @@ class Texture;
 class Uniform;
 class UniformRegistry;
 class VertexAttribute;
+enum class TexUnitUsageParameter : uint8_t;
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
 
@@ -58,8 +59,8 @@ class RenderingContext {
 	//	@{
 private:
 	// Use Pimpl idiom
-	class InternalState;
-	std::unique_ptr<InternalState> state;
+	class InternalData;
+	std::unique_ptr<InternalData> internalData;
 
 	bool immediate;
 
@@ -393,16 +394,19 @@ public:
 	// ------
 
 	/*! @name Textures
-	 \todo Move array of activeTextures to RenderingData to allow delayed binding
+	 \todo Move array of activeTextures to RenderingStatus to allow delayed binding
 	 */
 	//	@{
-	Texture * getTexture(uint32_t unit);
-	void pushTexture(uint32_t unit);
-	void pushAndSetTexture(uint32_t unit, Texture * texture);
-	void popTexture(uint32_t unit);
+	Texture * getTexture(uint8_t unit)const;
+	TexUnitUsageParameter getTextureUsage(uint8_t unit)const;
+	void pushTexture(uint8_t unit);
+	void pushAndSetTexture(uint8_t unit, Texture * texture); // default usage = TexUnitUsageParameter::TEXTURE_MAPPING );
+	void pushAndSetTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage);
+	void popTexture(uint8_t unit);
 
 	//! \note texture may be nullptr
-	void setTexture(uint32_t unit, Texture * texture);
+	void setTexture(uint8_t unit, Texture * texture); // default: usage = TexUnitUsageParameter::TEXTURE_MAPPING);
+	void setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage);
 	// @}
 	
 	// ------

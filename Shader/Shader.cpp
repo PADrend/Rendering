@@ -11,7 +11,7 @@
 #include "Shader.h"
 #include "Uniform.h"
 #include "UniformRegistry.h"
-#include "../RenderingContext/RenderingData.h"
+#include "../RenderingContext/internal/RenderingStatus.h"
 #include "../RenderingContext/RenderingContext.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
@@ -112,7 +112,7 @@ bool Shader::init() {
 				status = LINKED;
 
 				// recreate renderingData
-				renderingData.reset(new RenderingData(this));
+				renderingData.reset(new RenderingStatus(this));
 
 				// make sure all set uniforms are re-applied.
 				uniforms->resetCounters();

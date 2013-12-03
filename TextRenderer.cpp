@@ -10,7 +10,7 @@
 #include "Mesh/Mesh.h"
 #include "Mesh/VertexDescription.h"
 #include "MeshUtils/MeshBuilder.h"
-#include "RenderingContext/ParameterStructs.h"
+#include "RenderingContext/RenderingParameters.h"
 #include "RenderingContext/RenderingContext.h"
 #include "Shader/Shader.h"
 #include "Shader/Uniform.h"

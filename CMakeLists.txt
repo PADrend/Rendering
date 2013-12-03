@@ -35,8 +35,11 @@ add_library(Rendering
 	MeshUtils/QuadtreeMeshBuilder.cpp
 	MeshUtils/QuadtreeMeshBuilderDebug.cpp
 	MeshUtils/Simplification.cpp
-	RenderingContext/ParameterStructs.cpp
+	RenderingContext/internal/StatusHandler_glCompatibility.cpp
+	RenderingContext/internal/StatusHandler_glCore.cpp
+	RenderingContext/internal/StatusHandler_sgUniforms.cpp
 	RenderingContext/RenderingContext.cpp
+	RenderingContext/RenderingParameters.cpp
 	Serialization/GenericAttributeSerialization.cpp
 	Serialization/Serialization.cpp
 	Serialization/StreamerMD2.cpp

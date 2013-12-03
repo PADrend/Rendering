@@ -11,8 +11,9 @@
 #ifndef RENDERING_DATA_H_
 #define RENDERING_DATA_H_
 
-#include "ParameterStructs.h"
+#include "../RenderingParameters.h"
 #include <Geometry/Matrix4x4.h>
+
 #include <bitset>
 #include <cassert>
 #include <deque>
@@ -23,7 +24,7 @@ namespace Rendering {
 class Shader;
 
 //! (internal) Used by shaders and the renderingContext to track the state of shader (and openGL) dependent properties.
-class RenderingData {
+class RenderingStatus {
 
 	//!	@name General
 	//	@{
@@ -38,8 +39,8 @@ class RenderingData {
 		bool initialized;
 
 	public:
-		explicit RenderingData(Shader * _shader = nullptr) : checkNumbers(TYPE_COUNT, 0), shader(_shader), initialized(false),
-			lightsEnabled(0), materialEnabled(false), enabledTextureUnits(MAX_TEXTURES, false) {}
+		explicit RenderingStatus(Shader * _shader = nullptr) : checkNumbers(TYPE_COUNT, 0), shader(_shader), initialized(false),
+			lightsEnabled(0), materialEnabled(false),textureUnitUsages(MAX_TEXTURES,TexUnitUsageParameter::UNDEFINED) {}
 		Shader * getShader() 						{	return shader;	}
 		bool isInitialized()const					{	return initialized;	}
 		void markInitialized()						{	initialized=true;	}
@@ -53,7 +54,7 @@ class RenderingData {
 		Geometry::Matrix4x4f cameraMatrix;
 		Geometry::Matrix4x4f cameraInverseMatrix;
 	public:
-		bool cameraInverseMatrixChanged(const RenderingData & actual) const {
+		bool cameraInverseMatrixChanged(const RenderingStatus & actual) const {
 			return (checkNumbers[CAMERA] == actual.checkNumbers[CAMERA]) ? false :
 					cameraInverseMatrix != actual.cameraInverseMatrix;
 		}
@@ -68,7 +69,7 @@ class RenderingData {
 			cameraMatrix = matrix.inverse();
 			++checkNumbers[CAMERA];
 		}
-		void updateCameraMatrix(const RenderingData & actual) {
+		void updateCameraMatrix(const RenderingStatus & actual) {
 			cameraInverseMatrix = actual.cameraInverseMatrix;
 			cameraMatrix = actual.cameraMatrix;
 			checkNumbers[CAMERA] = actual.checkNumbers[CAMERA];
@@ -132,7 +133,7 @@ class RenderingData {
 		bool isLightEnabled(uint8_t lightNumber) const {
 			return lightsEnabled[lightNumber];
 		}
-		bool lightsChanged(const RenderingData & actual) const {
+		bool lightsChanged(const RenderingStatus & actual) const {
 			if (checkNumbers[LIGHT] == actual.checkNumbers[LIGHT])
 				return false;
 			if (lightsEnabled != actual.lightsEnabled)
@@ -144,7 +145,7 @@ class RenderingData {
 			}
 			return false;
 		}
-		void updateLights(const RenderingData & actual) {
+		void updateLights(const RenderingStatus & actual) {
 			lightsEnabled = actual.lightsEnabled;
 			checkNumbers[LIGHT] = actual.checkNumbers[LIGHT];
 		}
@@ -166,7 +167,7 @@ class RenderingData {
 	public:
 		bool isMaterialEnabled()const								{	return materialEnabled;	}
 		const MaterialParameters & getMaterialParameters()const	{	return material;	}
-		bool materialChanged(const RenderingData & actual) const {
+		bool materialChanged(const RenderingStatus & actual) const {
 			return (checkNumbers[MATERIAL] == actual.checkNumbers[MATERIAL]) ? false :
 						(materialEnabled != actual.materialEnabled || material != actual.material);
 		}
@@ -175,7 +176,7 @@ class RenderingData {
 			materialEnabled = true;
 			++checkNumbers[MATERIAL];
 		}
-		void updateMaterial(const RenderingData & actual) {
+		void updateMaterial(const RenderingStatus & actual) {
 			materialEnabled=actual.materialEnabled;
 			material=actual.material;
 			checkNumbers[MATERIAL]=actual.checkNumbers[MATERIAL];
@@ -199,7 +200,7 @@ class RenderingData {
 			modelViewMatrix = matrix;
 			++checkNumbers[MODELVIEW];
 		}
-		bool modelViewMatrixChanged(const RenderingData & actual) const {
+		bool modelViewMatrixChanged(const RenderingStatus & actual) const {
 			return (checkNumbers[MODELVIEW] == actual.checkNumbers[MODELVIEW]) ? false :
 					modelViewMatrix != actual.modelViewMatrix;
 		}
@@ -207,7 +208,7 @@ class RenderingData {
 			modelViewMatrix *= matrix;
 			++checkNumbers[MODELVIEW];
 		}
-		void updateModelViewMatrix(const RenderingData & actual) {
+		void updateModelViewMatrix(const RenderingStatus & actual) {
 			modelViewMatrix = actual.modelViewMatrix;
 			checkNumbers[MODELVIEW] = actual.checkNumbers[MODELVIEW];
 		}
@@ -220,7 +221,7 @@ class RenderingData {
 	private:
 		PointParameters pointParameters;
 	public:
-		bool pointParametersChanged(const RenderingData & actual) const {
+		bool pointParametersChanged(const RenderingStatus & actual) const {
 			return pointParameters != actual.pointParameters;
 		}
 		const PointParameters & getPointParameters() const {
@@ -243,11 +244,11 @@ class RenderingData {
 			++checkNumbers[PROJECTION];
 		}
 		const Geometry::Matrix4x4f & getProjectionMatrix() const 				{	return projectionMatrix;	}
-		void updateProjectionMatrix(const RenderingData & actual) {
+		void updateProjectionMatrix(const RenderingStatus & actual) {
 			projectionMatrix = actual.projectionMatrix;
 			checkNumbers[PROJECTION] = actual.checkNumbers[PROJECTION];
 		}
-		bool projectionMatrixChanged(const RenderingData & actual) const {
+		bool projectionMatrixChanged(const RenderingStatus & actual) const {
 			return (checkNumbers[PROJECTION] == actual.checkNumbers[PROJECTION]) ? false :
 					projectionMatrix != actual.projectionMatrix;
 		}
@@ -257,36 +258,35 @@ class RenderingData {
 
 	//!	@name Texture Units
 	//	@{
-	private:
-		std::deque<bool> enabledTextureUnits;
-
 	public:
 		static const uint8_t MAX_TEXTURES = 8;
-		void disableTextureUnit(uint8_t unit) {
-			assert(unit < MAX_TEXTURES);
+	private:
+		std::vector<TexUnitUsageParameter> textureUnitUsages;
+
+	public:
+
+		void setTextureUnitUsage(uint8_t unit,TexUnitUsageParameter use) {
 			++checkNumbers[TEXTURE_UNITS];
-			enabledTextureUnits[unit] = false;
+			textureUnitUsages.at(unit) = use;
 		}
-		void enableTextureUnit(uint8_t unit) {
-			assert(unit < MAX_TEXTURES);
-			++checkNumbers[TEXTURE_UNITS];
-			enabledTextureUnits[unit] = true;
+		const std::vector<TexUnitUsageParameter> & getTextureUnitUsages()const	{	
+			return textureUnitUsages;
 		}
-		const std::deque<bool> & getEnabledTextureUnits()const	{	return enabledTextureUnits;	}
-		bool texturesChanged(const RenderingData & actual) const {
-			if (checkNumbers[TEXTURE_UNITS] == actual.checkNumbers[TEXTURE_UNITS]) {
+		const TexUnitUsageParameter& getTextureUnitUsage(uint8_t unit)const{	
+			return textureUnitUsages.at(unit);
+		}
+		bool textureUnitsChanged(const RenderingStatus & actual) const {
+			if(checkNumbers[TEXTURE_UNITS] == actual.checkNumbers[TEXTURE_UNITS]) 
 				return false;
-			}
-			for (uint_fast8_t i = 0; i < MAX_TEXTURES; ++i) {
-				if (enabledTextureUnits[i] != actual.enabledTextureUnits[i]) {
+			for(uint_fast8_t i = 0; i < MAX_TEXTURES; ++i) {
+				if (textureUnitUsages[i] != actual.textureUnitUsages[i])
 					return true;
-				}
 			}
 			return false;
 		}
-		void updateTextureUnits(const RenderingData & actual){
-			for (uint_fast8_t i = 0; i < MAX_TEXTURES; ++i)
-				enabledTextureUnits[i] = actual.enabledTextureUnits[i];
+		void updateTextureUnits(const RenderingStatus & actual){
+			for(uint_fast8_t i = 0; i < MAX_TEXTURES; ++i)
+				textureUnitUsages[i] = actual.textureUnitUsages[i];
 			checkNumbers[TEXTURE_UNITS] = actual.checkNumbers[TEXTURE_UNITS];
 		}
 

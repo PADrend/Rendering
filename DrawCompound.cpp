@@ -13,7 +13,7 @@
 #include "MeshUtils/MeshBuilder.h"
 #include "MeshUtils/MeshUtils.h"
 #include "MeshUtils/PlatonicSolids.h"
-#include "RenderingContext/ParameterStructs.h"
+#include "RenderingContext/RenderingParameters.h"
 #include "RenderingContext/RenderingContext.h"
 #include "GLHeader.h"
 #include <Geometry/Box.h>

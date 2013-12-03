@@ -949,6 +949,16 @@ class StencilParameters {
 		}
 };
 
+/*! Determines the intended usage of a texture bound to a texture unit.
+	- TEXTURE_MAPPING The texture is used for "normal" texture mapping using vertex texture coordinates. 
+		The corresponding texture is enabled in classic GL mode ( glEnable(GL_specificTextureType) ) and the 
+		corresponding sg_textureEnabled[unit] uniform is set to true.
+	- UNDEFINED otherwise.		*/
+enum class TexUnitUsageParameter : uint8_t{
+	UNDEFINED,
+	TEXTURE_MAPPING
+};
+
 }
 
 #endif // PARAMETERSTRUCTS_H

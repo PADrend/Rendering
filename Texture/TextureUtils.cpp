@@ -16,7 +16,7 @@
 #include "../Mesh/VertexAttribute.h"
 #include "../Mesh/VertexAttributeIds.h"
 #include "../Mesh/VertexDescription.h"
-#include "../RenderingContext/ParameterStructs.h"
+#include "../RenderingContext/RenderingParameters.h"
 #include "../RenderingContext/RenderingContext.h"
 #include "../GLHeader.h"
 #include "../Helper.h"

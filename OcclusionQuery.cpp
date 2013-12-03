@@ -9,7 +9,7 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "OcclusionQuery.h"
-#include "RenderingContext/ParameterStructs.h"
+#include "RenderingContext/RenderingParameters.h"
 #include "RenderingContext/RenderingContext.h"
 #include "GLHeader.h"
 #include <cstdint>

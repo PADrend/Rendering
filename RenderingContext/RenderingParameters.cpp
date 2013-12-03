@@ -8,7 +8,7 @@
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#include "ParameterStructs.h"
+#include "RenderingParameters.h"
 #include "../GLHeader.h"
 #include <Util/StringIdentifier.h>
 #include <stdexcept>
@@ -404,5 +404,6 @@ PolygonModeParameters::polygonModeMode_t PolygonModeParameters::glToMode(uint32_
 #endif /* LIB_GL */
 	throw std::invalid_argument("Invalid GLenum value for PolygonModeParameters::polygonModeMode_t enumerator");
 }
+
 
 }

@@ -11,14 +11,14 @@
 #ifndef CORE_RENDERING_DATA_H_
 #define CORE_RENDERING_DATA_H_
 
-#include "ParameterStructs.h"
+#include "../RenderingParameters.h"
 #include <cstdint>
 #include <vector>
 
 namespace Rendering {
 
 //! (internal) Used by the renderingContext to track changes made to the shader independent core-state of OpenGL.
-class CoreRenderingData {
+class CoreRenderingStatus {
 
 	//!	@name General
 	//	@{
@@ -32,12 +32,12 @@ class CoreRenderingData {
 		std::vector<uint32_t> checkNumbers;
 
 	public:
-		CoreRenderingData() :
+		CoreRenderingStatus() :
 			checkNumbers(TYPE_COUNT),
 			cullFaceParameters(),
 			stencilParameters() {
 		}
-		~CoreRenderingData(){}
+		~CoreRenderingStatus(){}
 	//	@}
 
 	// -------------------------------
@@ -48,7 +48,7 @@ class CoreRenderingData {
 		BlendingParameters blendingParameters;
 
 	public:
-		bool blendingParametersChanged(const CoreRenderingData & actual) const {
+		bool blendingParametersChanged(const CoreRenderingStatus & actual) const {
 			return (checkNumbers[BLENDING] == actual.checkNumbers[BLENDING]) ? false :
 					(blendingParameters != actual.blendingParameters);
 		}
@@ -63,7 +63,7 @@ class CoreRenderingData {
 			blendingParameters = p;
 			checkNumbers[BLENDING] = _checkNumber;
 		}
-		void updateBlendingParameters(const CoreRenderingData & other) {
+		void updateBlendingParameters(const CoreRenderingStatus & other) {
 			blendingParameters = other.blendingParameters;
 			checkNumbers[BLENDING] = other.checkNumbers[BLENDING];
 		}
@@ -77,7 +77,7 @@ class CoreRenderingData {
 	private:
 		ColorBufferParameters colorBufferParameters;
 	public:
-		bool colorBufferParametersChanged(const CoreRenderingData & actual) const {
+		bool colorBufferParametersChanged(const CoreRenderingStatus & actual) const {
 			return colorBufferParameters != actual.colorBufferParameters;
 		}
 		const ColorBufferParameters & getColorBufferParameters() const {
@@ -95,7 +95,7 @@ class CoreRenderingData {
 	private:
 		CullFaceParameters cullFaceParameters;
 	public:
-		bool cullFaceParametersChanged(const CoreRenderingData & actual) const {
+		bool cullFaceParametersChanged(const CoreRenderingStatus & actual) const {
 			return cullFaceParameters!=actual.cullFaceParameters;
 		}
 		const CullFaceParameters & getCullFaceParameters()const {
@@ -114,7 +114,7 @@ class CoreRenderingData {
 	private:
 		DepthBufferParameters depthBufferParameters;
 	public:
-		bool depthBufferParametersChanged(const CoreRenderingData & actual) const {
+		bool depthBufferParametersChanged(const CoreRenderingStatus & actual) const {
 			return depthBufferParameters != actual.depthBufferParameters;
 		}
 		const DepthBufferParameters & getDepthBufferParameters() const {
@@ -132,7 +132,7 @@ class CoreRenderingData {
 	private:
 		AlphaTestParameters alphaTestParameters;
 	public:
-		bool alphaTestParametersChanged(const CoreRenderingData & actual) const {
+		bool alphaTestParametersChanged(const CoreRenderingStatus & actual) const {
 			return alphaTestParameters!=actual.alphaTestParameters;
 		}
 		const AlphaTestParameters & getAlphaTestParameters()const {
@@ -151,7 +151,7 @@ class CoreRenderingData {
 	private:
 		LineParameters lineParameters;
 	public:
-		bool lineParametersChanged(const CoreRenderingData & actual) const {
+		bool lineParametersChanged(const CoreRenderingStatus & actual) const {
 			return lineParameters != actual.lineParameters;
 		}
 		const LineParameters & getLineParameters() const {
@@ -169,7 +169,7 @@ class CoreRenderingData {
 	private:
 		LightingParameters lightingParameters;
 	public:
-		bool lightingParametersChanged(const CoreRenderingData & actual) const {
+		bool lightingParametersChanged(const CoreRenderingStatus & actual) const {
 			return lightingParameters != actual.lightingParameters;
 		}
 		const LightingParameters & getLightingParameters() const {
@@ -187,7 +187,7 @@ class CoreRenderingData {
 	private:
 		PolygonModeParameters polygonModeParameters;
 	public:
-		bool polygonModeParametersChanged(const CoreRenderingData & actual) const {
+		bool polygonModeParametersChanged(const CoreRenderingStatus & actual) const {
 			return polygonModeParameters!=actual.polygonModeParameters;
 		}
 		const PolygonModeParameters & getPolygonModeParameters()const {
@@ -206,7 +206,7 @@ class CoreRenderingData {
 	private:
 		PolygonOffsetParameters polygonOffsetParameters;
 	public:
-		bool polygonOffsetParametersChanged(const CoreRenderingData & actual) const {
+		bool polygonOffsetParametersChanged(const CoreRenderingStatus & actual) const {
 			return polygonOffsetParameters != actual.polygonOffsetParameters;
 		}
 		const PolygonOffsetParameters & getPolygonOffsetParameters() const {
@@ -225,7 +225,7 @@ class CoreRenderingData {
 		StencilParameters stencilParameters;
 
 	public:
-		bool stencilParametersChanged(const CoreRenderingData & actual) const {
+		bool stencilParametersChanged(const CoreRenderingStatus & actual) const {
 			return (checkNumbers[STENCIL] == actual.checkNumbers[STENCIL]) ? false : (stencilParameters != actual.stencilParameters);
 		}
 		const StencilParameters & getStencilParameters() const {
@@ -239,7 +239,7 @@ class CoreRenderingData {
 			stencilParameters = p;
 			checkNumbers[STENCIL] = _checkNumber;
 		}
-		void updateStencilParameters(const CoreRenderingData & other) {
+		void updateStencilParameters(const CoreRenderingStatus & other) {
 			stencilParameters = other.stencilParameters;
 			checkNumbers[STENCIL] = other.checkNumbers[STENCIL];
 		}
