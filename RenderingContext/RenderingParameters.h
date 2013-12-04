@@ -966,7 +966,7 @@ enum class TexUnitUsageParameter : uint8_t {
 	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
 	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
 	 */
-	TEXTURE_1D,
+	TEXTURE_MAPPING_1D,
 	/**
 	 * The texture is used for two-dimensional texturing using per vertex
 	 * texture coordinates. When using legacy OpenGL, the corresponding state
@@ -974,7 +974,7 @@ enum class TexUnitUsageParameter : uint8_t {
 	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
 	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
 	 */
-	TEXTURE_2D,
+	TEXTURE_MAPPING_2D,
 	/**
 	 * The texture is used for three-dimensional texturing using per vertex
 	 * texture coordinates. When using legacy OpenGL, the corresponding state
@@ -982,7 +982,7 @@ enum class TexUnitUsageParameter : uint8_t {
 	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
 	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
 	 */
-	TEXTURE_3D
+	TEXTURE_MAPPING_3D
 };
 
 }

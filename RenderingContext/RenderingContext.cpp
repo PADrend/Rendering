@@ -773,11 +773,11 @@ void RenderingContext::pushTexture(uint8_t unit) {
 
 void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture) {
 	if(texture && texture->getGLTextureType() == GL_TEXTURE_1D) {
-		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_1D);
+		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_1D);
 	} else if(texture && texture->getGLTextureType() == GL_TEXTURE_3D) {
-		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_3D);
+		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_3D);
 	} else {
-		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_2D);
+		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_2D);
 	}
 }
 
@@ -798,11 +798,11 @@ void RenderingContext::popTexture(uint8_t unit) {
 
 void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
 	if(texture && texture->getGLTextureType() == GL_TEXTURE_1D) {
-		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_1D);
+		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_1D);
 	} else if(texture && texture->getGLTextureType() == GL_TEXTURE_3D) {
-		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_3D);
+		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_3D);
 	} else {
-		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_2D);
+		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_2D);
 	}
 }
 
@@ -829,11 +829,11 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageP
 		internalData->targetRenderingStatus.setTextureUnitUsage(unit,usage);
 #ifdef LIB_GL
 		// enable the fixed function pipeline texture processing; the corresponding uniforms are set when applying the rendering data
-		if(usage == TexUnitUsageParameter::TEXTURE_1D) {
+		if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_1D) {
 			glEnable(GL_TEXTURE_1D);
-		} else if(usage == TexUnitUsageParameter::TEXTURE_2D) {
+		} else if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_2D) {
 			glEnable(GL_TEXTURE_2D);
-		} else if(usage == TexUnitUsageParameter::TEXTURE_3D) {
+		} else if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_3D) {
 			glEnable(GL_TEXTURE_3D);
 		} else {
 			glDisable(GL_TEXTURE_1D);
