@@ -771,11 +771,17 @@ void RenderingContext::pushTexture(uint8_t unit) {
 	internalData->textureStacks.at(unit).emplace(getTexture(unit),getTextureUsage(unit));
 }
 
-void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture){
-	pushAndSetTexture(unit,texture,TexUnitUsageParameter::TEXTURE_MAPPING);
+void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture) {
+	if(texture && texture->getGLTextureType() == GL_TEXTURE_1D) {
+		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_1D);
+	} else if(texture && texture->getGLTextureType() == GL_TEXTURE_3D) {
+		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_3D);
+	} else {
+		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_2D);
+	}
 }
 
-void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture,TexUnitUsageParameter usage) {
+void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
 	pushTexture(unit);
 	setTexture(unit, texture, usage);
 }
@@ -789,11 +795,18 @@ void RenderingContext::popTexture(uint8_t unit) {
 	setTexture(unit, textureAndUsage.first.get(), textureAndUsage.second );
 	internalData->textureStacks[unit].pop();
 }
-void RenderingContext::setTexture(uint8_t unit, Texture * texture){
-	setTexture(unit,texture,TexUnitUsageParameter::TEXTURE_MAPPING);
+
+void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
+	if(texture && texture->getGLTextureType() == GL_TEXTURE_1D) {
+		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_1D);
+	} else if(texture && texture->getGLTextureType() == GL_TEXTURE_3D) {
+		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_3D);
+	} else {
+		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_2D);
+	}
 }
 
-void RenderingContext::setTexture(uint8_t unit, Texture * texture,TexUnitUsageParameter usage) {
+void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
 	Texture * oldTexture = getTexture(unit);
 	if(texture == oldTexture && usage == internalData->targetRenderingStatus.getTextureUnitUsage(unit) )
 		return;
@@ -816,10 +829,16 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture,TexUnitUsagePa
 		internalData->targetRenderingStatus.setTextureUnitUsage(unit,usage);
 #ifdef LIB_GL
 		// enable the fixed function pipeline texture processing; the corresponding uniforms are set when applying the rendering data
-		if(usage==TexUnitUsageParameter::TEXTURE_MAPPING){
-			glEnable(texture ? texture->getGLTextureType() : GL_TEXTURE_2D);
-		}else{
-			glDisable(texture ? texture->getGLTextureType() : GL_TEXTURE_2D);
+		if(usage == TexUnitUsageParameter::TEXTURE_1D) {
+			glEnable(GL_TEXTURE_1D);
+		} else if(usage == TexUnitUsageParameter::TEXTURE_2D) {
+			glEnable(GL_TEXTURE_2D);
+		} else if(usage == TexUnitUsageParameter::TEXTURE_3D) {
+			glEnable(GL_TEXTURE_3D);
+		} else {
+			glDisable(GL_TEXTURE_1D);
+			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_TEXTURE_3D);
 		}
 #endif /* LIB_GL */
 	}

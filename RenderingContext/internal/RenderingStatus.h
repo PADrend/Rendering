@@ -40,7 +40,7 @@ class RenderingStatus {
 
 	public:
 		explicit RenderingStatus(Shader * _shader = nullptr) : checkNumbers(TYPE_COUNT, 0), shader(_shader), initialized(false),
-			lightsEnabled(0), materialEnabled(false),textureUnitUsages(MAX_TEXTURES,TexUnitUsageParameter::UNDEFINED) {}
+			lightsEnabled(0), materialEnabled(false),textureUnitUsages(MAX_TEXTURES, TexUnitUsageParameter::GENERAL_PURPOSE) {}
 		Shader * getShader() 						{	return shader;	}
 		bool isInitialized()const					{	return initialized;	}
 		void markInitialized()						{	initialized=true;	}

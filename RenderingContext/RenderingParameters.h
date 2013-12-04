@@ -949,14 +949,40 @@ class StencilParameters {
 		}
 };
 
-/*! Determines the intended usage of a texture bound to a texture unit.
-	- TEXTURE_MAPPING The texture is used for "normal" texture mapping using vertex texture coordinates. 
-		The corresponding texture is enabled in classic GL mode ( glEnable(GL_specificTextureType) ) and the 
-		corresponding sg_textureEnabled[unit] uniform is set to true.
-	- UNDEFINED otherwise.		*/
-enum class TexUnitUsageParameter : uint8_t{
-	UNDEFINED,
-	TEXTURE_MAPPING
+//! Determines the intended usage of a texture bound to a texture unit.
+enum class TexUnitUsageParameter : uint8_t {
+	/**
+	 * The texture is not used for texturing. When using legacy OpenGL, the
+	 * corresponding state is disabled (see, e.g., the parameter
+	 * @c GL_TEXTURE_2D of @c glDisable) for the corresponding unit (see
+	 * @c glActiveTexture). If a shader is used, the corresponding uniform
+	 * @c sg_textureEnabled[unit] is set to @c false.
+	 */
+	GENERAL_PURPOSE,
+	/**
+	 * The texture is used for one-dimensional texturing using per vertex
+	 * texture coordinates. When using legacy OpenGL, the corresponding state
+	 * is enabled (see the parameter @c GL_TEXTURE_1D of @c glEnable) for the
+	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
+	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
+	 */
+	TEXTURE_1D,
+	/**
+	 * The texture is used for two-dimensional texturing using per vertex
+	 * texture coordinates. When using legacy OpenGL, the corresponding state
+	 * is enabled (see the parameter @c GL_TEXTURE_2D of @c glEnable) for the
+	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
+	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
+	 */
+	TEXTURE_2D,
+	/**
+	 * The texture is used for three-dimensional texturing using per vertex
+	 * texture coordinates. When using legacy OpenGL, the corresponding state
+	 * is enabled (see the parameter @c GL_TEXTURE_3D of @c glEnable) for the
+	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
+	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
+	 */
+	TEXTURE_3D
 };
 
 }
