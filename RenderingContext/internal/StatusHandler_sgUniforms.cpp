@@ -10,18 +10,12 @@
 */
 #include "StatusHandler_sgUniforms.h"
 #include "RenderingStatus.h"
-#include "../../GLHeader.h"
-#include "../../Helper.h"
 #include "../../Shader/Shader.h"
 #include "../../Shader/UniformRegistry.h"
 
-#ifdef WIN32
-#include <GL/wglew.h>
-#endif
-
 namespace Rendering {
 namespace StatusHandler_sgUniforms{
-	
+
 typedef std::vector<Uniform::UniformName> UniformNameArray_t;
 //! (internal)
 static UniformNameArray_t createNames(const std::string & prefix, uint8_t number, const std::string &postfix) {
