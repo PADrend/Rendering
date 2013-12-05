@@ -227,13 +227,17 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 	// Textures
 	if(forced || target.texturesChanged(actual)) {
 		for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
-
 			const auto & texture = actual.getTexture(unit);
-			if(texture.isNotNull()) {
-				glBindTexture(texture->getGLTextureType(), texture->getGLId());
-			} else {
-				glBindTexture(GL_TEXTURE_2D, 0);
+			const auto & oldTexture = target.getTexture(unit);
+			if(texture != oldTexture) {
+				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
+				if(texture.isNotNull()) {
+					glBindTexture(texture->getGLTextureType(), texture->getGLId());
+				} else if(oldTexture.isNotNull()) {
+					glBindTexture(oldTexture->getGLTextureType(), 0);
+				} else {
+					glBindTexture(GL_TEXTURE_2D, 0);
+				}
 			}
 		}
 		target.updateTextures(actual);
