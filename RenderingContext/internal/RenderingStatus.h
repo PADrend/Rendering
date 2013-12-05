@@ -279,29 +279,19 @@ class RenderingStatus {
 		std::vector<TexUnitUsageParameter> textureUnitUsages;
 
 	public:
-
-		void setTextureUnitUsage(uint8_t unit,TexUnitUsageParameter use) {
+		void setTextureUnitUsage(uint8_t unit, TexUnitUsageParameter use) {
 			++textureUnitUsagesCheckNumber;
 			textureUnitUsages.at(unit) = use;
 		}
-		const std::vector<TexUnitUsageParameter> & getTextureUnitUsages()const	{	
-			return textureUnitUsages;
-		}
-		const TexUnitUsageParameter& getTextureUnitUsage(uint8_t unit)const{	
+		const TexUnitUsageParameter & getTextureUnitUsage(uint8_t unit) const {
 			return textureUnitUsages.at(unit);
 		}
 		bool textureUnitsChanged(const RenderingStatus & actual) const {
-			if(textureUnitUsagesCheckNumber == actual.textureUnitUsagesCheckNumber) 
-				return false;
-			for(uint_fast8_t i = 0; i < MAX_TEXTURES; ++i) {
-				if (textureUnitUsages[i] != actual.textureUnitUsages[i])
-					return true;
-			}
-			return false;
+			return (textureUnitUsagesCheckNumber == actual.textureUnitUsagesCheckNumber) ? false : 
+					textureUnitUsages != actual.textureUnitUsages;
 		}
-		void updateTextureUnits(const RenderingStatus & actual){
-			for(uint_fast8_t i = 0; i < MAX_TEXTURES; ++i)
-				textureUnitUsages[i] = actual.textureUnitUsages[i];
+		void updateTextureUnits(const RenderingStatus & actual) {
+			textureUnitUsages = actual.textureUnitUsages;
 			textureUnitUsagesCheckNumber = actual.textureUnitUsagesCheckNumber;
 		}
 
