@@ -18,10 +18,12 @@ namespace StatusHandler_sgUniforms{
 
 typedef std::vector<Uniform::UniformName> UniformNameArray_t;
 //! (internal)
-static UniformNameArray_t createNames(const std::string & prefix, uint8_t number, const std::string &postfix) {
+static UniformNameArray_t createNames(const std::string & prefix, uint8_t number, const std::string & postfix) {
 	UniformNameArray_t arr;
-	for (uint8_t i = 0; i < number; ++i)
-		arr.push_back(prefix + static_cast<char> ('0' + i) + postfix);
+	arr.reserve(number);
+	for(uint_fast8_t i = 0; i < number; ++i) {
+		arr.emplace_back(prefix + static_cast<char>('0' + i) + postfix);
+	}
 	return arr;
 }
 
