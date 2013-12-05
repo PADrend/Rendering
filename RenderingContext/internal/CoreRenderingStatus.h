@@ -24,14 +24,14 @@ class CoreRenderingStatus {
 	//	@{
 	public:
 		CoreRenderingStatus() :
+			alphaTestParameters(),
 			blendingCheckNumber(0),
 			blendingParameters(),
 			colorBufferParameters(), 
 			cullFaceParameters(),
 			depthBufferParameters(),
-			alphaTestParameters(),
-			lineParameters(),
 			lightingParameters(),
+			lineParameters(),
 			polygonModeParameters(),
 			polygonOffsetParameters(),
 			stencilCheckNumber(),
@@ -42,6 +42,25 @@ class CoreRenderingStatus {
 	//	@}
 
 	// -------------------------------
+
+	//!	@name AlphaTest
+	//	@{
+	private:
+		AlphaTestParameters alphaTestParameters;
+	public:
+		bool alphaTestParametersChanged(const CoreRenderingStatus & actual) const {
+			return alphaTestParameters!=actual.alphaTestParameters;
+		}
+		const AlphaTestParameters & getAlphaTestParameters()const {
+			return alphaTestParameters;
+		}
+		void setAlphaTestParameters(const AlphaTestParameters & p){
+			alphaTestParameters=p;
+		}
+
+	//	@}
+
+	// ------
 
 	//!	@name Blending
 	//	@{
@@ -129,21 +148,20 @@ class CoreRenderingStatus {
 
 	// ------
 
-	//!	@name AlphaTest
+	//!	@name Lighting
 	//	@{
 	private:
-		AlphaTestParameters alphaTestParameters;
+		LightingParameters lightingParameters;
 	public:
-		bool alphaTestParametersChanged(const CoreRenderingStatus & actual) const {
-			return alphaTestParameters!=actual.alphaTestParameters;
+		bool lightingParametersChanged(const CoreRenderingStatus & actual) const {
+			return lightingParameters != actual.lightingParameters;
 		}
-		const AlphaTestParameters & getAlphaTestParameters()const {
-			return alphaTestParameters;
+		const LightingParameters & getLightingParameters() const {
+			return lightingParameters;
 		}
-		void setAlphaTestParameters(const AlphaTestParameters & p){
-			alphaTestParameters=p;
+		void setLightingParameters(const LightingParameters & p) {
+			lightingParameters = p;
 		}
-
 	//	@}
 
 	// ------
@@ -161,24 +179,6 @@ class CoreRenderingStatus {
 		}
 		void setLineParameters(const LineParameters & p) {
 			lineParameters = p;
-		}
-	//	@}
-
-	// ------
-
-	//!	@name Lighting
-	//	@{
-	private:
-		LightingParameters lightingParameters;
-	public:
-		bool lightingParametersChanged(const CoreRenderingStatus & actual) const {
-			return lightingParameters != actual.lightingParameters;
-		}
-		const LightingParameters & getLightingParameters() const {
-			return lightingParameters;
-		}
-		void setLightingParameters(const LightingParameters & p) {
-			lightingParameters = p;
 		}
 	//	@}
 
