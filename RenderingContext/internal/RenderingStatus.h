@@ -13,7 +13,6 @@
 
 #include "../RenderingParameters.h"
 #include <Geometry/Matrix4x4.h>
-
 #include <bitset>
 #include <cassert>
 #include <deque>
@@ -29,18 +28,30 @@ class RenderingStatus {
 	//!	@name General
 	//	@{
 	private:
-		enum type {
-			COLOR = 0, LIGHT = 1, MATERIAL = 2, TEXTURE_UNITS = 3, CAMERA = 4, MODELVIEW = 5, PROJECTION = 6, CAMERAINVERSE = 7, MODELVIEWPROJECTION = 8
-		};
-		static const uint8_t TYPE_COUNT = 9;
-
-		std::vector<uint32_t> checkNumbers;
 		Shader * shader;
 		bool initialized;
 
 	public:
-		explicit RenderingStatus(Shader * _shader = nullptr) : checkNumbers(TYPE_COUNT, 0), shader(_shader), initialized(false),
-			lightsEnabled(0), materialEnabled(false),textureUnitUsages(MAX_TEXTURES, TexUnitUsageParameter::GENERAL_PURPOSE) {}
+		explicit RenderingStatus(Shader * _shader = nullptr) : 
+			shader(_shader), 
+			initialized(false),
+			cameraCheckNumber(0),
+			cameraMatrix(),
+			cameraInverseMatrix(),
+			lightsCheckNumber(0),
+			lights(),
+			lightsEnabled(0),
+			materialCheckNumber(0),
+			materialEnabled(false),
+			material(),
+			modelViewMatrixCheckNumber(0),
+			modelViewMatrix(),
+			pointParameters(),
+			projectionMatrixCheckNumber(0),
+			projectionMatrix(),
+			textureUnitUsagesCheckNumber(0),
+			textureUnitUsages(MAX_TEXTURES, TexUnitUsageParameter::GENERAL_PURPOSE) {
+		}
 		Shader * getShader() 						{	return shader;	}
 		bool isInitialized()const					{	return initialized;	}
 		void markInitialized()						{	initialized=true;	}
@@ -51,11 +62,12 @@ class RenderingStatus {
 	//!	@name Camera Matrix
 	//	@{
 	private:
+		uint32_t cameraCheckNumber;
 		Geometry::Matrix4x4f cameraMatrix;
 		Geometry::Matrix4x4f cameraInverseMatrix;
 	public:
 		bool cameraInverseMatrixChanged(const RenderingStatus & actual) const {
-			return (checkNumbers[CAMERA] == actual.checkNumbers[CAMERA]) ? false :
+			return (cameraCheckNumber == actual.cameraCheckNumber) ? false :
 					cameraInverseMatrix != actual.cameraInverseMatrix;
 		}
 		const Geometry::Matrix4x4f & getCameraInverseMatrix() const {
@@ -67,12 +79,12 @@ class RenderingStatus {
 		void setCameraInverseMatrix(const Geometry::Matrix4x4f & matrix) {
 			cameraInverseMatrix = matrix;
 			cameraMatrix = matrix.inverse();
-			++checkNumbers[CAMERA];
+			++cameraCheckNumber;
 		}
 		void updateCameraMatrix(const RenderingStatus & actual) {
 			cameraInverseMatrix = actual.cameraInverseMatrix;
 			cameraMatrix = actual.cameraMatrix;
-			checkNumbers[CAMERA] = actual.checkNumbers[CAMERA];
+			cameraCheckNumber = actual.cameraCheckNumber;
 		}
 	//	@}
 
@@ -83,6 +95,7 @@ class RenderingStatus {
 	public:
 		static const uint8_t MAX_LIGHTS = 8;
 	private:
+		uint32_t lightsCheckNumber;
 		//! Storage of light parameters.
 		LightParameters lights[MAX_LIGHTS];
 
@@ -118,7 +131,7 @@ class RenderingStatus {
 			while(lightsEnabled[pos]) {
 				++pos;
 			}
-			++checkNumbers[LIGHT];
+			++lightsCheckNumber;
 			lights[pos] = light;
 			lightsEnabled[pos] = true;
 			return pos;
@@ -126,7 +139,7 @@ class RenderingStatus {
 		//! Disable the light with the given number.
 		void disableLight(uint8_t lightNumber) {
 			assert(lightsEnabled[lightNumber]);
-			++checkNumbers[LIGHT];
+			++lightsCheckNumber;
 			lightsEnabled[lightNumber] = false;
 		}
 		//! Return @c true, if the light with the given light number is enabled.
@@ -134,7 +147,7 @@ class RenderingStatus {
 			return lightsEnabled[lightNumber];
 		}
 		bool lightsChanged(const RenderingStatus & actual) const {
-			if (checkNumbers[LIGHT] == actual.checkNumbers[LIGHT])
+			if (lightsCheckNumber == actual.lightsCheckNumber)
 				return false;
 			if (lightsEnabled != actual.lightsEnabled)
 				return true;
@@ -147,7 +160,7 @@ class RenderingStatus {
 		}
 		void updateLights(const RenderingStatus & actual) {
 			lightsEnabled = actual.lightsEnabled;
-			checkNumbers[LIGHT] = actual.checkNumbers[LIGHT];
+			lightsCheckNumber = actual.lightsCheckNumber;
 		}
 		void updateLightParameter(uint8_t lightNumber, const LightParameters & light) {
 			assert(lightNumber < MAX_LIGHTS);
@@ -160,30 +173,30 @@ class RenderingStatus {
 	//!	@name Materials
 	//	@{
 	private:
+		uint32_t materialCheckNumber;
 		bool materialEnabled;
 		MaterialParameters material;
-
 
 	public:
 		bool isMaterialEnabled()const								{	return materialEnabled;	}
 		const MaterialParameters & getMaterialParameters()const	{	return material;	}
 		bool materialChanged(const RenderingStatus & actual) const {
-			return (checkNumbers[MATERIAL] == actual.checkNumbers[MATERIAL]) ? false :
+			return (materialCheckNumber == actual.materialCheckNumber) ? false :
 						(materialEnabled != actual.materialEnabled || material != actual.material);
 		}
 		void setMaterial(const MaterialParameters & mat) {
 			material = mat;
 			materialEnabled = true;
-			++checkNumbers[MATERIAL];
+			++materialCheckNumber;
 		}
 		void updateMaterial(const RenderingStatus & actual) {
 			materialEnabled=actual.materialEnabled;
 			material=actual.material;
-			checkNumbers[MATERIAL]=actual.checkNumbers[MATERIAL];
+			materialCheckNumber=actual.materialCheckNumber;
 		}
 		void disableMaterial() {
 			materialEnabled = false;
-			++checkNumbers[MATERIAL];
+			++materialCheckNumber;
 		}
 	//	@}
 
@@ -192,25 +205,26 @@ class RenderingStatus {
 	//!	@name Modelview Matrix
 	//	@{
 	private:
+		uint32_t modelViewMatrixCheckNumber;
 		Geometry::Matrix4x4f modelViewMatrix;
 
 	public:
 		const Geometry::Matrix4x4f & getModelViewMatrix() const 				{	return modelViewMatrix;	}
 		void setModelViewMatrix(const Geometry::Matrix4x4f & matrix) {
 			modelViewMatrix = matrix;
-			++checkNumbers[MODELVIEW];
+			++modelViewMatrixCheckNumber;
 		}
 		bool modelViewMatrixChanged(const RenderingStatus & actual) const {
-			return (checkNumbers[MODELVIEW] == actual.checkNumbers[MODELVIEW]) ? false :
+			return (modelViewMatrixCheckNumber == actual.modelViewMatrixCheckNumber) ? false :
 					modelViewMatrix != actual.modelViewMatrix;
 		}
 		void multModelViewMatrix(const Geometry::Matrix4x4f & matrix) {
 			modelViewMatrix *= matrix;
-			++checkNumbers[MODELVIEW];
+			++modelViewMatrixCheckNumber;
 		}
 		void updateModelViewMatrix(const RenderingStatus & actual) {
 			modelViewMatrix = actual.modelViewMatrix;
-			checkNumbers[MODELVIEW] = actual.checkNumbers[MODELVIEW];
+			modelViewMatrixCheckNumber = actual.modelViewMatrixCheckNumber;
 		}
 	//	@}
 
@@ -237,19 +251,21 @@ class RenderingStatus {
 	//!	@name Projection Matrix
 	//	@{
 	private:
+		uint32_t projectionMatrixCheckNumber;
 		Geometry::Matrix4x4f projectionMatrix;
+
 	public:
 		void setProjectionMatrix(const Geometry::Matrix4x4f & matrix) {
 			projectionMatrix = matrix;
-			++checkNumbers[PROJECTION];
+			++projectionMatrixCheckNumber;
 		}
 		const Geometry::Matrix4x4f & getProjectionMatrix() const 				{	return projectionMatrix;	}
 		void updateProjectionMatrix(const RenderingStatus & actual) {
 			projectionMatrix = actual.projectionMatrix;
-			checkNumbers[PROJECTION] = actual.checkNumbers[PROJECTION];
+			projectionMatrixCheckNumber = actual.projectionMatrixCheckNumber;
 		}
 		bool projectionMatrixChanged(const RenderingStatus & actual) const {
-			return (checkNumbers[PROJECTION] == actual.checkNumbers[PROJECTION]) ? false :
+			return (projectionMatrixCheckNumber == actual.projectionMatrixCheckNumber) ? false :
 					projectionMatrix != actual.projectionMatrix;
 		}
 	//	@}
@@ -259,12 +275,13 @@ class RenderingStatus {
 	//!	@name Texture Units
 	//	@{
 	private:
+		uint32_t textureUnitUsagesCheckNumber;
 		std::vector<TexUnitUsageParameter> textureUnitUsages;
 
 	public:
 
 		void setTextureUnitUsage(uint8_t unit,TexUnitUsageParameter use) {
-			++checkNumbers[TEXTURE_UNITS];
+			++textureUnitUsagesCheckNumber;
 			textureUnitUsages.at(unit) = use;
 		}
 		const std::vector<TexUnitUsageParameter> & getTextureUnitUsages()const	{	
@@ -274,7 +291,7 @@ class RenderingStatus {
 			return textureUnitUsages.at(unit);
 		}
 		bool textureUnitsChanged(const RenderingStatus & actual) const {
-			if(checkNumbers[TEXTURE_UNITS] == actual.checkNumbers[TEXTURE_UNITS]) 
+			if(textureUnitUsagesCheckNumber == actual.textureUnitUsagesCheckNumber) 
 				return false;
 			for(uint_fast8_t i = 0; i < MAX_TEXTURES; ++i) {
 				if (textureUnitUsages[i] != actual.textureUnitUsages[i])
@@ -285,7 +302,7 @@ class RenderingStatus {
 		void updateTextureUnits(const RenderingStatus & actual){
 			for(uint_fast8_t i = 0; i < MAX_TEXTURES; ++i)
 				textureUnitUsages[i] = actual.textureUnitUsages[i];
-			checkNumbers[TEXTURE_UNITS] = actual.checkNumbers[TEXTURE_UNITS];
+			textureUnitUsagesCheckNumber = actual.textureUnitUsagesCheckNumber;
 		}
 
 };

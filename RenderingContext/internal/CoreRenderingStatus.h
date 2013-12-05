@@ -14,35 +14,31 @@
 #include "../RenderingParameters.h"
 #include "../../Texture/Texture.h"
 #include <Util/References.h>
-#include <array>
 #include <cstdint>
-#include <vector>
 
 namespace Rendering {
 
 //! (internal) Used by the renderingContext to track changes made to the shader independent core-state of OpenGL.
 class CoreRenderingStatus {
-
-	//!	@name General
+	//!	@name Construction
 	//	@{
-	private:
-		enum type {
-			BLENDING = 0,
-			STENCIL = 1,
-			TEXTURES = 2
-		};
-		static const uint8_t TYPE_COUNT = 3;
-
-		std::vector<uint32_t> checkNumbers;
-
 	public:
 		CoreRenderingStatus() :
-			checkNumbers(TYPE_COUNT),
+			blendingCheckNumber(0),
+			blendingParameters(),
+			colorBufferParameters(), 
 			cullFaceParameters(),
+			depthBufferParameters(),
+			alphaTestParameters(),
+			lineParameters(),
+			lightingParameters(),
+			polygonModeParameters(),
+			polygonOffsetParameters(),
+			stencilCheckNumber(),
 			stencilParameters(),
+			texturesCheckNumber(),
 			boundTextures() {
 		}
-		~CoreRenderingStatus(){}
 	//	@}
 
 	// -------------------------------
@@ -50,11 +46,12 @@ class CoreRenderingStatus {
 	//!	@name Blending
 	//	@{
 	private:
+		uint32_t blendingCheckNumber;
 		BlendingParameters blendingParameters;
 
 	public:
 		bool blendingParametersChanged(const CoreRenderingStatus & actual) const {
-			return (checkNumbers[BLENDING] == actual.checkNumbers[BLENDING]) ? false :
+			return (blendingCheckNumber == actual.blendingCheckNumber) ? false :
 					(blendingParameters != actual.blendingParameters);
 		}
 		const BlendingParameters & getBlendingParameters() const {
@@ -62,15 +59,15 @@ class CoreRenderingStatus {
 		}
 		void setBlendingParameters(const BlendingParameters & p) {
 			blendingParameters = p;
-			++checkNumbers[BLENDING];
+			++blendingCheckNumber;
 		}
 		void updateBlendingParameters(const BlendingParameters & p,uint32_t _checkNumber) {
 			blendingParameters = p;
-			checkNumbers[BLENDING] = _checkNumber;
+			blendingCheckNumber = _checkNumber;
 		}
 		void updateBlendingParameters(const CoreRenderingStatus & other) {
 			blendingParameters = other.blendingParameters;
-			checkNumbers[BLENDING] = other.checkNumbers[BLENDING];
+			blendingCheckNumber = other.blendingCheckNumber;
 		}
 
 	//	@}
@@ -227,48 +224,50 @@ class CoreRenderingStatus {
 	//!	@name Stencil
 	//	@{
 	private:
+		uint32_t stencilCheckNumber;
 		StencilParameters stencilParameters;
 
 	public:
 		bool stencilParametersChanged(const CoreRenderingStatus & actual) const {
-			return (checkNumbers[STENCIL] == actual.checkNumbers[STENCIL]) ? false : (stencilParameters != actual.stencilParameters);
+			return (stencilCheckNumber == actual.stencilCheckNumber) ? false : (stencilParameters != actual.stencilParameters);
 		}
 		const StencilParameters & getStencilParameters() const {
 			return stencilParameters;
 		}
 		void setStencilParameters(const StencilParameters & p) {
 			stencilParameters = p;
-			++checkNumbers[STENCIL];
+			++stencilCheckNumber;
 		}
 		void updateStencilParameters(const StencilParameters & p, uint32_t _checkNumber) {
 			stencilParameters = p;
-			checkNumbers[STENCIL] = _checkNumber;
+			stencilCheckNumber = _checkNumber;
 		}
 		void updateStencilParameters(const CoreRenderingStatus & other) {
 			stencilParameters = other.stencilParameters;
-			checkNumbers[STENCIL] = other.checkNumbers[STENCIL];
+			stencilCheckNumber = other.stencilCheckNumber;
 		}
 	//	@}
 
 	//!	@name Textures
 	//	@{
 	private:
+		uint32_t texturesCheckNumber;
 		std::array<Util::Reference<Texture>, MAX_TEXTURES> boundTextures;
 
 	public:
 		void setTexture(uint8_t unit, Util::Reference<Texture> texture) {
-			++checkNumbers[TEXTURES];
+			++texturesCheckNumber;
 			boundTextures.at(unit) = std::move(texture);
 		}
 		const Util::Reference<Texture> & getTexture(uint8_t unit) const {
 			return boundTextures.at(unit);
 		}
 		bool texturesChanged(const CoreRenderingStatus & actual) const {
-			return (checkNumbers[TEXTURES] == actual.checkNumbers[TEXTURES]) ? false : (boundTextures != actual.boundTextures);
+			return (texturesCheckNumber == actual.texturesCheckNumber) ? false : (boundTextures != actual.boundTextures);
 		}
 		void updateTextures(const CoreRenderingStatus & actual) {
 			boundTextures = actual.boundTextures;
-			checkNumbers[TEXTURES] = actual.checkNumbers[TEXTURES];
+			texturesCheckNumber = actual.texturesCheckNumber;
 		}
 	//	@}
 };
