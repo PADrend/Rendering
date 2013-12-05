@@ -808,43 +808,25 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
 
 void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
 	Texture * oldTexture = getTexture(unit);
-	if(texture == oldTexture && usage == internalData->targetRenderingStatus.getTextureUnitUsage(unit) )
-		return;
-
-	//! \todo move enable / disable to RenderingStatus (?), but be warned: At some positions might be expected, that the texture is enabled immediately.
-	glActiveTexture(GL_TEXTURE0 + unit);
-
-	if(texture != oldTexture){
+	if(texture != oldTexture) {
 		internalData->boundTextures.at(unit) = texture;
 
+		glActiveTexture(GL_TEXTURE0 + unit);
 		if(texture) {
 			const auto id = texture->_prepareForBinding(*this);
-			glBindTexture(texture->getGLTextureType(),id); // id may be 0 on failure -- this shouldn't be a problem
-		}else{
-			glBindTexture(GL_TEXTURE_2D,0);
-		}
-	}
-
-	if(usage != internalData->targetRenderingStatus.getTextureUnitUsage(unit)){
-		internalData->targetRenderingStatus.setTextureUnitUsage(unit,usage);
-#ifdef LIB_GL
-		// enable the fixed function pipeline texture processing; the corresponding uniforms are set when applying the rendering data
-		if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_1D) {
-			glEnable(GL_TEXTURE_1D);
-		} else if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_2D) {
-			glEnable(GL_TEXTURE_2D);
-		} else if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_3D) {
-			glEnable(GL_TEXTURE_3D);
+			glBindTexture(texture->getGLTextureType(), id); // id may be 0 on failure -- this shouldn't be a problem
 		} else {
-			glDisable(GL_TEXTURE_1D);
-			glDisable(GL_TEXTURE_2D);
-			glDisable(GL_TEXTURE_3D);
+			glBindTexture(GL_TEXTURE_2D, 0);
 		}
-#endif /* LIB_GL */
 	}
-	if(immediate)
-		applyChanges();
 
+	if(usage != internalData->targetRenderingStatus.getTextureUnitUsage(unit)) {
+		internalData->targetRenderingStatus.setTextureUnitUsage(unit, usage);
+	}
+
+	if(immediate) {
+		applyChanges();
+	}
 }
 
 // TRANSFORM FEEDBACK ************************************************************************
