@@ -138,7 +138,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 	// Texturing
 	if (forced || target.textureUnitsChanged(actual)) {
-		for(uint_fast8_t unit = 0; unit < RenderingStatus::MAX_TEXTURES; ++unit) {
+		for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {
 			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 
 			// enable/disable the fixed-function pipeline texture processing

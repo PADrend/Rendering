@@ -1,7 +1,7 @@
 /*
 	This file is part of the Rendering library.
-	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
-	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
+	Copyright (C) 2007-2013 Benjamin Eikel <benjamin@eikel.org>
+	Copyright (C) 2007-2013 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
@@ -82,9 +82,7 @@ class RenderingContext::InternalData {
 		std::stack<Geometry::Matrix4x4> matrixStack;
 		std::stack<Geometry::Matrix4x4> projectionMatrixStack;
 
-		//! \todo boundTextures should be moved to renderingData
-		std::array<Util::Reference<Texture>,RenderingStatus::MAX_TEXTURES> boundTextures;
-		std::array<std::stack<std::pair<Util::Reference<Texture>,TexUnitUsageParameter>>,RenderingStatus::MAX_TEXTURES> textureStacks;
+		std::array<std::stack<std::pair<Util::Reference<Texture>, TexUnitUsageParameter>>, MAX_TEXTURES> textureStacks;
 
 		typedef std::pair<Util::Reference<CountedBufferObject>,uint32_t> feedbackBufferStatus_t; // buffer->mode
 
@@ -101,7 +99,7 @@ class RenderingContext::InternalData {
 		Geometry::Rect_i windowClientArea;
 
 		InternalData() : targetRenderingStatus(), openGLRenderingStatus(), activeRenderingStatus(nullptr),
-			actualCoreRenderingStatus(), appliedCoreRenderingStatus(), globalUniforms(), boundTextures(), textureStacks(),
+			actualCoreRenderingStatus(), appliedCoreRenderingStatus(), globalUniforms(), textureStacks(),
 			currentViewport(0, 0, 0, 0) {
 		}
 };
@@ -760,7 +758,7 @@ void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & unif
 // TEXTURES **********************************************************************************
 
 Texture * RenderingContext::getTexture(uint8_t unit)const {
-	return unit < internalData->boundTextures.size() ? internalData->boundTextures[unit].get() : nullptr;
+	return unit < MAX_TEXTURES ? internalData->actualCoreRenderingStatus.getTexture(unit).get() : nullptr;
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit)const{
@@ -809,15 +807,10 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
 void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
 	Texture * oldTexture = getTexture(unit);
 	if(texture != oldTexture) {
-		internalData->boundTextures.at(unit) = texture;
-
-		glActiveTexture(GL_TEXTURE0 + unit);
 		if(texture) {
-			const auto id = texture->_prepareForBinding(*this);
-			glBindTexture(texture->getGLTextureType(), id); // id may be 0 on failure -- this shouldn't be a problem
-		} else {
-			glBindTexture(GL_TEXTURE_2D, 0);
+			texture->_prepareForBinding(*this);
 		}
+		internalData->actualCoreRenderingStatus.setTexture(unit, texture);
 	}
 
 	if(usage != internalData->targetRenderingStatus.getTextureUnitUsage(unit)) {

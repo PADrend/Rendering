@@ -1,7 +1,7 @@
 /*
 	This file is part of the Rendering library.
-	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
-	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
+	Copyright (C) 2007-2013 Benjamin Eikel <benjamin@eikel.org>
+	Copyright (C) 2007-2013 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
@@ -258,8 +258,6 @@ class RenderingStatus {
 
 	//!	@name Texture Units
 	//	@{
-	public:
-		static const uint8_t MAX_TEXTURES = 8;
 	private:
 		std::vector<TexUnitUsageParameter> textureUnitUsages;
 

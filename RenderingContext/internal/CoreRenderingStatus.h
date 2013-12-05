@@ -1,7 +1,7 @@
 /*
 	This file is part of the Rendering library.
-	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
-	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
+	Copyright (C) 2007-2013 Benjamin Eikel <benjamin@eikel.org>
+	Copyright (C) 2007-2013 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
@@ -12,6 +12,9 @@
 #define CORE_RENDERING_DATA_H_
 
 #include "../RenderingParameters.h"
+#include "../../Texture/Texture.h"
+#include <Util/References.h>
+#include <array>
 #include <cstdint>
 #include <vector>
 
@@ -25,9 +28,10 @@ class CoreRenderingStatus {
 	private:
 		enum type {
 			BLENDING = 0,
-			STENCIL = 1
+			STENCIL = 1,
+			TEXTURES = 2
 		};
-		static const uint8_t TYPE_COUNT = 2;
+		static const uint8_t TYPE_COUNT = 3;
 
 		std::vector<uint32_t> checkNumbers;
 
@@ -35,7 +39,8 @@ class CoreRenderingStatus {
 		CoreRenderingStatus() :
 			checkNumbers(TYPE_COUNT),
 			cullFaceParameters(),
-			stencilParameters() {
+			stencilParameters(),
+			boundTextures() {
 		}
 		~CoreRenderingStatus(){}
 	//	@}
@@ -243,9 +248,29 @@ class CoreRenderingStatus {
 			stencilParameters = other.stencilParameters;
 			checkNumbers[STENCIL] = other.checkNumbers[STENCIL];
 		}
-
 	//	@}
 
+	//!	@name Textures
+	//	@{
+	private:
+		std::array<Util::Reference<Texture>, MAX_TEXTURES> boundTextures;
+
+	public:
+		void setTexture(uint8_t unit, Util::Reference<Texture> texture) {
+			++checkNumbers[TEXTURES];
+			boundTextures.at(unit) = std::move(texture);
+		}
+		const Util::Reference<Texture> & getTexture(uint8_t unit) const {
+			return boundTextures.at(unit);
+		}
+		bool texturesChanged(const CoreRenderingStatus & actual) const {
+			return (checkNumbers[TEXTURES] == actual.checkNumbers[TEXTURES]) ? false : (boundTextures != actual.boundTextures);
+		}
+		void updateTextures(const CoreRenderingStatus & actual) {
+			boundTextures = actual.boundTextures;
+			checkNumbers[TEXTURES] = actual.checkNumbers[TEXTURES];
+		}
+	//	@}
 };
 
 }

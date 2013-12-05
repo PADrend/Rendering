@@ -46,7 +46,7 @@ static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_EXPONENT(createNames("s
 static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_COSCUTOFF(createNames("sg_LightSource[", RenderingStatus::MAX_LIGHTS, "].cosCutoff"));
 
 static const Uniform::UniformName UNIFORM_SG_TEXTURE_ENABLED("sg_textureEnabled");
-static const UniformNameArray_t UNIFORM_SG_TEXTURES(createNames("sg_texture", RenderingStatus::MAX_TEXTURES, ""));
+static const UniformNameArray_t UNIFORM_SG_TEXTURES(createNames("sg_texture", MAX_TEXTURES, ""));
 static const Uniform::UniformName UNIFORM_SG_USE_MATERIALS("sg_useMaterials");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_AMBIENT("sg_Material.ambient");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_DIFFUSE("sg_Material.diffuse");
@@ -164,7 +164,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 		}
 
 		uniforms.emplace_back(UNIFORM_SG_TEXTURE_ENABLED, textureUnitsUsedForRendering);
-		for (uint_fast8_t i = 0; i < RenderingStatus::MAX_TEXTURES; ++i)  // for each shader, this is only necessary once...
+		for (uint_fast8_t i = 0; i < MAX_TEXTURES; ++i)  // for each shader, this is only necessary once...
 			uniforms.emplace_back(UNIFORM_SG_TEXTURES[i], i);
 		target.updateTextureUnits(actual);
 	}
