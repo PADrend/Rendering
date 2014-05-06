@@ -53,26 +53,25 @@ Texture * StreamerPKM::loadTexture(std::istream & input) {
 		return nullptr;
 	}
 	// Numbers are stored big-endian.
-	uint16_t width = convertBigEndianTwoBytes(header.width);
-	uint16_t height = convertBigEndianTwoBytes(header.height);
-	uint16_t activeWidth = convertBigEndianTwoBytes(header.activeWidth);
-	uint16_t activeHeight = convertBigEndianTwoBytes(header.activeHeight);
+	const uint16_t width = convertBigEndianTwoBytes(header.width);
+	const uint16_t height = convertBigEndianTwoBytes(header.height);
+	const uint16_t activeWidth = convertBigEndianTwoBytes(header.activeWidth);
+	const uint16_t activeHeight = convertBigEndianTwoBytes(header.activeHeight);
 
 
 	Texture::Format format;
-	format.width = activeWidth;
-	format.height = activeHeight;
-	format.border = 0;
+	format.sizeX = activeWidth;
+	format.sizeY = activeHeight;
 	format.glTextureType = GL_TEXTURE_2D;
 #ifdef LIB_GLESv2
 	format.glInternalFormat = GL_ETC1_RGB8_OES;
 #endif /* LIB_GLESv2 */
 	format.compressed = true;
-	format.imageSize = 8 * ((width + 3) >> 2) * ((height + 3) >> 2);
+	format.compressedImageSize = 8 * ((width + 3) >> 2) * ((height + 3) >> 2);
 
 	Util::Reference<Texture> texture = new Texture(format);
 	texture->allocateLocalData();
-	input.read(reinterpret_cast<char *>(texture->getLocalData()), format.imageSize);
+	input.read(reinterpret_cast<char *>(texture->getLocalData()), format.compressedImageSize);
 
 	return texture.detachAndDecrease();
 }

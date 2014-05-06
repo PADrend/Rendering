@@ -44,35 +44,37 @@ namespace TextureUtils {
 
 /*! (static) Factory */
 Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps, bool clampToEdge) {
-	Texture::Format f;
-	f.glTextureType=GL_TEXTURE_2D;
-	f.width=width;
-	f.height=height;
-	f.glFormat=alpha ? GL_RGBA : GL_RGB;
-	f.glDataType=GL_UNSIGNED_BYTE;
-	f.glInternalFormat=alpha ? GL_RGBA : GL_RGB;
-	f.magFilter=GL_NEAREST;
-	f.minFilter=useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_2D;
+	format.sizeX = width;
+	format.sizeY = height;
+	format.glFormat = alpha ? GL_RGBA : GL_RGB;
+	format.glDataType = GL_UNSIGNED_BYTE;
+	format.glInternalFormat=alpha ? GL_RGBA : GL_RGB;
+	format.glMagFilter = GL_NEAREST;
+	format.glMinFilter = useMipmaps ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
+	format.autoCreateMipmaps = useMipmaps;
 
-	if (clampToEdge) {
-		f.wrapS = GL_CLAMP_TO_EDGE;
-		f.wrapT = GL_CLAMP_TO_EDGE;
-		f.wrapR = GL_CLAMP_TO_EDGE;
+	if(clampToEdge) {
+		format.glWrapS = GL_CLAMP_TO_EDGE;
+		format.glWrapT = GL_CLAMP_TO_EDGE;
+		format.glWrapR = GL_CLAMP_TO_EDGE;
 	}
 
-	return new Texture(f);
+	return new Texture(format);
 }
 
 Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps, float scaling) {
 	Texture::Format format;
 	format.glTextureType = GL_TEXTURE_2D;
-	format.width = width;
-	format.height = height;
+	format.sizeX = width;
+	format.sizeY = height;
 	format.glFormat = alpha ? GL_RGBA : GL_RGB;
 	format.glDataType = GL_UNSIGNED_BYTE;
 	format.glInternalFormat = alpha ? GL_RGBA : GL_RGB;
-	format.magFilter = GL_LINEAR;
-	format.minFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	format.glMagFilter = GL_LINEAR;
+	format.glMinFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	format.autoCreateMipmaps = useMipmaps;
 
 	Util::Reference<Texture> texture = new Texture(format);
 	texture->allocateLocalData();
@@ -98,18 +100,20 @@ Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, bool u
 
 Texture * createTextureDataArray_Vec4(const uint32_t size) {
 #if defined(LIB_GL)
-	Texture::Format f;
-	f.glTextureType = GL_TEXTURE_1D;
-	f.width = size;
-	f.height = 1;
-	f.glFormat = GL_RGBA;
-	f.glDataType = GL_FLOAT;
-	f.glInternalFormat = GL_RGBA32F_ARB;
-	f.magFilter = GL_LINEAR;
-	f.minFilter = GL_LINEAR;
-	f.wrapS = GL_CLAMP;
-	f.wrapT = GL_CLAMP;
-	return new Texture(f);
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_1D;
+	format.sizeX = size;
+	format.sizeY = 1;
+	format.glFormat = GL_RGBA;
+	format.glDataType = GL_FLOAT;
+	format.glInternalFormat = GL_RGBA32F_ARB;
+	format.glMagFilter = GL_LINEAR;
+	format.glMinFilter = GL_LINEAR;
+	format.glWrapS = GL_CLAMP;
+	format.glWrapT = GL_CLAMP;
+	format.autoCreateMipmaps = false;
+	
+	return new Texture(format);
 #else
 	return nullptr;
 #endif
@@ -118,76 +122,82 @@ Texture * createTextureDataArray_Vec4(const uint32_t size) {
 #ifdef LIB_GL
 /*! (static) Factory */
 Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps) {
-	Texture::Format f;
-	f.glTextureType=GL_TEXTURE_2D;
-	f.width=width;
-	f.height=height;
-	f.glFormat=alpha ? GL_RGBA : GL_RGB;
-	f.glDataType=GL_FLOAT;
-	f.glInternalFormat=alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
-	f.magFilter=GL_LINEAR;
-	f.minFilter=useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	Texture::Format format;
+	format.glTextureType=GL_TEXTURE_2D;
+	format.sizeX = width;
+	format.sizeY = height;
+	format.glFormat = alpha ? GL_RGBA : GL_RGB;
+	format.glDataType = GL_FLOAT;
+	format.glInternalFormat = alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
+	format.glMagFilter = GL_LINEAR;
+	format.glMinFilter = useMipmaps ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
+	format.autoCreateMipmaps = useMipmaps;
 
-	return new Texture(f);
+	return new Texture(format);
 }
 /*! (static) Factory */
 Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte, bool useMipmaps) {
-	Texture::Format f;
-	f.glTextureType = GL_TEXTURE_2D;
-	f.width = width;
-	f.height = height;
-	f.glFormat = GL_RED;
-	f.glDataType = useByte ? GL_UNSIGNED_BYTE : GL_FLOAT;
-	f.glInternalFormat = useByte ? 1 : GL_R32F;
-	f.magFilter = GL_NEAREST;
-	f.minFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
-	return new Texture(f);
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_2D;
+	format.sizeX = width;
+	format.sizeY = height;
+	format.glFormat = GL_RED;
+	format.glDataType = useByte ? GL_UNSIGNED_BYTE : GL_FLOAT;
+	format.glInternalFormat = useByte ? 1 : GL_R32F;
+	format.glMagFilter = GL_NEAREST;
+	format.glMinFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	format.autoCreateMipmaps = useMipmaps;
+
+	return new Texture(format);
 }
 
 /*! (static) Factory */
 Texture * createDepthStencilTexture(uint32_t width, uint32_t height) {
-	Texture::Format depthStencilFormat;
-	depthStencilFormat.glTextureType = GL_TEXTURE_2D;
-	depthStencilFormat.width = width;
-	depthStencilFormat.height = height;
-	depthStencilFormat.glFormat = GL_DEPTH_STENCIL_EXT;
-	depthStencilFormat.glDataType = GL_UNSIGNED_INT_24_8_EXT;
-	depthStencilFormat.glInternalFormat = GL_DEPTH24_STENCIL8_EXT;
-	depthStencilFormat.magFilter = GL_NEAREST;
-	depthStencilFormat.minFilter = GL_NEAREST;
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_2D;
+	format.sizeX = width;
+	format.sizeY = height;
+	format.glFormat = GL_DEPTH_STENCIL_EXT;
+	format.glDataType = GL_UNSIGNED_INT_24_8_EXT;
+	format.glInternalFormat = GL_DEPTH24_STENCIL8_EXT;
+	format.glMagFilter = GL_NEAREST;
+	format.glMinFilter = GL_NEAREST;
+	format.autoCreateMipmaps = false;
 
-	return new Texture(depthStencilFormat);
+	return new Texture(format);
 }
 #endif
 
 /*! (static) Factory */
 Texture * createDepthTexture(uint32_t width, uint32_t height) {
-	Texture::Format depthFormat;
-	depthFormat.glTextureType = GL_TEXTURE_2D;
-	depthFormat.width = width;
-	depthFormat.height = height;
-	depthFormat.glFormat = GL_DEPTH_COMPONENT;
-	depthFormat.glDataType = GL_FLOAT;
-	depthFormat.glInternalFormat = GL_DEPTH_COMPONENT;
-	depthFormat.magFilter = GL_NEAREST;
-	depthFormat.minFilter = GL_NEAREST;
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_2D;
+	format.sizeX = width;
+	format.sizeY = height;
+	format.glFormat = GL_DEPTH_COMPONENT;
+	format.glDataType = GL_FLOAT;
+	format.glInternalFormat = GL_DEPTH_COMPONENT;
+	format.glMagFilter = GL_NEAREST;
+	format.glMinFilter = GL_NEAREST;
+	format.autoCreateMipmaps = false;
 
-	return new Texture(depthFormat);
+	return new Texture(format);
 }
 
 //! [static] Factory
 Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo, bool useMipmaps) {
-	Texture::Format f=Texture::Format();
-	f.glTextureType=GL_TEXTURE_2D;
-	f.width = width;
-	f.height = height;
-	f.glFormat=GL_RGBA;
-	f.glDataType=GL_UNSIGNED_BYTE;
-	f.glInternalFormat=GL_RGBA;
-	f.magFilter=GL_NEAREST;
-	f.minFilter=useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	Texture::Format format=Texture::Format();
+	format.glTextureType=GL_TEXTURE_2D;
+	format.sizeX = width;
+	format.sizeY = height;
+	format.glFormat=GL_RGBA;
+	format.glDataType=GL_UNSIGNED_BYTE;
+	format.glInternalFormat=GL_RGBA;
+	format.glMagFilter=GL_NEAREST;
+	format.glMinFilter=useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	format.autoCreateMipmaps = useMipmaps;
 
-	auto t=new Texture(f);
+	auto t=new Texture(format);
 	t->allocateLocalData();
 	GLubyte * tData=t->getLocalData();
 
@@ -210,43 +220,45 @@ Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool useMipmaps, 
 	const uint32_t height = bitmap.getHeight();
 	const uint32_t width = bitmap.getWidth();
 
-	Texture::Format tFormat;
-	tFormat.glTextureType = GL_TEXTURE_2D;
-	tFormat.glDataType = GL_UNSIGNED_BYTE;
-	tFormat.height = height;
-	tFormat.width = width;
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_2D;
+	format.glDataType = GL_UNSIGNED_BYTE;
+	format.sizeY = height;
+	format.sizeX = width;
 
 	const Util::PixelFormat & pixelFormat = bitmap.getPixelFormat();
 	if(pixelFormat==Util::PixelFormat::RGBA){
-		tFormat.glFormat = GL_RGBA;
-		tFormat.glInternalFormat = GL_RGBA;
+		format.glFormat = GL_RGBA;
+		format.glInternalFormat = GL_RGBA;
 	}else if(pixelFormat==Util::PixelFormat::RGB){
-		tFormat.glFormat = GL_RGB;
-		tFormat.glInternalFormat = GL_RGB;
+		format.glFormat = GL_RGB;
+		format.glInternalFormat = GL_RGB;
 #ifdef LIB_GL
 	}else if(pixelFormat==Util::PixelFormat::BGRA){
-		tFormat.glFormat = GL_BGRA;
-		tFormat.glInternalFormat = GL_RGBA;
+		format.glFormat = GL_BGRA;
+		format.glInternalFormat = GL_RGBA;
 	}else if(pixelFormat==Util::PixelFormat::BGR){
-		tFormat.glFormat = GL_BGR;
-		tFormat.glInternalFormat = GL_RGB;
+		format.glFormat = GL_BGR;
+		format.glInternalFormat = GL_RGB;
 	}else if(pixelFormat==Util::PixelFormat::MONO){
-		tFormat.glFormat = GL_RED;
-		tFormat.glInternalFormat = GL_RED;
+		format.glFormat = GL_RED;
+		format.glInternalFormat = GL_RED;
 #endif /* LIB_GL */
 	}else{
 		WARN("createTextureFromBitmap: Bitmap has unimplemented color format.");
 		return nullptr;
 	}
 
-	tFormat.minFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
-	if (clampToEdge) {
-		tFormat.wrapS = GL_CLAMP_TO_EDGE;
-		tFormat.wrapT = GL_CLAMP_TO_EDGE;
-		tFormat.wrapR = GL_CLAMP_TO_EDGE;
+	format.glMinFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	format.autoCreateMipmaps = useMipmaps;
+
+	if(clampToEdge) {
+		format.glWrapS = GL_CLAMP_TO_EDGE;
+		format.glWrapT = GL_CLAMP_TO_EDGE;
+		format.glWrapR = GL_CLAMP_TO_EDGE;
 	}
 
-	auto texture = new Texture(tFormat);
+	auto texture = new Texture(format);
 	texture->allocateLocalData();
 	const uint8_t * pixels = bitmap.data();
 
@@ -269,38 +281,39 @@ Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool useMipmaps, 
  * @todo Create a Streamer class instead of this function.
  */
 Texture * createTextureFromRAW(const Util::FileName & filename, unsigned int type, bool useMipmaps, bool clampToEdge, bool flip_h) {
-	if (type!=RAW_16BIT_BW) {
+	if(type!=RAW_16BIT_BW) {
 		WARN(std::string("RAW-Image has unimplemented color format for file ") + filename);
 		return nullptr;
 	}
 	const std::vector<uint8_t> buffer = Util::FileUtils::loadFile(filename);
-	if (buffer.empty()) {
+	if(buffer.empty()) {
 		WARN(std::string("Could not open file ") + filename.toString());
 		return nullptr;
 	}
 	uint32_t width = static_cast<uint32_t> (std::sqrt(buffer.size()/2.0));
 //    std::cout <<"\n\nWidth:"<<width<<","<<size<<"\n\n";
-	if (!width*width*2 == buffer.size()) {
+	if(!width*width*2 == buffer.size()) {
 		WARN(std::string("RAW-Image is not quadratic for file ") + filename.toString());
 		return nullptr;
 	}
 
-	Texture::Format tFormat;
-	tFormat.glTextureType=GL_TEXTURE_2D;
-	tFormat.height = width;
-	tFormat.width = width;
-	tFormat.glDataType=GL_FLOAT;
-	tFormat.glInternalFormat=GL_RGB;
+	Texture::Format format;
+	format.glTextureType=GL_TEXTURE_2D;
+	format.sizeY = width;
+	format.sizeX = width;
+	format.glDataType=GL_FLOAT;
+	format.glInternalFormat=GL_RGB;
 
-	tFormat.glFormat = GL_RGB;
-	tFormat.minFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
-	if (clampToEdge) {
-		tFormat.wrapS=GL_CLAMP_TO_EDGE;
-		tFormat.wrapT=GL_CLAMP_TO_EDGE;
-		tFormat.wrapR=GL_CLAMP_TO_EDGE;
+	format.glFormat = GL_RGB;
+	format.glMinFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
+	format.autoCreateMipmaps = useMipmaps;
+	if(clampToEdge) {
+		format.glWrapS = GL_CLAMP_TO_EDGE;
+		format.glWrapT = GL_CLAMP_TO_EDGE;
+		format.glWrapR = GL_CLAMP_TO_EDGE;
 	}
 	// TODO! check endianess!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	auto t=new Texture(tFormat);
+	auto t=new Texture(format);
 	t->allocateLocalData();
 	float * data = reinterpret_cast<float *> (t->getLocalData());//new float[width*width*3];
 
@@ -343,7 +356,7 @@ bool compareTextures(Texture *t1, Texture *t2) {
 Texture * createTextureFromScreen(int xpos, int ypos, const Texture::Format & format) {
 	auto texture = new Texture(format);
 	texture->allocateLocalData();
-	glReadPixels(xpos, ypos, static_cast<GLsizei>(format.width), static_cast<GLsizei>(format.height), format.glFormat, format.glDataType, texture->getLocalData());
+	glReadPixels(xpos, ypos, static_cast<GLsizei>(format.sizeX), static_cast<GLsizei>(format.sizeY), format.glFormat, format.glDataType, texture->getLocalData());
 	return texture;
 }
 
@@ -358,8 +371,8 @@ Texture * createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/, int width/*=-1
 			height = viewport[3]-ypos;
 	 }
 	Texture::Format format;
-	format.width = width;
-	format.height = height;
+	format.sizeX = width;
+	format.sizeY = height;
 	format.glDataType = GL_UNSIGNED_BYTE;
 	format.glFormat = useAlpha ? GL_RGBA : GL_RGB;
 	return createTextureFromScreen(xpos, ypos, format);
@@ -367,9 +380,9 @@ Texture * createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/, int width/*=-1
 
 //! [static]
 void updateTextureFromScreen(RenderingContext & context,Texture * t,const Geometry::Rect_i & textureRect, int screenPosX/*=0*/, int screenPosY/*=0*/){
-	const Texture::Format & f=t->getFormat();
-	const int width=textureRect.getWidth()>static_cast<int>(f.width) ? static_cast<int>(f.width) : textureRect.getWidth();
-	const int height=textureRect.getHeight()>static_cast<int>(f.height) ? static_cast<int>(f.height) : textureRect.getHeight();
+	const Texture::Format & format=t->getFormat();
+	const int width=textureRect.getWidth()>static_cast<int>(format.sizeX) ? static_cast<int>(format.sizeX) : textureRect.getWidth();
+	const int height=textureRect.getHeight()>static_cast<int>(format.sizeY) ? static_cast<int>(format.sizeY) : textureRect.getHeight();
 	context.pushAndSetTexture(0,t);
 	glCopyTexSubImage2D(GL_TEXTURE_2D,0,textureRect.getX(), textureRect.getY(),screenPosX,screenPosY, width, height);
 	context.popTexture(0);
@@ -378,7 +391,7 @@ void updateTextureFromScreen(RenderingContext & context,Texture * t,const Geomet
 
 //! [static]
 void updateTextureFromScreen(RenderingContext & context,Texture * t){
-	updateTextureFromScreen(context,t,Geometry::Rect_i(0,0,t->getFormat().width,t->getFormat().height));
+	updateTextureFromScreen(context,t,Geometry::Rect_i(0,0,t->getFormat().sizeX,t->getFormat().sizeY));
 }
 
 #ifdef LIB_GL
@@ -497,11 +510,11 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 #endif
 
 Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context,Texture * texture) {
-	if (texture == nullptr){
+	if(texture == nullptr){
 		WARN("Error creating bitmap: texture was null");
 		return nullptr;
 	}
-	if (texture->getLocalData() == nullptr){
+	if(texture->getLocalData() == nullptr){
 		if(!texture->isGLTextureValid()){
 			WARN("Error creating bitmap: texture has no local data and gl data invalid");
 			return nullptr;
@@ -512,24 +525,24 @@ Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context
 }
 
 Util::Reference<Util::Bitmap> createBitmapFromLocalTexture(Texture * texture) {
-	if (texture == nullptr) {
+	if(texture == nullptr) {
 		return nullptr;
 	}
-	if (texture->getLocalData() == nullptr) {
+	if(texture->getLocalData() == nullptr) {
 		WARN("Texture has no local data; can not create Bitmap.");
 		return nullptr;
 	}
 
-	const Texture::Format & tFormat = texture->getFormat();
+	const Texture::Format & format = texture->getFormat();
 
-	if (tFormat.glTextureType != GL_TEXTURE_2D) {
+	if(format.glTextureType != GL_TEXTURE_2D) {
 		WARN("createBitmapFromTexture: Other texture types than GL_TEXTURE_2D are not supported.");
 		return nullptr;
 	}
 
 	Util::Reference<Util::Bitmap> bitmap;
 
-	switch (tFormat.glFormat) {
+	switch (format.glFormat) {
 #ifdef LIB_GL
 		case GL_RED:
 		case GL_GREEN:
@@ -537,32 +550,32 @@ Util::Reference<Util::Bitmap> createBitmapFromLocalTexture(Texture * texture) {
 		case GL_ALPHA:
 #endif /* LIB_GL */
 		case GL_DEPTH_COMPONENT:{
-			if(tFormat.glDataType == GL_UNSIGNED_BYTE){
-				bitmap = new Util::Bitmap(static_cast<uint32_t>(tFormat.width), static_cast<uint32_t>(tFormat.height), Util::PixelFormat::MONO);
-			}else if(tFormat.glDataType == GL_FLOAT){
-				bitmap = new Util::Bitmap(static_cast<uint32_t>(tFormat.width), static_cast<uint32_t>(tFormat.height), Util::PixelFormat::MONO_FLOAT);
+			if(format.glDataType == GL_UNSIGNED_BYTE){
+				bitmap = new Util::Bitmap(static_cast<uint32_t>(format.sizeX), static_cast<uint32_t>(format.sizeY), Util::PixelFormat::MONO);
+			}else if(format.glDataType == GL_FLOAT){
+				bitmap = new Util::Bitmap(static_cast<uint32_t>(format.sizeX), static_cast<uint32_t>(format.sizeY), Util::PixelFormat::MONO_FLOAT);
 			}
 			break;
 		}
 		case GL_RGB:{
-			if(tFormat.glDataType == GL_UNSIGNED_BYTE)
-				bitmap = new Util::Bitmap(static_cast<uint32_t>(tFormat.width), static_cast<uint32_t>(tFormat.height), Util::PixelFormat::RGB);
+			if(format.glDataType == GL_UNSIGNED_BYTE)
+				bitmap = new Util::Bitmap(static_cast<uint32_t>(format.sizeX), static_cast<uint32_t>(format.sizeY), Util::PixelFormat::RGB);
 			break;
 		}
 		case GL_RGBA:{
-			if(tFormat.glDataType == GL_UNSIGNED_BYTE)
-				bitmap = new Util::Bitmap(static_cast<uint32_t>(tFormat.width), static_cast<uint32_t>(tFormat.height), Util::PixelFormat::RGBA);
+			if(format.glDataType == GL_UNSIGNED_BYTE)
+				bitmap = new Util::Bitmap(static_cast<uint32_t>(format.sizeX), static_cast<uint32_t>(format.sizeY), Util::PixelFormat::RGBA);
 			break;
 		}
 #ifdef LIB_GL
 		case GL_BGR:{
-			if(tFormat.glDataType == GL_UNSIGNED_BYTE)
-				bitmap = new Util::Bitmap(static_cast<uint32_t>(tFormat.width), static_cast<uint32_t>(tFormat.height), Util::PixelFormat::BGR);
+			if(format.glDataType == GL_UNSIGNED_BYTE)
+				bitmap = new Util::Bitmap(static_cast<uint32_t>(format.sizeX), static_cast<uint32_t>(format.sizeY), Util::PixelFormat::BGR);
 			break;
 		}
 		case GL_BGRA:{
-			if(tFormat.glDataType == GL_UNSIGNED_BYTE)
-				bitmap = new Util::Bitmap(static_cast<uint32_t>(tFormat.width), static_cast<uint32_t>(tFormat.height), Util::PixelFormat::BGRA);
+			if(format.glDataType == GL_UNSIGNED_BYTE)
+				bitmap = new Util::Bitmap(static_cast<uint32_t>(format.sizeX), static_cast<uint32_t>(format.sizeY), Util::PixelFormat::BGRA);
 			break;
 		}
 #endif /* LIB_GL */

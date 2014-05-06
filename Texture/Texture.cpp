@@ -17,6 +17,7 @@
 #include <Util/Macros.h>
 #include <Util/References.h>
 #include <cstddef>
+#include <iostream>
 
 #ifdef LIB_GL
 # ifdef __APPLE__
@@ -29,13 +30,14 @@
 namespace Rendering {
 
 Texture::Format::Format():
-	width(0), height(0), border(0),
-	glTextureType(GL_TEXTURE_2D),
-	glInternalFormat(GL_RGBA), glFormat(GL_RGBA),
-	glDataType(GL_UNSIGNED_BYTE),
-	wrapS(GL_REPEAT), wrapT(GL_REPEAT), wrapR(GL_REPEAT),
-	magFilter(GL_LINEAR), minFilter(GL_LINEAR),
-	compressed(false), imageSize(0) {
+		sizeX(0), sizeY(0), numLayers(1), 
+		glTextureType(GL_TEXTURE_2D),
+		glInternalFormat(GL_RGBA), glFormat(GL_RGBA),
+		compressed(false), compressedImageSize(0),
+		glDataType(GL_UNSIGNED_BYTE),
+		glWrapS(GL_REPEAT), glWrapT(GL_REPEAT), glWrapR(GL_REPEAT),
+		glMagFilter(GL_LINEAR), glMinFilter(GL_LINEAR),
+		autoCreateMipmaps(true) {
 }
 
 uint32_t Texture::Format::getPixelSize()const{
@@ -72,35 +74,60 @@ uint32_t Texture::Format::getPixelSize()const{
 
 //! [ctor]
 Texture::Texture(Format _format):
-		glId(0),format(std::move(_format)),dataHasChanged(false),
+		glId(0),format(std::move(_format)),dataHasChanged(true),
 		_pixelDataSize(format.getPixelSize()) {
+	// checkFormatConsistency
 }
 
 //! [dtor]
 Texture::~Texture() {
 	removeGLData();
 }
+//
+//std::pair<Util::Reference<Util::Bitmap>,bool>& Texture::checkFormatConsistency(imageId_t subImage){
+//	const auto it = localBitmaps.find(subImage);
+//	
+//	if(it==localBitmaps.end()){			
+////		const uint8_t level = std::get<0>(subImage);
+//		const uint32_t layer = std::get<1>(subImage);
+//		const uint8_t face = std::get<2>(subImage);
+//		
+//		switch( format.glTextureType ){
+//			case GL_TEXTURE_1D:
+//			case GL_TEXTURE_2D:
+//				if(layer>0||face>0)
+//					throw std::runtime_error("Texture::accessSubImageEntry: No faces or layers supported for given texture type.");
+//				break;
+//#ifdef LIB_GL
+//			case GL_TEXTURE_3D:
+//				if(face>0)
+//					throw std::runtime_error("Texture::accessSubImageEntry: No faces supported for 3d-textures.");
+//				break;
+//			case GL_TEXTURE_CUBE_MAP:
+//				if(layer>0)
+//					throw std::runtime_error("Texture::accessSubImageEntry: No layer supported for cube-textures.");
+//				if(face>5)
+//					throw std::runtime_error("Texture::accessSubImageEntry: Invalid cube-texture face.");
+//				break;
+//#endif
+//			default:
+//				//! \todo Implement array textures, 3d textures, ...
+//				throw std::runtime_error("Texture::accessSubImageEntry: unsupported texture type.");
+//		}
+//		localBitmaps[subImage] = std::make_pair(nullptr,true);
+//		dataHasChanged = true;
+//		return localBitmaps[subImage];
+//	}
+//	return it->second;
+//}
 
-//! [dtor]
-Texture * Texture::clone()const{
-	auto t=new Texture(getFormat());
-	if(localBitmap.isNotNull()){
-		t->localBitmap=new Util::Bitmap( *localBitmap.get() );
-		t->dataChanged();
-	}
-	t->setFileName(this->getFileName());
-	return t;
-}
 
-bool Texture::createGLID(RenderingContext & context){
-	
-	int at;
-	glGetIntegerv(GL_ACTIVE_TEXTURE, &at);
-	
+
+void Texture::_createGLID(RenderingContext & context){
 	// TODO!!! handle: dataHasChanged
-	if (glId) {
+	if(glId) {
 		//INFO ("Recreating Texture!");
-		if (isGLTextureValid()) {
+		if(isGLTextureValid()) {
 			WARN("Recreating valid Texture!");
 			removeGLData();
 		}
@@ -108,10 +135,13 @@ bool Texture::createGLID(RenderingContext & context){
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	GET_GL_ERROR();
 	glGenTextures(1,&glId);
-	if(!glId)
-		return false;
-	GET_GL_ERROR();
+	if(!glId){
+		GET_GL_ERROR();
+		throw std::runtime_error("Texture::_createGLID: Could not create texture.");
+	}
 
+	GLint activeTexture;
+	glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture);
 	context.pushAndSetTexture(0,nullptr); // store and disable texture unit 0, so that we can use it without side effects.
 
 	glActiveTexture(GL_TEXTURE0);
@@ -119,45 +149,89 @@ bool Texture::createGLID(RenderingContext & context){
 
 	GET_GL_ERROR();
 	// set parameters
-	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_S,format.wrapS);
-	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_T,format.wrapT);
+	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_S,format.glWrapS);
+	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_T,format.glWrapT);
 #ifdef LIB_GL
-	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_R,format.wrapR);
+	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_R,format.glWrapR);
 #endif
 
-	glTexParameteri(format.glTextureType,GL_TEXTURE_MAG_FILTER,format.magFilter);
-	glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.minFilter);
-
+	glTexParameteri(format.glTextureType,GL_TEXTURE_MAG_FILTER,format.glMagFilter);
+	glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.glMinFilter);
 	context.popTexture(0);
 	
-	glActiveTexture(at);
-
-	return true;
+	glActiveTexture(activeTexture);
+	GET_GL_ERROR();
 }
 
 
-bool Texture::uploadGLTexture(RenderingContext & context) {
-
-	int at;
-	glGetIntegerv(GL_ACTIVE_TEXTURE, &at);
+void Texture::createMipMaps(RenderingContext & context) {
+	GLint activeTexture;
+	glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture);
 	
-	if(glId==0 && !createGLID(context))
-		return false;
+	if(!glId)
+		_createGLID(context);
+
 
 	context.pushAndSetTexture(0,nullptr); // store and disable texture unit 0, so that we can use it without side effects.
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(format.glTextureType,glId);
 
+
+	switch (format.glTextureType) {
+		case GL_TEXTURE_2D: {
+#ifdef LIB_GL
+			if(isExtensionSupported("GL_EXT_framebuffer_object")) { // glGenerateMipmapEXT is supported
+				glGenerateMipmapEXT(GL_TEXTURE_2D);
+			} else {
+				gluBuild2DMipmaps(GL_TEXTURE_2D, static_cast<GLenum>(format.glInternalFormat),
+									static_cast<GLsizei>(getWidth()), 
+									static_cast<GLsizei>(getHeight()),
+									format.glFormat, format.glDataType, getLocalData());
+			}
+#elif defined(LIB_GLESv2)
+			glGenerateMipmap(GL_TEXTURE_2D);
+#endif
+			break;
+		}
+		default:{
+			context.popTexture(0);
+			glActiveTexture(activeTexture);
+			throw std::runtime_error("Texture::createMipMaps: unsupported texture type.");
+		}
+	}
+	GET_GL_ERROR();
+	context.popTexture(0);
+	glActiveTexture(activeTexture);
+}
+	
+void Texture::_uploadGLTexture(RenderingContext & context) {
+	GLint activeTexture;
+	glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture);
+	
+	if(!glId)
+		_createGLID(context);
+
+	dataHasChanged = false;
+
+	context.pushAndSetTexture(0,nullptr); // store and disable texture unit 0, so that we can use it without side effects.
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(format.glTextureType,glId);
+
+
 	switch (format.glTextureType) {
 #ifdef LIB_GL
+	//! \todo add cube map support and 3d-texture support
+
 		case GL_TEXTURE_1D: {
-			if (isMipmappingActive()) {
+			if(format.autoCreateMipmaps) {
 				gluBuild1DMipmaps(GL_TEXTURE_1D, format.glInternalFormat,
-						static_cast<GLsizei>(format.width), format.glFormat, format.glDataType, getLocalData());
+						static_cast<GLsizei>(getWidth()), format.glFormat, 
+						format.glDataType, getLocalData());
 			} else {
 				glTexImage1D(GL_TEXTURE_1D, 0, format.glInternalFormat,
-						static_cast<GLsizei>(format.width), format.border, format.glFormat,
+						static_cast<GLsizei>(getWidth()), 0, format.glFormat,
 						format.glDataType, getLocalData());
 			}
 			break;
@@ -166,23 +240,27 @@ bool Texture::uploadGLTexture(RenderingContext & context) {
 		case GL_TEXTURE_2D: {
 			if(format.compressed) {
 				glCompressedTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLenum>(format.glInternalFormat),
-									   static_cast<GLsizei>(format.width), static_cast<GLsizei>(format.height), 0,
-									   static_cast<GLsizei>(format.imageSize), getLocalData());
+										static_cast<GLsizei>(getWidth()), 
+										static_cast<GLsizei>(getHeight()), 0,
+										static_cast<GLsizei>(format.compressedImageSize), 
+										getLocalData());
 				break;
 			}
 
-			glTexImage2D(GL_TEXTURE_2D, 0, format.glInternalFormat,
-						 static_cast<GLsizei>(format.width), static_cast<GLsizei>(format.height), format.border,
-						 format.glFormat, format.glDataType, getLocalData());
+			glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLenum>(format.glInternalFormat),
+										static_cast<GLsizei>(getWidth()), 
+										static_cast<GLsizei>(getHeight()), 0,
+										format.glFormat, format.glDataType, getLocalData());
 
-			if (isMipmappingActive()) {
+			if(format.autoCreateMipmaps) {
 #ifdef LIB_GL
 				if(isExtensionSupported("GL_EXT_framebuffer_object")) { // glGenerateMipmapEXT is supported
 					glGenerateMipmapEXT(GL_TEXTURE_2D);
 				} else {
-					gluBuild2DMipmaps(GL_TEXTURE_2D, format.glInternalFormat,
-									  static_cast<GLsizei>(format.width), static_cast<GLsizei>(format.height),
-									  format.glFormat, format.glDataType, getLocalData());
+					gluBuild2DMipmaps(GL_TEXTURE_2D, static_cast<GLenum>(format.glInternalFormat),
+										static_cast<GLsizei>(getWidth()), 
+										static_cast<GLsizei>(getHeight()),
+										format.glFormat, format.glDataType, getLocalData());
 				}
 #elif defined(LIB_GLESv2)
 				glGenerateMipmap(GL_TEXTURE_2D);
@@ -190,30 +268,16 @@ bool Texture::uploadGLTexture(RenderingContext & context) {
 			}
 			break;
 		}
-		default:
-			WARN("Unimplemented Texture Format.");
+		default:{
+			context.popTexture(0);
+			glActiveTexture(activeTexture);
+			throw std::runtime_error("Texture::_uploadGLTexture: unsupported texture type.");
+		}
 	}
 	GET_GL_ERROR();
-	dataHasChanged=false;
-
 	context.popTexture(0);
-	
-	glActiveTexture(at);
-	
-	return true; // todo: return fals on error!
+	glActiveTexture(activeTexture);
 }
-//
-//uint32_t Texture::_prepareForBinding(RenderingContext & context) {
-//	if(!glId || dataHasChanged) 
-//		uploadGLTexture(context);
-//	return glId;
-//	if (glId) {
-//#ifdef LIB_GL
-//		glEnable(format.glTextureType);
-//#endif /* LIB_GL */
-//		glBindTexture(format.glTextureType,glId);
-//	}
-//}
 
 void Texture::allocateLocalData(){
 	if(localBitmap.isNotNull()){
@@ -225,8 +289,8 @@ void Texture::allocateLocalData(){
 	PixelFormat localFormat = PixelFormat::UNKNOWN;
 
 #ifdef LIB_GL
-	if (!format.compressed && (format.glTextureType==GL_TEXTURE_1D || format.glTextureType==GL_TEXTURE_2D)){
-		if (format.glDataType==GL_FLOAT) {
+	if(!format.compressed && (format.glTextureType==GL_TEXTURE_1D || format.glTextureType==GL_TEXTURE_2D)){
+		if(format.glDataType==GL_FLOAT) {
 			switch (format.glFormat){
 				case GL_RGBA:
 					localFormat = PixelFormat::RGBA_FLOAT;
@@ -256,7 +320,7 @@ void Texture::allocateLocalData(){
 				default:
 					break;
 			}
-		}else if (format.glDataType==GL_UNSIGNED_BYTE) {
+		}else if(format.glDataType==GL_UNSIGNED_BYTE) {
 			switch (format.glFormat){
 				case GL_RGBA:
 					localFormat = PixelFormat::RGBA;
@@ -286,13 +350,13 @@ void Texture::allocateLocalData(){
 				default:
 					break;
 			}
-		} else if (format.glDataType == GL_UNSIGNED_INT_24_8_EXT) {
+		} else if(format.glDataType == GL_UNSIGNED_INT_24_8_EXT) {
 			localFormat = PixelFormat::RGBA;
 		}
 	}
 #else /* LIB_GL */
-	if (!format.compressed && format.glTextureType == GL_TEXTURE_2D) {
-		if (format.glDataType == GL_FLOAT) {
+	if(!format.compressed && format.glTextureType == GL_TEXTURE_2D) {
+		if(format.glDataType == GL_FLOAT) {
 			switch (format.glFormat) {
 				case GL_RGBA:
 					localFormat = PixelFormat::RGBA_FLOAT;
@@ -303,7 +367,7 @@ void Texture::allocateLocalData(){
 				default:
 					break;
 			}
-		} else if (format.glDataType == GL_UNSIGNED_BYTE) {
+		} else if(format.glDataType == GL_UNSIGNED_BYTE) {
 			switch (format.glFormat) {
 				case GL_RGBA:
 					localFormat = PixelFormat::RGBA;
@@ -320,20 +384,12 @@ void Texture::allocateLocalData(){
 
 	// No default format found...
 	if(localFormat == PixelFormat::UNKNOWN) {
-		localBitmap = new Util::Bitmap(getWidth(), getHeight(), static_cast<std::size_t>(format.getDataSize()));
+		localBitmap = new Util::Bitmap(getWidth(), getHeight()*getNumLayers(), static_cast<std::size_t>(format.getDataSize()));
 	}else {
-		localBitmap = new Util::Bitmap(getWidth(), getHeight(), localFormat);
+		localBitmap = new Util::Bitmap(getWidth(), getHeight()*getNumLayers(), localFormat);
 	}
 
 }
-
-//void Texture::_disable() {
-//#ifdef LIB_GL
-//	if (glId) {
-//		glDisable(format.glTextureType);
-//	}
-//#endif /* LIB_GL */
-//}
 
 bool Texture::isGLTextureValid()const {
 	return glId==0?false: (glIsTexture(glId)==GL_TRUE) ;
@@ -350,57 +406,56 @@ bool Texture::isGLTextureResident()const {
 #endif
 }
 
-void Texture::removeLocalData(){
-	localBitmap=nullptr;
-}
-
 void Texture::removeGLData(){
 	if(glId)
 		glDeleteTextures(1,&glId);
 	glId=0;
 }
 
-bool Texture::downloadGLTexture(RenderingContext & context) {
+void Texture::downloadGLTexture(RenderingContext & context) {
 #ifdef LIB_GL
 	if(!glId){
 		WARN("No glTexture available.");
-		return false;
+		return;
 	}
-	if(localBitmap.isNull()){
+	dataHasChanged = false;
+
+	if(!localBitmap)
 		allocateLocalData();
-	}
+
 	context.pushAndSetTexture(0,this);
-	glGetTexImage(format.glTextureType, 0, format.glFormat, format.glDataType, getLocalData());
+//	GL_TEXTURE_CUBE_MAP_POSITIVE_X
+	switch( format.glTextureType ){
+		case GL_TEXTURE_1D:
+		case GL_TEXTURE_2D:
+			glGetTexImage(format.glTextureType, 0, format.glFormat, format.glDataType, getLocalData());
+			break;
+//		case GL_TEXTURE_CUBE_MAP:
+//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
+//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
+//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
+//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
+//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
+//			break;
+		default:
+			throw std::runtime_error("Texture::downloadGLTexture: unsupported texture type.");
+	}
+
 	context.popTexture(0);
-	return true;
 #else
 	WARN("downloadGLTexture not supported.");
-	return false;
 #endif
 }
 
-uint8_t * Texture::getLocalData() {
-	return localBitmap.isNull() ? nullptr : localBitmap->data();
-}
-
-const uint8_t * Texture::getLocalData()const {
-	return localBitmap.isNull() ? nullptr : localBitmap->data();
-}
+uint8_t * Texture::getLocalData()							{	return localBitmap ? localBitmap->data() : nullptr;	}
+const uint8_t * Texture::getLocalData() const				{	return localBitmap ? localBitmap->data() : nullptr;	}
 
 uint8_t * Texture::openLocalData(RenderingContext & context){
-	if(localBitmap.isNull()){
+	if(!localBitmap){
 		allocateLocalData();
-		if(glId!=0)
-			downloadGLTexture(context);
+		downloadGLTexture(context);
 	}
-	return localBitmap->data();
-}
-
-bool Texture::isMipmappingActive() const {
-	return 	format.minFilter == GL_NEAREST_MIPMAP_NEAREST ||
-			format.minFilter == GL_LINEAR_MIPMAP_NEAREST ||
-			format.minFilter == GL_NEAREST_MIPMAP_LINEAR ||
-			format.minFilter == GL_LINEAR_MIPMAP_LINEAR;
+	return getLocalData();
 }
 
 }

@@ -27,14 +27,20 @@ class RenderingContext;
  **
  **	Coordinates:
  **
- ** (0,height)             (width,height)
- **       +---------------+
- **       |      /\       |
- **       |     /  \      |
- **       |      ||       |
- **       |      ||       |
- **       +---------------+
- ** (0,0)                  (width,0)
+ ** (0,sizeY-1,numLayers-1)             (sizeX,sizeY,numLayers-1)
+ **               +---------------+  
+ **               |               |  
+ **               .     ...       .
+ **               .               .
+ **               |               |  
+ ** (0,0,1)       +---------------+ (sizeX-1,0,1)
+ ** (0,sizeY-1,0) +---------------+ (sizeX-1,sizeY-1,0)
+ **               |      /\       |  
+ **               |     /  \      |
+ **               |      ||       |
+ **               |      ||       |
+ **               +---------------+
+ ** (0,0,0)                  (sizeX,0,0)
  **
  ** \note the coordinates are different to the ones used in Util::Bitmap
  **/
@@ -46,54 +52,46 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		 **/
 		struct Format {
 			Format();
-			uint32_t width;
-			uint32_t height;
-			int32_t border;
-			uint32_t glTextureType;
-			int32_t glInternalFormat;
-			uint32_t glFormat;
-			uint32_t glDataType;
-			int32_t wrapS, wrapT, wrapR;
-			int32_t magFilter, minFilter;
-			bool compressed; //!< Determines if the texture is stored in a compressed format.
-			uint32_t imageSize; //!< Size of the data in bytes. @see glCompressedTexImage2D
+			uint32_t sizeX, sizeY, numLayers;		//!< width, height, depth (3d-texture)/num Layers(array texture)
+			uint32_t glTextureType;					//!< GL_TEXTURE_??
+
+			// storage parameters
+			int32_t glInternalFormat;				//!< e.g. GL_RGBA8
+			uint32_t glFormat;						//!< e.g. GL_RGBA
+			bool compressed; 						//!< [=false] Determines if the texture is stored in a compressed format.
+			uint32_t compressedImageSize; 			//!< Size of the data in bytes. @see glCompressedTexImage2D
+
+			// sampling parameters
+			uint32_t glDataType;					//!< e.g. GL_UNSIGNED_BYTE
+			int32_t glWrapS, glWrapT, glWrapR;		//!< e.g. GL_REPEAT
+			int32_t glMagFilter, glMinFilter;		//!< e.g. GL_LINEAR
+
+			// memory control
+			bool autoCreateMipmaps;					//!< [=true]
+			
 			uint32_t getPixelSize() const;
-			uint32_t getDataSize() const {
-				if(compressed) {
-					return imageSize;
-				} else {
-					return getPixelSize() * width * height;
-				}
-			}
-			uint32_t getRowSize() const {
-				if(compressed) {
-					return 0;
-				} else {
-					return getPixelSize() * width;
-				}
-			}
+			uint32_t getDataSize() const 	{	return compressed ? compressedImageSize : getPixelSize() * sizeX * sizeY * numLayers;}
+			uint32_t getRowSize() const		{	return compressed ? 0 : getPixelSize() * sizeX;	}
 		};
 		// ---------------------------------------
 
 		Texture(Format format);
 		~Texture();
 
-		Texture * clone() const;
-
 		uint32_t getDataSize() const						{	return format.getDataSize();	}
 		const Format & getFormat() const					{	return format;	}
 		uint32_t getGLTextureType() const					{	return format.glTextureType;	}
 		uint32_t getGLId() const							{	return glId;	}
-		uint32_t getHeight() const							{	return format.height;	}
-		uint32_t getWidth() const							{	return format.width;	}
+		uint32_t getNumLayers() const						{	return format.numLayers;	}
+		uint32_t getHeight() const							{	return format.sizeY;	}
+		uint32_t getWidth() const							{	return format.sizeX;	}
 
-		bool createGLID(RenderingContext & context);
-		bool uploadGLTexture(RenderingContext & context);
-		bool downloadGLTexture(RenderingContext & context);
+		void _createGLID(RenderingContext & context);
+		void _uploadGLTexture(RenderingContext & context);
+		void downloadGLTexture(RenderingContext & context);
 		void removeGLData();
 
 		void allocateLocalData();
-		void removeLocalData();
 
 		/*! Returns a pointer to the local data.
 			\note if the texture has no local data, it is downloaded automatically */
@@ -101,21 +99,21 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 
 		uint8_t * getLocalData();
 		const uint8_t * getLocalData() const;
-		void dataChanged() 									{	dataHasChanged=true;	}
+		
+		void dataChanged()									{	dataHasChanged = true;	}
+		void createMipMaps(RenderingContext & context);
 
 		//! (internal) uploads the texture if necessary; returns the glId or 0 if the texture is invalid.
 		uint32_t _prepareForBinding(RenderingContext & context){
 			if(!glId || dataHasChanged)
-				uploadGLTexture(context);
+				_uploadGLTexture(context);
 			return glId;
 		}
 
 		bool isGLTextureValid()const;
 		bool isGLTextureResident()const;
 
-		const Util::Reference<Util::Bitmap> & getLocalBitmap() const {
-			return localBitmap;
-		}
+		Util::Bitmap* getLocalBitmap()const					{	return localBitmap.get();	}
 
 		/*!	@name Filename */
 		// @{
@@ -127,21 +125,13 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 			Util::FileName fileName;
 		// @}
 
-	/*!	@name Mipmapping */
-	// @{
-	public:
-		//! Generate mipmaps of the texture and set the filtering flags to use these mipmaps.
-		bool isMipmappingActive() const;
-	// @}
-
 	private:
 		uint32_t glId;
 		const Format format;
 		bool dataHasChanged;
-
 		const uint32_t _pixelDataSize; // initialized automatically
 
-		Util::Reference<Util::Bitmap> localBitmap; //!< local data storage
+		Util::Reference<Util::Bitmap> localBitmap;
 };
 
 

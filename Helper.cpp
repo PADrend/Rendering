@@ -11,6 +11,7 @@
 #include "Helper.h"
 #include "GLHeader.h"
 #include <iostream>
+#include <iomanip>
 #if defined(ANDROID)
 #include <android/log.h>
 #endif /* defined(ANDROID) */
@@ -52,7 +53,7 @@ static const char * getGLErrorString(GLenum errorFlag) {
 			return "GL_INVALID_FRAMEBUFFER_OPERATION";
 #endif /* LIB_GLESv2 */
 		default:
-			return "Invalid error flag";
+			return "Unknown error";
 	}
 }
 
@@ -66,7 +67,7 @@ void checkGLError(const char * file, int line) {
 #if defined(ANDROID)
 		__android_log_print(ANDROID_LOG_WARN, "RenderingMobile", "GL ERROR (%i):%s at %s:%i", errorFlag, getGLErrorString(errorFlag), file, line);
 #else
-		std::cerr << "GL ERROR (" << errorFlag << "):" << getGLErrorString(errorFlag) << " at " << file << ":" << line << std::endl;
+		std::cerr << "GL ERROR (0x" << std::hex << errorFlag << "):" << getGLErrorString(errorFlag) << " at " << file << ":" << line << std::endl;
 #endif
 		errorFlag = glGetError();
 	}
