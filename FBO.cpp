@@ -62,7 +62,7 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 	if(t!=nullptr){
 		GLuint textureId=t->getGLId();
 		if(textureId==0){
-			t->uploadGLTexture(context);
+			t->_uploadGLTexture(context);
 			textureId=t->getGLId();
 		}
 #if defined(LIB_GL)
