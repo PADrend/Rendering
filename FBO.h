@@ -69,14 +69,14 @@ class FBO : public Util::ReferenceCounter<FBO> {
 
 		const char * getStatusMessage(RenderingContext & context);
 
-		void attachTexture(RenderingContext & context, uint32_t attachmentPoint,Texture * t,uint32_t layer=0);
-		void detachTexture(RenderingContext & context, uint32_t attachmentPoint)				{   attachTexture(context,attachmentPoint,nullptr);    }
+		void attachTexture(RenderingContext & context, uint32_t attachmentPoint,Texture * t,uint32_t level, uint32_t layer);
+		void detachTexture(RenderingContext & context, uint32_t attachmentPoint)				{   attachTexture(context,attachmentPoint,nullptr,0,0);    }
 
-		void attachColorTexture(RenderingContext & context, Texture * t, uint32_t unit = 0,uint32_t layer=0);
-		void detachColorTexture(RenderingContext & context, uint32_t unit = 0);
-		void attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t layer=0);
+		void attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId = 0,uint32_t level=0,uint32_t layer=0);
+		void detachColorTexture(RenderingContext & context, uint32_t colorBufferId = 0);
+		void attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t level=0,uint32_t layer=0);
 		void detachDepthStencilTexture(RenderingContext & context);
-		void attachDepthTexture(RenderingContext & context, Texture * t,uint32_t layer=0);
+		void attachDepthTexture(RenderingContext & context, Texture * t,uint32_t level=0,uint32_t layer=0);
 		void detachDepthTexture(RenderingContext & context);
 
 		/**

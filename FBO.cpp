@@ -59,29 +59,37 @@ void FBO::_enable(){
 #endif
 }
 
-void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Texture * t,uint32_t layer){
+void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Texture * texture,uint32_t level,uint32_t layer){
 	context.pushAndSetFBO(this);
-	if(t!=nullptr){
-		GLuint textureId = t->getGLId();
+	if( texture ){
+		GLuint textureId = texture->getGLId();
 		if(textureId==0){
-			t->_uploadGLTexture(context);
-			textureId = t->getGLId();
+			texture->_uploadGLTexture(context);
+			textureId = texture->getGLId();
 		}
+		if(layer+1 > texture->getNumLayers())
+			throw std::invalid_argument("FBO::attachTexture: invalid texture layer.");
 #if defined(LIB_GL)
-		// switch(t->getFormat().glTextureType)...
-		// handle layer!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint,t->getFormat().glTextureType,  textureId,0);
+		static const bool textureArrayAvailable = isExtensionSupported("GL_EXT_texture_array");
+		if(textureArrayAvailable){
+			if( texture->getNumLayers()>1 )
+				glFramebufferTextureLayerEXT(GL_FRAMEBUFFER_EXT, attachmentPoint,  textureId, level, layer);
+			else
+				glFramebufferTextureEXT(GL_FRAMEBUFFER_EXT, attachmentPoint,  textureId, level);
+		}else if( texture->getGLTextureType()==GL_TEXTURE_2D ){
+				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	
+		}else{
+			throw std::invalid_argument("FBO::attachTexture: texture type is not supported by your OpenGL version.");
+		}
 #elif defined(LIB_GLESv2)
-		glFramebufferTexture2D(GL_FRAMEBUFFER,t->getFormat().glTextureType,  textureId,0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, texture->getGLTextureType(),  textureId,0);
 #endif
-						
 	}else{
 #if defined(LIB_GL)
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint,GL_TEXTURE_2D,0,0);
 #elif defined(LIB_GLESv2)
 		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint,GL_TEXTURE_2D,0,0);
 #endif
-				 
 	}
 	context.popFBO();
 	GET_GL_ERROR();
@@ -89,49 +97,49 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 
 
 #if defined(LIB_GL)
-void FBO::attachColorTexture(RenderingContext & context, Texture * t, uint32_t unit,uint32_t layer) {
-	attachTexture(context, GL_COLOR_ATTACHMENT0_EXT + unit, t,layer);
+void FBO::attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId,uint32_t level,uint32_t layer) {
+	attachTexture(context, GL_COLOR_ATTACHMENT0_EXT + colorBufferId, t,level,layer);
 }
-void FBO::detachColorTexture(RenderingContext & context, uint32_t unit) {
-	detachTexture(context, GL_COLOR_ATTACHMENT0_EXT + unit);
+void FBO::detachColorTexture(RenderingContext & context, uint32_t colorBufferId) {
+	detachTexture(context, GL_COLOR_ATTACHMENT0_EXT + colorBufferId);
 }
-void FBO::attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t layer) {
-	attachTexture(context, GL_DEPTH_ATTACHMENT_EXT, t,layer);
-	attachTexture(context, GL_STENCIL_ATTACHMENT_EXT, t,layer);
+void FBO::attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t level,uint32_t layer) {
+	attachTexture(context, GL_DEPTH_ATTACHMENT_EXT, t,level,layer);
+	attachTexture(context, GL_STENCIL_ATTACHMENT_EXT, t,level,layer);
 }
 void FBO::detachDepthStencilTexture(RenderingContext & context) {
 	detachTexture(context, GL_DEPTH_ATTACHMENT_EXT);
 	detachTexture(context, GL_STENCIL_ATTACHMENT_EXT);
 }
-void FBO::attachDepthTexture(RenderingContext & context, Texture * t,uint32_t layer) {
-	attachTexture(context, GL_DEPTH_ATTACHMENT_EXT, t,layer);
+void FBO::attachDepthTexture(RenderingContext & context, Texture * t,uint32_t level,uint32_t layer) {
+	attachTexture(context, GL_DEPTH_ATTACHMENT_EXT, t,level,layer);
 }
 void FBO::detachDepthTexture(RenderingContext & context) {
 	detachTexture(context, GL_DEPTH_ATTACHMENT_EXT);
 }
 #elif defined(LIB_GLESv2)
-void FBO::attachColorTexture(RenderingContext & context, Texture * t, uint32_t unit,uint32_t layer) {
-	if(unit != 0) {
+void FBO::attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId,uint32_t layer) {
+	if(colorBufferId != 0) {
 		throw std::invalid_argument("Only one color attachment is supported in OpenGL ES 2.0.");
 	}
-	attachTexture(context, GL_COLOR_ATTACHMENT0, t,layer);
+	attachTexture(context, GL_COLOR_ATTACHMENT0, t,level,layer);
 }
-void FBO::detachColorTexture(RenderingContext & context, uint32_t unit) {
-	if(unit != 0) {
+void FBO::detachColorTexture(RenderingContext & context, uint32_t colorBufferId) {
+	if(colorBufferId != 0) {
 		throw std::invalid_argument("Only one color attachment is supported in OpenGL ES 2.0.");
 	}
 	detachTexture(context, GL_COLOR_ATTACHMENT0);
 }
-void FBO::attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t layer) {
-	attachTexture(context, GL_DEPTH_ATTACHMENT, t,layer);
-	attachTexture(context, GL_STENCIL_ATTACHMENT, t,layer);
+void FBO::attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t level,uint32_t layer) {
+	attachTexture(context, GL_DEPTH_ATTACHMENT, t,level,layer);
+	attachTexture(context, GL_STENCIL_ATTACHMENT, t,level,layer);
 }
 void FBO::detachDepthStencilTexture(RenderingContext & context) {
 	detachTexture(context, GL_DEPTH_ATTACHMENT);
 	detachTexture(context, GL_STENCIL_ATTACHMENT);
 }
-void FBO::attachDepthTexture(RenderingContext & context, Texture * t,uint32_t layer) {
-	attachTexture(context, GL_DEPTH_ATTACHMENT, t,layer);
+void FBO::attachDepthTexture(RenderingContext & context, Texture * t,uint32_t level,uint32_t layer) {
+	attachTexture(context, GL_DEPTH_ATTACHMENT, t,level,layer);
 }
 void FBO::detachDepthTexture(RenderingContext & context) {
 	detachTexture(context, GL_DEPTH_ATTACHMENT);
