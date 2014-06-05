@@ -43,7 +43,7 @@ namespace Rendering {
 namespace TextureUtils {
 
 /*! (static) Factory */
-Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps, bool clampToEdge) {
+Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha) {
 	Texture::Format format;
 	format.glTextureType = GL_TEXTURE_2D;
 	format.sizeX = width;
@@ -51,20 +51,11 @@ Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha, bool use
 	format.glFormat = alpha ? GL_RGBA : GL_RGB;
 	format.glDataType = GL_UNSIGNED_BYTE;
 	format.glInternalFormat=alpha ? GL_RGBA : GL_RGB;
-	format.glMagFilter = GL_NEAREST;
-	format.glMinFilter = useMipmaps ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
-	format.autoCreateMipmaps = useMipmaps;
-
-	if(clampToEdge) {
-		format.glWrapS = GL_CLAMP_TO_EDGE;
-		format.glWrapT = GL_CLAMP_TO_EDGE;
-		format.glWrapR = GL_CLAMP_TO_EDGE;
-	}
 
 	return new Texture(format);
 }
 
-Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps, float scaling) {
+Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha,float scaling) {
 	Texture::Format format;
 	format.glTextureType = GL_TEXTURE_2D;
 	format.sizeX = width;
@@ -72,9 +63,6 @@ Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, bool u
 	format.glFormat = alpha ? GL_RGBA : GL_RGB;
 	format.glDataType = GL_UNSIGNED_BYTE;
 	format.glInternalFormat = alpha ? GL_RGBA : GL_RGB;
-	format.glMagFilter = GL_LINEAR;
-	format.glMinFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
-	format.autoCreateMipmaps = useMipmaps;
 
 	Util::Reference<Texture> texture = new Texture(format);
 	texture->allocateLocalData();
@@ -107,11 +95,8 @@ Texture * createTextureDataArray_Vec4(const uint32_t size) {
 	format.glFormat = GL_RGBA;
 	format.glDataType = GL_FLOAT;
 	format.glInternalFormat = GL_RGBA32F_ARB;
-	format.glMagFilter = GL_LINEAR;
-	format.glMinFilter = GL_LINEAR;
 	format.glWrapS = GL_CLAMP;
 	format.glWrapT = GL_CLAMP;
-	format.autoCreateMipmaps = false;
 	
 	return new Texture(format);
 #else
@@ -121,7 +106,7 @@ Texture * createTextureDataArray_Vec4(const uint32_t size) {
 
 #ifdef LIB_GL
 /*! (static) Factory */
-Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps) {
+Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha) {
 	Texture::Format format;
 	format.glTextureType=GL_TEXTURE_2D;
 	format.sizeX = width;
@@ -129,14 +114,10 @@ Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha, bool use
 	format.glFormat = alpha ? GL_RGBA : GL_RGB;
 	format.glDataType = GL_FLOAT;
 	format.glInternalFormat = alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
-	format.glMagFilter = GL_LINEAR;
-	format.glMinFilter = useMipmaps ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
-	format.autoCreateMipmaps = useMipmaps;
-
 	return new Texture(format);
 }
 /*! (static) Factory */
-Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte, bool useMipmaps) {
+Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte) {
 	Texture::Format format;
 	format.glTextureType = GL_TEXTURE_2D;
 	format.sizeX = width;
@@ -144,9 +125,6 @@ Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte, bool u
 	format.glFormat = GL_RED;
 	format.glDataType = useByte ? GL_UNSIGNED_BYTE : GL_FLOAT;
 	format.glInternalFormat = useByte ? 1 : GL_R32F;
-	format.glMagFilter = GL_NEAREST;
-	format.glMinFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
-	format.autoCreateMipmaps = useMipmaps;
 
 	return new Texture(format);
 }
@@ -160,9 +138,8 @@ Texture * createDepthStencilTexture(uint32_t width, uint32_t height) {
 	format.glFormat = GL_DEPTH_STENCIL_EXT;
 	format.glDataType = GL_UNSIGNED_INT_24_8_EXT;
 	format.glInternalFormat = GL_DEPTH24_STENCIL8_EXT;
-	format.glMagFilter = GL_NEAREST;
-	format.glMinFilter = GL_NEAREST;
-	format.autoCreateMipmaps = false;
+	format.linearMinFilter = false;
+	format.linearMagFilter = false;
 
 	return new Texture(format);
 }
@@ -177,15 +154,14 @@ Texture * createDepthTexture(uint32_t width, uint32_t height) {
 	format.glFormat = GL_DEPTH_COMPONENT;
 	format.glDataType = GL_FLOAT;
 	format.glInternalFormat = GL_DEPTH_COMPONENT;
-	format.glMagFilter = GL_NEAREST;
-	format.glMinFilter = GL_NEAREST;
-	format.autoCreateMipmaps = false;
+	format.linearMinFilter = false;
+	format.linearMagFilter = false;
 
 	return new Texture(format);
 }
 
 //! [static] Factory
-Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo, bool useMipmaps) {
+Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo) {
 	Texture::Format format=Texture::Format();
 	format.glTextureType=GL_TEXTURE_2D;
 	format.sizeX = width;
@@ -193,9 +169,6 @@ Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powO
 	format.glFormat=GL_RGBA;
 	format.glDataType=GL_UNSIGNED_BYTE;
 	format.glInternalFormat=GL_RGBA;
-	format.glMagFilter=GL_NEAREST;
-	format.glMinFilter=useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
-	format.autoCreateMipmaps = useMipmaps;
 
 	auto t=new Texture(format);
 	t->allocateLocalData();
@@ -216,7 +189,7 @@ Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powO
 	return t;
 }
 
-Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool useMipmaps, bool clampToEdge) {
+Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool clampToEdge) {
 	const uint32_t height = bitmap.getHeight();
 	const uint32_t width = bitmap.getWidth();
 
@@ -249,9 +222,6 @@ Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool useMipmaps, 
 		return nullptr;
 	}
 
-	format.glMinFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
-	format.autoCreateMipmaps = useMipmaps;
-
 	if(clampToEdge) {
 		format.glWrapS = GL_CLAMP_TO_EDGE;
 		format.glWrapT = GL_CLAMP_TO_EDGE;
@@ -280,7 +250,7 @@ Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool useMipmaps, 
  * @Note: Used for importing hight-maps e.g. created with terragen.
  * @todo Create a Streamer class instead of this function.
  */
-Texture * createTextureFromRAW(const Util::FileName & filename, unsigned int type, bool useMipmaps, bool clampToEdge, bool flip_h) {
+Texture * createTextureFromRAW(const Util::FileName & filename, unsigned int type,  bool flip_h) {
 	if(type!=RAW_16BIT_BW) {
 		WARN(std::string("RAW-Image has unimplemented color format for file ") + filename);
 		return nullptr;
@@ -305,13 +275,7 @@ Texture * createTextureFromRAW(const Util::FileName & filename, unsigned int typ
 	format.glInternalFormat=GL_RGB;
 
 	format.glFormat = GL_RGB;
-	format.glMinFilter = useMipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR;
-	format.autoCreateMipmaps = useMipmaps;
-	if(clampToEdge) {
-		format.glWrapS = GL_CLAMP_TO_EDGE;
-		format.glWrapT = GL_CLAMP_TO_EDGE;
-		format.glWrapR = GL_CLAMP_TO_EDGE;
-	}
+
 	// TODO! check endianess!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	auto t=new Texture(format);
 	t->allocateLocalData();

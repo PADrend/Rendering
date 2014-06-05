@@ -47,13 +47,27 @@ class RenderingContext;
 class Texture: public Util::ReferenceCounter<Texture>	{
 
 	public:
+		
+		/*! A Texture's type. (Corresponds to 'glTextureType', but the actual value is independent from OpenGL.
+			\note Value assignment must never change! (they may be used for serialization)
+		*/
+		enum class TextureType : std::uint8_t{
+			TEXTURE_1D = 0,
+			TEXTURE_1D_ARRAY = 1,
+			TEXTURE_2D = 2,
+			TEXTURE_2D_ARRAY = 3,
+			TEXTURE_3D = 4,
+			TEXTURE_CUBE_MAP = 5,
+			TEXTURE_CUBE_MAP_ARRAY = 6
+		};
+		
 		/***
 		 ** Texture::Format
 		 **/
 		struct Format {
 			Format();
 			uint32_t sizeX, sizeY, numLayers;		//!< width, height, depth (3d-texture)/num Layers(array texture)
-			uint32_t glTextureType;					//!< GL_TEXTURE_??
+			uint32_t glTextureType;					//!< GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_
 
 			// storage parameters
 			int32_t glInternalFormat;				//!< e.g. GL_RGBA8
@@ -64,10 +78,9 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 			// sampling parameters
 			uint32_t glDataType;					//!< e.g. GL_UNSIGNED_BYTE
 			int32_t glWrapS, glWrapT, glWrapR;		//!< e.g. GL_REPEAT
-			int32_t glMagFilter, glMinFilter;		//!< e.g. GL_LINEAR
 
-			// memory control
-			bool autoCreateMipmaps;					//!< [=true]
+		
+			bool linearMinFilter,linearMagFilter;	//! true, true
 			
 			uint32_t getPixelSize() const;
 			uint32_t getDataSize() const 	{	return compressed ? compressedImageSize : getPixelSize() * sizeX * sizeY * numLayers;}
@@ -85,6 +98,9 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		uint32_t getNumLayers() const						{	return format.numLayers;	}
 		uint32_t getHeight() const							{	return format.sizeY;	}
 		uint32_t getWidth() const							{	return format.sizeX;	}
+		TextureType getTextureType() const					{	return tType;	}
+		bool getUseLinearMinFilter() const					{	return format.linearMinFilter;	}
+		bool getUseLinearMagFilter() const					{	return format.linearMagFilter;	}
 
 		void _createGLID(RenderingContext & context);
 		void _uploadGLTexture(RenderingContext & context);
@@ -101,12 +117,13 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		const uint8_t * getLocalData() const;
 		
 		void dataChanged()									{	dataHasChanged = true;	}
-		void createMipMaps(RenderingContext & context);
 
 		//! (internal) uploads the texture if necessary; returns the glId or 0 if the texture is invalid.
 		uint32_t _prepareForBinding(RenderingContext & context){
 			if(!glId || dataHasChanged)
 				_uploadGLTexture(context);
+			if(mipmapCreationIsPlanned)
+				createMipmaps(context);
 			return glId;
 		}
 
@@ -115,20 +132,31 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 
 		Util::Bitmap* getLocalBitmap()const					{	return localBitmap.get();	}
 
-		/*!	@name Filename */
-		// @{
+	/*!	@name Mipmaps */
+	// @{
+		void planMipmapCreation()							{	mipmapCreationIsPlanned = true;	}
+		void createMipmaps(RenderingContext & context);
+		bool getHasMipmaps() const							{	return hasMipmaps;	}
+	// @}
+		
+		
+	/*!	@name Filename */
+	// @{
 		public:
 			const Util::FileName & getFileName() const		{	return fileName;	}
 			void setFileName(const Util::FileName & f)		{	fileName=f;			}
 
 		private:
 			Util::FileName fileName;
-		// @}
+	// @}
 
 	private:
+		TextureType tType;
 		uint32_t glId;
 		const Format format;
 		bool dataHasChanged;
+		bool hasMipmaps;
+		bool mipmapCreationIsPlanned;
 		const uint32_t _pixelDataSize; // initialized automatically
 
 		Util::Reference<Util::Bitmap> localBitmap;

@@ -36,19 +36,19 @@ namespace TextureUtils {
 
 const unsigned int RAW_16BIT_BW = 0;
 
-Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps = false, bool clampToEdge = false);
-Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps = false, float scaling = 1.0f);
-Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha, bool useMipmaps = false);
-Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte = false, bool useMipmaps = false);
+Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha);
+Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, float scaling = 1.0f);
+Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha);
+Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte = false);
 Texture * createDepthStencilTexture(uint32_t width, uint32_t height);
 Texture * createDepthTexture(uint32_t width, uint32_t height);
 
 // creates an vec4 data array as textures for handling big arrays inside shaders. See SkeletalAnimationUtils for generic accessor. 
 Texture * createTextureDataArray_Vec4(const uint32_t size);
 
-Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo=8, bool useMipmaps = false);
-Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool useMipmaps = true, bool clampToEdge = false);
-Texture * createTextureFromRAW(const Util::FileName & filename,unsigned int type=RAW_16BIT_BW, bool useMipmaps = false, bool clampToEdge = false, bool flip_h = true);
+Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo=8);
+Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool clampToEdge = false);
+Texture * createTextureFromRAW(const Util::FileName & filename,unsigned int type=RAW_16BIT_BW, bool flip_h = true);
 Texture * createTextureFromScreen(int xpos, int ypos, const Texture::Format & format);
 Texture * createTextureFromScreen(int xpos=0, int ypos=0, int width=-1, int height=-1,bool useAlpha = true);
 

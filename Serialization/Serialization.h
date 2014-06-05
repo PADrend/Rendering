@@ -103,11 +103,9 @@ bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output)
  * The type of the texture is determined by the file extension.
  *
  * @param file Address to the file containing the texture data
- * @param useMipmaps Generate mipmaps for the texture and use them during rendering.
- * @param clampToEdge Set the wrapping parameter such that texture accesses are clamped.
  * @return A single texture
  */
-Texture * loadTexture(const Util::FileName & url, bool useMipmaps = false, bool clampToEdge = false);
+Texture * loadTexture(const Util::FileName & url);
 
 /**
  * Create a single texture from the given data.
@@ -115,11 +113,9 @@ Texture * loadTexture(const Util::FileName & url, bool useMipmaps = false, bool 
  *
  * @param extension File extension specifying the type of the texture
  * @param data Texture data
- * @param useMipmaps Generate mipmaps for the texture and use them during rendering.
- * @param clampToEdge Set the wrapping parameter such that texture accesses are clamped.
  * @return A single texture
  */
-Texture * loadTexture(const std::string & extension, const std::string & data, bool useMipmaps = false, bool clampToEdge = false);
+Texture * loadTexture(const std::string & extension, const std::string & data);
 
 /**
  * Write a single texture to the given address.

@@ -136,7 +136,7 @@ bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output)
 	return true;
 }
 
-Texture * loadTexture(const Util::FileName & url, bool useMipmaps, bool clampToEdge) {
+Texture * loadTexture(const Util::FileName & url) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_LOAD_TEXTURE));
 
 	// Rendering streamer found?
@@ -155,7 +155,7 @@ Texture * loadTexture(const Util::FileName & url, bool useMipmaps, bool clampToE
 		// Try Util::Serialization
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(url);
 		if(bitmap.isNotNull()) {
-			Util::Reference<Texture> texture = TextureUtils::createTextureFromBitmap(*bitmap.get(), useMipmaps, clampToEdge);
+			Util::Reference<Texture> texture = TextureUtils::createTextureFromBitmap(*bitmap.get());
 			if(texture.isNotNull()) {
 				texture->setFileName(url);
 			}
@@ -167,7 +167,7 @@ Texture * loadTexture(const Util::FileName & url, bool useMipmaps, bool clampToE
 	}
 }
 
-Texture * loadTexture(const std::string & extension, const std::string & data, bool useMipmaps, bool clampToEdge) {
+Texture * loadTexture(const std::string & extension, const std::string & data) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(extension, AbstractRenderingStreamer::CAP_LOAD_TEXTURE));
 	// Rendering streamer found?
 	if (loader.get() != nullptr) {
@@ -177,7 +177,7 @@ Texture * loadTexture(const std::string & extension, const std::string & data, b
 		// Try Util::Serialization.
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(extension, data);
 		if(bitmap.isNotNull()) {
-			return TextureUtils::createTextureFromBitmap(*bitmap.get(), useMipmaps, clampToEdge);
+			return TextureUtils::createTextureFromBitmap(*bitmap.get());
 		}
 
 		WARN("Unsupported file extension \"" + extension + "\".");
