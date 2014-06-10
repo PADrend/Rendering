@@ -61,8 +61,11 @@ Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha,float s
 	format.sizeX = width;
 	format.sizeY = height;
 	format.glFormat = alpha ? GL_RGBA : GL_RGB;
-	format.glDataType = GL_UNSIGNED_BYTE;
-	format.glInternalFormat = alpha ? GL_RGBA : GL_RGB;
+	format.glDataType = GL_FLOAT;
+	format.glInternalFormat = alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
+	
+	format.linearMinFilter = true;
+	format.linearMagFilter = true;
 
 	Util::Reference<Texture> texture = new Texture(format);
 	texture->allocateLocalData();
