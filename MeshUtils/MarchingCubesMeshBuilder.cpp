@@ -451,7 +451,7 @@ Mesh * MarchingCubesMeshBuilder::createMesh(DataSet & data) {
 
 					for(int8_t j = 2; j >= 0; --j) {
 						const Geometry::Vec4 & v = vertexList[triTable[cubeindex][i+j]];
-						mb.color(Util::Color4ub(v.w()*256,v.w()*256,v.w()*256,255));
+						mb.color(Util::Color4f(v.w(),v.w(),v.w(),1.0));
 
 						mb.position( v.xyz() );
 						mb.addIndex(mb.addVertex());
