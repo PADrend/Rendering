@@ -461,7 +461,7 @@ std::string Uniform::toString() const {
 			for (size_t i = 0; i < numValues; ++i) {
 				s << " ("<<ptr[0];
 				for (size_t j = 1; j < 9; ++j)
-					s<<","<<ptr[i];
+					s<<","<<ptr[j];
 				s << ")";
 				ptr+=9;
 			}
@@ -474,7 +474,7 @@ std::string Uniform::toString() const {
 			for (size_t i = 0; i < numValues; ++i) {
 				s << " ("<<ptr[0];
 				for (size_t j = 1; j < 16; ++j)
-					s<<","<<ptr[i];
+					s<<","<<ptr[j];
 				s << ")";
 				ptr+=16;
 			}
