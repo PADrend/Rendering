@@ -162,7 +162,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 		std::deque<bool> textureUnitsUsedForRendering;
 		for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {
 			const auto & usage = actual.getTextureUnitUsage(unit);
-			textureUnitsUsedForRendering.emplace_back(usage != TexUnitUsageParameter::GENERAL_PURPOSE);
+			textureUnitsUsedForRendering.emplace_back(usage != TexUnitUsageParameter::GENERAL_PURPOSE && usage!=TexUnitUsageParameter::DISABLED);
 
 			// for each shader, this is only necessary once...
 			uniforms.emplace_back(UNIFORM_SG_TEXTURES[unit], unit);

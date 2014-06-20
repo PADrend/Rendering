@@ -686,6 +686,8 @@ void RenderingContext::setFBO(FBO * fbo) {
 // GLOBAL UNIFORMS ***************************************************************************
 void RenderingContext::setGlobalUniform(const Uniform & u) {
 	internalData->globalUniforms.setUniform(u, false, false);
+	if(immediate)
+		applyChanges();	
 }
 const Uniform & RenderingContext::getGlobalUniform(const Util::StringIdentifier & uniformName) {
 	return internalData->globalUniforms.getUniform(uniformName);
@@ -770,9 +772,11 @@ void RenderingContext::pushTexture(uint8_t unit) {
 }
 
 void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture) {
-	if(texture && texture->getGLTextureType() == GL_TEXTURE_1D) {
+	if(!texture){
+		pushAndSetTexture(unit, nullptr, TexUnitUsageParameter::DISABLED);
+	}else if(texture->getGLTextureType() == GL_TEXTURE_1D) {
 		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_1D);
-	} else if(texture && texture->getGLTextureType() == GL_TEXTURE_3D) {
+	} else if(texture->getGLTextureType() == GL_TEXTURE_3D) {
 		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_3D);
 	} else {
 		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_2D);
@@ -795,9 +799,11 @@ void RenderingContext::popTexture(uint8_t unit) {
 }
 
 void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
-	if(texture && texture->getGLTextureType() == GL_TEXTURE_1D) {
+	if(!texture){
+		setTexture(unit, nullptr, TexUnitUsageParameter::DISABLED);
+	}else if(texture->getGLTextureType() == GL_TEXTURE_1D) {
 		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_1D);
-	} else if(texture && texture->getGLTextureType() == GL_TEXTURE_3D) {
+	} else if(texture->getGLTextureType() == GL_TEXTURE_3D) {
 		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_3D);
 	} else {
 		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_2D);
@@ -812,7 +818,8 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageP
 		}
 		internalData->actualCoreRenderingStatus.setTexture(unit, texture);
 	}
-
+	if(!texture)
+		usage = TexUnitUsageParameter::DISABLED;
 	if(usage != internalData->targetRenderingStatus.getTextureUnitUsage(unit)) {
 		internalData->targetRenderingStatus.setTextureUnitUsage(unit, usage);
 	}

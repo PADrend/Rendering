@@ -982,7 +982,10 @@ enum class TexUnitUsageParameter : uint8_t {
 	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
 	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
 	 */
-	TEXTURE_MAPPING_3D
+	TEXTURE_MAPPING_3D,
+	
+	//! No Texture is bound to the texture unit.
+	DISABLED
 };
 
 static const uint8_t MAX_TEXTURES = 8;

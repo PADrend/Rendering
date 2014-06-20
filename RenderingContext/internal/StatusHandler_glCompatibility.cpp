@@ -142,26 +142,25 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			// enable/disable the fixed-function pipeline texture processing
 			const auto & usage = actual.getTextureUnitUsage(unit);
 			const auto & oldUsage = target.getTextureUnitUsage(unit);
+			if(!forced && usage==oldUsage)
+				continue;
+				
+			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 			if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_1D) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				glEnable(GL_TEXTURE_1D);
 			} else if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_2D) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				glEnable(GL_TEXTURE_2D);
 			} else if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_3D) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				glEnable(GL_TEXTURE_3D);
 			} else if(oldUsage == TexUnitUsageParameter::TEXTURE_MAPPING_1D) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				glDisable(GL_TEXTURE_1D);
 			} else if(oldUsage == TexUnitUsageParameter::TEXTURE_MAPPING_2D) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				glDisable(GL_TEXTURE_2D);
 			} else if(oldUsage == TexUnitUsageParameter::TEXTURE_MAPPING_3D) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				glDisable(GL_TEXTURE_3D);
 			}
 		}
+		glActiveTexture(GL_TEXTURE0);
 	}
 	GET_GL_ERROR();
 #endif /* LIB_GL */

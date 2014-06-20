@@ -229,11 +229,11 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 		for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {
 			const auto & texture = actual.getTexture(unit);
 			const auto & oldTexture = target.getTexture(unit);
-			if(texture != oldTexture) {
+			if(forced || texture != oldTexture) {
 				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
-				if(texture.isNotNull()) {
+				if( texture ) {
 					glBindTexture(texture->getGLTextureType(), texture->getGLId());
-				} else if(oldTexture.isNotNull()) {
+				} else if( oldTexture ) {
 					glBindTexture(oldTexture->getGLTextureType(), 0);
 				} else {
 					glBindTexture(GL_TEXTURE_2D, 0);
