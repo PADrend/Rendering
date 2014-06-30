@@ -70,16 +70,29 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 		if(layer+1 > texture->getNumLayers())
 			throw std::invalid_argument("FBO::attachTexture: invalid texture layer.");
 #if defined(LIB_GL)
-		static const bool textureArrayAvailable = isExtensionSupported("GL_EXT_texture_array");
-		if(textureArrayAvailable){
-			if( texture->getNumLayers()>1 )
-				glFramebufferTextureLayerEXT(GL_FRAMEBUFFER_EXT, attachmentPoint,  textureId, level, layer);
-			else
-				glFramebufferTextureEXT(GL_FRAMEBUFFER_EXT, attachmentPoint,  textureId, level);
-		}else if( texture->getGLTextureType()==GL_TEXTURE_2D ){
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	
-		}else{
-			throw std::invalid_argument("FBO::attachTexture: texture type is not supported by your OpenGL version.");
+
+		switch( texture->getTextureType() ){
+			case Texture::TextureType::TEXTURE_1D:
+				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_EXT_framebuffer_object
+				break;
+			case Texture::TextureType::TEXTURE_2D:
+				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_EXT_framebuffer_object
+				break;
+			case Texture::TextureType::TEXTURE_CUBE_MAP:
+				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, GL_TEXTURE_CUBE_MAP_POSITIVE_X+layer, 	textureId, level);	// GL_EXT_framebuffer_object
+				break;
+			case Texture::TextureType::TEXTURE_1D_ARRAY:
+			case Texture::TextureType::TEXTURE_2D_ARRAY:
+			case Texture::TextureType::TEXTURE_3D:
+			case Texture::TextureType::TEXTURE_CUBE_MAP_ARRAY:{
+				static const bool featureAvailable = isExtensionSupported("GL_ARB_framebuffer_object");	
+				if(!featureAvailable)
+					throw std::invalid_argument("FBO::attachTexture: texture type is not supported by your OpenGL version.");
+				glFramebufferTextureLayer(GL_FRAMEBUFFER_EXT, attachmentPoint,  textureId, level, layer);				// GL_ARB_framebuffer_object
+				break;
+			}
+			default:
+				throw std::logic_error("FBO::attachTexture: ???");
 		}
 #elif defined(LIB_GLESv2)
 		glFramebufferTexture2D(GL_FRAMEBUFFER, texture->getGLTextureType(),  textureId,0);
