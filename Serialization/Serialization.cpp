@@ -3,9 +3,9 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	
+
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
+	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "Serialization.h"
@@ -136,7 +136,7 @@ bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output)
 	return true;
 }
 
-Texture * loadTexture(const Util::FileName & url) {
+Texture * loadTexture(const Util::FileName & url, const Texture::TextureType &tType, const std::uint8_t layerNum) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_LOAD_TEXTURE));
 
 	// Rendering streamer found?
@@ -154,16 +154,25 @@ Texture * loadTexture(const Util::FileName & url) {
 	} else {
 		// Try Util::Serialization
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(url);
+		Util::Reference<Texture> texture;
 		if(bitmap.isNotNull()) {
-			Util::Reference<Texture> texture = TextureUtils::createTextureFromBitmap(*bitmap.get());
+            switch(tType){
+                case Texture::TextureType::TEXTURE_2D:
+                    texture = TextureUtils::createTextureFromBitmap(*bitmap.get());
+                    break;
+                case Texture::TextureType::TEXTURE_CUBE_MAP:
+                    texture = TextureUtils::createCubeTextureFromBitmap(*bitmap.get());
+                    break;
+                default:
+                    WARN("Error loading texture (unsupported file extension \"" + url.getEnding() + "\", or invalid path).");
+                    return nullptr;
+            }
 			if(texture.isNotNull()) {
 				texture->setFileName(url);
 			}
 			return texture.detachAndDecrease();;
 		}
 
-		WARN("Error loading texture (unsupported file extension \"" + url.getEnding() + "\", or invalid path).");
-		return nullptr;
 	}
 }
 

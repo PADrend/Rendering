@@ -3,9 +3,9 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	
+
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
+	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "Texture.h"
@@ -16,6 +16,7 @@
 #include <Util/Graphics/PixelFormat.h>
 #include <Util/Macros.h>
 #include <Util/References.h>
+#include <Util/Graphics/PixelAccessor.h>
 #include <cstddef>
 #include <iostream>
 
@@ -25,7 +26,7 @@ namespace Rendering {
 
 
 Texture::Format::Format():
-		sizeX(0), sizeY(0), numLayers(1), 
+		sizeX(0), sizeY(0), numLayers(1),
 		glTextureType(GL_TEXTURE_2D),
 		glInternalFormat(GL_RGBA), glFormat(GL_RGBA),
 		compressed(false), compressedImageSize(0),
@@ -138,7 +139,7 @@ void Texture::_createGLID(RenderingContext & context){
 	glTexParameteri(format.glTextureType,GL_TEXTURE_MAG_FILTER,format.linearMagFilter ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR : GL_NEAREST);
 	context.popTexture(0);
-	
+
 	glActiveTexture(activeTexture);
 	GET_GL_ERROR();
 }
@@ -174,11 +175,11 @@ void Texture::createMipmaps(RenderingContext & context) {
 		glActiveTexture(activeTexture);
 	}
 }
-	
+
 void Texture::_uploadGLTexture(RenderingContext & context) {
 	GLint activeTexture;
 	glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture);
-	
+
 	if(!glId)
 		_createGLID(context);
 
@@ -187,8 +188,8 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 	context.pushAndSetTexture(0,nullptr); // store and disable texture unit 0, so that we can use it without side effects.
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(format.glTextureType,glId);
-	
-	
+
+
 	switch (format.glTextureType) {
 #ifdef LIB_GL
 	//! \todo add cube map support and 3d-texture support
@@ -203,18 +204,33 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 		case GL_TEXTURE_2D: {
 			if(format.compressed) {
 				glCompressedTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLenum>(format.glInternalFormat),
-										static_cast<GLsizei>(getWidth()), 
+										static_cast<GLsizei>(getWidth()),
 										static_cast<GLsizei>(getHeight()), 0,
-										static_cast<GLsizei>(format.compressedImageSize), 
+										static_cast<GLsizei>(format.compressedImageSize),
 										getLocalData());
 			}else{
 				glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLenum>(format.glInternalFormat),
-										static_cast<GLsizei>(getWidth()), 
+										static_cast<GLsizei>(getWidth()),
 										static_cast<GLsizei>(getHeight()), 0,
 										format.glFormat, format.glDataType, getLocalData());
 			}
 			break;
 		}
+		case GL_TEXTURE_CUBE_MAP:{
+		    Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
+		    if(pa){
+                for(uint_fast8_t layer =0; layer < 6; layer++){
+                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, layer, static_cast<GLenum>(format.glInternalFormat),
+                                static_cast<GLsizei>(getWidth()),
+                                static_cast<GLsizei>(getHeight() / 6), 0,
+                                format.glFormat, format.glDataType, pa.get()->_ptr<uint8_t>(0, getHeight() * layer/ 6));
+                }
+		    }
+		    else
+                std::cout< "No PixelAccessor";
+            break;
+		}
+
 		default:{
 			context.popTexture(0);
 			glActiveTexture(activeTexture);
@@ -371,19 +387,23 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 		allocateLocalData();
 
 	context.pushAndSetTexture(0,this);
-//	GL_TEXTURE_CUBE_MAP_POSITIVE_X
 	switch( format.glTextureType ){
 		case GL_TEXTURE_1D:
 		case GL_TEXTURE_2D:
 			glGetTexImage(format.glTextureType, 0, format.glFormat, format.glDataType, getLocalData());
 			break;
-//		case GL_TEXTURE_CUBE_MAP:
-//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
-//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
-//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
-//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
-//			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face, 0, format.glFormat, format.glDataType, getLocalData(subImage));
-//			break;
+		case GL_TEXTURE_CUBE_MAP:{
+		    Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
+		    if(pa){
+                for(uint_fast8_t layer =0; layer < 6; layer++){
+                    glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, layer, format.glFormat,
+                                format.glDataType, pa.get()->_ptr<uint8_t>(0, getHeight() * layer/ 6));
+                }
+		    }
+		    else
+                std::cout<"No PixelAccessor";
+            break;
+		}
 		default:
 			throw std::runtime_error("Texture::downloadGLTexture: unsupported texture type.");
 	}

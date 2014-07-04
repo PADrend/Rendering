@@ -3,9 +3,9 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	
+
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
+	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "TextureUtils.h"
@@ -41,6 +41,20 @@
 
 namespace Rendering {
 namespace TextureUtils {
+
+/*! (static) Factory */
+Texture * createStdCubeTexture(uint32_t width, uint32_t height, bool alpha) {
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_CUBE_MAP;
+	format.sizeX = width;
+	format.sizeY = height;
+	format.numLayers = 6;
+	format.glFormat = alpha ? GL_RGBA : GL_RGB;
+	format.glDataType = GL_UNSIGNED_BYTE;
+	format.glInternalFormat=alpha ? GL_RGBA : GL_RGB;
+
+	return new Texture(format);
+}
 
 /*! (static) Factory */
 Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha) {
@@ -100,7 +114,7 @@ Texture * createTextureDataArray_Vec4(const uint32_t size) {
 	format.glInternalFormat = GL_RGBA32F_ARB;
 	format.glWrapS = GL_CLAMP;
 	format.glWrapT = GL_CLAMP;
-	
+
 	return new Texture(format);
 #else
 	return nullptr;
@@ -108,6 +122,17 @@ Texture * createTextureDataArray_Vec4(const uint32_t size) {
 }
 
 #ifdef LIB_GL
+/*! (static) Factory */
+Texture * createHDRCubeTexture(uint32_t width, uint32_t height, bool alpha) {
+    Texture::Format format;
+	format.glTextureType=GL_TEXTURE_CUBE_MAP;
+	format.sizeX = width;
+	format.sizeY = height * 6;
+	format.glFormat = alpha ? GL_RGBA : GL_RGB;
+	format.glDataType = GL_FLOAT;
+	format.glInternalFormat = alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
+	return new Texture(format);
+}
 /*! (static) Factory */
 Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha) {
 	Texture::Format format;
@@ -190,6 +215,62 @@ Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powO
 	}
 	t->dataChanged();
 	return t;
+}
+
+Util::Reference<Texture> createCubeTextureFromBitmap(const Util::Bitmap & bitmap) {
+	const uint32_t bitmapHeight = bitmap.getHeight();
+	const uint32_t width = bitmap.getWidth();
+    if (bitmapHeight % 6 != 0){
+        WARN("createCubeTextureFromBitmap: Bitmap has not a divisible height by 6.");
+		return nullptr;
+    }
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_CUBE_MAP;
+	format.glDataType = GL_UNSIGNED_BYTE;
+	format.sizeY = bitmapHeight / 6;
+	format.numLayers = 6;
+	format.sizeX = width;
+
+	const Util::PixelFormat & pixelFormat = bitmap.getPixelFormat();
+	if(pixelFormat==Util::PixelFormat::RGBA){
+		format.glFormat = GL_RGBA;
+		format.glInternalFormat = GL_RGBA;
+	}else if(pixelFormat==Util::PixelFormat::RGB){
+		format.glFormat = GL_RGB;
+		format.glInternalFormat = GL_RGB;
+#ifdef LIB_GL
+	}else if(pixelFormat==Util::PixelFormat::BGRA){
+		format.glFormat = GL_BGRA;
+		format.glInternalFormat = GL_RGBA;
+	}else if(pixelFormat==Util::PixelFormat::BGR){
+		format.glFormat = GL_BGR;
+		format.glInternalFormat = GL_RGB;
+	}else if(pixelFormat==Util::PixelFormat::MONO){
+		format.glFormat = GL_RED;
+		format.glInternalFormat = GL_RED;
+#endif /* LIB_GL */
+	}else{
+		WARN("createCubeTextureFromBitmap: Bitmap has unimplemented color format.");
+		return nullptr;
+	}
+
+	Util::Reference<Texture> texture = new Texture(format);
+	texture->allocateLocalData();
+	const uint8_t * pixels = bitmap.data();
+
+	// Flip the rows.
+	const uint32_t rowSize = width * pixelFormat.getBytesPerPixel();
+	for(uint_fast8_t layer =0; layer < 6; layer++){
+       for (uint_fast16_t row = bitmapHeight * layer / 6; row < bitmapHeight * (layer+1) / 6; ++row) {
+            const uint32_t offset = row * rowSize;
+            const uint16_t reverseRow = (bitmapHeight * (layer+1) / 6) - 1 - row;
+            const uint32_t reverseOffset = reverseRow * rowSize;
+            std::copy(pixels + reverseOffset, pixels + reverseOffset + rowSize, texture->getLocalData() + offset);
+        }
+
+	}
+	texture->dataChanged();
+	return texture;
 }
 
 Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool clampToEdge) {
@@ -570,7 +651,7 @@ Util::Reference<Util::PixelAccessor> createColorPixelAccessor(RenderingContext &
 Util::Reference<Util::PixelAccessor> createDepthPixelAccessor(RenderingContext & context, Texture * texture) {
 	class DepthAccessor : public Util::PixelAccessor {
 		public:
-			DepthAccessor(Util::Reference<Util::Bitmap> bitmap) : 
+			DepthAccessor(Util::Reference<Util::Bitmap> bitmap) :
 				Util::PixelAccessor(std::move(bitmap)) {
 			}
 			virtual ~DepthAccessor(){
@@ -630,7 +711,7 @@ Util::Reference<Util::PixelAccessor> createDepthPixelAccessor(RenderingContext &
 Util::Reference<Util::PixelAccessor> createStencilPixelAccessor(RenderingContext & context, Texture * texture) {
 	class StencilAccessor : public Util::PixelAccessor {
 		public:
-			StencilAccessor(Util::Reference<Util::Bitmap> bitmap) : 
+			StencilAccessor(Util::Reference<Util::Bitmap> bitmap) :
 				Util::PixelAccessor(std::move(bitmap)) {
 			}
 			virtual ~StencilAccessor(){

@@ -3,15 +3,16 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	
+
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
+	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #ifndef RENDERING_SERIALIZATION_H
 #define RENDERING_SERIALIZATION_H
 
 #include "../Mesh/Mesh.h"
+#include "../Texture/Texture.h"
 #include <Util/StringIdentifier.h>
 #include <ostream>
 #include <string>
@@ -25,7 +26,6 @@ template<class ObjType> class ReferenceAttribute;
 
 namespace Rendering {
 class RenderingContext;
-class Texture;
 
 /**
  * @brief %Serialization functions for objects (meshes, textures etc.)
@@ -105,7 +105,7 @@ bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output)
  * @param file Address to the file containing the texture data
  * @return A single texture
  */
-Texture * loadTexture(const Util::FileName & url);
+Texture * loadTexture(const Util::FileName & url,  const Texture::TextureType &tType  = Texture::TextureType::TEXTURE_2D, const std::uint8_t layerNum = 1);
 
 /**
  * Create a single texture from the given data.

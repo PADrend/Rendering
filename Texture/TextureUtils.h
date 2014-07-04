@@ -3,9 +3,9 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	
+
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
+	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #ifndef RENDERING_TEXTUREUTILS_H
@@ -36,6 +36,8 @@ namespace TextureUtils {
 
 const unsigned int RAW_16BIT_BW = 0;
 
+Texture * createStdCubeTexture(uint32_t width, uint32_t height, bool alpha);
+Texture * createHDRCubeTexture(uint32_t width, uint32_t height, bool alpha);
 Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha);
 Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, float scaling = 1.0f);
 Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha);
@@ -43,11 +45,12 @@ Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte = false
 Texture * createDepthStencilTexture(uint32_t width, uint32_t height);
 Texture * createDepthTexture(uint32_t width, uint32_t height);
 
-// creates an vec4 data array as textures for handling big arrays inside shaders. See SkeletalAnimationUtils for generic accessor. 
+// creates an vec4 data array as textures for handling big arrays inside shaders. See SkeletalAnimationUtils for generic accessor.
 Texture * createTextureDataArray_Vec4(const uint32_t size);
 
 Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo=8);
 Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool clampToEdge = false);
+Util::Reference<Texture> createCubeTextureFromBitmap(const Util::Bitmap & bitmap);
 Texture * createTextureFromRAW(const Util::FileName & filename,unsigned int type=RAW_16BIT_BW, bool flip_h = true);
 Texture * createTextureFromScreen(int xpos, int ypos, const Texture::Format & format);
 Texture * createTextureFromScreen(int xpos=0, int ypos=0, int width=-1, int height=-1,bool useAlpha = true);
