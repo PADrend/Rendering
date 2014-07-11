@@ -12,7 +12,7 @@
 #define RENDERING_SERIALIZATION_H
 
 #include "../Mesh/Mesh.h"
-#include "../Texture/Texture.h"
+#include "../Texture/TextureType.h"
 #include <Util/StringIdentifier.h>
 #include <ostream>
 #include <string>
@@ -26,6 +26,7 @@ template<class ObjType> class ReferenceAttribute;
 
 namespace Rendering {
 class RenderingContext;
+class Texture;
 
 /**
  * @brief %Serialization functions for objects (meshes, textures etc.)
@@ -105,7 +106,7 @@ bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output)
  * @param file Address to the file containing the texture data
  * @return A single texture
  */
-Texture * loadTexture(const Util::FileName & url,  const Texture::TextureType &tType  = Texture::TextureType::TEXTURE_2D, const std::uint8_t layerNum = 1);
+Util::Reference<Texture> loadTexture(const Util::FileName & url,  TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1);
 
 /**
  * Create a single texture from the given data.
@@ -115,7 +116,7 @@ Texture * loadTexture(const Util::FileName & url,  const Texture::TextureType &t
  * @param data Texture data
  * @return A single texture
  */
-Texture * loadTexture(const std::string & extension, const std::string & data);
+Util::Reference<Texture> loadTexture(const std::string & extension, const std::string & data, TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1);
 
 /**
  * Write a single texture to the given address.

@@ -43,11 +43,11 @@ namespace Rendering {
 namespace TextureUtils {
 
 /*! (static) Factory */
-Texture * createStdCubeTexture(uint32_t width, uint32_t height, bool alpha) {
+Texture * createStdCubeTexture(uint32_t width, bool alpha) {
 	Texture::Format format;
 	format.glTextureType = GL_TEXTURE_CUBE_MAP;
 	format.sizeX = width;
-	format.sizeY = height;
+	format.sizeY = width;
 	format.numLayers = 6;
 	format.glFormat = alpha ? GL_RGBA : GL_RGB;
 	format.glDataType = GL_UNSIGNED_BYTE;
@@ -123,11 +123,12 @@ Texture * createTextureDataArray_Vec4(const uint32_t size) {
 
 #ifdef LIB_GL
 /*! (static) Factory */
-Texture * createHDRCubeTexture(uint32_t width, uint32_t height, bool alpha) {
+Texture * createHDRCubeTexture(uint32_t width, bool alpha) {
     Texture::Format format;
 	format.glTextureType=GL_TEXTURE_CUBE_MAP;
 	format.sizeX = width;
-	format.sizeY = height * 6;
+	format.sizeY = width;
+	format.numLayers = 6;
 	format.glFormat = alpha ? GL_RGBA : GL_RGB;
 	format.glDataType = GL_FLOAT;
 	format.glInternalFormat = alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
@@ -217,71 +218,54 @@ Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powO
 	return t;
 }
 
-Util::Reference<Texture> createCubeTextureFromBitmap(const Util::Bitmap & bitmap) {
-	const uint32_t bitmapHeight = bitmap.getHeight();
-	const uint32_t width = bitmap.getWidth();
-    if (bitmapHeight % 6 != 0){
-        WARN("createCubeTextureFromBitmap: Bitmap has not a divisible height by 6.");
-		return nullptr;
-    }
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_CUBE_MAP;
-	format.glDataType = GL_UNSIGNED_BYTE;
-	format.sizeY = bitmapHeight / 6;
-	format.numLayers = 6;
-	format.sizeX = width;
-
-	const Util::PixelFormat & pixelFormat = bitmap.getPixelFormat();
-	if(pixelFormat==Util::PixelFormat::RGBA){
-		format.glFormat = GL_RGBA;
-		format.glInternalFormat = GL_RGBA;
-	}else if(pixelFormat==Util::PixelFormat::RGB){
-		format.glFormat = GL_RGB;
-		format.glInternalFormat = GL_RGB;
-#ifdef LIB_GL
-	}else if(pixelFormat==Util::PixelFormat::BGRA){
-		format.glFormat = GL_BGRA;
-		format.glInternalFormat = GL_RGBA;
-	}else if(pixelFormat==Util::PixelFormat::BGR){
-		format.glFormat = GL_BGR;
-		format.glInternalFormat = GL_RGB;
-	}else if(pixelFormat==Util::PixelFormat::MONO){
-		format.glFormat = GL_RED;
-		format.glInternalFormat = GL_RED;
-#endif /* LIB_GL */
-	}else{
-		WARN("createCubeTextureFromBitmap: Bitmap has unimplemented color format.");
-		return nullptr;
-	}
-
-	Util::Reference<Texture> texture = new Texture(format);
-	texture->allocateLocalData();
-	const uint8_t * pixels = bitmap.data();
-
-	// Flip the rows.
-	const uint32_t rowSize = width * pixelFormat.getBytesPerPixel();
-	for(uint_fast8_t layer =0; layer < 6; layer++){
-       for (uint_fast16_t row = bitmapHeight * layer / 6; row < bitmapHeight * (layer+1) / 6; ++row) {
-            const uint32_t offset = row * rowSize;
-            const uint16_t reverseRow = (bitmapHeight * (layer+1) / 6) - 1 - row;
-            const uint32_t reverseOffset = reverseRow * rowSize;
-            std::copy(pixels + reverseOffset, pixels + reverseOffset + rowSize, texture->getLocalData() + offset);
-        }
-
-	}
-	texture->dataChanged();
-	return texture;
-}
-
-Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool clampToEdge) {
-	const uint32_t height = bitmap.getHeight();
+Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, TextureType type, uint32_t numLayers, bool clampToEdge){
+	const uint32_t bHeight = bitmap.getHeight();
 	const uint32_t width = bitmap.getWidth();
 
 	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_2D;
-	format.glDataType = GL_UNSIGNED_BYTE;
-	format.sizeY = height;
+	
+	if( bitmap.getPixelFormat().getBytesPerComponent() == 1){
+		format.glDataType = GL_UNSIGNED_BYTE;
+	}else if( bitmap.getPixelFormat().getBytesPerComponent() == 4){
+		format.glDataType = GL_FLOAT;
+	}else {
+		WARN("createTextureFromBitmap: Bitmap has unimplemented data type.");
+		return nullptr;
+	}
+	if( numLayers==0 || numLayers>bHeight || (bHeight%numLayers) != 0){
+		WARN("createTextureFromBitmap: Bitmap height is not dividable into given number of layers.");
+		return nullptr;
+	}
+	
+	switch(type){
+	case TextureType::TEXTURE_1D:
+		format.glTextureType = GL_TEXTURE_1D;
+		break;
+	case TextureType::TEXTURE_1D_ARRAY:
+		format.glTextureType = GL_TEXTURE_1D_ARRAY;
+		break;
+	case TextureType::TEXTURE_2D:
+		format.glTextureType = GL_TEXTURE_2D;
+		break;
+	case TextureType::TEXTURE_2D_ARRAY:
+		format.glTextureType = GL_TEXTURE_2D_ARRAY;
+		break;
+	case TextureType::TEXTURE_3D:
+		format.glTextureType = GL_TEXTURE_3D;
+		break;
+	case TextureType::TEXTURE_CUBE_MAP:
+		format.glTextureType = GL_TEXTURE_CUBE_MAP;
+		break;
+	case TextureType::TEXTURE_CUBE_MAP_ARRAY:
+		format.glTextureType = GL_TEXTURE_CUBE_MAP_ARRAY;
+		break;
+	default:
+		throw std::logic_error("createTextureFromBitmap: Invalid type.");
+	}
+	
+	format.sizeY = bHeight / numLayers;
 	format.sizeX = width;
+	format.numLayers = numLayers;
 
 	const Util::PixelFormat & pixelFormat = bitmap.getPixelFormat();
 	if(pixelFormat==Util::PixelFormat::RGBA){
@@ -312,15 +296,15 @@ Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool clampToEdge)
 		format.glWrapR = GL_CLAMP_TO_EDGE;
 	}
 
-	auto texture = new Texture(format);
+	Util::Reference<Texture> texture = new Texture(format);
 	texture->allocateLocalData();
 	const uint8_t * pixels = bitmap.data();
 
 	// Flip the rows.
 	const uint32_t rowSize = width * pixelFormat.getBytesPerPixel();
-	for (uint_fast16_t row = 0; row < height; ++row) {
+	for (uint_fast16_t row = 0; row < bHeight; ++row) {
 		const uint32_t offset = row * rowSize;
-		const uint16_t reverseRow = height - 1 - row;
+		const uint16_t reverseRow = bHeight - 1 - row;
 		const uint32_t reverseOffset = reverseRow * rowSize;
 		std::copy(pixels + reverseOffset, pixels + reverseOffset + rowSize, texture->getLocalData() + offset);
 	}

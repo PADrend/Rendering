@@ -26,7 +26,12 @@ inline static uint16_t convertBigEndianTwoBytes(const uint8_t bytes[2]) {
 	return number;
 }
 
-Texture * StreamerPKM::loadTexture(std::istream & input) {
+Util::Reference<Texture> StreamerPKM::loadTexture(std::istream & input, TextureType type, uint32_t numLayers){
+	if(type!=TextureType::TEXTURE_2D || numLayers!=1){
+		WARN("StreamerPKM: Only single layered 2d textures are supported!");
+		return nullptr;
+	}
+	
 	struct PKMHeader {
 		uint8_t magic[4];
 		uint8_t version[2];
@@ -73,7 +78,7 @@ Texture * StreamerPKM::loadTexture(std::istream & input) {
 	texture->allocateLocalData();
 	input.read(reinterpret_cast<char *>(texture->getLocalData()), format.compressedImageSize);
 
-	return texture.detachAndDecrease();
+	return texture;
 }
 
 uint8_t StreamerPKM::queryCapabilities(const std::string & extension) {

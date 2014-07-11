@@ -15,6 +15,7 @@
 #include <Util/References.h>
 #include <Util/IO/FileName.h>
 #include <cstdint>
+#include "TextureType.h"
 
 namespace Util {
 class Bitmap;
@@ -45,21 +46,7 @@ class RenderingContext;
  ** \note the coordinates are different to the ones used in Util::Bitmap
  **/
 class Texture: public Util::ReferenceCounter<Texture>	{
-
 	public:
-		
-		/*! A Texture's type. (Corresponds to 'glTextureType', but the actual value is independent from OpenGL.
-			\note Value assignment must never change! (they may be used for serialization)
-		*/
-		enum class TextureType : std::uint8_t{
-			TEXTURE_1D = 0,
-			TEXTURE_1D_ARRAY = 1,
-			TEXTURE_2D = 2,
-			TEXTURE_2D_ARRAY = 3,
-			TEXTURE_3D = 4,
-			TEXTURE_CUBE_MAP = 5,
-			TEXTURE_CUBE_MAP_ARRAY = 6
-		};
 		
 		/***
 		 ** Texture::Format

@@ -12,15 +12,16 @@
 #define RENDERING_ABSTRACTRENDERINGSTREAMER_H_
 
 #include <Util/Serialization/AbstractStreamer.h>
+#include <Util/References.h>
 #include <Util/Macros.h>
 #include <istream>
 #include <ostream>
 #include <cstdint>
 #include <string>
+#include "../Texture/Texture.h"
 
 namespace Rendering {
 class Mesh;
-class Texture;
 
 /**
  * Interface for classes that are capable of converting between meshes and streams, or textures and streams.
@@ -63,7 +64,7 @@ class AbstractRenderingStreamer : public Util::AbstractStreamer {
 		 * @param input Use the data from the stream beginning at the preset position.
 		 * @return Texture object. The caller is responsible for the memory deallocation.
 		 */
-		virtual Texture * loadTexture(std::istream & /*input*/) {
+		virtual Util::Reference<Texture> loadTexture(std::istream & /*input*/, TextureType, uint32_t /*numLayers*/) {
 			WARN("Unsupported call for loading a single texture.");
 			return nullptr;
 		}

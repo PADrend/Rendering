@@ -36,8 +36,8 @@ namespace TextureUtils {
 
 const unsigned int RAW_16BIT_BW = 0;
 
-Texture * createStdCubeTexture(uint32_t width, uint32_t height, bool alpha);
-Texture * createHDRCubeTexture(uint32_t width, uint32_t height, bool alpha);
+Texture * createStdCubeTexture(uint32_t width, bool alpha);
+Texture * createHDRCubeTexture(uint32_t width, bool alpha);
 Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha);
 Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha, float scaling = 1.0f);
 Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha);
@@ -49,8 +49,16 @@ Texture * createDepthTexture(uint32_t width, uint32_t height);
 Texture * createTextureDataArray_Vec4(const uint32_t size);
 
 Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo=8);
-Texture * createTextureFromBitmap(const Util::Bitmap & bitmap, bool clampToEdge = false);
-Util::Reference<Texture> createCubeTextureFromBitmap(const Util::Bitmap & bitmap);
+
+
+/*! Create a texture of the given @p textureType from the given @p bitmap.
+	- For textureType TEXTURE_1D and TEXTURE_2D, numLayers must be 1.
+	- For textureType TEXTURE_CUBE_MAP, numLayers must be 6.
+	- For textureType TEXTURE_CUBE_MAP_ARRAY, numLayers must be a multiple of 6.
+	
+*/
+Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, TextureType type = TextureType::TEXTURE_2D, uint32_t numLayers=1, bool clampToEdge = false);
+//Util::Reference<Texture> createCubeTextureFromBitmap(const Util::Bitmap & bitmap);
 Texture * createTextureFromRAW(const Util::FileName & filename,unsigned int type=RAW_16BIT_BW, bool flip_h = true);
 Texture * createTextureFromScreen(int xpos, int ypos, const Texture::Format & format);
 Texture * createTextureFromScreen(int xpos=0, int ypos=0, int width=-1, int height=-1,bool useAlpha = true);

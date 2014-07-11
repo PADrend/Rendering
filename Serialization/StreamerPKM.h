@@ -31,8 +31,8 @@ class StreamerPKM : public AbstractRenderingStreamer {
 		virtual ~StreamerPKM() {
 		}
 
-		Texture * loadTexture(std::istream & input) override;
-
+		Util::Reference<Texture> loadTexture(std::istream & /*input*/, TextureType, uint32_t /*numLayers*/) override;
+		
 		static uint8_t queryCapabilities(const std::string & extension);
 		static const char * const fileExtension;
 };

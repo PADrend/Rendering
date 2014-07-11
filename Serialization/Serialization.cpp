@@ -54,23 +54,23 @@ const Util::StringIdentifier DESCRIPTION_MATERIAL_SHININESS("shininess");
 static AbstractRenderingStreamer * createStreamer(const std::string & extension, uint8_t capability) {
 	std::string lowerExtension(extension);
 	std::transform(extension.begin(), extension.end(), lowerExtension.begin(), ::tolower);
-	if (StreamerMD2::queryCapabilities(lowerExtension) & capability) {
+	if(StreamerMD2::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerMD2;
-	} else if (StreamerMMF::queryCapabilities(lowerExtension) & capability) {
+	} else if(StreamerMMF::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerMMF;
-	} else if (StreamerMTL::queryCapabilities(lowerExtension) & capability) {
+	} else if(StreamerMTL::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerMTL;
-	} else if (StreamerMVBO::queryCapabilities(lowerExtension) & capability) {
+	} else if(StreamerMVBO::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerMVBO;
-	} else if (StreamerNGC::queryCapabilities(lowerExtension) & capability) {
+	} else if(StreamerNGC::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerNGC;
-	} else if (StreamerOBJ::queryCapabilities(lowerExtension) & capability) {
+	} else if(StreamerOBJ::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerOBJ;
-	} else if (StreamerPKM::queryCapabilities(lowerExtension) & capability) {
+	} else if(StreamerPKM::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerPKM;
-	} else if (StreamerPLY::queryCapabilities(lowerExtension) & capability) {
+	} else if(StreamerPLY::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerPLY;
-	} else if (StreamerXYZ::queryCapabilities(lowerExtension) & capability) {
+	} else if(StreamerXYZ::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerXYZ;
 	} else {
 		return nullptr;
@@ -79,7 +79,7 @@ static AbstractRenderingStreamer * createStreamer(const std::string & extension,
 
 Mesh * loadMesh(const Util::FileName & url) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_LOAD_MESH));
-	if (loader.get() == nullptr) {
+	if(loader.get() == nullptr) {
 		WARN("Unsupported file extension \"" + url.getEnding() + "\".");
 		return nullptr;
 	}
@@ -97,7 +97,7 @@ Mesh * loadMesh(const Util::FileName & url) {
 
 Mesh * loadMesh(const std::string & extension, const std::string & data) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(extension, AbstractRenderingStreamer::CAP_LOAD_MESH));
-	if (loader.get() == nullptr) {
+	if(loader.get() == nullptr) {
 		WARN("Unsupported file extension \"" + extension + "\".");
 		return nullptr;
 	}
@@ -107,7 +107,7 @@ Mesh * loadMesh(const std::string & extension, const std::string & data) {
 
 bool saveMesh(Mesh * mesh, const Util::FileName & url) {
 	std::unique_ptr<AbstractRenderingStreamer> saver(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_SAVE_MESH));
-	if (saver.get() == nullptr) {
+	if(saver.get() == nullptr) {
 		WARN("Unsupported file extension \"" + url.getEnding() + "\".");
 		return false;
 	}
@@ -116,7 +116,7 @@ bool saveMesh(Mesh * mesh, const Util::FileName & url) {
 		WARN("Error opening stream for writing. Path: " + url.toString());
 		return false;
 	}
-	if (!saver->saveMesh(mesh, *stream)) {
+	if(!saver->saveMesh(mesh, *stream)) {
 		WARN("Saving failed.");
 		return false;
 	}
@@ -125,70 +125,48 @@ bool saveMesh(Mesh * mesh, const Util::FileName & url) {
 
 bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output) {
 	std::unique_ptr<AbstractRenderingStreamer> saver(createStreamer(extension, AbstractRenderingStreamer::CAP_SAVE_MESH));
-	if (saver.get() == nullptr) {
+	if(saver.get() == nullptr) {
 		WARN("Unsupported file extension \"" + extension + "\".");
 		return false;
 	}
-	if (!saver->saveMesh(mesh, output)) {
+	if(!saver->saveMesh(mesh, output)) {
 		WARN("Saving failed.");
 		return false;
 	}
 	return true;
 }
 
-Texture * loadTexture(const Util::FileName & url, const Texture::TextureType &tType, const std::uint8_t layerNum) {
+Util::Reference<Texture> loadTexture(const Util::FileName & url, TextureType tType, uint32_t numLayers) {
+	Util::Reference<Texture> texture;
+	
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_LOAD_TEXTURE));
-
-	// Rendering streamer found?
-	if (loader.get() != nullptr) {
+	if( loader.get() ) {	// Rendering streamer found?
 		auto stream = Util::FileUtils::openForReading(url);
-		if(!stream) {
-			WARN("Error opening stream for reading. Path: " + url.toString());
-			return nullptr;
-		}
-		Util::Reference<Texture> texture = loader->loadTexture(*stream);
-		if(texture.isNotNull()) {
-			texture->setFileName(url);
-		}
-		return texture.detachAndDecrease();;
-	} else {
-		// Try Util::Serialization
+		if(stream) 
+			texture = loader->loadTexture(*stream,tType,numLayers);
+		else
+			WARN("loadTexture: Error opening stream for reading. Path: " + url.toString());
+	} else {	// Try Util::Serialization
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(url);
-		Util::Reference<Texture> texture;
-		if(bitmap.isNotNull()) {
-            switch(tType){
-                case Texture::TextureType::TEXTURE_2D:
-                    texture = TextureUtils::createTextureFromBitmap(*bitmap.get());
-                    break;
-                case Texture::TextureType::TEXTURE_CUBE_MAP:
-                    texture = TextureUtils::createCubeTextureFromBitmap(*bitmap.get());
-                    break;
-                default:
-                    WARN("Error loading texture (unsupported file extension \"" + url.getEnding() + "\", or invalid path).");
-                    return nullptr;
-            }
-			if(texture.isNotNull()) {
-				texture->setFileName(url);
-			}
-			return texture.detachAndDecrease();;
-		}
-
+		if(bitmap)
+			texture = TextureUtils::createTextureFromBitmap(*bitmap.get(), tType, numLayers);
 	}
+	if( texture ) 
+		texture->setFileName(url);
+	return texture;
 }
 
-Texture * loadTexture(const std::string & extension, const std::string & data) {
+Util::Reference<Texture> loadTexture(const std::string & extension, const std::string & data, TextureType tType, uint32_t numLayers) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(extension, AbstractRenderingStreamer::CAP_LOAD_TEXTURE));
 	// Rendering streamer found?
-	if (loader.get() != nullptr) {
+	if(loader.get() != nullptr) {
 		std::istringstream stream(data);
-		return loader->loadTexture(stream);
+		return loader->loadTexture(stream,tType,numLayers);
 	} else {
 		// Try Util::Serialization.
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(extension, data);
-		if(bitmap.isNotNull()) {
-			return TextureUtils::createTextureFromBitmap(*bitmap.get());
-		}
-
+		if(bitmap) 
+			return TextureUtils::createTextureFromBitmap(*bitmap.get(), tType, numLayers);
 		WARN("Unsupported file extension \"" + extension + "\".");
 		return nullptr;
 	}
@@ -200,13 +178,13 @@ bool saveTexture(RenderingContext & context,Texture * texture, const Util::FileN
 		return false;
 	}
 	std::unique_ptr<AbstractRenderingStreamer> saver(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_SAVE_TEXTURE));
-	if (saver.get() != nullptr){
+	if(saver.get() != nullptr){
 		auto stream = Util::FileUtils::openForWriting(url);
 		if(!stream) {
 			WARN("Error opening stream for writing. Path: " + url.toString());
 			return false;
 		}
-		if (!saver->saveTexture(texture, *stream)) {
+		if(!saver->saveTexture(texture, *stream)) {
 			WARN("Saving failed.");
 			return false;
 		}
@@ -231,8 +209,8 @@ bool saveTexture(RenderingContext & context,Texture * texture, const Util::FileN
 
 bool saveTexture(RenderingContext &context,Texture * texture, const std::string & extension, std::ostream & output) {
 	std::unique_ptr<AbstractRenderingStreamer> saver(createStreamer(extension, AbstractRenderingStreamer::CAP_SAVE_TEXTURE));
-	if (saver.get() != nullptr){
-		if (!saver->saveTexture(texture, output)) {
+	if(saver.get() != nullptr){
+		if(!saver->saveTexture(texture, output)) {
 			WARN("Saving failed.");
 			return false;
 		}
@@ -257,7 +235,7 @@ bool saveTexture(RenderingContext &context,Texture * texture, const std::string 
 
 Util::GenericAttributeList * loadGeneric(const Util::FileName & url) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_LOAD_GENERIC));
-	if (loader.get() == nullptr) {
+	if(loader.get() == nullptr) {
 		WARN("Unsupported file extension \"" + url.getEnding() + "\".");
 		return nullptr;
 	}
@@ -278,7 +256,7 @@ Util::GenericAttributeList * loadGeneric(const Util::FileName & url) {
 
 Util::GenericAttributeList * loadGeneric(const std::string & extension, const std::string & data) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(extension, AbstractRenderingStreamer::CAP_LOAD_GENERIC));
-	if (loader.get() == nullptr) {
+	if(loader.get() == nullptr) {
 		WARN("Unsupported file extension \"" + extension + "\".");
 		return nullptr;
 	}
@@ -288,7 +266,7 @@ Util::GenericAttributeList * loadGeneric(const std::string & extension, const st
 }
 
 Util::GenericAttributeMap * createMeshDescription(Mesh * m) {
-	if (m == nullptr) {
+	if(m == nullptr) {
 		return nullptr;
 	}
 	auto d = new Util::GenericAttributeMap;

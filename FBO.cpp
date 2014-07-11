@@ -72,19 +72,19 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 #if defined(LIB_GL)
 
 		switch( texture->getTextureType() ){
-			case Texture::TextureType::TEXTURE_1D:
+			case TextureType::TEXTURE_1D:
 				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_EXT_framebuffer_object
 				break;
-			case Texture::TextureType::TEXTURE_2D:
+			case TextureType::TEXTURE_2D:
 				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_EXT_framebuffer_object
 				break;
-			case Texture::TextureType::TEXTURE_CUBE_MAP:
+			case TextureType::TEXTURE_CUBE_MAP:
 				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, GL_TEXTURE_CUBE_MAP_POSITIVE_X+layer, 	textureId, level);	// GL_EXT_framebuffer_object
 				break;
-			case Texture::TextureType::TEXTURE_1D_ARRAY:
-			case Texture::TextureType::TEXTURE_2D_ARRAY:
-			case Texture::TextureType::TEXTURE_3D:
-			case Texture::TextureType::TEXTURE_CUBE_MAP_ARRAY:{
+			case TextureType::TEXTURE_1D_ARRAY:
+			case TextureType::TEXTURE_2D_ARRAY:
+			case TextureType::TEXTURE_3D:
+			case TextureType::TEXTURE_CUBE_MAP_ARRAY:{
 				static const bool featureAvailable = isExtensionSupported("GL_ARB_framebuffer_object");	
 				if(!featureAvailable)
 					throw std::invalid_argument("FBO::attachTexture: texture type is not supported by your OpenGL version.");
