@@ -65,20 +65,22 @@ void BufferObject::unbind(uint32_t bufferTarget) const {
 	glBindBuffer(bufferTarget, 0);
 }
 
-template<typename T>
-void BufferObject::allocateData(uint32_t bufferTarget, std::size_t numberOfElements, uint32_t usageHint) {
+void BufferObject::uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint){
 	prepare();
 	bind(bufferTarget);
-	glBufferData(bufferTarget, static_cast<GLsizeiptr>(numberOfElements * sizeof(T)), nullptr, usageHint);
+	glBufferData(bufferTarget, static_cast<GLsizeiptr>(numBytes), data, usageHint);
 	unbind(bufferTarget);
+
+}
+
+template<typename T>
+void BufferObject::allocateData(uint32_t bufferTarget, std::size_t numberOfElements, uint32_t usageHint) {
+	uploadData(bufferTarget, nullptr, static_cast<GLsizeiptr>(numberOfElements * sizeof(T)), usageHint);
 }
 
 template<typename T>
 void BufferObject::uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint) {
-	prepare();
-	bind(bufferTarget);
-	glBufferData(bufferTarget, static_cast<GLsizeiptr>(data.size() * sizeof(T)), data.data(), usageHint);
-	unbind(bufferTarget);
+	uploadData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),static_cast<GLsizeiptr>(data.size() * sizeof(T)),usageHint);
 }
 
 #if defined(LIB_GL)

@@ -82,6 +82,7 @@ class BufferObject {
 		 */
 		template<typename T>
 		void uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint);
+		void uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint);
 
 		/**
 		 * @brief Retrieve data from the buffer object
@@ -97,6 +98,7 @@ class BufferObject {
 		bool isValid() const {
 			return bufferId != 0;
 		}
+		uint32_t getGLId()const{	return bufferId;	}
 };
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
