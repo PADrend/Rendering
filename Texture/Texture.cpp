@@ -10,6 +10,7 @@
 */
 #include "Texture.h"
 #include "../GLHeader.h"
+#include "../BufferObject.h"
 #include "../Helper.h"
 #include "../RenderingContext/RenderingContext.h"
 #include <Util/Graphics/Bitmap.h>
@@ -74,8 +75,8 @@ Texture::Texture(Format _format):
 	switch(format.glTextureType){
 		case GL_TEXTURE_1D:
 			tType = TextureType::TEXTURE_1D;
-			if(format.numLayers!=1)
-				throw std::logic_error("Texture: TEXTURE_1D expects numLayers == 1.");
+			if(format.numLayers!=1 || format.sizeY!=1 )
+				throw std::logic_error("Texture: TEXTURE_1D expects numLayers == 1 && sizeY == 1.");
 			break;
 		case GL_TEXTURE_1D_ARRAY:
 			tType = TextureType::TEXTURE_1D_ARRAY;
@@ -101,6 +102,13 @@ Texture::Texture(Format _format):
 			if( (format.numLayers%6) !=0)
 				throw std::logic_error("Texture: TEXTURE_CUBE_MAP expects (numLayers%6) == 0.");
 			break;
+		case GL_TEXTURE_BUFFER:
+			if( format.numLayers != 1 || format.sizeY!=1)
+				throw std::logic_error("Texture: TEXTURE_BUFFER expects numLayers == 1 && sizeY == 1.");
+			tType = TextureType::TEXTURE_BUFFER;
+			bufferObject.reset( new BufferObject );
+			break;
+
 		default:
 			throw std::runtime_error("Texture: Unsupported texture type.");
 	}
@@ -135,7 +143,7 @@ void Texture::_createGLID(RenderingContext & context){
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(format.glTextureType,glId);
-
+	
 	GET_GL_ERROR();
 	// set parameters
 	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_S,format.glWrapS);
@@ -197,19 +205,18 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(format.glTextureType,glId);
 
-
-	switch (format.glTextureType) {
+	switch(tType) {
 #ifdef LIB_GL
 	//! \todo add cube map support and 3d-texture support
 
-		case GL_TEXTURE_1D: {
+		case TextureType::TEXTURE_1D: {
 			glTexImage1D(GL_TEXTURE_1D, 0, static_cast<GLint>(format.glInternalFormat),
 					static_cast<GLsizei>(getWidth()), 0, static_cast<GLenum>(format.glFormat),
 					static_cast<GLenum>(format.glDataType), getLocalData());
 			break;
 		}
 #endif
-		case GL_TEXTURE_2D: {
+		case TextureType::TEXTURE_2D: {
 			if(format.compressed) {
 				glCompressedTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format.glInternalFormat),
 										static_cast<GLsizei>(getWidth()),
@@ -225,7 +232,7 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 			}
 			break;
 		}
-		case GL_TEXTURE_CUBE_MAP:{
+		case TextureType::TEXTURE_CUBE_MAP:{
 			Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
 			if(pa){ // local data available?
 				for(uint_fast8_t layer =0; layer < 6; layer++){
@@ -247,11 +254,21 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 			}
 			break;
 		}
-
+		case  TextureType::TEXTURE_BUFFER:{
+			if( getLocalBitmap() ){ // there is a local bitmap?
+				bufferObject->uploadData(GL_TEXTURE_BUFFER,  getLocalBitmap()->data(),getLocalBitmap()->getDataSize(), GL_STATIC_DRAW );
+			} // else nothing to upload -> the buffer contains the data
+			break;
+		
+		}
+		case  TextureType::TEXTURE_1D_ARRAY:
+		case  TextureType::TEXTURE_2D_ARRAY:
+		case  TextureType::TEXTURE_3D:
+		case  TextureType::TEXTURE_CUBE_MAP_ARRAY:
 		default:{
 			context.popTexture(0);
 			glActiveTexture(activeTexture);
-			throw std::runtime_error("Texture::_uploadGLTexture: unsupported texture type.");
+			throw std::runtime_error("Texture::_uploadGLTexture: (currently) unsupported texture type.");
 		}
 	}
 	GET_GL_ERROR();
@@ -395,7 +412,7 @@ void Texture::removeGLData(){
 void Texture::downloadGLTexture(RenderingContext & context) {
 #ifdef LIB_GL
 	if(!glId){
-		WARN("No glTexture available.");
+		WARN("downloadGLTexture: No glTexture available.");
 		return;
 	}
 	dataHasChanged = false;
@@ -404,12 +421,12 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 		allocateLocalData();
 
 	context.pushAndSetTexture(0,this);
-	switch( format.glTextureType ){
-		case GL_TEXTURE_1D:
-		case GL_TEXTURE_2D:
+	switch( tType ){
+		case  TextureType::TEXTURE_1D:
+		case  TextureType::TEXTURE_2D:
 			glGetTexImage(format.glTextureType, 0, format.glFormat, format.glDataType, getLocalData());
 			break;
-		case GL_TEXTURE_CUBE_MAP:{
+		case  TextureType::TEXTURE_CUBE_MAP:{
 			Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
 			if(pa){
 				for(uint_fast8_t layer = 0; layer < 6; ++layer){
@@ -422,8 +439,17 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 				throw std::runtime_error("Texture::downloadGLTexture: unsupported pixel format.");
 			break;
 		}
+		case TextureType::TEXTURE_BUFFER:{
+			auto data =  bufferObject->downloadData<uint8_t>(GL_TEXTURE_BUFFER,getLocalBitmap()->getDataSize());
+			localBitmap->swapData( data );
+			break;
+		}
+		case  TextureType::TEXTURE_1D_ARRAY:
+		case  TextureType::TEXTURE_2D_ARRAY:
+		case  TextureType::TEXTURE_3D:
+		case  TextureType::TEXTURE_CUBE_MAP_ARRAY:		
 		default:
-			throw std::runtime_error("Texture::downloadGLTexture: unsupported texture type.");
+			throw std::runtime_error("Texture::downloadGLTexture: (currently) unsupported texture type.");
 	}
 
 	context.popTexture(0);

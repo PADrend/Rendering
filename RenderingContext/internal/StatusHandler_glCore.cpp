@@ -10,6 +10,7 @@
 */
 #include "StatusHandler_glCore.h"
 #include "CoreRenderingStatus.h"
+#include "../../BufferObject.h"
 #include "../../GLHeader.h"
 #include "../../Helper.h"
 
@@ -233,6 +234,9 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				if( texture ) {
 					glBindTexture(texture->getGLTextureType(), texture->getGLId());
+					BufferObject* buffer = texture->getBufferObject();
+					if(buffer)
+						glTexBuffer( GL_TEXTURE_BUFFER, texture->getFormat().glInternalFormat, buffer->getGLId() );
 				} else if( oldTexture ) {
 					glBindTexture(oldTexture->getGLTextureType(), 0);
 				} else {

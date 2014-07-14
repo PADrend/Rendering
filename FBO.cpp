@@ -91,6 +91,8 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 				glFramebufferTextureLayer(GL_FRAMEBUFFER_EXT, attachmentPoint,  textureId, level, layer);				// GL_ARB_framebuffer_object
 				break;
 			}
+			case TextureType::TEXTURE_BUFFER:
+				throw std::logic_error("FBO::attachTexture: TextureBuffers are no valid targets.");
 			default:
 				throw std::logic_error("FBO::attachTexture: ???");
 		}

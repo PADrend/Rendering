@@ -259,6 +259,9 @@ Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, Te
 	case TextureType::TEXTURE_CUBE_MAP_ARRAY:
 		format.glTextureType = GL_TEXTURE_CUBE_MAP_ARRAY;
 		break;
+	case TextureType::TEXTURE_BUFFER:
+		format.glTextureType = GL_TEXTURE_BUFFER;
+		break;
 	default:
 		throw std::logic_error("createTextureFromBitmap: Invalid type.");
 	}

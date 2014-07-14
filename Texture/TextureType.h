@@ -23,7 +23,8 @@ enum class TextureType : std::uint8_t{
 	TEXTURE_2D_ARRAY = 3,
 	TEXTURE_3D = 4,
 	TEXTURE_CUBE_MAP = 5,
-	TEXTURE_CUBE_MAP_ARRAY = 6
+	TEXTURE_CUBE_MAP_ARRAY = 6,
+	TEXTURE_BUFFER = 7
 };
 
 }

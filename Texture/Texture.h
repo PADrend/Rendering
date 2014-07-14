@@ -11,17 +11,20 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#include "TextureType.h"
+
 #include <Util/ReferenceCounter.h>
 #include <Util/References.h>
 #include <Util/IO/FileName.h>
 #include <cstdint>
-#include "TextureType.h"
+#include <memory>
 
 namespace Util {
 class Bitmap;
 }
 namespace Rendering {
 class RenderingContext;
+class BufferObject;
 
 /***
  ** Texture
@@ -126,7 +129,15 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		bool getHasMipmaps() const							{	return hasMipmaps;	}
 	// @}
 		
-		
+			
+	/*!	@name BufferObject (tType == TEXTURE_BUFFER)  */
+	// @{
+		public:
+			BufferObject* getBufferObject()const			{	return bufferObject.get();	}
+		private:
+			std::unique_ptr<BufferObject> bufferObject;		// if type is bufferObject
+	// @}
+
 	/*!	@name Filename */
 	// @{
 		public:
