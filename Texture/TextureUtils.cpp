@@ -224,9 +224,9 @@ Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, Te
 
 	Texture::Format format;
 	
-	if( bitmap.getPixelFormat().getBytesPerComponent() == 1){
+	if( bitmap.getPixelFormat().getValueType() == Util::TypeConstant::UINT8 ){
 		format.glDataType = GL_UNSIGNED_BYTE;
-	}else if( bitmap.getPixelFormat().getBytesPerComponent() == 4){
+	}else if( bitmap.getPixelFormat().getValueType() == Util::TypeConstant::FLOAT ){
 		format.glDataType = GL_FLOAT;
 	}else {
 		WARN("createTextureFromBitmap: Bitmap has unimplemented data type.");

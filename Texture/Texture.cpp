@@ -303,16 +303,16 @@ void Texture::allocateLocalData(){
 					break;
 				case GL_DEPTH_COMPONENT:
 				case GL_RED:
-					localFormat = PixelFormat(4, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
+					localFormat = PixelFormat( Util::TypeConstant::FLOAT, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
 					break;
 				case GL_GREEN:
-					localFormat = PixelFormat(4, PixelFormat::NONE,0,PixelFormat::NONE,PixelFormat::NONE);
+					localFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,0,PixelFormat::NONE,PixelFormat::NONE);
 					break;
 				case GL_BLUE:
-					localFormat = PixelFormat(4, PixelFormat::NONE,PixelFormat::NONE,0,PixelFormat::NONE);
+					localFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,PixelFormat::NONE,0,PixelFormat::NONE);
 					break;
 				case GL_ALPHA:
-					localFormat = PixelFormat(4, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
+					localFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
 					break;
 				default:
 					break;
@@ -333,16 +333,16 @@ void Texture::allocateLocalData(){
 					break;
 				case GL_DEPTH_COMPONENT:
 				case GL_RED:
-					localFormat = PixelFormat(1, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
+					localFormat = PixelFormat( Util::TypeConstant::UINT8, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
 					break;
 				case GL_GREEN:
-					localFormat = PixelFormat(1, PixelFormat::NONE,0,PixelFormat::NONE,PixelFormat::NONE);
+					localFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,0,PixelFormat::NONE,PixelFormat::NONE);
 					break;
 				case GL_BLUE:
-					localFormat = PixelFormat(1, PixelFormat::NONE,PixelFormat::NONE,0,PixelFormat::NONE);
+					localFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,PixelFormat::NONE,0,PixelFormat::NONE);
 					break;
 				case GL_ALPHA:
-					localFormat = PixelFormat(1, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
+					localFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
 					break;
 				default:
 					break;
