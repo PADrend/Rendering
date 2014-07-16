@@ -278,7 +278,7 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 
 void Texture::allocateLocalData(){
 	if(localBitmap.isNotNull()){
-		WARN("Data already allocated");
+		WARN("Texture::allocateLocalData: Data already allocated");
 		return;
 	}
 	using Util::PixelFormat;
@@ -315,6 +315,7 @@ void Texture::allocateLocalData(){
 					localFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
 					break;
 				default:
+					WARN("Texture::allocateLocalData: Unsupported glFormat.");
 					break;
 			}
 		}else if(format.glDataType==GL_UNSIGNED_BYTE) {
@@ -345,10 +346,49 @@ void Texture::allocateLocalData(){
 					localFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
 					break;
 				default:
+					WARN("Texture::allocateLocalData: Unsupported glFormat.");
+					break;
+			}
+		}else if(format.glDataType==GL_UNSIGNED_INT) {
+			switch (format.glFormat){
+				case GL_R:
+					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
+					break;
+				case GL_RG:
+					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, PixelFormat::NONE, PixelFormat::NONE );
+					break;
+				case GL_RGB:
+					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, 8, PixelFormat::NONE );
+					break;
+				case GL_RGBA:
+					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, 8, 12 );
+					break;
+				default:
+					WARN("Texture::allocateLocalData: Unsupported glFormat.");
+					break;
+			}
+		}else if(format.glDataType==GL_INT) {
+			switch (format.glFormat){
+				case GL_R:
+					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
+					break;
+				case GL_RG:
+					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, PixelFormat::NONE, PixelFormat::NONE );
+					break;
+				case GL_RGB:
+					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, 8, PixelFormat::NONE );
+					break;
+				case GL_RGBA:
+					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, 8, 12 );
+					break;
+				default:
+					WARN("Texture::allocateLocalData: Unsupported glFormat.");
 					break;
 			}
 		} else if(format.glDataType == GL_UNSIGNED_INT_24_8_EXT) {
 			localFormat = PixelFormat::RGBA;
+		}else{
+			WARN("Texture::allocateLocalData: Unsupported glDataType.");
 		}
 	}
 #else /* LIB_GL */
