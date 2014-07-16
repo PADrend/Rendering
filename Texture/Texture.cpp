@@ -504,7 +504,8 @@ const uint8_t * Texture::getLocalData() const				{	return localBitmap ? localBit
 uint8_t * Texture::openLocalData(RenderingContext & context){
 	if(!localBitmap){
 		allocateLocalData();
-		downloadGLTexture(context);
+		if(getGLId()!=0)
+			downloadGLTexture(context);
 	}
 	return getLocalData();
 }
