@@ -191,7 +191,7 @@ bool saveTexture(RenderingContext & context,Texture * texture, const Util::FileN
 		return true;
 	} else {
 		// Try Util::Serialization.
-		auto bitmap = TextureUtils::createBitmapFromTexture(context,texture);
+		auto bitmap = TextureUtils::createBitmapFromTexture(context,*texture);
 		if(bitmap.isNull()){
 			WARN("Error saving texture: internal bitmap was null");
 			return false;
@@ -208,6 +208,10 @@ bool saveTexture(RenderingContext & context,Texture * texture, const Util::FileN
 }
 
 bool saveTexture(RenderingContext &context,Texture * texture, const std::string & extension, std::ostream & output) {
+	if(!texture){
+		WARN("Error saving texture: texture was null");
+		return false;
+	}
 	std::unique_ptr<AbstractRenderingStreamer> saver(createStreamer(extension, AbstractRenderingStreamer::CAP_SAVE_TEXTURE));
 	if(saver.get() != nullptr){
 		if(!saver->saveTexture(texture, output)) {
@@ -218,7 +222,7 @@ bool saveTexture(RenderingContext &context,Texture * texture, const std::string 
 
 	} else {
 		// Try Util::Serialization.
-		auto bitmap = TextureUtils::createBitmapFromTexture(context,texture);
+		auto bitmap = TextureUtils::createBitmapFromTexture(context,*texture);
 		if(bitmap.isNull()){
 			WARN("Error saving texture: internal bitmap was null");
 			return false;
