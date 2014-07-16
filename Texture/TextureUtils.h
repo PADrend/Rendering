@@ -13,6 +13,7 @@
 
 #include "Texture.h"
 #include <Util/References.h>
+#include <Util/TypeConstant.h>
 #include <cstdint>
 #include <vector>
 
@@ -36,6 +37,8 @@ namespace TextureUtils {
 
 const unsigned int RAW_16BIT_BW = 0;
 
+uint32_t textureTypeToGLTextureType(TextureType type);
+
 Texture * createStdCubeTexture(uint32_t width, bool alpha);
 Texture * createHDRCubeTexture(uint32_t width, bool alpha);
 Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha);
@@ -44,6 +47,13 @@ Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha);
 Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte = false);
 Texture * createDepthStencilTexture(uint32_t width, uint32_t height);
 Texture * createDepthTexture(uint32_t width, uint32_t height);
+
+/*! @p numComponents == 1 || 2 || 3|| 4
+	@p dataType == FLOAT || UINT8 || UINT32 || INT32
+	@note no filtering is performed
+	@note If the texture should be used as image(load and store), only 1,2,or 4 components are valid.
+*/
+Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents);
 
 // creates an vec4 data array as textures for handling big arrays inside shaders. See SkeletalAnimationUtils for generic accessor.
 Texture * createTextureDataArray_Vec4(const uint32_t size);

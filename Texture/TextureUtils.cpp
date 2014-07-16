@@ -42,46 +42,58 @@
 namespace Rendering {
 namespace TextureUtils {
 
-/*! (static) Factory */
-Texture * createStdCubeTexture(uint32_t width, bool alpha) {
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_CUBE_MAP;
-	format.sizeX = width;
-	format.sizeY = width;
-	format.numLayers = 6;
-	format.glFormat = alpha ? GL_RGBA : GL_RGB;
-	format.glDataType = GL_UNSIGNED_BYTE;
-	format.glInternalFormat=alpha ? GL_RGBA : GL_RGB;
+//! (static)
+uint32_t textureTypeToGLTextureType(TextureType type){
+	switch(type){
+		case TextureType::TEXTURE_1D:
+			return static_cast<uint32_t>(GL_TEXTURE_1D);
+		case TextureType::TEXTURE_1D_ARRAY:
+			return static_cast<uint32_t>(GL_TEXTURE_1D_ARRAY);
+		case TextureType::TEXTURE_2D:
+			return static_cast<uint32_t>(GL_TEXTURE_2D);
+		case TextureType::TEXTURE_2D_ARRAY:
+			return static_cast<uint32_t>(GL_TEXTURE_2D_ARRAY);
+		case TextureType::TEXTURE_3D:
+			return static_cast<uint32_t>(GL_TEXTURE_3D);
+		case TextureType::TEXTURE_CUBE_MAP:
+			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP);
+		case TextureType::TEXTURE_CUBE_MAP_ARRAY:
+			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP_ARRAY);
+		case TextureType::TEXTURE_BUFFER:
+			return static_cast<uint32_t>(GL_TEXTURE_BUFFER);
+		default:
+			throw std::logic_error("createTextureFromBitmap: Invalid type.");
+	}
+}
 
+static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glFormat,GLenum glDataType,GLenum glInternalFormat, bool filtering){
+	Texture::Format format;
+	format.glTextureType = textureTypeToGLTextureType(type);
+	format.sizeX = sizeX;
+	format.sizeY = sizeY;
+	format.numLayers = numLayers;
+	format.glFormat = glFormat;
+	format.glDataType = glDataType;
+	format.glInternalFormat = glInternalFormat;
+	
+	format.linearMinFilter = filtering;
+	format.linearMagFilter = filtering;
 	return new Texture(format);
 }
 
-/*! (static) Factory */
-Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha) {
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_2D;
-	format.sizeX = width;
-	format.sizeY = height;
-	format.glFormat = alpha ? GL_RGBA : GL_RGB;
-	format.glDataType = GL_UNSIGNED_BYTE;
-	format.glInternalFormat=alpha ? GL_RGBA : GL_RGB;
+//! (static)
+Texture * createStdCubeTexture(uint32_t width, bool alpha) {
+	return create(TextureType::TEXTURE_CUBE_MAP,width,width,6, alpha ? GL_RGBA : GL_RGB,GL_UNSIGNED_BYTE,alpha ? GL_RGBA : GL_RGB,true);
+}
 
-	return new Texture(format);
+//! (static)
+Texture * createStdTexture(uint32_t width, uint32_t height, bool alpha) {
+	return create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB,GL_UNSIGNED_BYTE,alpha ? GL_RGBA : GL_RGB,true);
 }
 
 Texture * createNoiseTexture(uint32_t width, uint32_t height, bool alpha,float scaling) {
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_2D;
-	format.sizeX = width;
-	format.sizeY = height;
-	format.glFormat = alpha ? GL_RGBA : GL_RGB;
-	format.glDataType = GL_FLOAT;
-	format.glInternalFormat = alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
-	
-	format.linearMinFilter = true;
-	format.linearMagFilter = true;
+	Util::Reference<Texture> texture = create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT,alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
 
-	Util::Reference<Texture> texture = new Texture(format);
 	texture->allocateLocalData();
 	Util::Reference<Util::PixelAccessor> pixelAccessor = Util::PixelAccessor::create(texture->getLocalBitmap());
 	Util::NoiseGenerator generator(17);
@@ -122,84 +134,65 @@ Texture * createTextureDataArray_Vec4(const uint32_t size) {
 }
 
 #ifdef LIB_GL
-/*! (static) Factory */
+//! (static)
 Texture * createHDRCubeTexture(uint32_t width, bool alpha) {
-    Texture::Format format;
-	format.glTextureType=GL_TEXTURE_CUBE_MAP;
-	format.sizeX = width;
-	format.sizeY = width;
-	format.numLayers = 6;
-	format.glFormat = alpha ? GL_RGBA : GL_RGB;
-	format.glDataType = GL_FLOAT;
-	format.glInternalFormat = alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
-	return new Texture(format);
+	return create(TextureType::TEXTURE_CUBE_MAP,width,width,6, alpha ? GL_RGBA : GL_RGB, GL_FLOAT, alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
 }
-/*! (static) Factory */
+
+//! (static)
 Texture * createHDRTexture(uint32_t width, uint32_t height, bool alpha) {
-	Texture::Format format;
-	format.glTextureType=GL_TEXTURE_2D;
-	format.sizeX = width;
-	format.sizeY = height;
-	format.glFormat = alpha ? GL_RGBA : GL_RGB;
-	format.glDataType = GL_FLOAT;
-	format.glInternalFormat = alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB;
-	return new Texture(format);
+	return create(TextureType::TEXTURE_2D, width, height, 1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT, alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
 }
-/*! (static) Factory */
+
+//! (static)
 Texture * createRedTexture(uint32_t width, uint32_t height, bool useByte) {
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_2D;
-	format.sizeX = width;
-	format.sizeY = height;
-	format.glFormat = GL_RED;
-	format.glDataType = useByte ? GL_UNSIGNED_BYTE : GL_FLOAT;
-	format.glInternalFormat = useByte ? 1 : GL_R32F;
-
-	return new Texture(format);
+	return create(TextureType::TEXTURE_2D, width, height, 1, GL_RED,  useByte ? GL_UNSIGNED_BYTE : GL_FLOAT, useByte ? 1 : GL_R32F,true);
 }
 
-/*! (static) Factory */
+//! (static)
 Texture * createDepthStencilTexture(uint32_t width, uint32_t height) {
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_2D;
-	format.sizeX = width;
-	format.sizeY = height;
-	format.glFormat = GL_DEPTH_STENCIL_EXT;
-	format.glDataType = GL_UNSIGNED_INT_24_8_EXT;
-	format.glInternalFormat = GL_DEPTH24_STENCIL8_EXT;
-	format.linearMinFilter = false;
-	format.linearMagFilter = false;
-
-	return new Texture(format);
+	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, GL_DEPTH24_STENCIL8_EXT, false);
 }
 #endif
 
-/*! (static) Factory */
+//! [static] Factory
 Texture * createDepthTexture(uint32_t width, uint32_t height) {
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_2D;
-	format.sizeX = width;
-	format.sizeY = height;
-	format.glFormat = GL_DEPTH_COMPONENT;
-	format.glDataType = GL_FLOAT;
-	format.glInternalFormat = GL_DEPTH_COMPONENT;
-	format.linearMinFilter = false;
-	format.linearMagFilter = false;
+	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
+}
 
-	return new Texture(format);
+//! [static] Factory
+Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents){
+	if( numComponents<1||numComponents>4 )
+		throw std::logic_error("createDataTexture: Invalid numComponents.");
+
+	GLenum glDataType, glInternalFormat;
+	if(dataType == Util::TypeConstant::UINT8){
+		glDataType = GL_UNSIGNED_BYTE;
+		static const GLenum internalFormats[] = {0,GL_R8,GL_RG8,GL_RGB8,GL_RGBA8};
+		glInternalFormat = internalFormats[numComponents];
+	} else if(dataType == Util::TypeConstant::UINT32){
+		glDataType =  GL_UNSIGNED_INT;
+		static const GLenum internalFormats[] = {0,GL_R32UI,GL_RG32UI,GL_RGB32UI,GL_RGBA32UI};
+		glInternalFormat = internalFormats[numComponents];
+	} else if(dataType == Util::TypeConstant::INT32){
+		glDataType =  GL_INT;
+		static const GLenum internalFormats[] = {0,GL_R32I,GL_RG32I,GL_RGB32I,GL_RGBA32I};
+		glInternalFormat = internalFormats[numComponents];
+	} else if(dataType == Util::TypeConstant::FLOAT){
+		glDataType =  GL_FLOAT;
+		static const GLenum internalFormats[] = {0,GL_R32F,GL_RG32F,GL_RGB32F,GL_RGBA32F};
+		glInternalFormat = internalFormats[numComponents];
+	}else{
+		throw std::logic_error("createDataTexture: Invalid dataType.");
+	}
+	static const GLenum formats[] = {0,GL_RED,GL_RG,GL_RGB,GL_RGBA};
+	return create( type, sizeX, sizeY, numLayers, formats[numComponents], glDataType, glInternalFormat, false);
 }
 
 //! [static] Factory
 Texture * createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo) {
-	Texture::Format format=Texture::Format();
-	format.glTextureType=GL_TEXTURE_2D;
-	format.sizeX = width;
-	format.sizeY = height;
-	format.glFormat=GL_RGBA;
-	format.glDataType=GL_UNSIGNED_BYTE;
-	format.glInternalFormat=GL_RGBA;
+	auto t = create(TextureType::TEXTURE_2D, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA ,true);
 
-	auto t=new Texture(format);
 	t->allocateLocalData();
 	GLubyte * tData=t->getLocalData();
 
@@ -237,34 +230,7 @@ Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, Te
 		return nullptr;
 	}
 	
-	switch(type){
-	case TextureType::TEXTURE_1D:
-		format.glTextureType = GL_TEXTURE_1D;
-		break;
-	case TextureType::TEXTURE_1D_ARRAY:
-		format.glTextureType = GL_TEXTURE_1D_ARRAY;
-		break;
-	case TextureType::TEXTURE_2D:
-		format.glTextureType = GL_TEXTURE_2D;
-		break;
-	case TextureType::TEXTURE_2D_ARRAY:
-		format.glTextureType = GL_TEXTURE_2D_ARRAY;
-		break;
-	case TextureType::TEXTURE_3D:
-		format.glTextureType = GL_TEXTURE_3D;
-		break;
-	case TextureType::TEXTURE_CUBE_MAP:
-		format.glTextureType = GL_TEXTURE_CUBE_MAP;
-		break;
-	case TextureType::TEXTURE_CUBE_MAP_ARRAY:
-		format.glTextureType = GL_TEXTURE_CUBE_MAP_ARRAY;
-		break;
-	case TextureType::TEXTURE_BUFFER:
-		format.glTextureType = GL_TEXTURE_BUFFER;
-		break;
-	default:
-		throw std::logic_error("createTextureFromBitmap: Invalid type.");
-	}
+	format.glTextureType = textureTypeToGLTextureType( type );
 	
 	format.sizeY = bHeight / numLayers;
 	format.sizeX = width;
