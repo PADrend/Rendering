@@ -66,14 +66,14 @@ uint32_t textureTypeToGLTextureType(TextureType type){
 	}
 }
 
-static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glFormat,GLenum glDataType,GLenum glInternalFormat, bool filtering){
+static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering){
 	Texture::Format format;
 	format.glTextureType = textureTypeToGLTextureType(type);
 	format.sizeX = sizeX;
 	format.sizeY = sizeY;
 	format.numLayers = numLayers;
-	format.glFormat = glFormat;
-	format.glDataType = glDataType;
+	format.glFormat = glPixelFormat;
+	format.glDataType = glPixelDataType;
 	format.glInternalFormat = glInternalFormat;
 	
 	format.linearMinFilter = filtering;
@@ -159,34 +159,45 @@ Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t heig
 Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
 	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
 }
+//
+//std::pair<uint32_t,uint32_t>  pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat);
+//Util::PixelFormat glPixelFormatToPixelFormat(uint32_t glDataType,uint32_t glPixelFormat);
+
 
 //! [static] Factory
 Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents){
 	if( numComponents<1||numComponents>4 )
 		throw std::logic_error("createDataTexture: Invalid numComponents.");
 
-	GLenum glDataType, glInternalFormat;
+	GLenum glInternalFormat, glPixelDataType, glPixelFormat;
 	if(dataType == Util::TypeConstant::UINT8){
-		glDataType = GL_UNSIGNED_BYTE;
 		static const GLenum internalFormats[] = {0,GL_R8,GL_RG8,GL_RGB8,GL_RGBA8};
 		glInternalFormat = internalFormats[numComponents];
+		glPixelDataType = GL_UNSIGNED_BYTE;
+		static const GLenum formats[] = {0,GL_RED,GL_RG,GL_RGB,GL_RGBA};
+		glPixelFormat = formats[numComponents];
 	} else if(dataType == Util::TypeConstant::UINT32){
-		glDataType =  GL_UNSIGNED_INT;
 		static const GLenum internalFormats[] = {0,GL_R32UI,GL_RG32UI,GL_RGB32UI,GL_RGBA32UI};
 		glInternalFormat = internalFormats[numComponents];
+		glPixelDataType =  GL_UNSIGNED_INT;
+		static const GLenum formats[] = {0,GL_RED_INTEGER,GL_RG_INTEGER,GL_RGB_INTEGER,GL_RGBA_INTEGER};
+		glPixelFormat = formats[numComponents];
 	} else if(dataType == Util::TypeConstant::INT32){
-		glDataType =  GL_INT;
 		static const GLenum internalFormats[] = {0,GL_R32I,GL_RG32I,GL_RGB32I,GL_RGBA32I};
 		glInternalFormat = internalFormats[numComponents];
+		glPixelDataType =  GL_INT;
+		static const GLenum formats[] = {0,GL_RED_INTEGER,GL_RG_INTEGER,GL_RGB_INTEGER,GL_RGBA_INTEGER};
+		glPixelFormat = formats[numComponents];
 	} else if(dataType == Util::TypeConstant::FLOAT){
-		glDataType =  GL_FLOAT;
 		static const GLenum internalFormats[] = {0,GL_R32F,GL_RG32F,GL_RGB32F,GL_RGBA32F};
 		glInternalFormat = internalFormats[numComponents];
+		glPixelDataType =  GL_FLOAT;
+		static const GLenum formats[] = {0,GL_RED,GL_RG,GL_RGB,GL_RGBA};
+		glPixelFormat = formats[numComponents];
 	}else{
 		throw std::logic_error("createDataTexture: Invalid dataType.");
 	}
-	static const GLenum formats[] = {0,GL_RED,GL_RG,GL_RGB,GL_RGBA};
-	return create( type, sizeX, sizeY, numLayers, formats[numComponents], glDataType, glInternalFormat, false);
+	return create( type, sizeX, sizeY, numLayers, glPixelFormat, glPixelDataType, glInternalFormat, false);
 }
 
 //! [static] Factory

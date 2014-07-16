@@ -39,21 +39,31 @@ Texture::Format::Format():
 uint32_t Texture::Format::getPixelSize()const{
 	uint32_t pixelSize = getGLTypeSize(glDataType);
 	switch (glFormat){
+#ifdef LIB_GL
+		case GL_RG:
+		case GL_RG_INTEGER:
+			pixelSize*=4;
+			break;
+#endif
+
 		case GL_RGBA:
 #ifdef LIB_GL
 		case GL_BGRA:
+		case GL_RGBA_INTEGER:
 #endif
 			pixelSize*=4;
 			break;
 		case GL_RGB:
 #ifdef LIB_GL
 		case GL_BGR:
+		case GL_RGB_INTEGER:
 #endif
 			pixelSize*=3;
 			break;
 		case GL_DEPTH_COMPONENT:
 #ifdef LIB_GL
 		case GL_RED:
+		case GL_RED_INTEGER:
 		case GL_GREEN:
 		case GL_BLUE:
 		case GL_ALPHA:
@@ -62,7 +72,7 @@ uint32_t Texture::Format::getPixelSize()const{
 			//pixelSize*=1;
 			break;
 		default:
-			FAIL(); // not implemented... sorry...
+			throw std::runtime_error("Format::getPixelSize: Unsupported format.");
 	}
 	return pixelSize;
 }
@@ -224,11 +234,13 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 										static_cast<GLsizei>(format.compressedImageSize),
 										getLocalData());
 			}else{
+					GET_GL_ERROR();
 				glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format.glInternalFormat),
 										static_cast<GLsizei>(getWidth()),
 										static_cast<GLsizei>(getHeight()), 0,
 										static_cast<GLenum>(format.glFormat), 
 										static_cast<GLenum>(format.glDataType), getLocalData());
+						GET_GL_ERROR();
 			}
 			break;
 		}
@@ -351,16 +363,16 @@ void Texture::allocateLocalData(){
 			}
 		}else if(format.glDataType==GL_UNSIGNED_INT) {
 			switch (format.glFormat){
-				case GL_R:
+				case GL_RED_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
 					break;
-				case GL_RG:
+				case GL_RG_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, PixelFormat::NONE, PixelFormat::NONE );
 					break;
-				case GL_RGB:
+				case GL_RGB_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, 8, PixelFormat::NONE );
 					break;
-				case GL_RGBA:
+				case GL_RGBA_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, 8, 12 );
 					break;
 				default:
@@ -369,16 +381,16 @@ void Texture::allocateLocalData(){
 			}
 		}else if(format.glDataType==GL_INT) {
 			switch (format.glFormat){
-				case GL_R:
+				case GL_RED_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
 					break;
-				case GL_RG:
+				case GL_RG_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, PixelFormat::NONE, PixelFormat::NONE );
 					break;
-				case GL_RGB:
+				case GL_RGB_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, 8, PixelFormat::NONE );
 					break;
-				case GL_RGBA:
+				case GL_RGBA_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, 8, 12 );
 					break;
 				default:
