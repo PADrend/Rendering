@@ -159,45 +159,105 @@ Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t heig
 Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
 	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
 }
+
+
+struct PixelFormatGL{
+	uint32_t glLocalDataFormat, glLocalDataType, glInternalFormat;
+	bool compressed;
+	
+	PixelFormatGL() : glLocalDataFormat(0),glLocalDataType(0),glInternalFormat(0),compressed(false){}
+	
+	bool isValid()const{	return glInternalFormat!=0;	}
+};
+
 //
-//std::pair<uint32_t,uint32_t>  pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat);
-//Util::PixelFormat glPixelFormatToPixelFormat(uint32_t glDataType,uint32_t glPixelFormat);
+
+static PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat){
+	PixelFormatGL glf;
+	if(pixelFormat.getValueType() == Util::TypeConstant::UINT8){
+		glf.glLocalDataType = GL_UNSIGNED_BYTE;
+		if( pixelFormat == Util::PixelFormat::MONO ){
+			glf.glLocalDataFormat = GL_RED;
+			glf.glInternalFormat = GL_RED; 
+		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT8, 0, 1, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+			glf.glLocalDataFormat = GL_RG;
+			glf.glInternalFormat = GL_RG; 
+		}else if( pixelFormat == Util::PixelFormat::RGB ){
+			glf.glLocalDataFormat = GL_RGB;
+			glf.glInternalFormat = GL_RGB; // GL_RGB8????
+		} else if( pixelFormat == Util::PixelFormat::BGR ){
+			glf.glLocalDataFormat = GL_BGR;
+			glf.glInternalFormat = GL_BGR; 
+		} else if( pixelFormat == Util::PixelFormat::RGBA ){
+			glf.glLocalDataFormat = GL_RGBA;
+			glf.glInternalFormat = GL_RGBA; 
+		}
+	} else if(pixelFormat.getValueType() == Util::TypeConstant::UINT32){
+		glf.glLocalDataType = GL_UNSIGNED_INT;
+		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+			glf.glLocalDataFormat = GL_RED_INTEGER;
+			glf.glInternalFormat = GL_R32UI; 
+		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+			glf.glLocalDataFormat = GL_RG_INTEGER;
+			glf.glInternalFormat = GL_RG32UI; 
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, 8, Util::PixelFormat::NONE) ){
+			glf.glLocalDataFormat = GL_RGB_INTEGER;
+			glf.glInternalFormat = GL_RGB32UI;
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, 8, 12) ){
+			glf.glLocalDataFormat = GL_RGBA_INTEGER;
+			glf.glInternalFormat = GL_RGBA32UI; 
+		}
+	} else if(pixelFormat.getValueType() == Util::TypeConstant::INT32){
+		glf.glLocalDataType = GL_INT;
+		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+			glf.glLocalDataFormat = GL_RED_INTEGER;
+			glf.glInternalFormat = GL_R32I; 
+		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+			glf.glLocalDataFormat = GL_RG_INTEGER;
+			glf.glInternalFormat = GL_RG32I; 
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, 8, Util::PixelFormat::NONE) ){
+			glf.glLocalDataFormat = GL_RGB_INTEGER;
+			glf.glInternalFormat = GL_RGB32I;
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, 8, 12) ){
+			glf.glLocalDataFormat = GL_RGBA_INTEGER;
+			glf.glInternalFormat = GL_RGBA32I; 
+		}
+	} else if(pixelFormat.getValueType() == Util::TypeConstant::FLOAT){
+		glf.glLocalDataType = GL_FLOAT;
+		if( pixelFormat == Util::PixelFormat::MONO_FLOAT ){
+			glf.glLocalDataFormat = GL_R32F;
+			glf.glInternalFormat = GL_RED; 
+		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::FLOAT, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+			glf.glLocalDataFormat = GL_RG32F;
+			glf.glInternalFormat = GL_RG; 
+		} else if( pixelFormat == Util::PixelFormat::RGB_FLOAT ){
+			glf.glLocalDataFormat = GL_RGB;
+			glf.glInternalFormat = GL_RGB32F; // GL_RGB8????
+		} else if( pixelFormat == Util::PixelFormat::RGBA_FLOAT ){
+			glf.glLocalDataFormat = GL_RGBA;
+			glf.glInternalFormat = GL_RGBA32F; 
+		}
+	}
+	
+	return glf;
+}
+//Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat);
 
 
 //! [static] Factory
 Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents){
 	if( numComponents<1||numComponents>4 )
 		throw std::logic_error("createDataTexture: Invalid numComponents.");
+	
+	const auto bytes = getNumBytes(dataType);
+	auto glPixelFormat = pixelFormatToGLPixelFormat( Util::PixelFormat(dataType,
+																		0,
+																		numComponents>1 ? bytes : Util::PixelFormat::NONE, 
+																		numComponents>2 ? bytes*2 : Util::PixelFormat::NONE, 
+																		numComponents>3 ? bytes*3 : Util::PixelFormat::NONE));
 
-	GLenum glInternalFormat, glPixelDataType, glPixelFormat;
-	if(dataType == Util::TypeConstant::UINT8){
-		static const GLenum internalFormats[] = {0,GL_R8,GL_RG8,GL_RGB8,GL_RGBA8};
-		glInternalFormat = internalFormats[numComponents];
-		glPixelDataType = GL_UNSIGNED_BYTE;
-		static const GLenum formats[] = {0,GL_RED,GL_RG,GL_RGB,GL_RGBA};
-		glPixelFormat = formats[numComponents];
-	} else if(dataType == Util::TypeConstant::UINT32){
-		static const GLenum internalFormats[] = {0,GL_R32UI,GL_RG32UI,GL_RGB32UI,GL_RGBA32UI};
-		glInternalFormat = internalFormats[numComponents];
-		glPixelDataType =  GL_UNSIGNED_INT;
-		static const GLenum formats[] = {0,GL_RED_INTEGER,GL_RG_INTEGER,GL_RGB_INTEGER,GL_RGBA_INTEGER};
-		glPixelFormat = formats[numComponents];
-	} else if(dataType == Util::TypeConstant::INT32){
-		static const GLenum internalFormats[] = {0,GL_R32I,GL_RG32I,GL_RGB32I,GL_RGBA32I};
-		glInternalFormat = internalFormats[numComponents];
-		glPixelDataType =  GL_INT;
-		static const GLenum formats[] = {0,GL_RED_INTEGER,GL_RG_INTEGER,GL_RGB_INTEGER,GL_RGBA_INTEGER};
-		glPixelFormat = formats[numComponents];
-	} else if(dataType == Util::TypeConstant::FLOAT){
-		static const GLenum internalFormats[] = {0,GL_R32F,GL_RG32F,GL_RGB32F,GL_RGBA32F};
-		glInternalFormat = internalFormats[numComponents];
-		glPixelDataType =  GL_FLOAT;
-		static const GLenum formats[] = {0,GL_RED,GL_RG,GL_RGB,GL_RGBA};
-		glPixelFormat = formats[numComponents];
-	}else{
-		throw std::logic_error("createDataTexture: Invalid dataType.");
-	}
-	return create( type, sizeX, sizeY, numLayers, glPixelFormat, glPixelDataType, glInternalFormat, false);
+//	return create( type, sizeX, sizeY, numLayers, glPixelFormat, glPixelDataType, glInternalFormat, false);
+	return create( type, sizeX, sizeY, numLayers, glPixelFormat.glLocalDataFormat, glPixelFormat.glLocalDataType, glPixelFormat.glInternalFormat, false);
 }
 
 //! [static] Factory
@@ -227,19 +287,7 @@ Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, Te
 	const uint32_t width = bitmap.getWidth();
 
 	Texture::Format format;
-	
-	if( bitmap.getPixelFormat().getValueType() == Util::TypeConstant::UINT8 ){
-		format.glDataType = GL_UNSIGNED_BYTE;
-	}else if( bitmap.getPixelFormat().getValueType() == Util::TypeConstant::FLOAT ){
-		format.glDataType = GL_FLOAT;
-	}else if( bitmap.getPixelFormat().getValueType() == Util::TypeConstant::UINT32 ){
-		format.glDataType = GL_UNSIGNED_INT;
-	}else if( bitmap.getPixelFormat().getValueType() == Util::TypeConstant::INT32 ){
-		format.glDataType = GL_INT;
-	}else {
-		WARN("createTextureFromBitmap: Bitmap has unimplemented data type.");
-		return nullptr;
-	}
+
 	if( numLayers==0 || numLayers>bHeight || (bHeight%numLayers) != 0){
 		WARN("createTextureFromBitmap: Bitmap height is not dividable into given number of layers.");
 		return nullptr;
@@ -251,29 +299,15 @@ Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, Te
 	format.sizeX = width;
 	format.numLayers = numLayers;
 
-	const Util::PixelFormat & pixelFormat = bitmap.getPixelFormat();
-	if(pixelFormat==Util::PixelFormat::RGBA){
-		format.glFormat = GL_RGBA;
-		format.glInternalFormat = GL_RGBA;
-	}else if(pixelFormat==Util::PixelFormat::RGB){
-		format.glFormat = GL_RGB;
-		format.glInternalFormat = GL_RGB;
-#ifdef LIB_GL
-	}else if(pixelFormat==Util::PixelFormat::BGRA){
-		format.glFormat = GL_BGRA;
-		format.glInternalFormat = GL_RGBA;
-	}else if(pixelFormat==Util::PixelFormat::BGR){
-		format.glFormat = GL_BGR;
-		format.glInternalFormat = GL_RGB;
-	}else if(pixelFormat==Util::PixelFormat::MONO){
-		format.glFormat = GL_RED;
-		format.glInternalFormat = GL_RED;
-#endif /* LIB_GL */
-	}else{
-		WARN("createTextureFromBitmap: Bitmap has unimplemented color format.");
+	const auto glPixelFormat = pixelFormatToGLPixelFormat(bitmap.getPixelFormat());
+	if(!glPixelFormat.isValid()){
+		WARN("createTextureFromBitmap: Bitmap has unimplemented pixel format.");
 		return nullptr;
 	}
-
+	format.glFormat = glPixelFormat.glLocalDataFormat;
+	format.glInternalFormat = glPixelFormat.glInternalFormat;
+	format.glDataType = glPixelFormat.glLocalDataType;
+	
 	if(clampToEdge) {
 		format.glWrapS = GL_CLAMP_TO_EDGE;
 		format.glWrapT = GL_CLAMP_TO_EDGE;
@@ -285,7 +319,7 @@ Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, Te
 	const uint8_t * pixels = bitmap.data();
 
 	// Flip the rows.
-	const uint32_t rowSize = width * pixelFormat.getBytesPerPixel();
+	const uint32_t rowSize = width * bitmap.getPixelFormat().getBytesPerPixel();
 	for (uint_fast16_t row = 0; row < bHeight; ++row) {
 		const uint32_t offset = row * rowSize;
 		const uint16_t reverseRow = bHeight - 1 - row;
