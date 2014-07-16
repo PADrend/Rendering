@@ -16,6 +16,7 @@
 #include <Geometry/Vec4.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Macros.h>
+#include <Util/References.h>
 #include <algorithm>
 #include <bitset>
 #include <cmath>
@@ -23,6 +24,7 @@
 #include <string>
 
 namespace Rendering {
+class Texture;
 
 namespace Comparison {
 /**
@@ -447,6 +449,42 @@ class DepthBufferParameters {
 			return function;
 		}
 };
+
+// -------------------------------------------
+//! Controls the binding of an image (part of a texture) for load and store operations in the shader.
+class ImageBindParameters {
+	private:
+		Util::Reference<Texture> texture;
+		uint32_t layer,level;
+		bool  multiLayer,readOperations,writeOperations;
+		uint32_t glFormat;
+	
+	public:
+		ImageBindParameters();
+		~ImageBindParameters();
+		
+		uint32_t getGLFormat()const			{	return glFormat;	}
+		void setGLFormat(uint32_t i)		{	glFormat = i;	}
+		
+		uint32_t getLayer()const			{	return layer;	}
+		void setLayer(uint32_t i)			{	layer = i;	}
+		
+		uint32_t getLevel()const			{	return level;	}
+		void setLevel(uint32_t i)			{	level = i;	}
+		
+		bool getMultiLayer()const			{	return multiLayer;	}
+		void setMultiLayer(bool b)			{	multiLayer = b;	}
+		
+		bool getReadOperations()const		{	return readOperations;	}
+		void setReadOperations(bool b)		{	readOperations = b;	}
+		
+		bool getWriteOperations()const		{	return writeOperations;	}
+		void setWriteOperations(bool b)		{	writeOperations = b;	}
+		
+		Texture* getTexture()const			{	return texture.get();	}
+		void setTexture(Texture* t);
+};
+static const uint8_t MAX_BOUND_IMAGES = 8;
 
 // -------------------------------------------
 

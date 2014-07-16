@@ -64,6 +64,8 @@ class RenderingContext::InternalData {
 		std::stack<ColorBufferParameters> colorBufferParameterStack;
 		std::stack<CullFaceParameters> cullFaceParameterStack;
 		std::stack<DepthBufferParameters> depthBufferParameterStack;
+		std::array<std::stack<ImageBindParameters>, MAX_BOUND_IMAGES> imageStacks; 
+		std::array<ImageBindParameters, MAX_BOUND_IMAGES> boundImages;
 		std::stack<LightingParameters> lightingParameterStack;
 		std::stack<LineParameters> lineParameterStack;
 		std::stack<MaterialParameters> materialStack;
@@ -425,6 +427,73 @@ void RenderingContext::setAlphaTest(const AlphaTestParameters & p) {
 		applyChanges();
 }
 
+// ImageBinding ************************************************************************************
+//! (static)
+bool RenderingContext::isImageBindingSupported(){
+#if defined(GL_ARB_shader_image_load_store)
+	static const bool support = isExtensionSupported("GL_ARB_shader_image_load_store");
+	return support;
+#else
+	return false;
+#endif
+}
+
+static void assertCorrectImageUnit(uint8_t unit){
+	if(unit>=MAX_BOUND_IMAGES)
+		throw std::runtime_error("RenderingContext: Invalid image unit.");
+}
+
+ImageBindParameters RenderingContext::getBoundImage(uint8_t unit)const{
+	assertCorrectImageUnit(unit);
+	return internalData->boundImages[unit];
+}
+
+void RenderingContext::pushBoundImage(uint8_t unit){
+	assertCorrectImageUnit(unit);
+	internalData->imageStacks[unit].push( internalData->boundImages[unit] );
+}
+
+void RenderingContext::pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam){
+	pushBoundImage(unit);
+	setBoundImage(unit,iParam);
+}
+void RenderingContext::popBoundImage(uint8_t unit){
+	assertCorrectImageUnit(unit);
+	auto& iStack = internalData->imageStacks[unit];
+	if(iStack.empty()){
+		WARN("popLighting: Empty lighting stack");
+	}else{
+		setBoundImage(unit,iStack.top());
+		iStack.pop();
+	}
+}
+
+//! \note the texture in iParam may be null to unbind
+void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iParam){
+	assertCorrectImageUnit(unit);
+	internalData->boundImages[unit] = iParam;
+#if defined(GL_ARB_shader_image_load_store)
+	if(isImageBindingSupported()){
+		
+		Texture* texture = iParam.getTexture();
+		GLuint textureId = texture ? texture->_prepareForBinding(*this) : 0;
+		GLenum access;
+		if(!iParam.getReadOperations()){
+			access =  GL_WRITE_ONLY;
+		}else if(!iParam.getWriteOperations()){
+			access =  GL_READ_ONLY;
+		}else{
+			access =  GL_READ_WRITE;
+		}
+		glBindImageTexture(unit,textureId,iParam.getLevel(),iParam.getMultiLayer()? GL_TRUE : GL_FALSE,iParam.getLayer(), access,iParam.getGLFormat());
+	}else{
+		WARN("RenderingContext::setBoundImage: GL_ARB_shader_image_load_store is not supported by your driver.");
+	}
+#else
+	WARN("RenderingContext::setBoundImage: GL_ARB_shader_image_load_store is not available for this executable.");
+#endif 
+}
+	
 // Lighting ************************************************************************************
 const LightingParameters & RenderingContext::getLightingParameters() const {
 	return internalData->actualCoreRenderingStatus.getLightingParameters();

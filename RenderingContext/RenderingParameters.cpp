@@ -10,6 +10,7 @@
 */
 #include "RenderingParameters.h"
 #include "../GLHeader.h"
+#include "../Texture/Texture.h"
 #include <Util/StringIdentifier.h>
 #include <stdexcept>
 #include <string>
@@ -342,6 +343,12 @@ BlendingParameters::equation_t BlendingParameters::glToEquation(uint32_t value) 
 	}
 	throw std::invalid_argument("Invalid GLenum value for BlendingParameters::equation_t enumerator");
 }
+
+// declare here to allow forward declaration of Texture
+ImageBindParameters::ImageBindParameters() : layer(0),level(0),multiLayer(false),readOperations(false),writeOperations(false),glFormat(0) {}
+ImageBindParameters::~ImageBindParameters(){} 
+void ImageBindParameters::setTexture(Texture* t)			{	texture = t;	}
+
 
 std::string PolygonModeParameters::modeToString(PolygonModeParameters::polygonModeMode_t mode) {
 	switch(mode) {

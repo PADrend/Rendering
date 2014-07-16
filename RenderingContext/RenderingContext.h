@@ -34,6 +34,7 @@ class ColorBufferParameters;
 class CullFaceParameters;
 class DepthBufferParameters;
 class FBO;
+class ImageBindParameters;
 class LightParameters;
 class LightingParameters;
 class LineParameters;
@@ -221,6 +222,20 @@ public:
 	//	@{
 	void setGlobalUniform(const Uniform & u);
 	const Uniform & getGlobalUniform(const Util::StringIdentifier & uniformName);
+	// @}
+
+	// ------
+
+	//! @name Image Binding (Image load and store)
+	//	@{
+	static bool isImageBindingSupported();
+	ImageBindParameters getBoundImage(uint8_t unit)const;
+	void pushBoundImage(uint8_t unit);
+	void pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam); 
+	void popBoundImage(uint8_t unit);
+
+	//! \note the texture in iParam may be null to unbind
+	void setBoundImage(uint8_t unit, const ImageBindParameters& iParam);
 	// @}
 
 	// ------
