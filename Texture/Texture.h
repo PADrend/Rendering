@@ -12,6 +12,7 @@
 #define TEXTURE_H
 
 #include "TextureType.h"
+#include "PixelFormatGL.h"
 
 #include <Util/ReferenceCounter.h>
 #include <Util/References.h>
@@ -59,22 +60,15 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 			uint32_t sizeX, sizeY, numLayers;		//!< width, height, depth (3d-texture)/num Layers(array texture)
 			uint32_t glTextureType;					//!< GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_
 
-			// storage parameters
-			int32_t glInternalFormat;				//!< e.g. GL_RGBA8
-			uint32_t glFormat;						//!< e.g. GL_RGBA
-			bool compressed; 						//!< [=false] Determines if the texture is stored in a compressed format.
 			uint32_t compressedImageSize; 			//!< Size of the data in bytes. @see glCompressedTexImage2D
-
-			// sampling parameters
-			uint32_t glDataType;					//!< e.g. GL_UNSIGNED_BYTE
 			int32_t glWrapS, glWrapT, glWrapR;		//!< e.g. GL_REPEAT
-
+			PixelFormatGL pixelFormat;
 		
 			bool linearMinFilter,linearMagFilter;	//! true, true
 			
 			uint32_t getPixelSize() const;
-			uint32_t getDataSize() const 	{	return compressed ? compressedImageSize : getPixelSize() * sizeX * sizeY * numLayers;}
-			uint32_t getRowSize() const		{	return compressed ? 0 : getPixelSize() * sizeX;	}
+			uint32_t getDataSize() const 	{	return pixelFormat.compressed ? compressedImageSize : getPixelSize() * sizeX * sizeY * numLayers;}
+			uint32_t getRowSize() const		{	return pixelFormat.compressed ? 0 : getPixelSize() * sizeX;	}
 		};
 		// ---------------------------------------
 

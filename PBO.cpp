@@ -55,7 +55,7 @@ void PBO::asynchronousReadPixels(uint32_t x, uint32_t y, uint32_t _width, uint32
 
 bool PBO::fillTexture(Texture * texture) const {
 	const Texture::Format & texFormat = texture->getFormat();
-	if(texFormat.sizeX != width || texFormat.sizeY != height || texFormat.glFormat != GL_BGRA || texFormat.glDataType != GL_UNSIGNED_BYTE) {
+	if(texFormat.sizeX != width || texFormat.sizeY != height || texFormat.pixelFormat.glLocalDataFormat != GL_BGRA || texFormat.pixelFormat.glLocalDataType != GL_UNSIGNED_BYTE) {
 		return false;
 	}
 	const uint32_t numBytes = 4 * width * height;

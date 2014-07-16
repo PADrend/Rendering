@@ -236,7 +236,7 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 					glBindTexture(texture->getGLTextureType(), texture->getGLId());
 					BufferObject* buffer = texture->getBufferObject();
 					if(buffer)
-						glTexBuffer( GL_TEXTURE_BUFFER, texture->getFormat().glInternalFormat, buffer->getGLId() );
+						glTexBuffer( GL_TEXTURE_BUFFER, texture->getFormat().pixelFormat.glInternalFormat, buffer->getGLId() );
 				} else if( oldTexture ) {
 					glBindTexture(oldTexture->getGLTextureType(), 0);
 				} else {

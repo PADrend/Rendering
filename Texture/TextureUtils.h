@@ -12,6 +12,7 @@
 #define RENDERING_TEXTUREUTILS_H
 
 #include "Texture.h"
+#include "PixelFormatGL.h"
 #include <Util/References.h>
 #include <Util/TypeConstant.h>
 #include <cstdint>
@@ -27,6 +28,7 @@ namespace Util {
 class Bitmap;
 class FileName;
 class PixelAccessor;
+class PixelFormat;
 }
 
 namespace Rendering {
@@ -37,6 +39,7 @@ namespace TextureUtils {
 
 const unsigned int RAW_16BIT_BW = 0;
 
+PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat);
 uint32_t textureTypeToGLTextureType(TextureType type);
 
 Util::Reference<Texture> createStdCubeTexture(uint32_t width, bool alpha);

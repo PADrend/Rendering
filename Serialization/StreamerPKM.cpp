@@ -71,7 +71,7 @@ Util::Reference<Texture> StreamerPKM::loadTexture(std::istream & input, TextureT
 #ifdef LIB_GLESv2
 	format.glInternalFormat = GL_ETC1_RGB8_OES;
 #endif /* LIB_GLESv2 */
-	format.compressed = true;
+	format.pixelFormat.compressed = true;
 	format.compressedImageSize = 8 * ((width + 3) >> 2) * ((height + 3) >> 2);
 
 	Util::Reference<Texture> texture = new Texture(format);

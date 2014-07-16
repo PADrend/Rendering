@@ -43,136 +43,7 @@ namespace Rendering {
 namespace TextureUtils {
 
 //! (static)
-uint32_t textureTypeToGLTextureType(TextureType type){
-	switch(type){
-		case TextureType::TEXTURE_1D:
-			return static_cast<uint32_t>(GL_TEXTURE_1D);
-		case TextureType::TEXTURE_1D_ARRAY:
-			return static_cast<uint32_t>(GL_TEXTURE_1D_ARRAY);
-		case TextureType::TEXTURE_2D:
-			return static_cast<uint32_t>(GL_TEXTURE_2D);
-		case TextureType::TEXTURE_2D_ARRAY:
-			return static_cast<uint32_t>(GL_TEXTURE_2D_ARRAY);
-		case TextureType::TEXTURE_3D:
-			return static_cast<uint32_t>(GL_TEXTURE_3D);
-		case TextureType::TEXTURE_CUBE_MAP:
-			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP);
-		case TextureType::TEXTURE_CUBE_MAP_ARRAY:
-			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP_ARRAY);
-		case TextureType::TEXTURE_BUFFER:
-			return static_cast<uint32_t>(GL_TEXTURE_BUFFER);
-		default:
-			throw std::logic_error("createTextureFromBitmap: Invalid type.");
-	}
-}
-
-static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering){
-	Texture::Format format;
-	format.glTextureType = textureTypeToGLTextureType(type);
-	format.sizeX = sizeX;
-	format.sizeY = sizeY;
-	format.numLayers = numLayers;
-	format.glFormat = glPixelFormat;
-	format.glDataType = glPixelDataType;
-	format.glInternalFormat = glInternalFormat;
-	
-	format.linearMinFilter = filtering;
-	format.linearMagFilter = filtering;
-	return new Texture(format);
-}
-
-//! (static)
-Util::Reference<Texture> createStdCubeTexture(uint32_t width, bool alpha) {
-	return create(TextureType::TEXTURE_CUBE_MAP,width,width,6, alpha ? GL_RGBA : GL_RGB,GL_UNSIGNED_BYTE,alpha ? GL_RGBA : GL_RGB,true);
-}
-
-//! (static)
-Util::Reference<Texture> createStdTexture(uint32_t width, uint32_t height, bool alpha) {
-	return create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB,GL_UNSIGNED_BYTE,alpha ? GL_RGBA : GL_RGB,true);
-}
-
-Util::Reference<Texture> createNoiseTexture(uint32_t width, uint32_t height, bool alpha,float scaling) {
-	Util::Reference<Texture> texture = create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT,alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
-
-	texture->allocateLocalData();
-	Util::Reference<Util::PixelAccessor> pixelAccessor = Util::PixelAccessor::create(texture->getLocalBitmap());
-	Util::NoiseGenerator generator(17);
-	for(uint_fast32_t i = 0; i < static_cast<uint_fast32_t>(texture->getWidth()); ++i) {
-		for(uint_fast32_t j = 0; j < static_cast<uint_fast32_t>(texture->getHeight()); ++j) {
-			const float x = (i + 0.5f) * scaling;
-			const float y = (j + 0.5f) * scaling;
-			pixelAccessor->writeColor(i, j, Util::Color4f(
-					(generator.get(x, y, 0.5f) + 1.0f) / 2.0f,
-					(generator.get(x, y, 1.5f) + 1.0f) / 2.0f,
-					(generator.get(x, y, 2.5f) + 1.0f) / 2.0f,
-					(generator.get(x, y, 3.5f) + 1.0f) / 2.0f
-			));
-		}
-	}
-	texture->dataChanged();
-
-	return texture.detachAndDecrease();
-}
-
-
-Util::Reference<Texture> createTextureDataArray_Vec4(const uint32_t size) {
-#if defined(LIB_GL)
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_1D;
-	format.sizeX = size;
-	format.sizeY = 1;
-	format.glFormat = GL_RGBA;
-	format.glDataType = GL_FLOAT;
-	format.glInternalFormat = GL_RGBA32F_ARB;
-	format.glWrapS = GL_CLAMP;
-	format.glWrapT = GL_CLAMP;
-
-	return new Texture(format);
-#else
-	return nullptr;
-#endif
-}
-
-#ifdef LIB_GL
-//! (static)
-Util::Reference<Texture> createHDRCubeTexture(uint32_t width, bool alpha) {
-	return create(TextureType::TEXTURE_CUBE_MAP,width,width,6, alpha ? GL_RGBA : GL_RGB, GL_FLOAT, alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
-}
-
-//! (static)
-Util::Reference<Texture> createHDRTexture(uint32_t width, uint32_t height, bool alpha) {
-	return create(TextureType::TEXTURE_2D, width, height, 1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT, alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
-}
-
-//! (static)
-Util::Reference<Texture> createRedTexture(uint32_t width, uint32_t height, bool useByte) {
-	return create(TextureType::TEXTURE_2D, width, height, 1, GL_RED,  useByte ? GL_UNSIGNED_BYTE : GL_FLOAT, useByte ? 1 : GL_R32F,true);
-}
-
-//! (static)
-Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t height) {
-	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, GL_DEPTH24_STENCIL8_EXT, false);
-}
-#endif
-
-//! [static] Factory
-Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
-	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
-}
-
-
-struct PixelFormatGL{
-	uint32_t glLocalDataFormat, glLocalDataType, glInternalFormat;
-	bool compressed;
-	
-	PixelFormatGL() : glLocalDataFormat(0),glLocalDataType(0),glInternalFormat(0),compressed(false){}
-	
-	bool isValid()const{	return glInternalFormat!=0;	}
-};
-
-//
-
-static PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat){
+PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat){
 	PixelFormatGL glf;
 	if(pixelFormat.getValueType() == Util::TypeConstant::UINT8){
 		glf.glLocalDataType = GL_UNSIGNED_BYTE;
@@ -243,6 +114,123 @@ static PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelF
 }
 //Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat);
 
+//! (static)
+uint32_t textureTypeToGLTextureType(TextureType type){
+	switch(type){
+		case TextureType::TEXTURE_1D:
+			return static_cast<uint32_t>(GL_TEXTURE_1D);
+		case TextureType::TEXTURE_1D_ARRAY:
+			return static_cast<uint32_t>(GL_TEXTURE_1D_ARRAY);
+		case TextureType::TEXTURE_2D:
+			return static_cast<uint32_t>(GL_TEXTURE_2D);
+		case TextureType::TEXTURE_2D_ARRAY:
+			return static_cast<uint32_t>(GL_TEXTURE_2D_ARRAY);
+		case TextureType::TEXTURE_3D:
+			return static_cast<uint32_t>(GL_TEXTURE_3D);
+		case TextureType::TEXTURE_CUBE_MAP:
+			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP);
+		case TextureType::TEXTURE_CUBE_MAP_ARRAY:
+			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP_ARRAY);
+		case TextureType::TEXTURE_BUFFER:
+			return static_cast<uint32_t>(GL_TEXTURE_BUFFER);
+		default:
+			throw std::logic_error("createTextureFromBitmap: Invalid type.");
+	}
+}
+
+static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering){
+	Texture::Format format;
+	format.glTextureType = textureTypeToGLTextureType(type);
+	format.sizeX = sizeX;
+	format.sizeY = sizeY;
+	format.numLayers = numLayers;
+	format.pixelFormat.glLocalDataFormat = glPixelFormat;
+	format.pixelFormat.glLocalDataType = glPixelDataType;
+	format.pixelFormat.glInternalFormat = glInternalFormat;
+	
+	format.linearMinFilter = filtering;
+	format.linearMagFilter = filtering;
+	return new Texture(format);
+}
+
+//! (static)
+Util::Reference<Texture> createStdCubeTexture(uint32_t width, bool alpha) {
+	return create(TextureType::TEXTURE_CUBE_MAP,width,width,6, alpha ? GL_RGBA : GL_RGB,GL_UNSIGNED_BYTE,alpha ? GL_RGBA : GL_RGB,true);
+}
+
+//! (static)
+Util::Reference<Texture> createStdTexture(uint32_t width, uint32_t height, bool alpha) {
+	return create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB,GL_UNSIGNED_BYTE,alpha ? GL_RGBA : GL_RGB,true);
+}
+
+Util::Reference<Texture> createNoiseTexture(uint32_t width, uint32_t height, bool alpha,float scaling) {
+	Util::Reference<Texture> texture = create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT,alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
+
+	texture->allocateLocalData();
+	Util::Reference<Util::PixelAccessor> pixelAccessor = Util::PixelAccessor::create(texture->getLocalBitmap());
+	Util::NoiseGenerator generator(17);
+	for(uint_fast32_t i = 0; i < static_cast<uint_fast32_t>(texture->getWidth()); ++i) {
+		for(uint_fast32_t j = 0; j < static_cast<uint_fast32_t>(texture->getHeight()); ++j) {
+			const float x = (i + 0.5f) * scaling;
+			const float y = (j + 0.5f) * scaling;
+			pixelAccessor->writeColor(i, j, Util::Color4f(
+					(generator.get(x, y, 0.5f) + 1.0f) / 2.0f,
+					(generator.get(x, y, 1.5f) + 1.0f) / 2.0f,
+					(generator.get(x, y, 2.5f) + 1.0f) / 2.0f,
+					(generator.get(x, y, 3.5f) + 1.0f) / 2.0f
+			));
+		}
+	}
+	texture->dataChanged();
+
+	return texture.detachAndDecrease();
+}
+
+
+Util::Reference<Texture> createTextureDataArray_Vec4(const uint32_t size) {
+#if defined(LIB_GL)
+	Texture::Format format;
+	format.glTextureType = GL_TEXTURE_1D;
+	format.sizeX = size;
+	format.sizeY = 1;
+	format.pixelFormat.glLocalDataFormat = GL_RGBA;
+	format.pixelFormat.glLocalDataType = GL_FLOAT;
+	format.pixelFormat.glInternalFormat = GL_RGBA32F;
+	format.glWrapS = GL_CLAMP;
+	format.glWrapT = GL_CLAMP;
+
+	return new Texture(format);
+#else
+	return nullptr;
+#endif
+}
+
+#ifdef LIB_GL
+//! (static)
+Util::Reference<Texture> createHDRCubeTexture(uint32_t width, bool alpha) {
+	return create(TextureType::TEXTURE_CUBE_MAP,width,width,6, alpha ? GL_RGBA : GL_RGB, GL_FLOAT, alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
+}
+
+//! (static)
+Util::Reference<Texture> createHDRTexture(uint32_t width, uint32_t height, bool alpha) {
+	return create(TextureType::TEXTURE_2D, width, height, 1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT, alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
+}
+
+//! (static)
+Util::Reference<Texture> createRedTexture(uint32_t width, uint32_t height, bool useByte) {
+	return create(TextureType::TEXTURE_2D, width, height, 1, GL_RED,  useByte ? GL_UNSIGNED_BYTE : GL_FLOAT, useByte ? 1 : GL_R32F,true);
+}
+
+//! (static)
+Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t height) {
+	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, GL_DEPTH24_STENCIL8_EXT, false);
+}
+#endif
+
+//! [static] Factory
+Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
+	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
+}
 
 //! [static] Factory
 Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents){
@@ -299,14 +287,11 @@ Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, Te
 	format.sizeX = width;
 	format.numLayers = numLayers;
 
-	const auto glPixelFormat = pixelFormatToGLPixelFormat(bitmap.getPixelFormat());
-	if(!glPixelFormat.isValid()){
+	format.pixelFormat = pixelFormatToGLPixelFormat(bitmap.getPixelFormat());
+	if(!format.pixelFormat.isValid()){
 		WARN("createTextureFromBitmap: Bitmap has unimplemented pixel format.");
 		return nullptr;
 	}
-	format.glFormat = glPixelFormat.glLocalDataFormat;
-	format.glInternalFormat = glPixelFormat.glInternalFormat;
-	format.glDataType = glPixelFormat.glLocalDataType;
 	
 	if(clampToEdge) {
 		format.glWrapS = GL_CLAMP_TO_EDGE;
@@ -354,13 +339,12 @@ Util::Reference<Texture> createTextureFromRAW(const Util::FileName & filename, u
 	}
 
 	Texture::Format format;
-	format.glTextureType=GL_TEXTURE_2D;
+	format.glTextureType = GL_TEXTURE_2D;
 	format.sizeY = width;
 	format.sizeX = width;
-	format.glDataType=GL_FLOAT;
-	format.glInternalFormat=GL_RGB;
-
-	format.glFormat = GL_RGB;
+	format.pixelFormat.glLocalDataType = GL_FLOAT;
+	format.pixelFormat.glInternalFormat = GL_RGB;
+	format.pixelFormat.glLocalDataFormat = GL_RGB;
 
 	// TODO! check endianess!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	auto t=new Texture(format);
@@ -386,7 +370,8 @@ Util::Reference<Texture> createTextureFromRAW(const Util::FileName & filename, u
 Util::Reference<Texture> createTextureFromScreen(int xpos, int ypos, const Texture::Format & format) {
 	auto texture = new Texture(format);
 	texture->allocateLocalData();
-	glReadPixels(xpos, ypos, static_cast<GLsizei>(format.sizeX), static_cast<GLsizei>(format.sizeY), format.glFormat, format.glDataType, texture->getLocalData());
+	glReadPixels(xpos, ypos, static_cast<GLsizei>(format.sizeX), static_cast<GLsizei>(format.sizeY), 
+				format.pixelFormat.glLocalDataFormat, format.pixelFormat.glLocalDataType, texture->getLocalData());
 	return texture;
 }
 
@@ -403,8 +388,9 @@ Util::Reference<Texture> createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/,
 	Texture::Format format;
 	format.sizeX = width;
 	format.sizeY = height;
-	format.glDataType = GL_UNSIGNED_BYTE;
-	format.glFormat = useAlpha ? GL_RGBA : GL_RGB;
+	format.pixelFormat.glLocalDataType = GL_UNSIGNED_BYTE;
+	format.pixelFormat.glLocalDataFormat = useAlpha ? GL_RGBA : GL_RGB;
+	format.pixelFormat.glInternalFormat = useAlpha ? GL_RGBA : GL_RGB;
 	return createTextureFromScreen(xpos, ypos, format);
 }
 
@@ -637,7 +623,7 @@ Util::Reference<Util::PixelAccessor> createDepthPixelAccessor(RenderingContext &
 			}
 	};
 #ifdef LIB_GL
-	if(texture.getFormat().glFormat != GL_DEPTH_STENCIL_EXT) {
+	if(texture.getFormat().pixelFormat.glLocalDataFormat != GL_DEPTH_STENCIL_EXT) {
 #endif /* LIB_GL */
 		return createColorPixelAccessor(context, texture);
 #ifdef LIB_GL
@@ -694,7 +680,7 @@ Util::Reference<Util::PixelAccessor> createStencilPixelAccessor(RenderingContext
 			}
 	};
 #ifdef LIB_GL
-	if(texture.getFormat().glFormat != GL_DEPTH_STENCIL_EXT) {
+	if(texture.getFormat().pixelFormat.glLocalDataFormat != GL_DEPTH_STENCIL_EXT) {
 #endif /* LIB_GL */
 		return createColorPixelAccessor(context, texture);
 #ifdef LIB_GL

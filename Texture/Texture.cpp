@@ -29,16 +29,14 @@ namespace Rendering {
 Texture::Format::Format():
 		sizeX(0), sizeY(0), numLayers(1),
 		glTextureType(GL_TEXTURE_2D),
-		glInternalFormat(GL_RGBA), glFormat(GL_RGBA),
-		compressed(false), compressedImageSize(0),
-		glDataType(GL_UNSIGNED_BYTE),
+		compressedImageSize(0),
 		glWrapS(GL_REPEAT), glWrapT(GL_REPEAT), glWrapR(GL_REPEAT),
 		linearMinFilter(true),linearMagFilter(true) {
 }
 
 uint32_t Texture::Format::getPixelSize()const{
-	uint32_t pixelSize = getGLTypeSize(glDataType);
-	switch (glFormat){
+	uint32_t pixelSize = getGLTypeSize(pixelFormat.glLocalDataType);
+	switch(pixelFormat.glLocalDataFormat){
 #ifdef LIB_GL
 		case GL_RG:
 		case GL_RG_INTEGER:
@@ -220,26 +218,26 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 	//! \todo add cube map support and 3d-texture support
 
 		case TextureType::TEXTURE_1D: {
-			glTexImage1D(GL_TEXTURE_1D, 0, static_cast<GLint>(format.glInternalFormat),
-					static_cast<GLsizei>(getWidth()), 0, static_cast<GLenum>(format.glFormat),
-					static_cast<GLenum>(format.glDataType), getLocalData());
+			glTexImage1D(GL_TEXTURE_1D, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+					static_cast<GLsizei>(getWidth()), 0, static_cast<GLenum>(format.pixelFormat.glLocalDataFormat),
+					static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
 			break;
 		}
 #endif
 		case TextureType::TEXTURE_2D: {
-			if(format.compressed) {
-				glCompressedTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format.glInternalFormat),
+			if(format.pixelFormat.compressed) {
+				glCompressedTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
 										static_cast<GLsizei>(getWidth()),
 										static_cast<GLsizei>(getHeight()), 0,
 										static_cast<GLsizei>(format.compressedImageSize),
 										getLocalData());
 			}else{
 					GET_GL_ERROR();
-				glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format.glInternalFormat),
+				glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
 										static_cast<GLsizei>(getWidth()),
 										static_cast<GLsizei>(getHeight()), 0,
-										static_cast<GLenum>(format.glFormat), 
-										static_cast<GLenum>(format.glDataType), getLocalData());
+										static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
+										static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
 						GET_GL_ERROR();
 			}
 			break;
@@ -248,20 +246,20 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 			Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
 			if(pa){ // local data available?
 				for(uint_fast8_t layer =0; layer < 6; layer++){
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, static_cast<GLint>(format.glInternalFormat),
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
 								static_cast<GLsizei>(getWidth()),
 								static_cast<GLsizei>(getHeight()), 0,
-								static_cast<GLenum>(format.glFormat), 
-								static_cast<GLenum>(format.glDataType), pa->_ptr<uint8_t>(0, getHeight() * layer));
+								static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
+								static_cast<GLenum>(format.pixelFormat.glLocalDataType), pa->_ptr<uint8_t>(0, getHeight() * layer));
 				}
 			}
 			else{ // -> just allocate gpu data.
 				for(uint_fast8_t layer =0; layer < 6; ++layer){
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, static_cast<GLint>(format.glInternalFormat),
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
 								static_cast<GLsizei>(getWidth()),
 								static_cast<GLsizei>(getHeight()), 0,
-								static_cast<GLenum>(format.glFormat), 
-								static_cast<GLenum>(format.glDataType), nullptr);
+								static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
+								static_cast<GLenum>(format.pixelFormat.glLocalDataType), nullptr);
 				}
 			}
 			break;
@@ -298,9 +296,9 @@ void Texture::allocateLocalData(){
 	PixelFormat localFormat = PixelFormat::UNKNOWN;
 
 #ifdef LIB_GL
-	if(!format.compressed){
-		if(format.glDataType==GL_FLOAT) {
-			switch (format.glFormat){
+	if(!format.pixelFormat.compressed){
+		if(format.pixelFormat.glLocalDataType==GL_FLOAT) {
+			switch (format.pixelFormat.glLocalDataFormat){
 				case GL_RGBA:
 					localFormat = PixelFormat::RGBA_FLOAT;
 					break;
@@ -330,8 +328,8 @@ void Texture::allocateLocalData(){
 					WARN("Texture::allocateLocalData: Unsupported glFormat.");
 					break;
 			}
-		}else if(format.glDataType==GL_UNSIGNED_BYTE) {
-			switch (format.glFormat){
+		}else if(format.pixelFormat.glLocalDataType==GL_UNSIGNED_BYTE) {
+			switch (format.pixelFormat.glLocalDataFormat){
 				case GL_RGBA:
 					localFormat = PixelFormat::RGBA;
 					break;
@@ -361,8 +359,8 @@ void Texture::allocateLocalData(){
 					WARN("Texture::allocateLocalData: Unsupported glFormat.");
 					break;
 			}
-		}else if(format.glDataType==GL_UNSIGNED_INT) {
-			switch (format.glFormat){
+		}else if(format.pixelFormat.glLocalDataType==GL_UNSIGNED_INT) {
+			switch (format.pixelFormat.glLocalDataFormat){
 				case GL_RED_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
 					break;
@@ -379,8 +377,8 @@ void Texture::allocateLocalData(){
 					WARN("Texture::allocateLocalData: Unsupported glFormat.");
 					break;
 			}
-		}else if(format.glDataType==GL_INT) {
-			switch (format.glFormat){
+		}else if(format.pixelFormat.glLocalDataType==GL_INT) {
+			switch (format.pixelFormat.glLocalDataFormat){
 				case GL_RED_INTEGER:
 					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
 					break;
@@ -397,7 +395,7 @@ void Texture::allocateLocalData(){
 					WARN("Texture::allocateLocalData: Unsupported glFormat.");
 					break;
 			}
-		} else if(format.glDataType == GL_UNSIGNED_INT_24_8_EXT) {
+		} else if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT_24_8_EXT) {
 			localFormat = PixelFormat::RGBA;
 		}else{
 			WARN("Texture::allocateLocalData: Unsupported glDataType.");
@@ -405,8 +403,8 @@ void Texture::allocateLocalData(){
 	}
 #else /* LIB_GL */
 	if(!format.compressed) {
-		if(format.glDataType == GL_FLOAT) {
-			switch (format.glFormat) {
+		if(format.pixelFormat.glLocalDataType == GL_FLOAT) {
+			switch (format.pixelFormat.glLocalDataFormat) {
 				case GL_RGBA:
 					localFormat = PixelFormat::RGBA_FLOAT;
 					break;
@@ -416,8 +414,8 @@ void Texture::allocateLocalData(){
 				default:
 					break;
 			}
-		} else if(format.glDataType == GL_UNSIGNED_BYTE) {
-			switch (format.glFormat) {
+		} else if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_BYTE) {
+			switch (format.pixelFormat.glLocalDataFormat) {
 				case GL_RGBA:
 					localFormat = PixelFormat::RGBA;
 					break;
@@ -476,14 +474,14 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 	switch( tType ){
 		case  TextureType::TEXTURE_1D:
 		case  TextureType::TEXTURE_2D:
-			glGetTexImage(format.glTextureType, 0, format.glFormat, format.glDataType, getLocalData());
+			glGetTexImage(format.glTextureType, 0, format.pixelFormat.glLocalDataFormat, format.pixelFormat.glLocalDataType, getLocalData());
 			break;
 		case  TextureType::TEXTURE_CUBE_MAP:{
 			Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
 			if(pa){
 				for(uint_fast8_t layer = 0; layer < 6; ++layer){
 					glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, 
-								static_cast<GLenum>(format.glFormat), static_cast<GLenum>(format.glDataType), 
+								static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), static_cast<GLenum>(format.pixelFormat.glLocalDataType), 
 								pa->_ptr<uint8_t>(0, getHeight() * layer));
 				}
 			}
