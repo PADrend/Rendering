@@ -154,15 +154,17 @@ void Texture::_createGLID(RenderingContext & context){
 	glBindTexture(format.glTextureType,glId);
 	
 	GET_GL_ERROR();
-	// set parameters
-	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_S,format.glWrapS);
-	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_T,format.glWrapT);
-#ifdef LIB_GL
-	glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_R,format.glWrapR);
-#endif
+	if( tType!=TextureType::TEXTURE_BUFFER ){
+		// set parameters
+		glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_S,format.glWrapS);
+		glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_T,format.glWrapT);
+	#ifdef LIB_GL
+		glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_R,format.glWrapR);
+	#endif
 
-	glTexParameteri(format.glTextureType,GL_TEXTURE_MAG_FILTER,format.linearMagFilter ? GL_LINEAR : GL_NEAREST);
-	glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR : GL_NEAREST);
+		glTexParameteri(format.glTextureType,GL_TEXTURE_MAG_FILTER,format.linearMagFilter ? GL_LINEAR : GL_NEAREST);
+		glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR : GL_NEAREST);
+	}
 	context.popTexture(0);
 
 	glActiveTexture(activeTexture);
