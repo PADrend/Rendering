@@ -40,6 +40,7 @@ namespace TextureUtils {
 const unsigned int RAW_16BIT_BW = 0;
 
 PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat);
+Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat);
 uint32_t textureTypeToGLTextureType(TextureType type);
 
 Util::Reference<Texture> createStdCubeTexture(uint32_t width, bool alpha);

@@ -13,6 +13,7 @@
 #include "../BufferObject.h"
 #include "../Helper.h"
 #include "../RenderingContext/RenderingContext.h"
+#include "TextureUtils.h"
 #include <Util/Graphics/Bitmap.h>
 #include <Util/Graphics/PixelFormat.h>
 #include <Util/Macros.h>
@@ -291,151 +292,17 @@ void Texture::allocateLocalData(){
 		WARN("Texture::allocateLocalData: Data already allocated");
 		return;
 	}
-	using Util::PixelFormat;
-
-	PixelFormat localFormat = PixelFormat::UNKNOWN;
-
-#ifdef LIB_GL
-	if(!format.pixelFormat.compressed){
-		if(format.pixelFormat.glLocalDataType==GL_FLOAT) {
-			switch (format.pixelFormat.glLocalDataFormat){
-				case GL_RGBA:
-					localFormat = PixelFormat::RGBA_FLOAT;
-					break;
-				case GL_RGB:
-					localFormat = PixelFormat::RGB_FLOAT;
-					break;
-				case GL_BGRA:
-					localFormat = PixelFormat::BGRA_FLOAT;
-					break;
-				case GL_BGR:
-					localFormat = PixelFormat::BGR_FLOAT;
-					break;
-				case GL_DEPTH_COMPONENT:
-				case GL_RED:
-					localFormat = PixelFormat( Util::TypeConstant::FLOAT, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
-					break;
-				case GL_GREEN:
-					localFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,0,PixelFormat::NONE,PixelFormat::NONE);
-					break;
-				case GL_BLUE:
-					localFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,PixelFormat::NONE,0,PixelFormat::NONE);
-					break;
-				case GL_ALPHA:
-					localFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
-					break;
-				default:
-					WARN("Texture::allocateLocalData: Unsupported glFormat.");
-					break;
-			}
-		}else if(format.pixelFormat.glLocalDataType==GL_UNSIGNED_BYTE) {
-			switch (format.pixelFormat.glLocalDataFormat){
-				case GL_RGBA:
-					localFormat = PixelFormat::RGBA;
-					break;
-				case GL_RGB:
-					localFormat = PixelFormat::RGB;
-					break;
-				case GL_BGRA:
-					localFormat = PixelFormat::BGRA;
-					break;
-				case GL_BGR:
-					localFormat = PixelFormat::BGR;
-					break;
-				case GL_DEPTH_COMPONENT:
-				case GL_RED:
-					localFormat = PixelFormat( Util::TypeConstant::UINT8, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
-					break;
-				case GL_GREEN:
-					localFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,0,PixelFormat::NONE,PixelFormat::NONE);
-					break;
-				case GL_BLUE:
-					localFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,PixelFormat::NONE,0,PixelFormat::NONE);
-					break;
-				case GL_ALPHA:
-					localFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
-					break;
-				default:
-					WARN("Texture::allocateLocalData: Unsupported glFormat.");
-					break;
-			}
-		}else if(format.pixelFormat.glLocalDataType==GL_UNSIGNED_INT) {
-			switch (format.pixelFormat.glLocalDataFormat){
-				case GL_RED_INTEGER:
-					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
-					break;
-				case GL_RG_INTEGER:
-					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, PixelFormat::NONE, PixelFormat::NONE );
-					break;
-				case GL_RGB_INTEGER:
-					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, 8, PixelFormat::NONE );
-					break;
-				case GL_RGBA_INTEGER:
-					localFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, 8, 12 );
-					break;
-				default:
-					WARN("Texture::allocateLocalData: Unsupported glFormat.");
-					break;
-			}
-		}else if(format.pixelFormat.glLocalDataType==GL_INT) {
-			switch (format.pixelFormat.glLocalDataFormat){
-				case GL_RED_INTEGER:
-					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
-					break;
-				case GL_RG_INTEGER:
-					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, PixelFormat::NONE, PixelFormat::NONE );
-					break;
-				case GL_RGB_INTEGER:
-					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, 8, PixelFormat::NONE );
-					break;
-				case GL_RGBA_INTEGER:
-					localFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, 8, 12 );
-					break;
-				default:
-					WARN("Texture::allocateLocalData: Unsupported glFormat.");
-					break;
-			}
-		} else if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT_24_8_EXT) {
-			localFormat = PixelFormat::RGBA;
-		}else{
-			WARN("Texture::allocateLocalData: Unsupported glDataType.");
-		}
-	}
-#else /* LIB_GL */
-	if(!format.compressed) {
-		if(format.pixelFormat.glLocalDataType == GL_FLOAT) {
-			switch (format.pixelFormat.glLocalDataFormat) {
-				case GL_RGBA:
-					localFormat = PixelFormat::RGBA_FLOAT;
-					break;
-				case GL_RGB:
-					localFormat = PixelFormat::RGB_FLOAT;
-					break;
-				default:
-					break;
-			}
-		} else if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_BYTE) {
-			switch (format.pixelFormat.glLocalDataFormat) {
-				case GL_RGBA:
-					localFormat = PixelFormat::RGBA;
-					break;
-				case GL_RGB:
-					localFormat = PixelFormat::RGB;
-					break;
-				default:
-					break;
-			}
-		}
-	}
-#endif /* LIB_GL */
-
-	// No default format found...
-	if(localFormat == PixelFormat::UNKNOWN) {
+	if( format.pixelFormat.compressed ){ // download raw data
 		localBitmap = new Util::Bitmap(getWidth(), getHeight()*getNumLayers(), static_cast<std::size_t>(format.getDataSize()));
-	}else {
-		localBitmap = new Util::Bitmap(getWidth(), getHeight()*getNumLayers(), localFormat);
+	}else{
+		const auto localFormat = TextureUtils::glPixelFormatToPixelFormat( format.pixelFormat );
+		if(localFormat == Util::PixelFormat::UNKNOWN) {
+			WARN("Texture::allocateLocalData: Unsupported pixel format.");
+			localBitmap = nullptr;
+		}else{
+			localBitmap = new Util::Bitmap(getWidth(), getHeight()*getNumLayers(), localFormat);
+		}
 	}
-
 }
 
 bool Texture::isGLTextureValid()const {

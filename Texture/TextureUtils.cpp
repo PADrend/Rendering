@@ -112,7 +112,149 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat){
 	
 	return glf;
 }
-//Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat);
+
+//! (static)
+Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat){
+	using Util::PixelFormat;
+	
+	PixelFormat bitmapPixelFormat = PixelFormat::UNKNOWN;
+	if(glPixelFormat.compressed)
+		return bitmapPixelFormat;
+		
+#ifdef LIB_GL
+	if(glPixelFormat.glLocalDataType==GL_FLOAT) {
+		switch(glPixelFormat.glLocalDataFormat){
+			case GL_RGBA:
+				bitmapPixelFormat = PixelFormat::RGBA_FLOAT;
+				break;
+			case GL_RGB:
+				bitmapPixelFormat = PixelFormat::RGB_FLOAT;
+				break;
+			case GL_BGRA:
+				bitmapPixelFormat = PixelFormat::BGRA_FLOAT;
+				break;
+			case GL_BGR:
+				bitmapPixelFormat = PixelFormat::BGR_FLOAT;
+				break;
+			case GL_DEPTH_COMPONENT:
+			case GL_RED:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::FLOAT, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
+				break;
+			case GL_GREEN:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,0,PixelFormat::NONE,PixelFormat::NONE);
+				break;
+			case GL_BLUE:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,PixelFormat::NONE,0,PixelFormat::NONE);
+				break;
+			case GL_ALPHA:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::FLOAT, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
+				break;
+			default:
+//				WARN("Texture::allocateLocalData: Unsupported glFormat.");
+				break;
+		}
+	}else if(glPixelFormat.glLocalDataType==GL_UNSIGNED_BYTE) {
+		switch (glPixelFormat.glLocalDataFormat){
+			case GL_RGBA:
+				bitmapPixelFormat = PixelFormat::RGBA;
+				break;
+			case GL_RGB:
+				bitmapPixelFormat = PixelFormat::RGB;
+				break;
+			case GL_BGRA:
+				bitmapPixelFormat = PixelFormat::BGRA;
+				break;
+			case GL_BGR:
+				bitmapPixelFormat = PixelFormat::BGR;
+				break;
+			case GL_DEPTH_COMPONENT:
+			case GL_RED:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT8, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
+				break;
+			case GL_GREEN:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,0,PixelFormat::NONE,PixelFormat::NONE);
+				break;
+			case GL_BLUE:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,PixelFormat::NONE,0,PixelFormat::NONE);
+				break;
+			case GL_ALPHA:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT8, PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE,0);
+				break;
+			default:
+//				WARN("Texture::allocateLocalData: Unsupported glFormat.");
+				break;
+		}
+	}else if(glPixelFormat.glLocalDataType==GL_UNSIGNED_INT) {
+		switch (glPixelFormat.glLocalDataFormat){
+			case GL_RED_INTEGER:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
+				break;
+			case GL_RG_INTEGER:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, PixelFormat::NONE, PixelFormat::NONE );
+				break;
+			case GL_RGB_INTEGER:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, 8, PixelFormat::NONE );
+				break;
+			case GL_RGBA_INTEGER:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT32, 0, 4, 8, 12 );
+				break;
+			default:
+//				WARN("Texture::allocateLocalData: Unsupported glFormat.");
+				break;
+		}
+	}else if(glPixelFormat.glLocalDataType==GL_INT) {
+		switch (glPixelFormat.glLocalDataFormat){
+			case GL_RED_INTEGER:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::INT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
+				break;
+			case GL_RG_INTEGER:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, PixelFormat::NONE, PixelFormat::NONE );
+				break;
+			case GL_RGB_INTEGER:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, 8, PixelFormat::NONE );
+				break;
+			case GL_RGBA_INTEGER:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::INT32, 0, 4, 8, 12 );
+				break;
+			default:
+//				WARN("Texture::allocateLocalData: Unsupported glFormat.");
+				break;
+		}
+	} else if(glPixelFormat.glLocalDataType == GL_UNSIGNED_INT_24_8_EXT) {
+		bitmapPixelFormat = PixelFormat::RGBA;
+	}else{
+//		WARN("Texture::allocateLocalData: Unsupported glDataType.");
+	}
+
+#else /* LIB_GL */
+
+	if(glPixelFormat.glLocalDataType == GL_FLOAT) {
+		switch (glPixelFormat.glLocalDataFormat) {
+			case GL_RGBA:
+				bitmapPixelFormat = PixelFormat::RGBA_FLOAT;
+				break;
+			case GL_RGB:
+				bitmapPixelFormat = PixelFormat::RGB_FLOAT;
+				break;
+			default:
+				break;
+		}
+	} else if(glPixelFormat.glLocalDataType == GL_UNSIGNED_BYTE) {
+		switch (glPixelFormat.glLocalDataFormat) {
+			case GL_RGBA:
+				bitmapPixelFormat = PixelFormat::RGBA;
+				break;
+			case GL_RGB:
+				bitmapPixelFormat = PixelFormat::RGB;
+				break;
+			default:
+				break;
+		}
+	}
+
+#endif /* LIB_GL */
+	return bitmapPixelFormat;
+}
 
 //! (static)
 uint32_t textureTypeToGLTextureType(TextureType type){
@@ -137,6 +279,9 @@ uint32_t textureTypeToGLTextureType(TextureType type){
 			throw std::logic_error("createTextureFromBitmap: Invalid type.");
 	}
 }
+
+// ----------------------------------------------------------------------------
+// factory functions
 
 static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering){
 	Texture::Format format;
