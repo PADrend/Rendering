@@ -96,11 +96,11 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat){
 	} else if(pixelFormat.getValueType() == Util::TypeConstant::FLOAT){
 		glf.glLocalDataType = GL_FLOAT;
 		if( pixelFormat == Util::PixelFormat::MONO_FLOAT ){
-			glf.glLocalDataFormat = GL_R32F;
-			glf.glInternalFormat = GL_RED; 
+			glf.glLocalDataFormat = GL_RED;
+			glf.glInternalFormat = GL_R32F; 
 		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::FLOAT, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
-			glf.glLocalDataFormat = GL_RG32F;
-			glf.glInternalFormat = GL_RG; 
+			glf.glLocalDataFormat = GL_RG;
+			glf.glInternalFormat = GL_RG32F; 
 		} else if( pixelFormat == Util::PixelFormat::RGB_FLOAT ){
 			glf.glLocalDataFormat = GL_RGB;
 			glf.glInternalFormat = GL_RGB32F; // GL_RGB8????
