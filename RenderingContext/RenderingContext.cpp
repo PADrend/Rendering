@@ -833,7 +833,7 @@ Texture * RenderingContext::getTexture(uint8_t unit)const {
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit)const{
-	return internalData->targetRenderingStatus.getTextureUnitUsage(unit);
+	return internalData->targetRenderingStatus.getTextureUnitParams(unit).first;
 }
 
 void RenderingContext::pushTexture(uint8_t unit) {
@@ -841,15 +841,7 @@ void RenderingContext::pushTexture(uint8_t unit) {
 }
 
 void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture) {
-	if(!texture){
-		pushAndSetTexture(unit, nullptr, TexUnitUsageParameter::DISABLED);
-	}else if(texture->getGLTextureType() == GL_TEXTURE_1D) {
-		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_1D);
-	} else if(texture->getGLTextureType() == GL_TEXTURE_3D) {
-		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_3D);
-	} else {
-		pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_2D);
-	}
+	pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING);
 }
 
 void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
@@ -868,34 +860,25 @@ void RenderingContext::popTexture(uint8_t unit) {
 }
 
 void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
-	if(!texture){
-		setTexture(unit, nullptr, TexUnitUsageParameter::DISABLED);
-	}else if(texture->getGLTextureType() == GL_TEXTURE_1D) {
-		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_1D);
-	} else if(texture->getGLTextureType() == GL_TEXTURE_3D) {
-		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_3D);
-	} else {
-		setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING_2D);
-	}
+	setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING);
 }
 
 void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
 	Texture * oldTexture = getTexture(unit);
 	if(texture != oldTexture) {
-		if(texture) {
+		if(texture) 
 			texture->_prepareForBinding(*this);
-		}
 		internalData->actualCoreRenderingStatus.setTexture(unit, texture);
 	}
-	if(!texture)
-		usage = TexUnitUsageParameter::DISABLED;
-	if(usage != internalData->targetRenderingStatus.getTextureUnitUsage(unit)) {
-		internalData->targetRenderingStatus.setTextureUnitUsage(unit, usage);
+	const auto oldUsage = internalData->targetRenderingStatus.getTextureUnitParams(unit).first;
+	if(!texture){
+		if( oldUsage!= TexUnitUsageParameter::DISABLED )
+			internalData->targetRenderingStatus.setTextureUnitParams(unit, TexUnitUsageParameter::DISABLED , oldTexture ? oldTexture->getTextureType() : TextureType::TEXTURE_2D);
+	}else if( oldUsage!= usage ){
+		internalData->targetRenderingStatus.setTextureUnitParams(unit, usage , texture->getTextureType());
 	}
-
-	if(immediate) {
+	if(immediate)
 		applyChanges();
-	}
 }
 
 // TRANSFORM FEEDBACK ************************************************************************

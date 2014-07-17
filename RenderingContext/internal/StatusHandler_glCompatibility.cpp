@@ -140,25 +140,41 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 	if (forced || target.textureUnitsChanged(actual)) {
 		for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {
 			// enable/disable the fixed-function pipeline texture processing
-			const auto & usage = actual.getTextureUnitUsage(unit);
-			const auto & oldUsage = target.getTextureUnitUsage(unit);
-			if(!forced && usage==oldUsage)
+			const auto & params = actual.getTextureUnitParams(unit);
+			const auto & oldParams = target.getTextureUnitParams(unit);
+			if(!forced && params==oldParams)
 				continue;
 				
 			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
-			if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_1D) {
-				glEnable(GL_TEXTURE_1D);
-			} else if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_2D) {
-				glEnable(GL_TEXTURE_2D);
-			} else if(usage == TexUnitUsageParameter::TEXTURE_MAPPING_3D) {
-				glEnable(GL_TEXTURE_3D);
-			} else if(oldUsage == TexUnitUsageParameter::TEXTURE_MAPPING_1D) {
-				glDisable(GL_TEXTURE_1D);
-			} else if(oldUsage == TexUnitUsageParameter::TEXTURE_MAPPING_2D) {
-				glDisable(GL_TEXTURE_2D);
-			} else if(oldUsage == TexUnitUsageParameter::TEXTURE_MAPPING_3D) {
-				glDisable(GL_TEXTURE_3D);
+
+			switch(params.second){
+				case TextureType::TEXTURE_2D:
+				case TextureType::TEXTURE_2D_ARRAY:
+				case TextureType::TEXTURE_CUBE_MAP:
+				case TextureType::TEXTURE_CUBE_MAP_ARRAY:
+					if(params.first == TexUnitUsageParameter::TEXTURE_MAPPING) 
+						glEnable(GL_TEXTURE_2D);
+					else
+						glDisable(GL_TEXTURE_2D);
+					break;
+				case TextureType::TEXTURE_1D:
+				case TextureType::TEXTURE_1D_ARRAY:
+				case TextureType::TEXTURE_BUFFER:
+					if(params.first == TexUnitUsageParameter::TEXTURE_MAPPING) 
+						glEnable(GL_TEXTURE_1D);
+					else
+						glDisable(GL_TEXTURE_1D);
+					break;
+				case TextureType::TEXTURE_3D:
+					if(params.first == TexUnitUsageParameter::TEXTURE_MAPPING) 
+						glEnable(GL_TEXTURE_3D);
+					else
+						glDisable(GL_TEXTURE_3D);
+					break;
+				default:
+					glDisable(GL_TEXTURE_2D);
 			}
+			
 		}
 		glActiveTexture(GL_TEXTURE0);
 	}

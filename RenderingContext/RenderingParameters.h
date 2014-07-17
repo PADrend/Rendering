@@ -998,29 +998,13 @@ enum class TexUnitUsageParameter : uint8_t {
 	 */
 	GENERAL_PURPOSE,
 	/**
-	 * The texture is used for one-dimensional texturing using per vertex
+	 * The texture is used for texturing mapping using per vertex
 	 * texture coordinates. When using legacy OpenGL, the corresponding state
-	 * is enabled (see the parameter @c GL_TEXTURE_1D of @c glEnable) for the
+	 * is enabled (see the parameter @c GL_TEXTURE_1D/2D/3D of @c glEnable) for the
 	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
 	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
 	 */
-	TEXTURE_MAPPING_1D,
-	/**
-	 * The texture is used for two-dimensional texturing using per vertex
-	 * texture coordinates. When using legacy OpenGL, the corresponding state
-	 * is enabled (see the parameter @c GL_TEXTURE_2D of @c glEnable) for the
-	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
-	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
-	 */
-	TEXTURE_MAPPING_2D,
-	/**
-	 * The texture is used for three-dimensional texturing using per vertex
-	 * texture coordinates. When using legacy OpenGL, the corresponding state
-	 * is enabled (see the parameter @c GL_TEXTURE_3D of @c glEnable) for the
-	 * corresponding unit (see @c glActiveTexture). If a shader is used, the
-	 * corresponding uniform @c sg_textureEnabled[unit] is set to @c true.
-	 */
-	TEXTURE_MAPPING_3D,
+	TEXTURE_MAPPING,
 	
 	//! No Texture is bound to the texture unit.
 	DISABLED

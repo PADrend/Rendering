@@ -12,6 +12,7 @@
 #define RENDERING_DATA_H_
 
 #include "../RenderingParameters.h"
+#include "../../Texture/TextureType.h"
 #include <Geometry/Matrix4x4.h>
 #include <bitset>
 #include <cassert>
@@ -50,7 +51,7 @@ class RenderingStatus {
 			projectionMatrixCheckNumber(0),
 			projectionMatrix(),
 			textureUnitUsagesCheckNumber(0),
-			textureUnitUsages(MAX_TEXTURES, TexUnitUsageParameter::GENERAL_PURPOSE) {
+			textureUnitParams(MAX_TEXTURES, std::make_pair(TexUnitUsageParameter::DISABLED,TextureType::TEXTURE_2D)) {
 		}
 		Shader * getShader() 						{	return shader;	}
 		bool isInitialized()const					{	return initialized;	}
@@ -276,22 +277,22 @@ class RenderingStatus {
 	//	@{
 	private:
 		uint32_t textureUnitUsagesCheckNumber;
-		std::vector<TexUnitUsageParameter> textureUnitUsages;
+		std::vector<std::pair<TexUnitUsageParameter,TextureType>> textureUnitParams;
 
 	public:
-		void setTextureUnitUsage(uint8_t unit, TexUnitUsageParameter use) {
+		void setTextureUnitParams(uint8_t unit, TexUnitUsageParameter use, TextureType t ) {
 			++textureUnitUsagesCheckNumber;
-			textureUnitUsages.at(unit) = use;
+			textureUnitParams.at(unit) = std::make_pair(use,t);
 		}
-		const TexUnitUsageParameter & getTextureUnitUsage(uint8_t unit) const {
-			return textureUnitUsages.at(unit);
+		const std::pair<TexUnitUsageParameter,TextureType> & getTextureUnitParams(uint8_t unit) const {
+			return textureUnitParams.at(unit);
 		}
 		bool textureUnitsChanged(const RenderingStatus & actual) const {
 			return (textureUnitUsagesCheckNumber == actual.textureUnitUsagesCheckNumber) ? false : 
-					textureUnitUsages != actual.textureUnitUsages;
+					textureUnitParams != actual.textureUnitParams;
 		}
 		void updateTextureUnits(const RenderingStatus & actual) {
-			textureUnitUsages = actual.textureUnitUsages;
+			textureUnitParams = actual.textureUnitParams;
 			textureUnitUsagesCheckNumber = actual.textureUnitUsagesCheckNumber;
 		}
 
