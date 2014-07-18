@@ -345,7 +345,8 @@ BlendingParameters::equation_t BlendingParameters::glToEquation(uint32_t value) 
 }
 
 // declare here to allow forward declaration of Texture
-ImageBindParameters::ImageBindParameters() : layer(0),level(0),multiLayer(false),readOperations(false),writeOperations(false),glFormat(0) {}
+ImageBindParameters::ImageBindParameters(Texture*t) : texture(t),layer(0),level(0),multiLayer(false),readOperations(true),writeOperations(true) {}
+ImageBindParameters::ImageBindParameters() : layer(0),level(0),multiLayer(false),readOperations(true),writeOperations(true) {}
 ImageBindParameters::~ImageBindParameters(){} 
 void ImageBindParameters::setTexture(Texture* t)			{	texture = t;	}
 

@@ -457,14 +457,11 @@ class ImageBindParameters {
 		Util::Reference<Texture> texture;
 		uint32_t layer,level;
 		bool  multiLayer,readOperations,writeOperations;
-		uint32_t glFormat;
 	
 	public:
 		ImageBindParameters();
+		ImageBindParameters(Texture*t);
 		~ImageBindParameters();
-		
-		uint32_t getGLFormat()const			{	return glFormat;	}
-		void setGLFormat(uint32_t i)		{	glFormat = i;	}
 		
 		uint32_t getLayer()const			{	return layer;	}
 		void setLayer(uint32_t i)			{	layer = i;	}
@@ -483,6 +480,11 @@ class ImageBindParameters {
 		
 		Texture* getTexture()const			{	return texture.get();	}
 		void setTexture(Texture* t);
+		
+		bool operator==(const ImageBindParameters & other) const {
+			return texture == other.texture&&layer==other.layer&&level==other.level&&multiLayer==other.multiLayer&&
+					readOperations==other.readOperations&&writeOperations==other.writeOperations;
+		}
 };
 static const uint8_t MAX_BOUND_IMAGES = 8;
 

@@ -474,18 +474,39 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 	internalData->boundImages[unit] = iParam;
 #if defined(GL_ARB_shader_image_load_store)
 	if(isImageBindingSupported()){
-		
+		GET_GL_ERROR();
 		Texture* texture = iParam.getTexture();
-		GLuint textureId = texture ? texture->_prepareForBinding(*this) : 0;
-		GLenum access;
-		if(!iParam.getReadOperations()){
-			access =  GL_WRITE_ONLY;
-		}else if(!iParam.getWriteOperations()){
-			access =  GL_READ_ONLY;
+		if(texture){
+			GLenum access;
+			if(!iParam.getReadOperations()){
+				access =  GL_WRITE_ONLY;
+			}else if(!iParam.getWriteOperations()){
+				access =  GL_READ_ONLY;
+			}else{
+				access =  GL_READ_WRITE;
+			}
+			const auto& pixelFormat = texture->getFormat().pixelFormat;
+			GLenum format = pixelFormat.glInternalFormat;
+			// special case:the used internalFormat in TextureUtils is not applicable here
+			if(pixelFormat.glLocalDataType==GL_BYTE){
+				if(pixelFormat.glInternalFormat==GL_RED){
+					format = GL_R8;
+				}else if(pixelFormat.glInternalFormat==GL_RG){
+					format = GL_RG8;
+				}else if(pixelFormat.glInternalFormat==GL_RGB){
+					format = GL_RGB8; // not supported by opengl!
+				}else if(pixelFormat.glInternalFormat==GL_RGBA){
+					format = GL_RGBA8;
+				}
+			}
+			glBindImageTexture(unit,texture->_prepareForBinding(*this),
+								iParam.getLevel(),iParam.getMultiLayer()? GL_TRUE : GL_FALSE,iParam.getLayer(), access,
+								format);
+			GET_GL_ERROR();
 		}else{
-			access =  GL_READ_WRITE;
+			glBindImageTexture(unit,0,0,GL_FALSE,0, GL_READ_WRITE, GL_RGBA32F);
+			GET_GL_ERROR();
 		}
-		glBindImageTexture(unit,textureId,iParam.getLevel(),iParam.getMultiLayer()? GL_TRUE : GL_FALSE,iParam.getLayer(), access,iParam.getGLFormat());
 	}else{
 		WARN("RenderingContext::setBoundImage: GL_ARB_shader_image_load_store is not supported by your driver.");
 	}
