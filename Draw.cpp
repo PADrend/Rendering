@@ -467,12 +467,15 @@ void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geome
 	rc.popMaterial();
 }
 
-void enable2DMode(RenderingContext & rc) {
+void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect){
 	rc.pushProjectionMatrix();
-	rc.setProjectionMatrix(Geometry::Matrix4x4f::orthographicProjection(0, rc.getWindowClientArea().getWidth(), rc.getWindowClientArea().getHeight(), 0, -1, 1));
+	rc.setProjectionMatrix(Geometry::Matrix4x4f::orthographicProjection(screenRect.getMinX(), screenRect.getMaxX(),screenRect.getMaxY(),screenRect.getMinY(), -1, 1));
 
 	rc.pushMatrix();
 	rc.setMatrix(Geometry::Matrix4x4f());
+}
+void enable2DMode(RenderingContext & rc) {
+	enable2DMode(rc, Geometry::Rect_i(0,0, rc.getWindowClientArea().getWidth(), rc.getWindowClientArea().getHeight()));
 }
 
 void disable2DMode(RenderingContext & rc) {

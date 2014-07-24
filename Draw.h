@@ -22,6 +22,7 @@ template<typename value_t> class _Box;
 typedef _Box<float> Box;
 template<typename _T> class _Rect;
 typedef _Rect<float> Rect;
+typedef _Rect<int> Rect_i;
 template<typename _T> class _Vec3;
 typedef _Vec3<float> Vec3f;
 }
@@ -93,6 +94,7 @@ void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geome
  * @note The state before the call is saved. Call disable2DMode() to restore it.
  */
 void enable2DMode(RenderingContext & rc);
+void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect);
 
 //! Reset the projection and modelview matrices to the state before the last call to enable2DMode().
 void disable2DMode(RenderingContext & rc);
