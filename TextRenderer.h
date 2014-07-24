@@ -71,6 +71,7 @@ class TextRenderer {
 		 * text. The position specifies the top left corner of the rendered
 		 * text.
 		 * @param textColor Color that is used to draw the text
+		 * @note the 2D-rendering mode must be enabled ( @see Draw::enable2DMode(...) )
 		 */
 		void draw(RenderingContext & context,
 				  const std::u32string & text,

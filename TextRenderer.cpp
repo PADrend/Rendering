@@ -87,8 +87,6 @@ void TextRenderer::draw(RenderingContext & context,
 	context.pushAndSetShader(impl->shader.get());
 	context.pushAndSetTexture(0, impl->texture.get());
 
-	enable2DMode(context);
-
 	impl->shader->setUniform(context, Uniform("textColor", textColor));
 
 	VertexDescription vertexDescription;
@@ -139,8 +137,6 @@ void TextRenderer::draw(RenderingContext & context,
 	Util::Reference<Mesh> mesh = builder.buildMesh();
 
 	context.displayMesh(mesh.get());
-
-	disable2DMode(context);
 
 	context.popTexture(0);
 	context.popShader();
