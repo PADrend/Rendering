@@ -131,7 +131,22 @@ public:
 	void pushAndSetAlphaTest(const AlphaTestParameters & alphaTestParameter);
 	void setAlphaTest(const AlphaTestParameters & alphaTestParameter);
 	// @}
+	
+	// ------
 
+	//! @name Atomic counters (extension ARB_shader_atomic_counters)
+	//	@{
+	static bool isAtomicCountersSupported();
+	static uint32_t getMaxAtomicCounterBuffers();
+	static uint32_t getMaxAtomicCounterBufferSize();
+	Texture* getAtomicCounterTextureBuffer(uint32_t index)const;
+	void pushAtomicCounterTextureBuffer(uint32_t index);
+	void pushAndSetAtomicCounterTextureBuffer(uint32_t index, Texture* bufferDataTexture); 
+	void popAtomicCounterTextureBuffer(uint32_t pushAtomicCounterTexture);
+
+	//! \note the texture may be null to unbind
+	void setAtomicCounterTextureBuffer(uint32_t pushAtomicCounterTexture, Texture* bufferDataTexture);
+	// @}
 	// ------
 
 	//! @name Blending

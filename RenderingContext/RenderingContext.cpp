@@ -60,6 +60,8 @@ class RenderingContext::InternalData {
 		}
 
 		std::stack<AlphaTestParameters> alphaTestParameterStack;
+		std::unordered_map<uint32_t,std::stack<Util::Reference<Texture>>> atomicCounterStacks; 
+
 		std::stack<BlendingParameters> blendingParameterStack;
 		std::stack<ColorBufferParameters> colorBufferParameterStack;
 		std::stack<CullFaceParameters> cullFaceParameterStack;
@@ -277,6 +279,124 @@ void RenderingContext::applyChanges(bool forced) {
 	GET_GL_ERROR();
 }
 
+// Atomic counters (extension ARB_shader_atomic_counters)  *****************************************************
+
+
+//! (static)
+bool RenderingContext::isAtomicCountersSupported(){
+#if defined(GL_ARB_shader_atomic_counters)
+	static const bool support = isExtensionSupported("GL_ARB_shader_atomic_counters");
+	return support;
+#else
+	return false;
+#endif
+}
+//! (static)
+uint32_t RenderingContext::getMaxAtomicCounterBuffers(){
+	static const uint32_t value = [](){
+#if defined(GL_ARB_shader_atomic_counters)
+		if(isAtomicCountersSupported()){
+			GLint max;
+			glGetIntegerv(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS, &max); 
+			return static_cast<uint32_t>(max);
+		}
+#endif
+		return static_cast<uint32_t>(0);
+	}();
+	return value;
+}
+//! (static)
+uint32_t RenderingContext::getMaxAtomicCounterBufferSize(){
+	static const uint32_t value = [](){
+#if defined(GL_ARB_shader_atomic_counters)
+		if(isAtomicCountersSupported()){
+			GLint max;
+			glGetIntegerv(GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE, &max); 
+			return static_cast<uint32_t>(max);
+		}
+#endif
+		return static_cast<uint32_t>(0);
+	}();
+	return value;
+}
+
+static void assertCorrectAtomicBufferIndex(uint32_t index){
+	if(index>=RenderingContext::getMaxAtomicCounterBuffers()){ // GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS
+		std::cout << "Error:"<<index << ">=" << RenderingContext::getMaxAtomicCounterBuffers() <<"\n";
+		throw std::runtime_error("RenderingContext::assertCorrectAtomicBufferIndex: Invalid buffer index.");
+	}
+}
+
+Texture* RenderingContext::getAtomicCounterTextureBuffer(uint32_t index)const{
+	assertCorrectAtomicBufferIndex(index);
+	auto& stack = internalData->atomicCounterStacks[index];
+	return stack.empty() ? nullptr : stack.top().get();
+}
+
+void RenderingContext::pushAtomicCounterTextureBuffer(uint32_t index){
+	assertCorrectAtomicBufferIndex(index);
+	auto& stack = internalData->atomicCounterStacks[index];
+	if(stack.empty()) stack.push(nullptr); // init stack
+	stack.push( getAtomicCounterTextureBuffer(index) );
+}
+
+void RenderingContext::pushAndSetAtomicCounterTextureBuffer(uint32_t index, Texture* t){
+	pushAtomicCounterTextureBuffer(index);
+	setAtomicCounterTextureBuffer(index,t);
+}
+void RenderingContext::popAtomicCounterTextureBuffer(uint32_t index){
+	assertCorrectAtomicBufferIndex(index);
+	auto& stack = internalData->atomicCounterStacks[index];
+	if(stack.size()<=1){
+		WARN("popAtomicCounterTexture: Empty stack");
+	}else{
+		setAtomicCounterTextureBuffer(index,stack.top().get());
+		stack.pop();
+	}
+}
+
+//! \note the texture in iParam may be null to unbind
+void RenderingContext::setAtomicCounterTextureBuffer(uint32_t index, Texture * texture){
+	assertCorrectAtomicBufferIndex(index);
+#if defined(GL_ARB_shader_image_load_store)
+	if(isAtomicCountersSupported()){
+		GET_GL_ERROR();
+		if(texture){
+			if(texture->getTextureType()!=TextureType::TEXTURE_BUFFER )
+				throw std::invalid_argument("RenderingContext::setAtomicCounterTextureBuffer: texture is not of type TEXTURE_BUFFER.");
+
+			const auto& pixelFormat = texture->getFormat().pixelFormat;
+			if( pixelFormat.glInternalFormat!=GL_R32I && pixelFormat.glInternalFormat!=GL_R32UI )
+				throw std::invalid_argument("RenderingContext::setAtomicCounterTextureBuffer: texture is not red 32bit integer.");
+		
+			if(texture->getWidth()>getMaxAtomicCounterBufferSize()){
+				std::cout << texture->getWidth()<<">"<<getMaxAtomicCounterBufferSize()<<"\n";
+				throw std::invalid_argument("RenderingContext::setAtomicCounterTextureBuffer: textureBuffer is too large.");
+			}
+			texture->_prepareForBinding(*this);
+			BufferObject* bo = texture->getBufferObject();
+			if( bo&& bo->isValid() ){
+				glBindBufferBase( GL_ATOMIC_COUNTER_BUFFER,index,bo->getGLId());
+			}else{
+					std::cout << bo;
+				WARN("RenderingContext::setAtomicCounterTexture: TextureBuffer is invalid.");
+			}
+			GET_GL_ERROR();
+		}else{
+			glBindBufferBase( GL_ATOMIC_COUNTER_BUFFER,index,0);
+			GET_GL_ERROR();
+		}
+	}else{
+		WARN("RenderingContext::setAtomicCounterTexture: GL_ARB_shader_image_load_store is not supported by your driver.");
+	}
+#endif 
+
+	auto& stack = internalData->atomicCounterStacks[index];
+	if(stack.empty())
+		stack.push(texture);
+	else
+		stack.top() = texture;
+}
 // Blending ************************************************************************************
 const BlendingParameters & RenderingContext::getBlendingParameters() const {
 	return internalData->actualCoreRenderingStatus.getBlendingParameters();
@@ -465,7 +585,7 @@ void RenderingContext::popBoundImage(uint8_t unit){
 	assertCorrectImageUnit(unit);
 	auto& iStack = internalData->imageStacks[unit];
 	if(iStack.empty()){
-		WARN("popLighting: Empty lighting stack");
+		WARN("popBoundImage: Empty stack");
 	}else{
 		setBoundImage(unit,iStack.top());
 		iStack.pop();
@@ -503,6 +623,7 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 					format = GL_RGBA8;
 				}
 			}
+			GET_GL_ERROR();
 			glBindImageTexture(unit,texture->_prepareForBinding(*this),
 								iParam.getLevel(),iParam.getMultiLayer()? GL_TRUE : GL_FALSE,iParam.getLayer(), access,
 								format);
