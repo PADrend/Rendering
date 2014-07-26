@@ -407,6 +407,8 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_UNSIGNED_INT_IMAGE_1D:
 			case GL_UNSIGNED_INT_IMAGE_2D:
 			case GL_UNSIGNED_INT_IMAGE_3D:
+			case GL_UNSIGNED_INT_ATOMIC_COUNTER:
+			case GL_UNSIGNED_INT_IMAGE_BUFFER:
 #endif /* LIB_GL */
 			{
 				dataType = Uniform::UNIFORM_INT;
@@ -441,7 +443,8 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 				break;
 			}
 			default:{
-				WARN(std::string("getActiveUniforms: Unimplmented uniform type.")+name);
+				std::cout << "Uniform type: 0x" << std::hex << glType <<  std::dec<<"\n";
+				WARN("getActiveUniforms: Unimplmented uniform type '"+name+"'");
 				continue;
 			}
 
