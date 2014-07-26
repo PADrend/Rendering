@@ -373,12 +373,13 @@ void RenderingContext::setAtomicCounterTextureBuffer(uint32_t index, Texture * t
 				std::cout << texture->getWidth()<<">"<<getMaxAtomicCounterBufferSize()<<"\n";
 				throw std::invalid_argument("RenderingContext::setAtomicCounterTextureBuffer: textureBuffer is too large.");
 			}
+			if(!texture->getLocalData()) // (workaround) buffer seems to contain invalid values if the memory is only allocated and not uploaded.
+				texture->allocateLocalData();
 			texture->_prepareForBinding(*this);
 			BufferObject* bo = texture->getBufferObject();
 			if( bo&& bo->isValid() ){
 				glBindBufferBase( GL_ATOMIC_COUNTER_BUFFER,index,bo->getGLId());
 			}else{
-					std::cout << bo;
 				WARN("RenderingContext::setAtomicCounterTexture: TextureBuffer is invalid.");
 			}
 			GET_GL_ERROR();
@@ -624,6 +625,7 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 				}
 			}
 			GET_GL_ERROR();
+
 			glBindImageTexture(unit,texture->_prepareForBinding(*this),
 								iParam.getLevel(),iParam.getMultiLayer()? GL_TRUE : GL_FALSE,iParam.getLayer(), access,
 								format);
