@@ -270,7 +270,14 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 		case  TextureType::TEXTURE_BUFFER:{
 			if( getLocalBitmap() ){ // there is a local bitmap?
 				bufferObject->uploadData(GL_TEXTURE_BUFFER,  getLocalBitmap()->data(),getLocalBitmap()->getDataSize(), GL_STATIC_DRAW );
-			} // else nothing to upload -> the buffer contains the data
+			}else if( !bufferObject->isValid() ){ // allocate data for buffer
+				bufferObject->uploadData(GL_TEXTURE_BUFFER,  nullptr,getDataSize(), GL_STATIC_DRAW );
+			}else{
+				// assume the buffer already contains the data; this may lead to a crash if this is not the case!
+				// \todo if this can be checked somehow, do it!
+			}
+			// bind the buffer to the texture
+			glTexBuffer( GL_TEXTURE_BUFFER, getFormat().pixelFormat.glInternalFormat, bufferObject->getGLId() );
 			break;
 		
 		}
@@ -359,7 +366,7 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 			break;
 		}
 		case TextureType::TEXTURE_BUFFER:{
-			auto data =  bufferObject->downloadData<uint8_t>(GL_TEXTURE_BUFFER,getLocalBitmap()->getDataSize());
+			auto data =  bufferObject->downloadData<uint8_t>(GL_TEXTURE_BUFFER,localBitmap->getDataSize());
 			localBitmap->swapData( data );
 			break;
 		}
