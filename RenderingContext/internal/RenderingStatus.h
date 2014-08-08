@@ -36,20 +36,20 @@ class RenderingStatus {
 		explicit RenderingStatus(Shader * _shader = nullptr) : 
 			shader(_shader), 
 			initialized(false),
-			cameraCheckNumber(0),
-			cameraMatrix(),
-			cameraInverseMatrix(),
+			checkNumber_matrixCameraWorld(0),
+			matrix_worldToCamera(),
+			matrix_cameraToWorld(),
 			lightsCheckNumber(0),
 			lights(),
 			lightsEnabled(0),
 			materialCheckNumber(0),
 			materialEnabled(false),
 			material(),
-			modelViewMatrixCheckNumber(0),
-			modelViewMatrix(),
+			matrix_modelToCameraCheckNumber(0),
+			matrix_modelToCamera(),
 			pointParameters(),
-			projectionMatrixCheckNumber(0),
-			projectionMatrix(),
+			matrix_cameraToClipCheckNumber(0),
+			matrix_cameraToClip(),
 			textureUnitUsagesCheckNumber(0),
 			textureUnitParams(MAX_TEXTURES, std::make_pair(TexUnitUsageParameter::DISABLED,TextureType::TEXTURE_2D)) {
 		}
@@ -63,29 +63,25 @@ class RenderingStatus {
 	//!	@name Camera Matrix
 	//	@{
 	private:
-		uint32_t cameraCheckNumber;
-		Geometry::Matrix4x4f cameraMatrix;
-		Geometry::Matrix4x4f cameraInverseMatrix;
+		uint32_t checkNumber_matrixCameraWorld;
+		Geometry::Matrix4x4f matrix_worldToCamera;
+		Geometry::Matrix4x4f matrix_cameraToWorld;
 	public:
-		bool cameraInverseMatrixChanged(const RenderingStatus & actual) const {
-			return (cameraCheckNumber == actual.cameraCheckNumber) ? false :
-					cameraInverseMatrix != actual.cameraInverseMatrix;
+		bool matrixEyeWorldChanged(const RenderingStatus & actual) const {
+			return (checkNumber_matrixCameraWorld == actual.checkNumber_matrixCameraWorld) ? false :
+					matrix_cameraToWorld != actual.matrix_cameraToWorld;
 		}
-		const Geometry::Matrix4x4f & getCameraInverseMatrix() const {
-			return cameraInverseMatrix;
-		}
-		const Geometry::Matrix4x4f & getCameraMatrix() const {
-			return cameraMatrix;
-		}
-		void setCameraInverseMatrix(const Geometry::Matrix4x4f & matrix) {
-			cameraInverseMatrix = matrix;
-			cameraMatrix = matrix.inverse();
-			++cameraCheckNumber;
+		const Geometry::Matrix4x4f & getMatrix_cameraToWorld() const 	{	return matrix_cameraToWorld;	}
+		const Geometry::Matrix4x4f & getMatrix_worldToCamera() const	{	return matrix_worldToCamera;	}
+		void setMatrix_cameraToWorld(const Geometry::Matrix4x4f & eyeToWorld) {
+			matrix_cameraToWorld = eyeToWorld;
+			matrix_worldToCamera = eyeToWorld.inverse();
+			++checkNumber_matrixCameraWorld;
 		}
 		void updateCameraMatrix(const RenderingStatus & actual) {
-			cameraInverseMatrix = actual.cameraInverseMatrix;
-			cameraMatrix = actual.cameraMatrix;
-			cameraCheckNumber = actual.cameraCheckNumber;
+			matrix_cameraToWorld = actual.matrix_cameraToWorld;
+			matrix_worldToCamera = actual.matrix_worldToCamera;
+			checkNumber_matrixCameraWorld = actual.checkNumber_matrixCameraWorld;
 		}
 	//	@}
 
@@ -206,26 +202,26 @@ class RenderingStatus {
 	//!	@name Modelview Matrix
 	//	@{
 	private:
-		uint32_t modelViewMatrixCheckNumber;
-		Geometry::Matrix4x4f modelViewMatrix;
+		uint32_t matrix_modelToCameraCheckNumber;
+		Geometry::Matrix4x4f matrix_modelToCamera;
 
 	public:
-		const Geometry::Matrix4x4f & getModelViewMatrix() const 				{	return modelViewMatrix;	}
-		void setModelViewMatrix(const Geometry::Matrix4x4f & matrix) {
-			modelViewMatrix = matrix;
-			++modelViewMatrixCheckNumber;
+		const Geometry::Matrix4x4f & getMatrix_modelToCamera() const 				{	return matrix_modelToCamera;	}
+		void setMatrix_modelToCamera(const Geometry::Matrix4x4f & matrix) {
+			matrix_modelToCamera = matrix;
+			++matrix_modelToCameraCheckNumber;
 		}
-		bool modelViewMatrixChanged(const RenderingStatus & actual) const {
-			return (modelViewMatrixCheckNumber == actual.modelViewMatrixCheckNumber) ? false :
-					modelViewMatrix != actual.modelViewMatrix;
+		bool matrix_modelToCameraChanged(const RenderingStatus & actual) const {
+			return (matrix_modelToCameraCheckNumber == actual.matrix_modelToCameraCheckNumber) ? false :
+					matrix_modelToCamera != actual.matrix_modelToCamera;
 		}
 		void multModelViewMatrix(const Geometry::Matrix4x4f & matrix) {
-			modelViewMatrix *= matrix;
-			++modelViewMatrixCheckNumber;
+			matrix_modelToCamera *= matrix;
+			++matrix_modelToCameraCheckNumber;
 		}
 		void updateModelViewMatrix(const RenderingStatus & actual) {
-			modelViewMatrix = actual.modelViewMatrix;
-			modelViewMatrixCheckNumber = actual.modelViewMatrixCheckNumber;
+			matrix_modelToCamera = actual.matrix_modelToCamera;
+			matrix_modelToCameraCheckNumber = actual.matrix_modelToCameraCheckNumber;
 		}
 	//	@}
 
@@ -252,22 +248,22 @@ class RenderingStatus {
 	//!	@name Projection Matrix
 	//	@{
 	private:
-		uint32_t projectionMatrixCheckNumber;
-		Geometry::Matrix4x4f projectionMatrix;
+		uint32_t matrix_cameraToClipCheckNumber;
+		Geometry::Matrix4x4f matrix_cameraToClip;
 
 	public:
-		void setProjectionMatrix(const Geometry::Matrix4x4f & matrix) {
-			projectionMatrix = matrix;
-			++projectionMatrixCheckNumber;
+		void setMatrix_cameraToClip(const Geometry::Matrix4x4f & matrix) {
+			matrix_cameraToClip = matrix;
+			++matrix_cameraToClipCheckNumber;
 		}
-		const Geometry::Matrix4x4f & getProjectionMatrix() const 				{	return projectionMatrix;	}
-		void updateProjectionMatrix(const RenderingStatus & actual) {
-			projectionMatrix = actual.projectionMatrix;
-			projectionMatrixCheckNumber = actual.projectionMatrixCheckNumber;
+		const Geometry::Matrix4x4f & getMatrix_cameraToClip() const 				{	return matrix_cameraToClip;	}
+		void updateMatrix_cameraToClip(const RenderingStatus & actual) {
+			matrix_cameraToClip = actual.matrix_cameraToClip;
+			matrix_cameraToClipCheckNumber = actual.matrix_cameraToClipCheckNumber;
 		}
-		bool projectionMatrixChanged(const RenderingStatus & actual) const {
-			return (projectionMatrixCheckNumber == actual.projectionMatrixCheckNumber) ? false :
-					projectionMatrix != actual.projectionMatrix;
+		bool matrix_cameraToClipChanged(const RenderingStatus & actual) const {
+			return (matrix_cameraToClipCheckNumber == actual.matrix_cameraToClipCheckNumber) ? false :
+					matrix_cameraToClip != actual.matrix_cameraToClip;
 		}
 	//	@}
 

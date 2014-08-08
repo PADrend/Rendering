@@ -52,25 +52,24 @@ void drawFullScreenRect(RenderingContext & rc){
 		mesh = mb.buildMesh();
 	}
 
-	rc.pushProjectionMatrix();
-	rc.setProjectionMatrix(projectionMatrix);
+	rc.pushMatrix_cameraToClip();
+	rc.setMatrix_cameraToClip(projectionMatrix);
 
-	rc.pushMatrix();
-	rc.setMatrix(modelViewMatrix);
+	rc.pushMatrix_modelToCamera();
+	rc.setMatrix_modelToCamera(modelViewMatrix);
 
 	rc.displayMesh(mesh.get());
 
-	rc.popMatrix();
-	rc.popProjectionMatrix();
+	rc.popMatrix_modelToCamera();
+	rc.popMatrix_cameraToClip();
 
 	GET_GL_ERROR();
 }
 
-void drawAbsBox(RenderingContext & rc, const Geometry::Box & box) {
-	rc.pushMatrix();
-	rc.resetMatrix();
-	drawBox(rc, box);
-	rc.popMatrix();
+void drawAbsBox(RenderingContext & renderingContext, const Geometry::Box & box) {
+	renderingContext.pushAndSetMatrix_modelToCamera( renderingContext.getMatrix_worldToCamera() );
+	drawBox(renderingContext, box);
+	renderingContext.popMatrix_modelToCamera();
 }
 
 void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
@@ -79,11 +78,10 @@ void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Co
 	rc.popMaterial();
 }
 
-void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
-	rc.pushMatrix();
-	rc.resetMatrix();
-	drawWireframeBox(rc, box);
-	rc.popMatrix();
+void drawAbsWireframeBox(RenderingContext & renderingContext, const Geometry::Box & box) {
+	renderingContext.pushAndSetMatrix_modelToCamera( renderingContext.getMatrix_worldToCamera() );
+	drawWireframeBox(renderingContext, box);
+	renderingContext.popMatrix_modelToCamera();
 }
 
 void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
@@ -105,10 +103,10 @@ void drawBox(RenderingContext & rc, const Geometry::Box & box) {
 	Geometry::Matrix4x4 matrix;
 	matrix.translate(box.getCenter());
 	matrix.scale(box.getExtentX(), box.getExtentY(), box.getExtentZ());
-	rc.pushMatrix();
-	rc.multMatrix(matrix);
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(matrix);
 	rc.displayMesh(mesh.get());
-	rc.popMatrix();
+	rc.popMatrix_modelToCamera();
 }
 
 void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
@@ -116,12 +114,12 @@ void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
 	rc.pushAndSetShader(nullptr);
 
 //  Too slow:
-//	rc.pushMatrix();
+//	rc.pushMatrix_modelToCamera();
 //	rc.resetMatrix();
 //	rc.applyChanges();
 
 	glPushMatrix();
-	glLoadTransposeMatrixf( rc.getCameraMatrix().getData());
+	glLoadTransposeMatrixf( rc.getMatrix_worldToCamera().getData());
 
 	static const unsigned int indices[]={
 		1,3,2,0,
@@ -147,7 +145,7 @@ void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
 	glEnd();
 
 	glPopMatrix();
-//	rc.popMatrix();
+//	rc.popMatrix_modelToCamera();
 	rc.popShader();
 	#else
 	drawAbsBox(rc,b);
@@ -334,10 +332,10 @@ void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect) {
 	Geometry::Matrix4x4 matrix;
 	matrix.translate(rect.getX(), rect.getY(), 0.0f);
 	matrix.scale(rect.getWidth(), rect.getHeight(), 1.0f);
-	rc.pushMatrix();
-	rc.multMatrix(matrix);
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(matrix);
 	rc.displayMesh(mesh.get());
-	rc.popMatrix();
+	rc.popMatrix_modelToCamera();
 }
 
 void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color) {
@@ -382,10 +380,10 @@ void drawRect(RenderingContext & rc, const Geometry::Rect & rect) {
 	Geometry::Matrix4x4 matrix;
 	matrix.translate(rect.getX(), rect.getY(), 0.0f);
 	matrix.scale(rect.getWidth(), rect.getHeight(), 1.0f);
-	rc.pushMatrix();
-	rc.multMatrix(matrix);
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(matrix);
 	rc.displayMesh(mesh.get());
-	rc.popMatrix();
+	rc.popMatrix_modelToCamera();
 }
 
 void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color) {
@@ -468,19 +466,19 @@ void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geome
 }
 
 void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect){
-	rc.pushProjectionMatrix();
-	rc.setProjectionMatrix(Geometry::Matrix4x4f::orthographicProjection(screenRect.getMinX(), screenRect.getMaxX(),screenRect.getMaxY(),screenRect.getMinY(), -1, 1));
+	rc.pushMatrix_cameraToClip();
+	rc.setMatrix_cameraToClip(Geometry::Matrix4x4f::orthographicProjection(screenRect.getMinX(), screenRect.getMaxX(),screenRect.getMaxY(),screenRect.getMinY(), -1, 1));
 
-	rc.pushMatrix();
-	rc.setMatrix(Geometry::Matrix4x4f());
+	rc.pushMatrix_modelToCamera();
+	rc.setMatrix_modelToCamera(Geometry::Matrix4x4f());
 }
 void enable2DMode(RenderingContext & rc) {
 	enable2DMode(rc, Geometry::Rect_i(0,0, rc.getWindowClientArea().getWidth(), rc.getWindowClientArea().getHeight()));
 }
 
 void disable2DMode(RenderingContext & rc) {
-	rc.popMatrix();
-	rc.popProjectionMatrix();
+	rc.popMatrix_modelToCamera();
+	rc.popMatrix_cameraToClip();
 }
 
 }

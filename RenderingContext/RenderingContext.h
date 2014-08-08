@@ -160,16 +160,6 @@ public:
 
 	// ------
 
-	/*! @name Camera Matrix
-	 camera matrix == inverse world matrix of camera node == default model view matrix	*/
-	//	@{
-	void setInverseCameraMatrix(const Geometry::Matrix4x4 & matrix);
-	const Geometry::Matrix4x4 & getCameraMatrix() const;
-	const Geometry::Matrix4x4 & getInverseCameraMatrix() const;
-	// @}
-
-	// ------
-
 	//! @name ColorBuffer
 	//	@{
 	const ColorBufferParameters & getColorBufferParameters() const;
@@ -313,22 +303,39 @@ public:
 
 
 	// @}
+	// ------
+
+	/*! @name Matrix CameraToWorld / WorldToCamera
+	 camera matrix == inverse world matrix of camera node == default model view matrix	*/
+	//	@{
+	void setMatrix_cameraToWorld(const Geometry::Matrix4x4 & matrix);	//!< formerly known as setInverseCameraMatrix
+	const Geometry::Matrix4x4 & getMatrix_worldToCamera() const;		//!< formerly known as getCameraMatrix
+	const Geometry::Matrix4x4 & getMatrix_cameraToWorld() const;		//!< formerly known as getInverseCameraMatrix
+	//	@}
 
 	// ------
 
-	//! @name Model View Matrix
+	//! @name Matrix ModelToCamera (Legacy Model View Matrix)
 	//	@{
 	//! resets the model view matrix to the default (camera matrix)
-	void resetMatrix();
-	const Geometry::Matrix4x4 & getMatrix() const;
-	//! Save the current model view matrix onto the matrix stack.
-	void pushMatrix();
-	//! Multiply the given matrix @a matrix with the current model view matrix.
-	void multMatrix(const Geometry::Matrix4x4 & matrix);
-	//! Replace the current model view matrix with the given matrix @a matrix.
-	void setMatrix(const Geometry::Matrix4x4 & matrix);
-	//! Restore the current model view matrix from the matrix stack.
-	void popMatrix();
+	void resetMatrix();  //! \note use renderingContext.setMatrix_modelToCamera( renderingContext.getMatrix_worldToCamera() ) instead!
+	const Geometry::Matrix4x4 & getMatrix_modelToCamera() const;		//!< formerly known as getMatrix
+	void multMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix);	//!< formerly known as multMatrix
+	void pushMatrix_modelToCamera();									//!< formerly known as pushMatrix
+	void pushAndSetMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix);
+	void setMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix);	//!< formerly known as setMatrix
+	void popMatrix_modelToCamera();										//!< formerly known as popMatrix
+	//	@}
+	
+	// ------
+
+	//! @name Matrix CameraToClipping (Legacy Projection Matrix)
+	//	@{
+	const Geometry::Matrix4x4 & getMatrix_cameraToClip() const;			//! formerly known as getProjectionMatrix
+	void pushAndSetMatrix_cameraToClip(const Geometry::Matrix4x4 & matrix);
+	void pushMatrix_cameraToClip();										//! formerly known as pushProjectionMatrix
+	void popMatrix_cameraToClip();										//! formerly known as popProjectionMatrix
+	void setMatrix_cameraToClip(const Geometry::Matrix4x4 & matrix);	//! formerly known as setProjectionMatrix
 	// @}
 	
 	// ------
@@ -363,15 +370,6 @@ public:
 	void setPolygonOffset(const PolygonOffsetParameters & polygonOffsetParameter);
 	// @}
 
-	// ------
-
-	//! @name Projection Matrix
-	//	@{
-	void pushProjectionMatrix();
-	void popProjectionMatrix();
-	void setProjectionMatrix(const Geometry::Matrix4x4 & matrix);
-	const Geometry::Matrix4x4 & getProjectionMatrix() const;
-	// @}
 
 	// ------
 

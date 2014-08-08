@@ -62,12 +62,12 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 	// camera  & inverse
 	bool cc = false;
-	if (forced || target.cameraInverseMatrixChanged(actual)) {
+	if (forced || target.matrixEyeWorldChanged(actual)) {
 		cc = true;
 		target.updateCameraMatrix(actual);
 
-		uniforms.emplace_back(UNIFORM_SG_CAMERA_MATRIX, actual.getCameraMatrix());
-		uniforms.emplace_back(UNIFORM_SG_CAMERA_INVERSE_MATRIX, actual.getCameraInverseMatrix());
+		uniforms.emplace_back(UNIFORM_SG_CAMERA_MATRIX, actual.getMatrix_worldToCamera());
+		uniforms.emplace_back(UNIFORM_SG_CAMERA_INVERSE_MATRIX, actual.getMatrix_cameraToWorld());
 	}
 
 	// lights
@@ -83,8 +83,8 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 			target.updateLightParameter(i, params);
 
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], (actual.getCameraMatrix() * params.position).xyz());
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], (actual.getCameraMatrix() * params.direction).xyz());
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], (actual.getMatrix_worldToCamera() * params.position).xyz());
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], (actual.getMatrix_worldToCamera() * params.direction).xyz());
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_TYPE[i], static_cast<int> (params.type));
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_CONSTANT[i], params.constant);
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_LINEAR[i], params.linear);
@@ -101,8 +101,8 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			for (uint_fast8_t i = numEnabledLights; i < RenderingStatus::MAX_LIGHTS; ++i) {
 				target.updateLightParameter(i, params);
 
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], (actual.getCameraMatrix() * params.position).xyz());
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], (actual.getCameraMatrix() * params.direction).xyz());
+				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], (actual.getMatrix_worldToCamera() * params.position).xyz());
+				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], (actual.getMatrix_worldToCamera() * params.direction).xyz());
 				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_TYPE[i], static_cast<int> (params.type));
 				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_CONSTANT[i], params.constant);
 				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_LINEAR[i], params.linear);
@@ -135,19 +135,19 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 		bool pc = false;
 		bool mc = false;
 
-		if (forced || target.modelViewMatrixChanged(actual)) {
+		if (forced || target.matrix_modelToCameraChanged(actual)) {
 			mc = true;
 			target.updateModelViewMatrix(actual);
-			uniforms.emplace_back(UNIFORM_SG_MODEL_VIEW_MATRIX, actual.getModelViewMatrix());
+			uniforms.emplace_back(UNIFORM_SG_MODEL_VIEW_MATRIX, actual.getMatrix_modelToCamera());
 		}
 
-		if (forced || target.projectionMatrixChanged(actual)) {
+		if (forced || target.matrix_cameraToClipChanged(actual)) {
 			pc = true;
-			target.updateProjectionMatrix(actual);
-			uniforms.emplace_back(UNIFORM_SG_PROJECTION_MATRIX, actual.getProjectionMatrix());
+			target.updateMatrix_cameraToClip(actual);
+			uniforms.emplace_back(UNIFORM_SG_PROJECTION_MATRIX, actual.getMatrix_cameraToClip());
 		}
 		if (forced || pc || mc) {
-			uniforms.emplace_back(UNIFORM_SG_MODEL_VIEW_PROJECTION_MATRIX, actual.getProjectionMatrix() * actual.getModelViewMatrix());
+			uniforms.emplace_back(UNIFORM_SG_MODEL_VIEW_PROJECTION_MATRIX, actual.getMatrix_cameraToClip() * actual.getMatrix_modelToCamera());
 		}
 	}
 

@@ -1124,79 +1124,90 @@ void RenderingContext::disableLight(uint8_t lightNumber) {
 
 // PROJECTION MATRIX *************************************************************************
 
-void RenderingContext::popProjectionMatrix() {
+void RenderingContext::popMatrix_cameraToClip() {
 	if(internalData->projectionMatrixStack.empty()) {
 		WARN("Cannot pop projection matrix. The stack is empty.");
 		return;
 	}
-	internalData->targetRenderingStatus.setProjectionMatrix(internalData->projectionMatrixStack.top());
+	internalData->targetRenderingStatus.setMatrix_cameraToClip(internalData->projectionMatrixStack.top());
 	internalData->projectionMatrixStack.pop();
 	if(immediate)
 		applyChanges();
 }
 
-void RenderingContext::pushProjectionMatrix() {
-	internalData->projectionMatrixStack.emplace(internalData->targetRenderingStatus.getProjectionMatrix());
+void RenderingContext::pushMatrix_cameraToClip() {
+	internalData->projectionMatrixStack.emplace(internalData->targetRenderingStatus.getMatrix_cameraToClip());
 }
 
-void RenderingContext::setProjectionMatrix(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetRenderingStatus.setProjectionMatrix(matrix);
+void RenderingContext::pushAndSetMatrix_cameraToClip(const Geometry::Matrix4x4 & matrix) {
+	pushMatrix_cameraToClip();
+	setMatrix_cameraToClip(matrix);
+}
+	
+void RenderingContext::setMatrix_cameraToClip(const Geometry::Matrix4x4 & matrix) {
+	internalData->targetRenderingStatus.setMatrix_cameraToClip(matrix);
 	if(immediate)
 		applyChanges();
 }
 
-const Geometry::Matrix4x4 & RenderingContext::getProjectionMatrix() const {
-	return internalData->targetRenderingStatus.getProjectionMatrix();
+const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToClip() const {
+	return internalData->targetRenderingStatus.getMatrix_cameraToClip();
 }
 
 // CAMERA MATRIX *****************************************************************************
 
-void RenderingContext::setInverseCameraMatrix(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetRenderingStatus.setCameraInverseMatrix(matrix);
+void RenderingContext::setMatrix_cameraToWorld(const Geometry::Matrix4x4 & matrix) {
+	internalData->targetRenderingStatus.setMatrix_cameraToWorld(matrix);
 	if(immediate)
 		applyChanges();
 }
-const Geometry::Matrix4x4 & RenderingContext::getCameraMatrix() const {
-	return internalData->targetRenderingStatus.getCameraMatrix();
+const Geometry::Matrix4x4 & RenderingContext::getMatrix_worldToCamera() const {
+	return internalData->targetRenderingStatus.getMatrix_worldToCamera();
 }
-const Geometry::Matrix4x4 & RenderingContext::getInverseCameraMatrix() const {
-	return internalData->targetRenderingStatus.getCameraInverseMatrix();
+const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToWorld() const {
+	return internalData->targetRenderingStatus.getMatrix_cameraToWorld();
 }
 
 // MODEL VIEW MATRIX *************************************************************************
 
 void RenderingContext::resetMatrix() {
-	internalData->targetRenderingStatus.setModelViewMatrix(internalData->targetRenderingStatus.getCameraMatrix());
+	internalData->targetRenderingStatus.setMatrix_modelToCamera(internalData->targetRenderingStatus.getMatrix_worldToCamera());
 	if(immediate)
 		applyChanges();
 }
 
-const Geometry::Matrix4x4 & RenderingContext::getMatrix() const {
-	return internalData->targetRenderingStatus.getModelViewMatrix();
+
+void RenderingContext::pushAndSetMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
+	pushMatrix_modelToCamera();
+	setMatrix_modelToCamera(matrix);
 }
 
-void RenderingContext::pushMatrix() {
-	internalData->matrixStack.emplace(internalData->targetRenderingStatus.getModelViewMatrix());
+const Geometry::Matrix4x4 & RenderingContext::getMatrix_modelToCamera() const {
+	return internalData->targetRenderingStatus.getMatrix_modelToCamera();
 }
 
-void RenderingContext::multMatrix(const Geometry::Matrix4x4 & matrix) {
+void RenderingContext::pushMatrix_modelToCamera() {
+	internalData->matrixStack.emplace(internalData->targetRenderingStatus.getMatrix_modelToCamera());
+}
+
+void RenderingContext::multMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
 	internalData->targetRenderingStatus.multModelViewMatrix(matrix);
 	if(immediate)
 		applyChanges();
 }
 
-void RenderingContext::setMatrix(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetRenderingStatus.setModelViewMatrix(matrix);
+void RenderingContext::setMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
+	internalData->targetRenderingStatus.setMatrix_modelToCamera(matrix);
 	if(immediate)
 		applyChanges();
 }
 
-void RenderingContext::popMatrix() {
+void RenderingContext::popMatrix_modelToCamera() {
 	if(internalData->matrixStack.empty()) {
 		WARN("Cannot pop matrix. The stack is empty.");
 		return;
 	}
-	internalData->targetRenderingStatus.setModelViewMatrix(internalData->matrixStack.top());
+	internalData->targetRenderingStatus.setMatrix_modelToCamera(internalData->matrixStack.top());
 	internalData->matrixStack.pop();
 	if(immediate)
 		applyChanges();

@@ -23,20 +23,20 @@ namespace StatusHandler_glCompatibility{
 void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced) {
 #ifdef LIB_GL
 
-	const bool cc = target.cameraInverseMatrixChanged(actual);
+	const bool cc = target.matrixEyeWorldChanged(actual);
 	if (forced || cc) {
 		target.updateCameraMatrix(actual);
 	}
 
-	if (forced || target.projectionMatrixChanged(actual)) {
+	if (forced || target.matrix_cameraToClipChanged(actual)) {
 		glMatrixMode(GL_PROJECTION);
-		glLoadTransposeMatrixf(actual.getProjectionMatrix().getData());
+		glLoadTransposeMatrixf(actual.getMatrix_cameraToClip().getData());
 		glMatrixMode(GL_MODELVIEW);
-		target.updateProjectionMatrix(actual);
+		target.updateMatrix_cameraToClip(actual);
 	}
 
-	if (forced || target.modelViewMatrixChanged(actual)) {
-		glLoadTransposeMatrixf(actual.getModelViewMatrix().getData());
+	if (forced || target.matrix_modelToCameraChanged(actual)) {
+		glLoadTransposeMatrixf(actual.getMatrix_modelToCamera().getData());
 		target.updateModelViewMatrix(actual);
 	}
 
@@ -87,7 +87,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 		glDisable(GL_LIGHT0 + static_cast<GLenum>(i));
 
 		glPushMatrix();
-		glLoadTransposeMatrixf(actual.getCameraMatrix().getData());
+		glLoadTransposeMatrixf(actual.getMatrix_worldToCamera().getData());
 
 		for (uint_fast8_t i = 0; i < numEnabledLights; ++i) {
 

@@ -270,35 +270,35 @@ void drawCoordSys(RenderingContext & rc, float scale) {
 	// X axis
 	Geometry::Matrix4x4 transform;
 	transform.scale(scale, 1.0f, 1.0f);
-	rc.pushMatrix();
-	rc.multMatrix(transform);
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(transform);
 	rc.pushAndSetColorMaterial(Util::ColorLibrary::RED);
 	rc.displayMesh(arrow.get());
 	rc.displayMesh(charX.get());
 	rc.popMaterial();
-	rc.popMatrix();
+	rc.popMatrix_modelToCamera();
 	// Y axis
 	transform.setIdentity();
 	transform.scale(1.0f, scale, 1.0f);
 	transform.rotate_deg(90.0f, 0.0f, 0.0f, 1.0f);
-	rc.pushMatrix();
-	rc.multMatrix(transform);
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(transform);
 	rc.pushAndSetColorMaterial(Util::ColorLibrary::GREEN);
 	rc.displayMesh(arrow.get());
 	rc.displayMesh(charY.get());
 	rc.popMaterial();
-	rc.popMatrix();
+	rc.popMatrix_modelToCamera();
 	// Z axis
 	transform.setIdentity();
 	transform.scale(1.0f, 1.0f, scale);
 	transform.rotate_deg(90.0f, 0.0f, -1.0f, 0.0f);
-	rc.pushMatrix();
-	rc.multMatrix(transform);
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(transform);
 	rc.pushAndSetColorMaterial(Util::ColorLibrary::BLUE);
 	rc.displayMesh(arrow.get());
 	rc.displayMesh(charZ.get());
 	rc.popMaterial();
-	rc.popMatrix();
+	rc.popMatrix_modelToCamera();
 }
 
 void drawFrustum(RenderingContext & rc, const Geometry::Frustum & frustum, const Util::Color4f & color, float lineWidth) {
@@ -398,10 +398,10 @@ void drawGrid(RenderingContext & rc, float scale) {
 
 	Geometry::Matrix4x4 matrix;
 	matrix.scale(scale);
-	rc.pushMatrix();
-	rc.multMatrix(matrix);
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(matrix);
 	rc.displayMesh(mesh.get());
-	rc.popMatrix();
+	rc.popMatrix_modelToCamera();
 }
 
 }
