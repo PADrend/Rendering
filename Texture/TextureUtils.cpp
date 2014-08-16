@@ -759,13 +759,10 @@ Util::Reference<Util::PixelAccessor> createDepthPixelAccessor(RenderingContext &
 				throw std::logic_error("Unsupported function called");
 			}
 
-			void doWriteColor(uint32_t /*x*/, uint32_t /*y*/, float /*value*/) override {
+			void doWriteSingleValueFloat(uint32_t /*x*/, uint32_t /*y*/, float /*value*/) override {
 				throw std::logic_error("Unsupported function called");
 			}
 
-			void doWriteColor(uint32_t /*x*/, uint32_t /*y*/, uint8_t /*value*/) override {
-				throw std::logic_error("Unsupported function called");
-			}
 	};
 #ifdef LIB_GL
 	if(texture.getFormat().pixelFormat.glLocalDataFormat != GL_DEPTH_STENCIL_EXT) {
@@ -816,13 +813,10 @@ Util::Reference<Util::PixelAccessor> createStencilPixelAccessor(RenderingContext
 				throw std::logic_error("Unsupported function called");
 			}
 
-			void doWriteColor(uint32_t /*x*/, uint32_t /*y*/, float /*value*/) override {
+			void doWriteSingleValueFloat(uint32_t /*x*/, uint32_t /*y*/, float /*value*/) override {
 				throw std::logic_error("Unsupported function called");
 			}
 
-			void doWriteColor(uint32_t /*x*/, uint32_t /*y*/, uint8_t /*value*/) override {
-				throw std::logic_error("Unsupported function called");
-			}
 	};
 #ifdef LIB_GL
 	if(texture.getFormat().pixelFormat.glLocalDataFormat != GL_DEPTH_STENCIL_EXT) {

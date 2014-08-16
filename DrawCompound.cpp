@@ -29,7 +29,7 @@
 
 namespace Rendering {
 
-void drawCamera(RenderingContext & rc, const Util::Color4ub & color) {
+void drawCamera(RenderingContext & rc, const Util::Color4f & color) {
 	static Util::Reference<Mesh> mesh;
 	if (mesh.isNull()) {
 		std::deque<Mesh *> meshes;
@@ -106,7 +106,7 @@ void drawCamera(RenderingContext & rc, const Util::Color4ub & color) {
 	}
 
 	rc.pushAndSetLighting(LightingParameters(false));
-	rc.pushAndSetColorMaterial(color);
+	rc.pushAndSetColorMaterial(Util::Color4f(color));
 	rc.displayMesh(mesh.get());
 	rc.popMaterial();
 	rc.popLighting();
@@ -301,7 +301,7 @@ void drawCoordSys(RenderingContext & rc, float scale) {
 	rc.popMatrix();
 }
 
-void drawFrustum(RenderingContext & rc, const Geometry::Frustum & frustum, const Util::Color4ub & color, float lineWidth) {
+void drawFrustum(RenderingContext & rc, const Geometry::Frustum & frustum, const Util::Color4f & color, float lineWidth) {
 	static Util::Reference<Mesh> mesh;
 	if (mesh.isNull()) {
 		VertexDescription vertexDescription;

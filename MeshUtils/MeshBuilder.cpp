@@ -604,7 +604,7 @@ void MeshBuilder::MBVertex::setColor(const VertexAttribute & attr,const Util::Co
 			*v = color.getA();
 	}else if(attr.getDataType() == GL_UNSIGNED_BYTE){
 		uint8_t *v=uint8Ptr( attr );
-		Util::Color4ub cUb=color;
+		Util::Color4ub cUb=Util::Color4ub(color);
 		*(v++) = cUb.getR();
 		*(v++) = cUb.getG();
 		*(v++) = cUb.getB();

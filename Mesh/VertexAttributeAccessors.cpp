@@ -57,7 +57,7 @@ class ColorAttributeAccessor3f : public ColorAttributeAccessor {
 		Util::Color4ub getColor4ub(uint32_t index)const override {
 			assertRange(index);
 			const float * v = _ptr<const float>(index);
-			return Util::Color4f(v[0], v[1], v[2], 1.0);
+			return Util::Color4ub(Util::Color4f(v[0], v[1], v[2], 1.0));
 		}
 		//! ---|> ColorAttributeAccessor
 		void setColor(uint32_t index, const Util::Color4f & c) override {
@@ -91,7 +91,7 @@ class ColorAttributeAccessor4f : public ColorAttributeAccessor {
 		Util::Color4ub getColor4ub(uint32_t index)const override {
 			assertRange(index);
 			const float * v = _ptr<const float>(index);
-			return Util::Color4f(v[0], v[1], v[2], v[3]);
+			return Util::Color4ub(Util::Color4f(v[0], v[1], v[2], v[3]));
 		}
 		//! ---|> ColorAttributeAccessor
 		void setColor(uint32_t index, const Util::Color4f & c) override {

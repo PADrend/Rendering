@@ -30,7 +30,7 @@ namespace Rendering {
 class RenderingContext;
 }
 namespace Util {
-class Color4ub;
+class Color4f;
 }
 
 /**
@@ -43,13 +43,13 @@ class Color4ub;
 namespace Rendering {
 
 void drawAbsBox(RenderingContext & rc, const Geometry::Box & box);
-void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4ub & color);
+void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
 void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box);
-void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4ub & color);
+void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
 void drawBox(RenderingContext & rc, const Geometry::Box & box);
-void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4ub & color);
+void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
 void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box);
-void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4ub & color);
+void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
 
 /**
  * @note Because OpenGL immediate mode is used inside this function,
@@ -71,12 +71,12 @@ void drawQuad(RenderingContext & rc, const Geometry::Vec3f & lowerLeft, const Ge
  * @see drawQuad
  */
 void drawQuad(RenderingContext & rc, const Geometry::Vec3f & lowerLeft, const Geometry::Vec3f & lowerRight, const Geometry::Vec3f & upperRight,
-				const Geometry::Vec3f & upperLeft, const Util::Color4ub & color);
+				const Geometry::Vec3f & upperLeft, const Util::Color4f & color);
 void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect);
-void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4ub & color);
+void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color);
 
 void drawRect(RenderingContext & rc, const Geometry::Rect & rect);
-void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4ub & color);
+void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color);
 
 /**
  * Draw a triangle in three-dimensional space.
@@ -86,7 +86,7 @@ void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Co
 void drawTriangle(RenderingContext & rc, const Geometry::Vec3f & vertexA, const Geometry::Vec3f & vertexB, const Geometry::Vec3f & vertexC);
 
 void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to);
-void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4ub & color);
+void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color);
 
 /**
  * Set the projection and modelview matrices to enable drawing in screen space.

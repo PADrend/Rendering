@@ -542,7 +542,7 @@ Mesh * StreamerPLY::loadMesh(std::istream & input) {
 						} else {
 							floatColor.setA(1.0f);
 						}
-						color = floatColor;
+						color = Util::Color4ub(floatColor);
 					} else { // most likely = TYPE_UCHAR
 						color.setR(e.getProperty(redIndex).getCurrentValue<GLubyte>());
 						color.setG(e.getProperty(greenIndex).getCurrentValue<GLubyte>());

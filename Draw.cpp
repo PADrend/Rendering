@@ -73,7 +73,7 @@ void drawAbsBox(RenderingContext & rc, const Geometry::Box & box) {
 	rc.popMatrix();
 }
 
-void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4ub & color) {
+void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawAbsBox(rc, box);
 	rc.popMaterial();
@@ -86,7 +86,7 @@ void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
 	rc.popMatrix();
 }
 
-void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4ub & color) {
+void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawAbsWireframeBox(rc, box);
 	rc.popMaterial();
@@ -154,7 +154,7 @@ void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
 	#endif
 }
 
-void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4ub & color) {
+void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawBox(rc, box);
 	rc.popMaterial();
@@ -217,7 +217,7 @@ void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
 	rc.displayMesh(mesh.get());
 }
 
-void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4ub & color) {
+void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawWireframeBox(rc, box);
 	rc.popMaterial();
@@ -294,7 +294,7 @@ void drawQuad(RenderingContext & rc, const Geometry::Vec3 & lowerLeft, const Geo
 }
 
 void drawQuad(RenderingContext & rc, const Geometry::Vec3f & lowerLeft, const Geometry::Vec3f & lowerRight, const Geometry::Vec3f & upperRight,
-				const Geometry::Vec3f & upperLeft, const Util::Color4ub & color) {
+				const Geometry::Vec3f & upperLeft, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawQuad(rc, lowerLeft, lowerRight, upperRight, upperLeft);
 	rc.popMaterial();
@@ -340,7 +340,7 @@ void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect) {
 	rc.popMatrix();
 }
 
-void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4ub & color) {
+void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawWireframeRect(rc, rect);
 	rc.popMaterial();
@@ -388,7 +388,7 @@ void drawRect(RenderingContext & rc, const Geometry::Rect & rect) {
 	rc.popMatrix();
 }
 
-void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4ub & color) {
+void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawRect(rc, rect);
 	rc.popMaterial();
@@ -461,7 +461,7 @@ void drawVector(RenderingContext & rc, const Geometry::Vec3 & from, const Geomet
 	rc.displayMesh(mesh.get());
 }
 
-void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4ub & color) {
+void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawVector(rc, from, to);
 	rc.popMaterial();
