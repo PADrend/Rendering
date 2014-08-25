@@ -29,7 +29,7 @@ namespace Rendering {
 
 static const std::string vertexProgram(R"***(#version 130
 
-uniform mat4 sg_modelViewProjectionMatrix;
+uniform mat4 sg_matrix_modelToClipping;
 
 in vec2 sg_Position;
 in vec2 sg_TexCoord0;
@@ -37,7 +37,7 @@ out vec2 glyphPos;
 
 void main(void) {
 	glyphPos = sg_TexCoord0;
-	gl_Position = (sg_modelViewProjectionMatrix * vec4(sg_Position, 0.0, 1.0));
+	gl_Position = (sg_matrix_modelToClipping * vec4(sg_Position, 0.0, 1.0));
 }
 )***");
 

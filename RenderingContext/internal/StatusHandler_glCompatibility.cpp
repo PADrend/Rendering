@@ -23,9 +23,9 @@ namespace StatusHandler_glCompatibility{
 void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced) {
 #ifdef LIB_GL
 
-	const bool cc = target.matrixEyeWorldChanged(actual);
+	const bool cc = target.matrixCameraToWorldChanged(actual);
 	if (forced || cc) {
-		target.updateCameraMatrix(actual);
+		target.updateMatrix_cameraToWorld(actual);
 	}
 
 	if (forced || target.matrix_cameraToClipChanged(actual)) {

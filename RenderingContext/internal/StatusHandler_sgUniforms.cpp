@@ -27,11 +27,17 @@ static UniformNameArray_t createNames(const std::string & prefix, uint8_t number
 	return arr;
 }
 
-static const Uniform::UniformName UNIFORM_SG_MODEL_VIEW_MATRIX("sg_modelViewMatrix");
-static const Uniform::UniformName UNIFORM_SG_PROJECTION_MATRIX("sg_projectionMatrix");
-static const Uniform::UniformName UNIFORM_SG_MODEL_VIEW_PROJECTION_MATRIX("sg_modelViewProjectionMatrix");
-static const Uniform::UniformName UNIFORM_SG_CAMERA_MATRIX("sg_cameraMatrix");
-static const Uniform::UniformName UNIFORM_SG_CAMERA_INVERSE_MATRIX("sg_cameraInverseMatrix");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_MODEL_TO_CAMERA("sg_matrix_modelToCamera");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_MODEL_TO_CAMERA_OLD("sg_modelViewMatrix");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING("sg_matrix_cameraToClipping");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING_OLD("sg_projectionMatrix");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_MODEL_TO_CLIPPING("sg_matrix_modelToClipping");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_MODEL_TO_CLIPPING_OLD("sg_modelViewProjectionMatrix");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_WORLD_TO_CAMERA("sg_matrix_worldToCamera");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_WORLD_TO_CAMERA_OLD("sg_cameraMatrix");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_CAMERA_TO_WORLD("sg_matrix_cameraToWorld");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_CAMERA_TO_WORLD_OLD("sg_cameraInverseMatrix");
+
 static const Uniform::UniformName UNIFORM_SG_LIGHT_COUNT("sg_lightCount");
 static const Uniform::UniformName UNIFORM_SG_POINT_SIZE("sg_pointSize");
 
@@ -62,12 +68,15 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 	// camera  & inverse
 	bool cc = false;
-	if (forced || target.matrixEyeWorldChanged(actual)) {
+	if (forced || target.matrixCameraToWorldChanged(actual)) {
 		cc = true;
-		target.updateCameraMatrix(actual);
+		target.updateMatrix_cameraToWorld(actual);
 
-		uniforms.emplace_back(UNIFORM_SG_CAMERA_MATRIX, actual.getMatrix_worldToCamera());
-		uniforms.emplace_back(UNIFORM_SG_CAMERA_INVERSE_MATRIX, actual.getMatrix_cameraToWorld());
+		uniforms.emplace_back(UNIFORM_SG_MATRIX_WORLD_TO_CAMERA, actual.getMatrix_worldToCamera());
+		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_WORLD, actual.getMatrix_cameraToWorld());
+		
+		uniforms.emplace_back(UNIFORM_SG_MATRIX_WORLD_TO_CAMERA_OLD, actual.getMatrix_worldToCamera());
+		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_WORLD_OLD, actual.getMatrix_cameraToWorld());
 	}
 
 	// lights
@@ -138,16 +147,20 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 		if (forced || target.matrix_modelToCameraChanged(actual)) {
 			mc = true;
 			target.updateModelViewMatrix(actual);
-			uniforms.emplace_back(UNIFORM_SG_MODEL_VIEW_MATRIX, actual.getMatrix_modelToCamera());
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CAMERA, actual.getMatrix_modelToCamera());
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CAMERA_OLD, actual.getMatrix_modelToCamera());
 		}
 
 		if (forced || target.matrix_cameraToClipChanged(actual)) {
 			pc = true;
 			target.updateMatrix_cameraToClip(actual);
-			uniforms.emplace_back(UNIFORM_SG_PROJECTION_MATRIX, actual.getMatrix_cameraToClip());
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING, actual.getMatrix_cameraToClip());
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING_OLD, actual.getMatrix_cameraToClip());
 		}
 		if (forced || pc || mc) {
-			uniforms.emplace_back(UNIFORM_SG_MODEL_VIEW_PROJECTION_MATRIX, actual.getMatrix_cameraToClip() * actual.getMatrix_modelToCamera());
+			const auto m = actual.getMatrix_cameraToClip() * actual.getMatrix_modelToCamera();
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CLIPPING, m);
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CLIPPING_OLD, m);
 		}
 	}
 

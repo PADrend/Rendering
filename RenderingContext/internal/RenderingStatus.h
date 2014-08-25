@@ -67,7 +67,7 @@ class RenderingStatus {
 		Geometry::Matrix4x4f matrix_worldToCamera;
 		Geometry::Matrix4x4f matrix_cameraToWorld;
 	public:
-		bool matrixEyeWorldChanged(const RenderingStatus & actual) const {
+		bool matrixCameraToWorldChanged(const RenderingStatus & actual) const {
 			return (checkNumber_matrixCameraWorld == actual.checkNumber_matrixCameraWorld) ? false :
 					matrix_cameraToWorld != actual.matrix_cameraToWorld;
 		}
@@ -78,7 +78,7 @@ class RenderingStatus {
 			matrix_worldToCamera = eyeToWorld.inverse();
 			++checkNumber_matrixCameraWorld;
 		}
-		void updateCameraMatrix(const RenderingStatus & actual) {
+		void updateMatrix_cameraToWorld(const RenderingStatus & actual) {
 			matrix_cameraToWorld = actual.matrix_cameraToWorld;
 			matrix_worldToCamera = actual.matrix_worldToCamera;
 			checkNumber_matrixCameraWorld = actual.checkNumber_matrixCameraWorld;

@@ -19,12 +19,12 @@ namespace ShaderUtils {
 Util::Reference<Shader> createNormalToColorShader() {
 	const std::string vertexProgram(
 R"***(#version 110
-uniform mat4 sg_cameraInverseMatrix;
-uniform mat4 sg_modelViewMatrix;
+uniform mat4 sg_matrix_cameraToWorld;
+uniform mat4 sg_matrix_modelToCamera;
 varying vec3 normal;
 
 void main() {
-	normal = normalize((sg_cameraInverseMatrix * sg_modelViewMatrix * vec4(gl_Normal, 0.0)).xyz);
+	normal = normalize((sg_matrix_cameraToWorld * sg_matrix_modelToCamera * vec4(gl_Normal, 0.0)).xyz);
 	gl_Position = ftransform();
 }
 )***");
