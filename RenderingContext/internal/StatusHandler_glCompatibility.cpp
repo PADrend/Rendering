@@ -98,13 +98,16 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			glLightfv(lightNumber, GL_DIFFUSE, parameters.diffuse.data());
 			glLightfv(lightNumber, GL_SPECULAR, parameters.specular.data());
 
+			const Geometry::Vec4 direction( parameters.direction, 0.0);
+			
 			if (parameters.type == LightParameters::DIRECTIONAL) {
-				glLightfv(lightNumber, GL_POSITION, (-parameters.direction).getVec());
+				glLightfv(lightNumber, GL_POSITION, (-direction).getVec());
 				glLightf(lightNumber, GL_CONSTANT_ATTENUATION, 1.0f);
 				glLightf(lightNumber, GL_LINEAR_ATTENUATION, 0.0f);
 				glLightf(lightNumber, GL_QUADRATIC_ATTENUATION, 0.0f);
 			} else {
-				glLightfv(lightNumber, GL_POSITION, parameters.position.getVec());
+				const Geometry::Vec4 position( parameters.position, 1.0);
+				glLightfv(lightNumber, GL_POSITION, position.getVec());
 				glLightf(lightNumber, GL_CONSTANT_ATTENUATION, parameters.constant);
 				glLightf(lightNumber, GL_LINEAR_ATTENUATION, parameters.linear);
 				glLightf(lightNumber, GL_QUADRATIC_ATTENUATION, parameters.quadratic);
@@ -112,7 +115,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 			if (parameters.type == LightParameters::SPOT) {
 				glLightf(lightNumber, GL_SPOT_CUTOFF, parameters.cutoff);
-				glLightfv(lightNumber, GL_SPOT_DIRECTION, parameters.direction.getVec());
+				glLightfv(lightNumber, GL_SPOT_DIRECTION, direction.getVec());
 				glLightf(lightNumber, GL_SPOT_EXPONENT, parameters.exponent);
 			} else {
 				glLightf(lightNumber, GL_SPOT_CUTOFF, 180.0f);

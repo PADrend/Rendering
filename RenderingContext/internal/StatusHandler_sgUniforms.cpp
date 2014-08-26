@@ -92,8 +92,8 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 			target.updateLightParameter(i, params);
 
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], (actual.getMatrix_worldToCamera() * params.position).xyz());
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], (actual.getMatrix_worldToCamera() * params.direction).xyz());
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], actual.getMatrix_worldToCamera().transformPosition(params.position) );
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], actual.getMatrix_worldToCamera().transformDirection(params.direction) );
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_TYPE[i], static_cast<int> (params.type));
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_CONSTANT[i], params.constant);
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_LINEAR[i], params.linear);
@@ -105,13 +105,13 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_COSCUTOFF[i], params.cosCutoff);
 		}
 
-		if (forced) {
+		if (forced) { // reset all non-enabled light values
 			LightParameters params;
 			for (uint_fast8_t i = numEnabledLights; i < RenderingStatus::MAX_LIGHTS; ++i) {
 				target.updateLightParameter(i, params);
 
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], (actual.getMatrix_worldToCamera() * params.position).xyz());
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], (actual.getMatrix_worldToCamera() * params.direction).xyz());
+				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], actual.getMatrix_worldToCamera().transformPosition(params.position) );
+				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], actual.getMatrix_worldToCamera().transformDirection(params.direction) );
 				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_TYPE[i], static_cast<int> (params.type));
 				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_CONSTANT[i], params.constant);
 				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_LINEAR[i], params.linear);

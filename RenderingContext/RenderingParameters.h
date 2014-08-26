@@ -537,24 +537,12 @@ class LightParameters {
 	public:
 		enum lightType_t {
 			DIRECTIONAL = 1, POINT = 2, SPOT = 3
-		};
+		}type;
 
-		lightType_t type;
-
-		Geometry::Vec4f direction;
-		Geometry::Vec4f position;
-
-		Util::Color4f ambient;
-		Util::Color4f diffuse;
-		Util::Color4f specular;
-
-		float constant;
-		float linear;
-		float quadratic;
-
-		float cutoff;
-		float cosCutoff;
-		float exponent;
+		Geometry::Vec3 direction,position;
+		Util::Color4f ambient, diffuse, specular;
+		float constant, linear, quadratic;
+		float cutoff, cosCutoff, exponent;
 
 		LightParameters() :	type(LightParameters::POINT), direction(), position(), ambient(0.2f, 0.2f, 0.2f, 1.0f), diffuse(0.8f, 0.8f, 0.8f, 1.0f), specular(1.0f, 1.0f, 1.0f,
 					1.0f), constant(1.0f), linear(0.0f), quadratic(0.0f), cutoff(20.0f), cosCutoff(std::cos(Geometry::Convert::degToRad(cutoff))), exponent(2.0f) {
