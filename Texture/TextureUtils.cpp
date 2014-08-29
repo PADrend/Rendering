@@ -610,8 +610,8 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	{
 		const Geometry::Rect_i & viewport = rc.getViewport();
 
-		rc.pushMatrix_cameraToClip();
-		rc.setMatrix_cameraToClip(Geometry::Matrix4x4::orthographicProjection(0, viewport.getWidth(), 0, viewport.getHeight(), -1, 1));
+		rc.pushMatrix_cameraToClipping();
+		rc.setMatrix_cameraToClipping(Geometry::Matrix4x4::orthographicProjection(0, viewport.getWidth(), 0, viewport.getHeight(), -1, 1));
 	}
 	{
 		Geometry::Matrix4x4 identityMatrix;
@@ -682,7 +682,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 		rc.popTexture(i);
 	}
 
-	rc.popMatrix_cameraToClip();
+	rc.popMatrix_cameraToClipping();
 	rc.popMatrix_modelToCamera();
 
 	rc.popLighting();

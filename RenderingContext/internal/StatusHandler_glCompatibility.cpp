@@ -30,9 +30,9 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 	if (forced || target.matrix_cameraToClipChanged(actual)) {
 		glMatrixMode(GL_PROJECTION);
-		glLoadTransposeMatrixf(actual.getMatrix_cameraToClip().getData());
+		glLoadTransposeMatrixf(actual.getMatrix_cameraToClipping().getData());
 		glMatrixMode(GL_MODELVIEW);
-		target.updateMatrix_cameraToClip(actual);
+		target.updateMatrix_cameraToClipping(actual);
 	}
 
 	if (forced || target.matrix_modelToCameraChanged(actual)) {

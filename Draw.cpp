@@ -52,8 +52,8 @@ void drawFullScreenRect(RenderingContext & rc){
 		mesh = mb.buildMesh();
 	}
 
-	rc.pushMatrix_cameraToClip();
-	rc.setMatrix_cameraToClip(projectionMatrix);
+	rc.pushMatrix_cameraToClipping();
+	rc.setMatrix_cameraToClipping(projectionMatrix);
 
 	rc.pushMatrix_modelToCamera();
 	rc.setMatrix_modelToCamera(modelViewMatrix);
@@ -61,7 +61,7 @@ void drawFullScreenRect(RenderingContext & rc){
 	rc.displayMesh(mesh.get());
 
 	rc.popMatrix_modelToCamera();
-	rc.popMatrix_cameraToClip();
+	rc.popMatrix_cameraToClipping();
 
 	GET_GL_ERROR();
 }
@@ -466,8 +466,8 @@ void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geome
 }
 
 void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect){
-	rc.pushMatrix_cameraToClip();
-	rc.setMatrix_cameraToClip(Geometry::Matrix4x4f::orthographicProjection(screenRect.getMinX(), screenRect.getMaxX(),screenRect.getMaxY(),screenRect.getMinY(), -1, 1));
+	rc.pushMatrix_cameraToClipping();
+	rc.setMatrix_cameraToClipping(Geometry::Matrix4x4f::orthographicProjection(screenRect.getMinX(), screenRect.getMaxX(),screenRect.getMaxY(),screenRect.getMinY(), -1, 1));
 
 	rc.pushMatrix_modelToCamera();
 	rc.setMatrix_modelToCamera(Geometry::Matrix4x4f());
@@ -478,7 +478,7 @@ void enable2DMode(RenderingContext & rc) {
 
 void disable2DMode(RenderingContext & rc) {
 	rc.popMatrix_modelToCamera();
-	rc.popMatrix_cameraToClip();
+	rc.popMatrix_cameraToClipping();
 }
 
 }

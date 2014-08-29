@@ -331,11 +331,11 @@ public:
 
 	//! @name Matrix CameraToClipping (Legacy Projection Matrix)
 	//	@{
-	const Geometry::Matrix4x4 & getMatrix_cameraToClip() const;			//! formerly known as getProjectionMatrix
-	void pushAndSetMatrix_cameraToClip(const Geometry::Matrix4x4 & matrix);
-	void pushMatrix_cameraToClip();										//! formerly known as pushProjectionMatrix
-	void popMatrix_cameraToClip();										//! formerly known as popProjectionMatrix
-	void setMatrix_cameraToClip(const Geometry::Matrix4x4 & matrix);	//! formerly known as setProjectionMatrix
+	const Geometry::Matrix4x4 & getMatrix_cameraToClipping() const;			//! formerly known as getProjectionMatrix
+	void pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix);
+	void pushMatrix_cameraToClipping();										//! formerly known as pushProjectionMatrix
+	void popMatrix_cameraToClipping();										//! formerly known as popProjectionMatrix
+	void setMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix);	//! formerly known as setProjectionMatrix
 	// @}
 	
 	// ------

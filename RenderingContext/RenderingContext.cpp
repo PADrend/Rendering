@@ -1124,34 +1124,34 @@ void RenderingContext::disableLight(uint8_t lightNumber) {
 
 // PROJECTION MATRIX *************************************************************************
 
-void RenderingContext::popMatrix_cameraToClip() {
+void RenderingContext::popMatrix_cameraToClipping() {
 	if(internalData->projectionMatrixStack.empty()) {
 		WARN("Cannot pop projection matrix. The stack is empty.");
 		return;
 	}
-	internalData->targetRenderingStatus.setMatrix_cameraToClip(internalData->projectionMatrixStack.top());
+	internalData->targetRenderingStatus.setMatrix_cameraToClipping(internalData->projectionMatrixStack.top());
 	internalData->projectionMatrixStack.pop();
 	if(immediate)
 		applyChanges();
 }
 
-void RenderingContext::pushMatrix_cameraToClip() {
-	internalData->projectionMatrixStack.emplace(internalData->targetRenderingStatus.getMatrix_cameraToClip());
+void RenderingContext::pushMatrix_cameraToClipping() {
+	internalData->projectionMatrixStack.emplace(internalData->targetRenderingStatus.getMatrix_cameraToClipping());
 }
 
-void RenderingContext::pushAndSetMatrix_cameraToClip(const Geometry::Matrix4x4 & matrix) {
-	pushMatrix_cameraToClip();
-	setMatrix_cameraToClip(matrix);
+void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
+	pushMatrix_cameraToClipping();
+	setMatrix_cameraToClipping(matrix);
 }
 	
-void RenderingContext::setMatrix_cameraToClip(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetRenderingStatus.setMatrix_cameraToClip(matrix);
+void RenderingContext::setMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
+	internalData->targetRenderingStatus.setMatrix_cameraToClipping(matrix);
 	if(immediate)
 		applyChanges();
 }
 
-const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToClip() const {
-	return internalData->targetRenderingStatus.getMatrix_cameraToClip();
+const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToClipping() const {
+	return internalData->targetRenderingStatus.getMatrix_cameraToClipping();
 }
 
 // CAMERA MATRIX *****************************************************************************

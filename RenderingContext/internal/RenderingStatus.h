@@ -49,7 +49,7 @@ class RenderingStatus {
 			matrix_modelToCamera(),
 			pointParameters(),
 			matrix_cameraToClipCheckNumber(0),
-			matrix_cameraToClip(),
+			matrix_cameraToClipping(),
 			textureUnitUsagesCheckNumber(0),
 			textureUnitParams(MAX_TEXTURES, std::make_pair(TexUnitUsageParameter::DISABLED,TextureType::TEXTURE_2D)) {
 		}
@@ -252,12 +252,12 @@ class RenderingStatus {
 		Geometry::Matrix4x4f matrix_cameraToClip;
 
 	public:
-		void setMatrix_cameraToClip(const Geometry::Matrix4x4f & matrix) {
+		void setMatrix_cameraToClipping(const Geometry::Matrix4x4f & matrix) {
 			matrix_cameraToClip = matrix;
 			++matrix_cameraToClipCheckNumber;
 		}
-		const Geometry::Matrix4x4f & getMatrix_cameraToClip() const 				{	return matrix_cameraToClip;	}
-		void updateMatrix_cameraToClip(const RenderingStatus & actual) {
+		const Geometry::Matrix4x4f & getMatrix_cameraToClipping() const 				{	return matrix_cameraToClip;	}
+		void updateMatrix_cameraToClipping(const RenderingStatus & actual) {
 			matrix_cameraToClip = actual.matrix_cameraToClip;
 			matrix_cameraToClipCheckNumber = actual.matrix_cameraToClipCheckNumber;
 		}

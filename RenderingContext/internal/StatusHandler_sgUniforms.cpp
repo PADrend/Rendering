@@ -153,12 +153,12 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 		if (forced || target.matrix_cameraToClipChanged(actual)) {
 			pc = true;
-			target.updateMatrix_cameraToClip(actual);
-			uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING, actual.getMatrix_cameraToClip());
-			uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING_OLD, actual.getMatrix_cameraToClip());
+			target.updateMatrix_cameraToClipping(actual);
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING, actual.getMatrix_cameraToClipping());
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING_OLD, actual.getMatrix_cameraToClipping());
 		}
 		if (forced || pc || mc) {
-			const auto m = actual.getMatrix_cameraToClip() * actual.getMatrix_modelToCamera();
+			const auto m = actual.getMatrix_cameraToClipping() * actual.getMatrix_modelToCamera();
 			uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CLIPPING, m);
 			uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CLIPPING_OLD, m);
 		}
