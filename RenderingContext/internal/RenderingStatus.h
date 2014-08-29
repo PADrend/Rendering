@@ -48,7 +48,7 @@ class RenderingStatus {
 			matrix_modelToCameraCheckNumber(0),
 			matrix_modelToCamera(),
 			pointParameters(),
-			matrix_cameraToClipCheckNumber(0),
+			matrix_cameraToClippingCheckNumber(0),
 			matrix_cameraToClipping(),
 			textureUnitUsagesCheckNumber(0),
 			textureUnitParams(MAX_TEXTURES, std::make_pair(TexUnitUsageParameter::DISABLED,TextureType::TEXTURE_2D)) {
@@ -248,22 +248,22 @@ class RenderingStatus {
 	//!	@name Projection Matrix
 	//	@{
 	private:
-		uint32_t matrix_cameraToClipCheckNumber;
-		Geometry::Matrix4x4f matrix_cameraToClip;
+		uint32_t matrix_cameraToClippingCheckNumber;
+		Geometry::Matrix4x4f matrix_cameraToClipping;
 
 	public:
 		void setMatrix_cameraToClipping(const Geometry::Matrix4x4f & matrix) {
-			matrix_cameraToClip = matrix;
-			++matrix_cameraToClipCheckNumber;
+			matrix_cameraToClipping = matrix;
+			++matrix_cameraToClippingCheckNumber;
 		}
-		const Geometry::Matrix4x4f & getMatrix_cameraToClipping() const 				{	return matrix_cameraToClip;	}
+		const Geometry::Matrix4x4f & getMatrix_cameraToClipping() const 				{	return matrix_cameraToClipping;	}
 		void updateMatrix_cameraToClipping(const RenderingStatus & actual) {
-			matrix_cameraToClip = actual.matrix_cameraToClip;
-			matrix_cameraToClipCheckNumber = actual.matrix_cameraToClipCheckNumber;
+			matrix_cameraToClipping = actual.matrix_cameraToClipping;
+			matrix_cameraToClippingCheckNumber = actual.matrix_cameraToClippingCheckNumber;
 		}
 		bool matrix_cameraToClipChanged(const RenderingStatus & actual) const {
-			return (matrix_cameraToClipCheckNumber == actual.matrix_cameraToClipCheckNumber) ? false :
-					matrix_cameraToClip != actual.matrix_cameraToClip;
+			return (matrix_cameraToClippingCheckNumber == actual.matrix_cameraToClippingCheckNumber) ? false :
+					matrix_cameraToClipping != actual.matrix_cameraToClipping;
 		}
 	//	@}
 
