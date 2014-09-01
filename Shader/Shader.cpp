@@ -395,6 +395,8 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 
 #ifdef LIB_GL
 			case GL_SAMPLER_1D:
+			case GL_SAMPLER_1D_ARRAY:
+			case GL_SAMPLER_2D_ARRAY:
 			case GL_SAMPLER_3D:
 			case GL_SAMPLER_1D_SHADOW:
 			case GL_SAMPLER_2D_SHADOW:

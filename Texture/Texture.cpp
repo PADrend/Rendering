@@ -281,14 +281,28 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 			break;
 		
 		}
-		case  TextureType::TEXTURE_1D_ARRAY:
+		case  TextureType::TEXTURE_1D_ARRAY:{
+			glTexImage2D(GL_TEXTURE_1D_ARRAY, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+							static_cast<GLsizei>(getWidth()),static_cast<GLsizei>(getNumLayers()), 
+							0,
+							static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
+							static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
+			break;
+		}
 		case  TextureType::TEXTURE_2D_ARRAY:
 		case  TextureType::TEXTURE_3D:
-		case  TextureType::TEXTURE_CUBE_MAP_ARRAY:
+		case  TextureType::TEXTURE_CUBE_MAP_ARRAY:{
+			glTexImage3D(static_cast<GLenum>(format.glTextureType), 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+							static_cast<GLsizei>(getWidth()), static_cast<GLsizei>(getHeight()),static_cast<GLsizei>(getNumLayers()), 
+							0,
+							static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
+							static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
+			break;
+		}
 		default:{
 			context.popTexture(0);
 			glActiveTexture(activeTexture);
-			throw std::runtime_error("Texture::_uploadGLTexture: (currently) unsupported texture type.");
+			throw std::runtime_error("Texture::_uploadGLTexture: Unsupported texture type.");
 		}
 	}
 	GET_GL_ERROR();
@@ -373,6 +387,8 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 		case  TextureType::TEXTURE_1D_ARRAY:
 		case  TextureType::TEXTURE_2D_ARRAY:
 		case  TextureType::TEXTURE_3D:
+			glGetTexImage(format.glTextureType, 0, format.pixelFormat.glLocalDataFormat, format.pixelFormat.glLocalDataType, getLocalData());
+			break;
 		case  TextureType::TEXTURE_CUBE_MAP_ARRAY:		
 		default:
 			throw std::runtime_error("Texture::downloadGLTexture: (currently) unsupported texture type.");

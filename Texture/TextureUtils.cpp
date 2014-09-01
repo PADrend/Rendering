@@ -298,15 +298,61 @@ static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t
 	return new Texture(format);
 }
 
+//! [static] Factory
+Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering){
+	if( numComponents<1||numComponents>4 )
+		throw std::logic_error("createTexture: Invalid numComponents.");
+	
+	const auto bytes = getNumBytes(dataType);
+	auto glPixelFormat = pixelFormatToGLPixelFormat( Util::PixelFormat(dataType,
+																		0,
+																		numComponents>1 ? bytes : Util::PixelFormat::NONE, 
+																		numComponents>2 ? bytes*2 : Util::PixelFormat::NONE, 
+																		numComponents>3 ? bytes*3 : Util::PixelFormat::NONE));
+
+	return create( type, sizeX, sizeY, numLayers, glPixelFormat.glLocalDataFormat, glPixelFormat.glLocalDataType, glPixelFormat.glInternalFormat, filtering);
+}
+
 //! (static)
 Util::Reference<Texture> createStdCubeTexture(uint32_t width, bool alpha) {
-	return create(TextureType::TEXTURE_CUBE_MAP,width,width,6, alpha ? GL_RGBA : GL_RGB,GL_UNSIGNED_BYTE,alpha ? GL_RGBA : GL_RGB,true);
+	return createColorTexture(TextureType::TEXTURE_CUBE_MAP, width, width, 6, Util::TypeConstant::UINT8, alpha ? 4 : 3,  true);
 }
 
 //! (static)
 Util::Reference<Texture> createStdTexture(uint32_t width, uint32_t height, bool alpha) {
-	return create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB,GL_UNSIGNED_BYTE,alpha ? GL_RGBA : GL_RGB,true);
+	return createColorTexture(TextureType::TEXTURE_2D, width, height, 1, Util::TypeConstant::UINT8, alpha ? 4 : 3,  true);
 }
+
+//! (static)
+Util::Reference<Texture> createHDRCubeTexture(uint32_t width, bool alpha) {
+	return createColorTexture(TextureType::TEXTURE_CUBE_MAP, width, width, 6, Util::TypeConstant::FLOAT, alpha ? 4 : 3, true);
+}
+
+//! (static)
+Util::Reference<Texture> createHDRTexture(uint32_t width, uint32_t height, bool alpha) {
+	return createColorTexture(TextureType::TEXTURE_2D, width, height, 1, Util::TypeConstant::FLOAT, alpha ? 4 : 3, true);
+}
+
+//! (static)
+Util::Reference<Texture> createRedTexture(uint32_t width, uint32_t height, bool useByte) {
+	return createColorTexture(TextureType::TEXTURE_2D, width, height, 1, useByte ? Util::TypeConstant::UINT8 : Util::TypeConstant::FLOAT, 1,  true);
+}
+
+//! (static)
+Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t height) {
+	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, GL_DEPTH24_STENCIL8_EXT, false);
+}
+
+//! [static] Factory
+Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
+	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
+}
+
+//! [static] Factory
+Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents){
+	return createColorTexture(type,sizeX,sizeY,numLayers,dataType,numComponents,false);
+}
+// ----------------------------
 
 Util::Reference<Texture> createNoiseTexture(uint32_t width, uint32_t height, bool alpha,float scaling) {
 	Util::Reference<Texture> texture = create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT,alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
@@ -333,64 +379,7 @@ Util::Reference<Texture> createNoiseTexture(uint32_t width, uint32_t height, boo
 
 
 Util::Reference<Texture> createTextureDataArray_Vec4(const uint32_t size) {
-#if defined(LIB_GL)
-	Texture::Format format;
-	format.glTextureType = GL_TEXTURE_1D;
-	format.sizeX = size;
-	format.sizeY = 1;
-	format.pixelFormat.glLocalDataFormat = GL_RGBA;
-	format.pixelFormat.glLocalDataType = GL_FLOAT;
-	format.pixelFormat.glInternalFormat = GL_RGBA32F;
-	format.glWrapS = GL_CLAMP;
-	format.glWrapT = GL_CLAMP;
-
-	return new Texture(format);
-#else
-	return nullptr;
-#endif
-}
-
-#ifdef LIB_GL
-//! (static)
-Util::Reference<Texture> createHDRCubeTexture(uint32_t width, bool alpha) {
-	return create(TextureType::TEXTURE_CUBE_MAP,width,width,6, alpha ? GL_RGBA : GL_RGB, GL_FLOAT, alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
-}
-
-//! (static)
-Util::Reference<Texture> createHDRTexture(uint32_t width, uint32_t height, bool alpha) {
-	return create(TextureType::TEXTURE_2D, width, height, 1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT, alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
-}
-
-//! (static)
-Util::Reference<Texture> createRedTexture(uint32_t width, uint32_t height, bool useByte) {
-	return create(TextureType::TEXTURE_2D, width, height, 1, GL_RED,  useByte ? GL_UNSIGNED_BYTE : GL_FLOAT, useByte ? 1 : GL_R32F,true);
-}
-
-//! (static)
-Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t height) {
-	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, GL_DEPTH24_STENCIL8_EXT, false);
-}
-#endif
-
-//! [static] Factory
-Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
-	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
-}
-
-//! [static] Factory
-Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents){
-	if( numComponents<1||numComponents>4 )
-		throw std::logic_error("createDataTexture: Invalid numComponents.");
-	
-	const auto bytes = getNumBytes(dataType);
-	auto glPixelFormat = pixelFormatToGLPixelFormat( Util::PixelFormat(dataType,
-																		0,
-																		numComponents>1 ? bytes : Util::PixelFormat::NONE, 
-																		numComponents>2 ? bytes*2 : Util::PixelFormat::NONE, 
-																		numComponents>3 ? bytes*3 : Util::PixelFormat::NONE));
-
-//	return create( type, sizeX, sizeY, numLayers, glPixelFormat, glPixelDataType, glInternalFormat, false);
-	return create( type, sizeX, sizeY, numLayers, glPixelFormat.glLocalDataFormat, glPixelFormat.glLocalDataType, glPixelFormat.glInternalFormat, false);
+	return createDataTexture(TextureType::TEXTURE_1D,size,1,1,Util::TypeConstant::FLOAT,4); 
 }
 
 //! [static] Factory
