@@ -242,12 +242,12 @@ Util::GenericAttributeList * StreamerOBJ::loadGeneric(std::istream & input) {
 				}
 				if (!vertexDesc) {
 					vertexDesc = new VertexDescription;
-					vertexDesc->appendAttribute(VertexAttributeIds::POSITION, 3, GL_FLOAT);
+					vertexDesc->appendAttribute(VertexAttributeIds::POSITION, 3, GL_FLOAT,false);
 					if (vt != 0) {
-						vertexDesc->appendAttribute(VertexAttributeIds::TEXCOORD0, 2, GL_FLOAT);
+						vertexDesc->appendAttribute(VertexAttributeIds::TEXCOORD0, 2, GL_FLOAT,false);
 					}
 					if (vn != 0) {
-						vertexDesc->appendAttribute(VertexAttributeIds::NORMAL, 3, GL_FLOAT);
+						vertexDesc->appendAttribute(VertexAttributeIds::NORMAL, 3, GL_FLOAT,false);
 					}
 				}
 

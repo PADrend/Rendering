@@ -22,24 +22,27 @@ namespace Rendering {
 VertexDescription::VertexDescription() : attributes(), vertexSize(0) {
 }
 
-const VertexAttribute & VertexDescription::appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t type) {
-	attributes.push_back(VertexAttribute(getVertexSize(), numValues, type, nameId, nameId.toString()));
+const VertexAttribute & VertexDescription::appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType, bool normalize) {
+	attributes.push_back(VertexAttribute(getVertexSize(), numValues, glType, nameId, nameId.toString(),normalize));
 	vertexSize += attributes.back().getDataSize();
 	return attributes.back();
 }
+const VertexAttribute & VertexDescription::appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType) {
+	return appendAttribute(nameId,numValues,glType,glType==GL_BYTE || glType==GL_UNSIGNED_BYTE);
+}
 
-const VertexAttribute & VertexDescription::appendAttribute(const std::string & name, uint8_t numValues, uint32_t type) {
-	attributes.push_back(VertexAttribute(getVertexSize(), numValues, type, Util::StringIdentifier(name), name));
+const VertexAttribute & VertexDescription::appendAttribute(const std::string & name, uint8_t numValues, uint32_t type, bool normalize) {
+	attributes.push_back(VertexAttribute(getVertexSize(), numValues, type, Util::StringIdentifier(name), name, normalize));
 	vertexSize += attributes.back().getDataSize();
 	return attributes.back();
 }
 
 const VertexAttribute & VertexDescription::appendFloatAttribute(const Util::StringIdentifier & nameId, uint8_t numValues) {
-	return appendAttribute(nameId, numValues, GL_FLOAT);
+	return appendAttribute(nameId, numValues, GL_FLOAT, false);
 }
 
 const VertexAttribute & VertexDescription::appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint8_t numValues) {
-	return appendAttribute(nameId, numValues, GL_UNSIGNED_INT);
+	return appendAttribute(nameId, numValues, GL_UNSIGNED_INT, false);
 }
 
 const VertexAttribute & VertexDescription::getAttribute(const std::string & name) const {
@@ -73,7 +76,7 @@ void VertexDescription::updateAttribute(const VertexAttribute & attr) {
 	for(auto it = attributes.begin(); it != attributes.end(); ++it) {
 		VertexAttribute & currentAttr = *it;
 		if(currentAttr.getNameId() == attr.getNameId()) {
-			currentAttr = VertexAttribute(currentAttr.getOffset(), attr.getNumValues(), attr.getDataType(), currentAttr.getNameId(), currentAttr.getName());
+			currentAttr = VertexAttribute(currentAttr.getOffset(), attr.getNumValues(), attr.getDataType(), currentAttr.getNameId(), currentAttr.getName(),currentAttr.getNormalize());
 			// Update the offsets.
 			vertexSize = static_cast<std::size_t>(currentAttr.getOffset() + currentAttr.getDataSize());
 
@@ -88,7 +91,7 @@ void VertexDescription::updateAttribute(const VertexAttribute & attr) {
 		}
 	}
 	// Attribute was not found.
-	appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType());
+	appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType(), attr.getNormalize());
 }
 
 std::string VertexDescription::toString() const {
@@ -123,35 +126,35 @@ bool VertexDescription::operator<(const VertexDescription & other)const{
 
 
 const VertexAttribute & VertexDescription::appendColorRGBAByte() {
-	return appendAttribute(VertexAttributeIds::COLOR, 4, GL_UNSIGNED_BYTE);
+	return appendAttribute(VertexAttributeIds::COLOR, 4, GL_UNSIGNED_BYTE, true);
 }
 
 const VertexAttribute & VertexDescription::appendColorRGBFloat() {
-	return appendAttribute(VertexAttributeIds::COLOR, 3, GL_FLOAT);
+	return appendAttribute(VertexAttributeIds::COLOR, 3, GL_FLOAT, false);
 }
 
 const VertexAttribute & VertexDescription::appendColorRGBAFloat() {
-	return appendAttribute(VertexAttributeIds::COLOR, 4, GL_FLOAT);
+	return appendAttribute(VertexAttributeIds::COLOR, 4, GL_FLOAT, false);
 }
 
 const VertexAttribute & VertexDescription::appendNormalByte() {
-	return appendAttribute(VertexAttributeIds::NORMAL, 4, GL_BYTE);
+	return appendAttribute(VertexAttributeIds::NORMAL, 4, GL_BYTE, true);
 }
 
 const VertexAttribute & VertexDescription::appendNormalFloat() {
-	return appendAttribute(VertexAttributeIds::NORMAL, 3, GL_FLOAT);
+	return appendAttribute(VertexAttributeIds::NORMAL, 3, GL_FLOAT, false);
 }
 
 const VertexAttribute & VertexDescription::appendPosition2D() {
-	return appendAttribute(VertexAttributeIds::POSITION, 2, GL_FLOAT);
+	return appendAttribute(VertexAttributeIds::POSITION, 2, GL_FLOAT, false);
 }
 
 const VertexAttribute & VertexDescription::appendPosition3D() {
-	return appendAttribute(VertexAttributeIds::POSITION, 3, GL_FLOAT);
+	return appendAttribute(VertexAttributeIds::POSITION, 3, GL_FLOAT, false);
 }
 
 const VertexAttribute & VertexDescription::appendTexCoord() {
-	return appendAttribute(VertexAttributeIds::TEXCOORD0, 2, GL_FLOAT);
+	return appendAttribute(VertexAttributeIds::TEXCOORD0, 2, GL_FLOAT, false);
 }
 
 

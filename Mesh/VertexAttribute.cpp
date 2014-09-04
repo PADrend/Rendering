@@ -19,22 +19,22 @@ namespace Rendering {
 
 VertexAttribute::VertexAttribute() :
 		offset(0),dataSize(0),
-		numValues(0), dataType(GL_FLOAT), nameId(0){
+		numValues(0), dataType(GL_FLOAT), nameId(0), normalize(false){
 }
 
 //! (ctor)
-VertexAttribute::VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId) :
+VertexAttribute::VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId, bool _normalize) :
 		offset(0), dataSize(getGLTypeSize(_dataType) * _numValues),
-		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)), name() {
+		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)), name(), normalize(_normalize) {
 	if((dataSize % 4) != 0) {
 		WARN("VertexAttribute is not 4-byte aligned.");
 	}
 }
 
 //! (ctor)
-VertexAttribute::VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name) :
+VertexAttribute::VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name, bool _normalize) :
 		offset(_offset),dataSize(getGLTypeSize(_dataType)*_numValues),
-		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)),name(std::move(_name)){
+		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)),name(std::move(_name)), normalize(_normalize){
 	if((dataSize % 4) != 0) {
 		WARN("VertexAttribute is not 4-byte aligned.");
 	}
@@ -50,12 +50,16 @@ bool VertexAttribute::operator<(const VertexAttribute & other)const{
 		return nameId<other.nameId;
 	}else if(offset!=other.offset){
 		return offset<other.offset;
+	}else if(normalize!=other.normalize){
+		return normalize<other.normalize;
 	} else return false;
 }
 
 std::string VertexAttribute::toString()const{
 	std::ostringstream s;
 	s << name << ": " << static_cast<unsigned int>(numValues) << " " << getGLTypeString(dataType);
+	if(normalize)
+		s << " (normalize)";
 	return s.str();
 }
 

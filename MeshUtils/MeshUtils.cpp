@@ -443,7 +443,7 @@ void shrinkMesh(Mesh * m) {
 			vdNew.appendColorRGBAByte();
 			convertColors = true;
 		} else { // just copy
-			vdNew.appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType());
+			vdNew.appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType(), attr.getNormalize());
 		}
 	}
 
@@ -550,13 +550,13 @@ VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & 
 		for(const auto & attr : attributes) {
 			const VertexAttribute & resultAttr = result.getAttribute(attr.getNameId());
 			if (resultAttr.empty()) {
-				result.appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType());
+				result.appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType(), attr.getNormalize());
 			} else if (!(attr == resultAttr)) {
 				uint8_t attrTypeSize = getGLTypeSize(attr.getDataType());
 				uint8_t resultAttrTypeSize = getGLTypeSize(resultAttr.getDataType());
 				result.updateAttribute(
 						VertexAttribute(std::max(attr.getNumValues(), resultAttr.getNumValues()),
-								attrTypeSize > resultAttrTypeSize ? attr.getDataType() : resultAttr.getDataType(), attr.getNameId()));
+								attrTypeSize > resultAttrTypeSize ? attr.getDataType() : resultAttr.getDataType(), attr.getNameId(), attr.getNormalize()&&resultAttr.getNormalize() ));
 			}
 		}
 	}
@@ -568,7 +568,7 @@ void removeColorData(Mesh * m) {
 	MeshVertexData & vertices = m->openVertexData();
 	const VertexDescription & vdo = vertices.getVertexDescription();
 	VertexDescription vdn = vdo;
-	vdn.appendAttribute(VertexAttributeIds::COLOR, 0, 0);
+	vdn.appendAttribute(VertexAttributeIds::COLOR, 0, 0, false);
 
 	std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, vdn));
 	vertices.swap(*newVertices.get());
@@ -1284,7 +1284,7 @@ void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringI
 	{
 		VertexDescription vdCopy(vertices.getVertexDescription());
 		const VertexAttribute & vaFrom = vdCopy.getAttribute(from);
-		VertexAttribute vaTo(vaFrom.getNumValues(), vaFrom.getDataType(), to);
+		VertexAttribute vaTo(vaFrom.getNumValues(), vaFrom.getDataType(), to, vaFrom.getNormalize());
 		vdCopy.updateAttribute(vaTo);
 
 		std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, vdCopy));
@@ -1316,7 +1316,7 @@ void calculateTextureCoordinates_projection(Mesh * mesh, Util::StringIdentifier 
 	// add slot for 2 float coordinates
 	if (!vData.getVertexDescription().hasAttribute(attribName)) {
 		VertexDescription newVd = vData.getVertexDescription();
-		newVd.appendAttribute(attribName, 2, GL_FLOAT);
+		newVd.appendAttribute(attribName, 2, GL_FLOAT,false);
 		std::unique_ptr<MeshVertexData> newVertices(convertVertices(vData, newVd));
 		vData.swap(*newVertices.get());
 	}
@@ -1356,7 +1356,7 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 		// add slot for 4 byte tangent vector
 		if (vertices.getVertexDescription().getAttribute(tangentVecName).empty()) {
 			VertexDescription newVd = vertices.getVertexDescription();
-			newVd.appendAttribute(tangentVecName, 4, GL_BYTE);
+			newVd.appendAttribute(tangentVecName, 4, GL_BYTE, true);
 			std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, newVd));
 			vertices.swap(*newVertices.get());
 		}

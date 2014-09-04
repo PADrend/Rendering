@@ -27,9 +27,9 @@ namespace Rendering {
 class VertexAttribute {
 	public:
 		VertexAttribute();
-		VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId);
+		VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId, bool _normalize);
 		bool operator==(const VertexAttribute & other)const{
-			return nameId==other.nameId && offset==other.offset && numValues==other.numValues && dataType==other.dataType;
+			return nameId==other.nameId && offset==other.offset && numValues==other.numValues && dataType==other.dataType && normalize==other.normalize;
 		}
 		bool operator<(const VertexAttribute & other)const;
 		std::string toString()const;
@@ -39,10 +39,11 @@ class VertexAttribute {
 		uint16_t getDataSize()const			{	return dataSize;	}
 		uint8_t getNumValues()const			{	return numValues;	}
 		uint32_t getDataType()const			{	return dataType;	}
+		bool getNormalize()const			{	return normalize;	}
 		Util::StringIdentifier getNameId()const	{	return nameId;	}
 		const std::string & getName()const	{	return name;	}
 	private:
-		VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name);
+		VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name, bool _normalize);
 		friend class VertexDescription;
 		uint16_t offset;
 		uint16_t dataSize;
@@ -50,6 +51,7 @@ class VertexAttribute {
 		uint32_t dataType;
 		Util::StringIdentifier nameId;
 		std::string name;
+		bool normalize;
 };
 
 }

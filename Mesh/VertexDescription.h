@@ -38,8 +38,9 @@ class VertexDescription {
 			\return the new attribute
 			\note the owner of the attribute is the vertexDescription
 			\note Before using this function, check a default method can be used instead (e.g. append appendPosition3D) */
-		const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t type);
-		const VertexAttribute & appendAttribute(const std::string & name, uint8_t numValues, uint32_t type);
+		const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType, bool normalize);
+		const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType);
+		const VertexAttribute & appendAttribute(const std::string & name, uint8_t numValues, uint32_t glType, bool normalize);
 
 		//! Add an attribute with the given name and the given number of float values.
 		const VertexAttribute & appendFloatAttribute(const Util::StringIdentifier & nameId, uint8_t numValues);
