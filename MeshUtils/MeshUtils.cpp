@@ -3,9 +3,9 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	
+
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
+	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "MeshUtils.h"
@@ -335,6 +335,35 @@ bool compareMeshes( Mesh * mesh1,Mesh * mesh2 ){
 		return false;
 
 	return true;
+}
+
+float getLongestSideLength(Mesh * m){
+	float maxSideLength = 0.0;
+	const VertexDescription & vd = m->getVertexDescription();
+	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
+	std::vector<RawVertex> vertexArray;
+	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+		WARN("splitLargeTriangles: Unsupported vertex format.");
+		return -1;
+	}
+	MeshVertexData & vertices = m->openVertexData();
+	MeshIndexData & indices = m->openIndexData();
+
+	// extract triangles
+	size_t vertexSize = vd.getVertexSize();
+	for (uint32_t i = 0; i < vertices.getVertexCount(); ++i) {
+		auto tmpData = new uint8_t[vertexSize];
+		std::copy(vertices[i], vertices[i] + vertexSize, tmpData);
+		vertexArray.emplace_back(i, tmpData, vertexSize);
+	}
+	uint32_t * iData = indices.data();
+	for (unsigned i = 0; i < indices.getIndexCount(); i += 3){
+		float tmp = (SplitTriangle(vertexArray.at(iData[i + 0]), vertexArray.at(iData[i + 1]), vertexArray.at(iData[i + 2]))).longestSideLength;
+		if(tmp > maxSideLength)
+			maxSideLength = tmp;
+
+	}
+	return maxSideLength;
 }
 
 //! (static)

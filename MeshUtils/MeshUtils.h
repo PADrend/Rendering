@@ -3,9 +3,9 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	
+
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
+	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #ifndef MESHUTILS_H
@@ -178,7 +178,13 @@ Mesh * eliminateTrianglesBehindPlane(Mesh * mesh, const Geometry::Plane & plane)
  * @param mesh Source mesh. The mesh is not changed.
  * @return New mesh
  */
-Mesh * eliminateZeroAreaTriangles(Mesh * mesh);
+Mesh * eliminateZeroAreaTriangles(Mesh * m);
+
+/**
+ *Estimate the max. side length of the polygon in the mesh m
+*/
+
+float getLongestSideLength(Mesh * m);
 
 /**
  * Take the given mesh and optimize the indices stored there for
