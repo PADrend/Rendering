@@ -16,12 +16,10 @@
 #include "../GLHeader.h"
 #include "../Helper.h"
 #include <Util/Macros.h>
-#include <Util/Concurrency/Concurrency.h>
-#include <Util/Concurrency/Lock.h>
-#include <Util/Concurrency/Mutex.h>
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <vector>
 #include <utility>
@@ -31,8 +29,8 @@ namespace Rendering{
 
 //! (internal)
 void MeshVertexData::setVertexDescription(const VertexDescription & vd){
-	static std::unique_ptr<Util::Concurrency::Mutex> mutex(Util::Concurrency::createMutex());
-	auto lock = Util::Concurrency::createLock(*mutex);
+	static std::mutex mutex;
+	std::lock_guard<std::mutex> lock(mutex);
 
 	static std::set<VertexDescription> descriptionCollections;
 	std::pair<std::set<VertexDescription>::iterator,bool> result = descriptionCollections.insert(vd);
