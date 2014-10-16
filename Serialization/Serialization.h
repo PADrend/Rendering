@@ -14,7 +14,7 @@
 #include "../Mesh/Mesh.h"
 #include "../Texture/TextureType.h"
 #include <Util/StringIdentifier.h>
-#include <ostream>
+#include <iosfwd>
 #include <string>
 
 namespace Util {
