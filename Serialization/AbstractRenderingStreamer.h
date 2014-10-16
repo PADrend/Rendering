@@ -14,8 +14,7 @@
 #include <Util/Serialization/AbstractStreamer.h>
 #include <Util/References.h>
 #include <Util/Macros.h>
-#include <istream>
-#include <ostream>
+#include <iosfwd>
 #include <cstdint>
 #include <string>
 #include "../Texture/Texture.h"
