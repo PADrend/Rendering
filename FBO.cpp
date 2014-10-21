@@ -97,13 +97,13 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 				throw std::logic_error("FBO::attachTexture: ???");
 		}
 #elif defined(LIB_GLESv2)
-		glFramebufferTexture2D(GL_FRAMEBUFFER, texture->getGLTextureType(),  textureId,0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, texture->getGLTextureType(), textureId, level);
 #endif
 	}else{
 #if defined(LIB_GL)
 		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint,GL_TEXTURE_2D,0,0);
 #elif defined(LIB_GLESv2)
-		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint,GL_TEXTURE_2D,0,0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, GL_TEXTURE_2D, 0, 0);
 #endif
 	}
 	context.popFBO();
@@ -133,11 +133,11 @@ void FBO::detachDepthTexture(RenderingContext & context) {
 	detachTexture(context, GL_DEPTH_ATTACHMENT_EXT);
 }
 #elif defined(LIB_GLESv2)
-void FBO::attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId,uint32_t layer) {
+void FBO::attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId, uint32_t level, uint32_t layer) {
 	if(colorBufferId != 0) {
 		throw std::invalid_argument("Only one color attachment is supported in OpenGL ES 2.0.");
 	}
-	attachTexture(context, GL_COLOR_ATTACHMENT0, t,level,layer);
+	attachTexture(context, GL_COLOR_ATTACHMENT0, t, level, layer);
 }
 void FBO::detachColorTexture(RenderingContext & context, uint32_t colorBufferId) {
 	if(colorBufferId != 0) {
@@ -221,8 +221,8 @@ const char * FBO::getStatusMessage(RenderingContext & context) {
 	return "[ERROR] Unknown error.";
 }
 
-#ifdef LIB_GL
 void FBO::setDrawBuffers(uint32_t number) {
+#ifdef LIB_GL
 	static const GLenum buffers[] = {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT1,
@@ -237,7 +237,8 @@ void FBO::setDrawBuffers(uint32_t number) {
 		throw std::invalid_argument("Unsupported number of draw buffers requested");
 	}
 	glDrawBuffers(static_cast<GLsizei>(number), buffers);
-}
 #endif /* LIB_GL */
+}
+
 
 }

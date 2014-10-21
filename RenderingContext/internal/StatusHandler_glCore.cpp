@@ -234,9 +234,11 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				if( texture ) {
 					glBindTexture(texture->getGLTextureType(), texture->getGLId());
+#if defined(LIB_GL)
 					BufferObject* buffer = texture->getBufferObject();
 					if(buffer)
 						glTexBuffer( GL_TEXTURE_BUFFER, texture->getFormat().pixelFormat.glInternalFormat, buffer->getGLId() );
+#endif
 				} else if( oldTexture ) {
 					glBindTexture(oldTexture->getGLTextureType(), 0);
 				} else {
