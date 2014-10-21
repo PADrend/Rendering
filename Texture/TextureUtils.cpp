@@ -47,23 +47,31 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat){
 	PixelFormatGL glf;
 	if(pixelFormat.getValueType() == Util::TypeConstant::UINT8){
 		glf.glLocalDataType = GL_UNSIGNED_BYTE;
+#if defined(LIB_GL)
 		if( pixelFormat == Util::PixelFormat::MONO ){
 			glf.glLocalDataFormat = GL_RED;
 			glf.glInternalFormat = GL_RED; 
 		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT8, 0, 1, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
 			glf.glLocalDataFormat = GL_RG;
 			glf.glInternalFormat = GL_RG; 
-		}else if( pixelFormat == Util::PixelFormat::RGB ){
+		}else
+#endif
+		if( pixelFormat == Util::PixelFormat::RGB ){
 			glf.glLocalDataFormat = GL_RGB;
 			glf.glInternalFormat = GL_RGB; // GL_RGB8????
-		} else if( pixelFormat == Util::PixelFormat::BGR ){
+		}
+#if defined(LIB_GL)
+		else if( pixelFormat == Util::PixelFormat::BGR ){
 			glf.glLocalDataFormat = GL_BGR;
 			glf.glInternalFormat = GL_BGR; 
 		} else if( pixelFormat == Util::PixelFormat::RGBA ){
 			glf.glLocalDataFormat = GL_RGBA;
 			glf.glInternalFormat = GL_RGBA; 
 		}
-	} else if(pixelFormat.getValueType() == Util::TypeConstant::UINT32){
+#endif
+	}
+#if defined(LIB_GL)
+	else if(pixelFormat.getValueType() == Util::TypeConstant::UINT32){
 		glf.glLocalDataType = GL_UNSIGNED_INT;
 		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
 			glf.glLocalDataFormat = GL_RED_INTEGER;
@@ -109,7 +117,7 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat){
 			glf.glInternalFormat = GL_RGBA32F; 
 		}
 	}
-	
+#endif
 	return glf;
 }
 
@@ -259,22 +267,28 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 //! (static)
 uint32_t textureTypeToGLTextureType(TextureType type){
 	switch(type){
+#if defined(LIB_GL)
 		case TextureType::TEXTURE_1D:
 			return static_cast<uint32_t>(GL_TEXTURE_1D);
 		case TextureType::TEXTURE_1D_ARRAY:
 			return static_cast<uint32_t>(GL_TEXTURE_1D_ARRAY);
+#endif
 		case TextureType::TEXTURE_2D:
 			return static_cast<uint32_t>(GL_TEXTURE_2D);
+#if defined(LIB_GL)
 		case TextureType::TEXTURE_2D_ARRAY:
 			return static_cast<uint32_t>(GL_TEXTURE_2D_ARRAY);
 		case TextureType::TEXTURE_3D:
 			return static_cast<uint32_t>(GL_TEXTURE_3D);
+#endif
 		case TextureType::TEXTURE_CUBE_MAP:
 			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP);
+#if defined(LIB_GL)
 		case TextureType::TEXTURE_CUBE_MAP_ARRAY:
 			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP_ARRAY);
 		case TextureType::TEXTURE_BUFFER:
 			return static_cast<uint32_t>(GL_TEXTURE_BUFFER);
+#endif
 		default:
 			throw std::logic_error("createTextureFromBitmap: Invalid type.");
 	}
@@ -340,12 +354,20 @@ Util::Reference<Texture> createRedTexture(uint32_t width, uint32_t height, bool 
 
 //! (static)
 Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t height) {
+#if defined(LIB_GL)
 	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_STENCIL_EXT, GL_UNSIGNED_INT_24_8_EXT, GL_DEPTH24_STENCIL8_EXT, false);
+#else
+	return nullptr;
+#endif
 }
 
 //! [static] Factory
 Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
+#if defined(LIB_GL)
 	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
+#else
+	return nullptr;
+#endif
 }
 
 //! [static] Factory
@@ -355,6 +377,7 @@ Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint3
 // ----------------------------
 
 Util::Reference<Texture> createNoiseTexture(uint32_t width, uint32_t height, bool alpha,float scaling) {
+#if defined(LIB_GL)
 	Util::Reference<Texture> texture = create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT,alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
 
 	texture->allocateLocalData();
@@ -375,6 +398,9 @@ Util::Reference<Texture> createNoiseTexture(uint32_t width, uint32_t height, boo
 	texture->dataChanged();
 
 	return texture.detachAndDecrease();
+#else
+	return nullptr;
+#endif
 }
 
 
@@ -566,23 +592,22 @@ void updateTextureFromScreen(RenderingContext & context,Texture & t,const Geomet
 void updateTextureFromScreen(RenderingContext & context,Texture & t){
 	updateTextureFromScreen(context,t,Geometry::Rect_i(0,0,t.getFormat().sizeX,t.getFormat().sizeY));
 }
-
-#ifdef LIB_GL
-
 //! [static]
 void drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect,Texture & t,const Geometry::Rect_f & textureRect){
+#ifdef LIB_GL
 	std::vector<Texture *> textures;
 	textures.push_back(&t);
 	std::vector<Geometry::Rect_f> rects;
 	rects.push_back(textureRect);
 
 	drawTextureToScreen(rc,screenRect,textures,rects);
+#endif
 }
 
 //! (static)
 void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenRect, const std::vector<Texture *> & textures,
 		const std::vector<Geometry::Rect_f> & textureRects) {
-
+#ifdef LIB_GL
 	uint8_t numTextures = textures.size() < textureRects.size() ? textures.size() : textureRects.size();
 	if(numTextures == 0) {
 		return;
@@ -677,8 +702,8 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	rc.popLighting();
 
 	rc.popDepthBuffer();
-}
 #endif
+}
 
 Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context,Texture & texture) {
 	if(texture.getLocalData() == nullptr){

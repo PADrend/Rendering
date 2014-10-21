@@ -82,6 +82,7 @@ Texture::Texture(Format _format):
 		glId(0),format(std::move(_format)),dataHasChanged(true),hasMipmaps(false),mipmapCreationIsPlanned(false),
 		_pixelDataSize(format.getPixelSize()) {
 	switch(format.glTextureType){
+#if defined(LIB_GL)
 		case GL_TEXTURE_1D:
 			tType = TextureType::TEXTURE_1D;
 			if(format.numLayers!=1 || format.sizeY!=1 )
@@ -90,22 +91,26 @@ Texture::Texture(Format _format):
 		case GL_TEXTURE_1D_ARRAY:
 			tType = TextureType::TEXTURE_1D_ARRAY;
 			break;
+#endif
 		case GL_TEXTURE_2D:
 			tType = TextureType::TEXTURE_2D;
 			if(format.numLayers!=1)
 				throw std::logic_error("Texture: TEXTURE_2D expects numLayers == 1.");
 			break;
+#if defined(LIB_GL)
 		case GL_TEXTURE_2D_ARRAY:
 			tType = TextureType::TEXTURE_2D_ARRAY;
 			break;
 		case GL_TEXTURE_3D:
 			tType = TextureType::TEXTURE_3D;
 			break;
+#endif
 		case GL_TEXTURE_CUBE_MAP:
 			tType = TextureType::TEXTURE_CUBE_MAP;
 			if(format.numLayers!=6)
 				throw std::logic_error("Texture: TEXTURE_CUBE_MAP expects numLayers == 6.");
 			break;
+#if defined(LIB_GL)
 		case GL_TEXTURE_CUBE_MAP_ARRAY:
 			tType = TextureType::TEXTURE_CUBE_MAP_ARRAY;
 			if( (format.numLayers%6) !=0)
@@ -117,7 +122,7 @@ Texture::Texture(Format _format):
 			tType = TextureType::TEXTURE_BUFFER;
 			bufferObject.reset( new BufferObject );
 			break;
-
+#endif
 		default:
 			throw std::runtime_error("Texture: Unsupported texture type.");
 	}
@@ -267,6 +272,7 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 			}
 			break;
 		}
+#if defined(LIB_GL)
 		case  TextureType::TEXTURE_BUFFER:{
 			if( getLocalBitmap() ){ // there is a local bitmap?
 				bufferObject->uploadData(GL_TEXTURE_BUFFER,  getLocalBitmap()->data(),getLocalBitmap()->getDataSize(), GL_STATIC_DRAW );
@@ -299,6 +305,7 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 							static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
 			break;
 		}
+#endif
 		default:{
 			context.popTexture(0);
 			glActiveTexture(activeTexture);
