@@ -13,6 +13,7 @@
 
 #include "../RenderingParameters.h"
 #include "../../Texture/TextureType.h"
+#include "../../Shader/Shader.h"
 #include <Geometry/Matrix4x4.h>
 #include <bitset>
 #include <cassert>
@@ -29,7 +30,7 @@ class RenderingStatus {
 	//!	@name General
 	//	@{
 	private:
-		Shader * shader;
+		Util::Reference<Shader> shader;
 		bool initialized;
 
 	public:
@@ -53,7 +54,7 @@ class RenderingStatus {
 			textureUnitUsagesCheckNumber(0),
 			textureUnitParams(MAX_TEXTURES, std::make_pair(TexUnitUsageParameter::DISABLED,TextureType::TEXTURE_2D)) {
 		}
-		Shader * getShader() 						{	return shader;	}
+		Shader * getShader() 						{	return shader.get();	}
 		bool isInitialized()const					{	return initialized;	}
 		void markInitialized()						{	initialized=true;	}
 	//	@}
