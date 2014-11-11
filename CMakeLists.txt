@@ -89,6 +89,14 @@ target_compile_definitions(Rendering PRIVATE "${GLIMPLEMENTATION_DEFINITIONS}")
 target_include_directories(Rendering PRIVATE ${GLIMPLEMENTATION_INCLUDE_DIRS})
 target_link_libraries(Rendering LINK_PRIVATE ${GLIMPLEMENTATION_LIBRARIES})
 
+# Dependency to OpenCL
+find_package(OpenCL QUIET)
+if(OPENCL_FOUND)
+	target_include_directories(Rendering PRIVATE ${OPENCL_INCLUDE_DIRS})
+	target_compile_definitions(Rendering PUBLIC HAVE_LIB_OPENCL)
+	target_link_libraries(Rendering LINK_PRIVATE ${OPENCL_LIBRARIES})
+endif()
+
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
