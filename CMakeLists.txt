@@ -24,6 +24,7 @@ add_library(Rendering
 	CL/CommandQueue.cpp
 	CL/Context.cpp
 	CL/Device.cpp
+	CL/HelperContext.cpp
 	CL/Kernel.cpp
 	CL/Platform.cpp
 	CL/Program.cpp
