@@ -20,14 +20,15 @@ set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
 add_library(Rendering
 	CL/Event.cpp
-	CL/Buffer.cpp
-	CL/BufferGL.cpp
+	CL/CLUtils.cpp
 	CL/CommandQueue.cpp
 	CL/Context.cpp
 	CL/Device.cpp
 	CL/Kernel.cpp
 	CL/Platform.cpp
 	CL/Program.cpp
+	CL/Memory/Buffer.cpp
+	CL/Memory/BufferGL.cpp
 	Mesh/Mesh.cpp
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp
@@ -101,9 +102,13 @@ target_link_libraries(Rendering LINK_PRIVATE ${GLIMPLEMENTATION_LIBRARIES})
 # Dependency to OpenCL
 find_package(OpenCL QUIET)
 if(OPENCL_FOUND)
-	target_include_directories(Rendering PRIVATE ${OPENCL_INCLUDE_DIRS})
-	target_compile_definitions(Rendering PUBLIC HAVE_LIB_OPENCL)
-	target_link_libraries(Rendering LINK_PRIVATE ${OPENCL_LIBRARIES})
+	if( OPENCL_HAS_CPP_BINDINGS )
+		target_include_directories(Rendering PRIVATE ${OPENCL_INCLUDE_DIRS})
+		target_compile_definitions(Rendering PUBLIC RENDERING_HAS_LIB_OPENCL)
+		target_link_libraries(Rendering LINK_PRIVATE ${OPENCL_LIBRARIES})
+	else( OPENCL_HAS_CPP_BINDINGS )
+	    message(SEND_ERROR "No OpenCL CPP bindings found" )
+	endif( OPENCL_HAS_CPP_BINDINGS )
 endif()
 
 include(CheckCXXCompilerFlag)

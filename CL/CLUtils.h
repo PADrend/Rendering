@@ -1,25 +1,23 @@
 /*
- * Event.cpp
+ * CLUtils.h
  *
- *  Created on: Nov 14, 2014
+ *  Created on: Nov 17, 2014
  *      Author: sascha
  */
 
 #ifdef RENDERING_HAS_LIB_OPENCL
-#include "Event.h"
+#ifndef CLUTILS_H_
+#define CLUTILS_H_
 
-#include <CL/cl.hpp>
+#include <string>
 
 namespace Rendering {
 namespace CL {
 
-Event::Event() : event(new cl::Event()) {}
-
-void Event::wait() {
-	event->wait();
-}
+const std::string getErrorString(int error);
 
 } /* namespace CL */
 } /* namespace Rendering */
 
+#endif /* CLUTILS_H_ */
 #endif /* RENDERING_HAS_LIB_OPENCL */
