@@ -1,10 +1,11 @@
 /*
- * CommandQueue.cpp
- *
- *  Created on: Nov 13, 2014
- *      Author: sascha
- */
+	This file is part of the Rendering library.
+	Copyright (C) 2014 Sascha Brandt <myeti@mail.upb.de>
 
+	This library is subject to the terms of the Mozilla Public License, v. 2.0.
+	You should have received a copy of the MPL along with this library; see the
+	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 #ifdef RENDERING_HAS_LIB_OPENCL
 #include "CommandQueue.h"
 #include "Event.h"
@@ -62,7 +63,7 @@ bool CommandQueue::write(Buffer* buffer, size_t offset, size_t size, void* ptr, 
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::execute(Kernel* kernel, RangeND_t offset, RangeND_t global, RangeND_t local, Event* event /*= nullptr*/) {
+bool CommandQueue::execute(Kernel* kernel, const RangeND_t& offset, const RangeND_t& global, const RangeND_t& local, Event* event /*= nullptr*/) {
 	cl_int err = queue->enqueueNDRangeKernel(*kernel->_internal(), toNDRange(offset), toNDRange(global), toNDRange(local), nullptr, event ? event->_internal() : nullptr);
 	if(err != CL_SUCCESS)
 		WARN("Could not execute kernel (" + getErrorString(err) + ")");

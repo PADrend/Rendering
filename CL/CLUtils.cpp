@@ -1,13 +1,18 @@
 /*
- * CLUtils.cpp
- *
- *  Created on: Nov 17, 2014
- *      Author: sascha
- */
+	This file is part of the Rendering library.
+	Copyright (C) 2014 Sascha Brandt <myeti@mail.upb.de>
 
+	This library is subject to the terms of the Mozilla Public License, v. 2.0.
+	You should have received a copy of the MPL along with this library; see the
+	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 #ifdef RENDERING_HAS_LIB_OPENCL
 
 #include "CLUtils.h"
+#include "Platform.h"
+#include "Device.h"
+
+#include <vector>
 
 namespace Rendering {
 namespace CL {
@@ -85,6 +90,22 @@ const std::string getErrorString(int error) {
     const int index = -error;
 
     return (index >= 0 && index < errorCount) ? errorString[index] : "";
+}
+
+
+void getFirstPlatformAndDeviceFor(uint32_t device_type, Platform*& platform, Device*& device)  {
+	std::vector< CL::Platform* > platformList;
+	CL::Platform::get(platformList);
+
+	for(auto pf : platformList) {
+		for(auto dev : pf->getDevices()) {
+			if(dev->getType() == device_type) {
+				platform = pf;
+				device = dev;
+				return;
+			}
+		}
+	}
 }
 
 } /* namespace CL */

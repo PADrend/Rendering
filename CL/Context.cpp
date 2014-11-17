@@ -1,10 +1,11 @@
 /*
- * Context.cpp
- *
- *  Created on: Nov 11, 2014
- *      Author: sascha
- */
+	This file is part of the Rendering library.
+	Copyright (C) 2014 Sascha Brandt <myeti@mail.upb.de>
 
+	This library is subject to the terms of the Mozilla Public License, v. 2.0.
+	You should have received a copy of the MPL along with this library; see the
+	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 #ifdef RENDERING_HAS_LIB_OPENCL
 #include "Context.h"
 
@@ -51,24 +52,11 @@ std::vector<cl_context_properties> getContextProperties(const cl::Platform& plat
 }
 
 Context::Context(Platform* platform, uint32_t device_type, bool shareGLContext /*= false*/) {
-	cl_int err;
-	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
-	context.reset(new cl::Context(static_cast<cl_device_type>(device_type), cprops.data(), nullptr, nullptr, &err));
-	if(err != CL_SUCCESS)
-		WARN("Could not create context (" + getErrorString(err) + ")");
-	FAIL_IF(err != CL_SUCCESS);
+	init(platform, device_type, shareGLContext);
 }
 
 Context::Context(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext /*= false*/) {
-	cl_int err;
-	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
-	std::vector<cl::Device> cl_devices;
-	for(auto device : devices)
-		cl_devices.push_back(*device->_internal());
-	context.reset(new cl::Context(cl_devices, cprops.data(), nullptr, nullptr, &err));
-	if(err != CL_SUCCESS)
-		WARN("Could not create context (" + getErrorString(err) + ")");
-	FAIL_IF(err != CL_SUCCESS);
+	init(platform, devices, shareGLContext);
 }
 
 std::vector<Device*> Context::getDevices() const {
@@ -79,6 +67,26 @@ std::vector<Device*> Context::getDevices() const {
 	return out;
 }
 
+void Context::init(Platform* platform, uint32_t device_type, bool shareGLContext /*= false*/) {
+	cl_int err;
+	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
+	context.reset(new cl::Context(static_cast<cl_device_type>(device_type), cprops.data(), nullptr, nullptr, &err));
+	if(err != CL_SUCCESS)
+		WARN("Could not create context (" + getErrorString(err) + ")");
+	FAIL_IF(err != CL_SUCCESS);
+}
+
+void Context::init(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext /*= false*/) {
+	cl_int err;
+	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
+	std::vector<cl::Device> cl_devices;
+	for(auto device : devices)
+		cl_devices.push_back(*device->_internal());
+	context.reset(new cl::Context(cl_devices, cprops.data(), nullptr, nullptr, &err));
+	if(err != CL_SUCCESS)
+		WARN("Could not create context (" + getErrorString(err) + ")");
+	FAIL_IF(err != CL_SUCCESS);
+}
 
 } /* namespace CL */
 } /* namespace Rendering */
