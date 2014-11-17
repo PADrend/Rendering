@@ -6,6 +6,8 @@
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
+
+#include "TestUtils.h"
 #include <Rendering/RenderingContext/RenderingContext.h>
 #include <Rendering/Helper.h>
 #include <Util/UI/UI.h>
@@ -21,6 +23,8 @@
 #include <fstream>
 #include <memory>
 
+std::unique_ptr<Util::UI::Window> TestUtils::window;
+
 int main(int /*argc*/, char ** /*argv*/) {
 	Util::init();
 
@@ -30,7 +34,7 @@ int main(int /*argc*/, char ** /*argv*/) {
 	properties.clientAreaHeight = 256;
 	properties.title = "Rendering Test";
 	properties.compatibilityProfile = true;
-	std::unique_ptr<Util::UI::Window> window(Util::UI::createWindow(properties));
+	TestUtils::window = Util::UI::createWindow(properties);
 	Rendering::enableGLErrorChecking();
 	Rendering::RenderingContext::initGLState();
 
@@ -53,6 +57,8 @@ int main(int /*argc*/, char ** /*argv*/) {
 
 	CppUnit::TextOutputter textOutput(&result, std::cout);
 	textOutput.write();
+
+	TestUtils::window.release();
 
 	return 0;
 }

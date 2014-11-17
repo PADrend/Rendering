@@ -153,6 +153,10 @@ const VertexAttribute & VertexDescription::appendPosition3D() {
 	return appendAttribute(VertexAttributeIds::POSITION, 3, GL_FLOAT, false);
 }
 
+const VertexAttribute & VertexDescription::appendPosition4D() {
+	return appendAttribute(VertexAttributeIds::POSITION, 4, GL_FLOAT, false);
+}
+
 const VertexAttribute & VertexDescription::appendTexCoord() {
 	return appendAttribute(VertexAttributeIds::TEXCOORD0, 2, GL_FLOAT, false);
 }

@@ -557,6 +557,8 @@ void MeshBuilder::MBVertex::setPosition(const VertexAttribute & attr,const Geome
 	*(v++) = pos.x();
 	*(v++) = pos.y();
 	*v = pos.z();
+	if(attr.getNumValues() == 4)
+		*(v+1) = 1;
 }
 void MeshBuilder::MBVertex::setNormal(const VertexAttribute & attr, const Geometry::Vec3f & n){
 	if(attr.getNumValues() < 3){
