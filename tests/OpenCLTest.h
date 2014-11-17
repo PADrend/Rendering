@@ -5,7 +5,7 @@
  *      Author: sascha
  */
 
-#ifdef HAVE_LIB_OPENCL
+#ifdef RENDERING_HAS_LIB_OPENCL
 
 #ifndef OPENCLTEST_H_
 #define OPENCLTEST_H_
@@ -24,4 +24,4 @@ public:
 };
 
 #endif /* OPENCLTEST_H_ */
-#endif /* HAVE_LIB_OPENCL */
+#endif /* RENDERING_HAS_LIB_OPENCL */

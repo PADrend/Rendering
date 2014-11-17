@@ -5,20 +5,24 @@
  *      Author: sascha
  */
 
+#ifdef RENDERING_HAS_LIB_OPENCL
 #ifndef DEVICE_H_
 #define DEVICE_H_
 
 #include <vector>
 #include <string>
+#include <memory>
 
-#include <CL/cl.hpp>
+namespace cl {
+class Device;
+}
 
 namespace Rendering {
 namespace CL {
 
 class Device {
 public:
-	Device(const cl::Device& device);
+	Device(cl::Device* device);
 	virtual ~Device() = default;
 
     static const uint32_t TYPE_DEFAULT;
@@ -39,10 +43,13 @@ public:
 	std::vector<size_t> getMaxWorkItemSizes() const;
 	uint32_t getType() const;
 
-	cl::Device device;
+	cl::Device* _internal() const { return device.get(); }
+private:
+	std::unique_ptr<cl::Device> device;
 };
 
 } /* namespace CL */
 } /* namespace Rendering */
 
 #endif /* DEVICE_H_ */
+#endif /* RENDERING_HAS_LIB_OPENCL */

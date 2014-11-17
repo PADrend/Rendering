@@ -5,14 +5,18 @@
  *      Author: sascha
  */
 
+#ifdef RENDERING_HAS_LIB_OPENCL
 #include "BufferGL.h"
+#include "../Context.h"
 
 #include <Util/Macros.h>
+
+#include <CL/cl.hpp>
 
 namespace Rendering {
 namespace CL {
 
-BufferGL::BufferGL(const Context& context, ReadWrite_t readWrite, uint32_t glHandle) {
+BufferGL::BufferGL(Context* context, ReadWrite_t readWrite, uint32_t glHandle) {
 	cl_mem_flags flags = 0;
 		switch (readWrite) {
 			case ReadWrite:
@@ -26,7 +30,7 @@ BufferGL::BufferGL(const Context& context, ReadWrite_t readWrite, uint32_t glHan
 				break;
 		}
 		cl_int err;
-		mem = cl::BufferGL(context.context, flags, glHandle, &err);
+		mem.reset(new cl::BufferGL(*context->_internal(), flags, glHandle, &err));
 		if(err != CL_SUCCESS) {
 			WARN("Could not create gl buffer (" + std::to_string(err) + ")");
 			FAIL();
@@ -35,3 +39,4 @@ BufferGL::BufferGL(const Context& context, ReadWrite_t readWrite, uint32_t glHan
 
 } /* namespace CL */
 } /* namespace Rendering */
+#endif /* RENDERING_HAS_LIB_OPENCL */

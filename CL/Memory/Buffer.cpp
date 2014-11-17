@@ -5,14 +5,18 @@
  *      Author: sascha
  */
 
+#ifdef RENDERING_HAS_LIB_OPENCL
 #include "Buffer.h"
+#include "../Context.h"
+
+#include <CL/cl.hpp>
 
 #include <Util/Macros.h>
 
 namespace Rendering {
 namespace CL {
 
-Buffer::Buffer(const Context& context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage /*= None*/, void* hostPtr /*= nullptr*/, ReadWrite_t hostReadWrite /*=ReadWrite*/) {
+Buffer::Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage /*= None*/, void* hostPtr /*= nullptr*/, ReadWrite_t hostReadWrite /*=ReadWrite*/) {
 	cl_mem_flags flags = 0;
 	switch (readWrite) {
 		case ReadWrite:
@@ -56,7 +60,7 @@ Buffer::Buffer(const Context& context, size_t size, ReadWrite_t readWrite, HostP
 			break;
 	}
 	cl_int err;
-	mem = cl::Buffer(context.context, flags, size, hostPtr, &err);
+	mem.reset(new cl::Buffer(*context->_internal(), flags, size, hostPtr, &err));
 	if(err != CL_SUCCESS) {
 		WARN("Could not create buffer (" + std::to_string(err) + ")");
 		FAIL();
@@ -65,4 +69,4 @@ Buffer::Buffer(const Context& context, size_t size, ReadWrite_t readWrite, HostP
 
 } /* namespace CL */
 } /* namespace Rendering */
-
+#endif /* RENDERING_HAS_LIB_OPENCL */

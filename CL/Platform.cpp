@@ -5,7 +5,11 @@
  *      Author: sascha
  */
 
+#ifdef RENDERING_HAS_LIB_OPENCL
 #include "Platform.h"
+
+#include "Device.h"
+
 
 #include <Util/Macros.h>
 
@@ -14,46 +18,45 @@
 namespace Rendering {
 namespace CL {
 
-Platform::Platform(const cl::Platform& platform) : platform(platform) {
+Platform::Platform(cl::Platform* platform) : platform(new cl::Platform(*platform)) {
 }
 
 std::string Platform::getExtensions() const {
-	return platform.getInfo<CL_PLATFORM_EXTENSIONS>();
+	return platform->getInfo<CL_PLATFORM_EXTENSIONS>();
 }
 
 std::string Platform::getName() const {
-	return platform.getInfo<CL_PLATFORM_NAME>();
+	return platform->getInfo<CL_PLATFORM_NAME>();
 }
 
 std::string Platform::getProfile() const {
-	return platform.getInfo<CL_PLATFORM_PROFILE>();
+	return platform->getInfo<CL_PLATFORM_PROFILE>();
 }
 
 std::string Platform::getVendor() const {
-	return platform.getInfo<CL_PLATFORM_VENDOR>();
+	return platform->getInfo<CL_PLATFORM_VENDOR>();
 }
 
 std::string Platform::getVersion() const {
-	return platform.getInfo<CL_PLATFORM_VERSION>();
+	return platform->getInfo<CL_PLATFORM_VERSION>();
 }
 
-std::vector<Device> Platform::getDevices() const {
-	std::vector<Device> out;
+std::vector<Device*> Platform::getDevices() const {
+	std::vector<Device*> out;
 	std::vector<cl::Device> devices;
-	platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+	platform->getDevices(CL_DEVICE_TYPE_ALL, &devices);
 	for(auto device : devices)
-		out.push_back(device);
+		out.push_back(new Device(&device));
 	return out;
 }
 
-void Platform::get(std::vector<Platform>* platforms) {
-	FAIL_IF(platforms == nullptr);
-
+void Platform::get(std::vector<Platform*>& platforms) {
 	std::vector<cl::Platform> out;
 	cl::Platform::get(&out);
 	for(auto pf : out)
-		platforms->push_back(pf);
+		platforms.push_back(new Platform(&pf));
 }
 
 } /* namespace CL */
 } /* namespace Rendering */
+#endif /* RENDERING_HAS_LIB_OPENCL */

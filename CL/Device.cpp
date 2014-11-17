@@ -5,7 +5,10 @@
  *      Author: sascha
  */
 
+#ifdef RENDERING_HAS_LIB_OPENCL
 #include "Device.h"
+
+#include <CL/cl.hpp>
 
 namespace Rendering {
 namespace CL {
@@ -17,48 +20,49 @@ const uint32_t Device::TYPE_ACCELERATOR = CL_DEVICE_TYPE_ACCELERATOR;
 const uint32_t Device::TYPE_CUSTOM = CL_DEVICE_TYPE_CUSTOM;
 const uint32_t Device::TYPE_ALL = CL_DEVICE_TYPE_ALL;
 
-Device::Device(const cl::Device& device) : device(device) {
+Device::Device(cl::Device* device) : device(new cl::Device(*device)) {
 }
 
 std::string Device::getBuiltInKernels() const {
-	return device.getInfo<CL_DEVICE_BUILT_IN_KERNELS>();
+	return device->getInfo<CL_DEVICE_BUILT_IN_KERNELS>();
 }
 
 std::string Device::getExtensions() const {
-	return device.getInfo<CL_DEVICE_EXTENSIONS>();
+	return device->getInfo<CL_DEVICE_EXTENSIONS>();
 }
 
 std::string Device::getName() const {
-	return device.getInfo<CL_DEVICE_NAME>();
+	return device->getInfo<CL_DEVICE_NAME>();
 }
 
 std::string Device::getOpenCL_CVersion() const {
-	return device.getInfo<CL_DEVICE_OPENCL_C_VERSION>();
+	return device->getInfo<CL_DEVICE_OPENCL_C_VERSION>();
 }
 
 std::string Device::getProfile() const {
-	return device.getInfo<CL_DEVICE_PROFILE>();
+	return device->getInfo<CL_DEVICE_PROFILE>();
 }
 
 std::string Device::getVendor() const {
-	return device.getInfo<CL_DEVICE_VENDOR>();
+	return device->getInfo<CL_DEVICE_VENDOR>();
 }
 
 std::string Device::getVersion() const {
-	return device.getInfo<CL_DEVICE_VERSION>();
+	return device->getInfo<CL_DEVICE_VERSION>();
 }
 
 std::string Device::getDriverVersion() const {
-	return device.getInfo<CL_DRIVER_VERSION>();
+	return device->getInfo<CL_DRIVER_VERSION>();
 }
 
 std::vector<size_t> Device::getMaxWorkItemSizes() const {
-	return device.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
+	return device->getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
 }
 
 uint32_t Device::getType() const {
-	return static_cast<uint32_t>(device.getInfo<CL_DEVICE_TYPE>());
+	return static_cast<uint32_t>(device->getInfo<CL_DEVICE_TYPE>());
 }
 
 } /* namespace CL */
 } /* namespace Rendering */
+#endif /* RENDERING_HAS_LIB_OPENCL */
