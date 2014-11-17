@@ -116,7 +116,8 @@ class MeshVertexData {
 			\note the size of the new buffer must be equal to that of the old one.
 			\note Use only if you know what you are doing!	*/		
 		void _swapBufferObject(BufferObject & other)	{	bufferObject.swap(other);	}
-			
+
+		uint32_t _getBufferId() { return bufferObject.getGLId(); }
 };
 
 

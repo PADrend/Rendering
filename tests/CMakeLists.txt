@@ -12,11 +12,18 @@ option(RENDERING_BUILD_TESTS "Defines if CppUnit tests for the Rendering library
 if(RENDERING_BUILD_TESTS)
 	add_executable(RenderingTest 
 		BufferObjectTest.cpp
+		OpenCLTest.cpp
 		DrawTest.cpp
 		RenderingTestMain.cpp
 	)
 
 	target_link_libraries(RenderingTest LINK_PRIVATE Rendering)
+
+# Dependency to OpenCL
+find_package(OpenCL QUIET)
+if(OPENCL_FOUND)
+	target_link_libraries(RenderingTest LINK_PRIVATE ${OPENCL_LIBRARIES})
+endif()
 
 	# Dependency to CppUnit
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake)

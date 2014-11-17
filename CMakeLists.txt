@@ -19,6 +19,15 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
 add_library(Rendering
+	CL/Event.cpp
+	CL/Buffer.cpp
+	CL/BufferGL.cpp
+	CL/CommandQueue.cpp
+	CL/Context.cpp
+	CL/Device.cpp
+	CL/Kernel.cpp
+	CL/Platform.cpp
+	CL/Program.cpp
 	Mesh/Mesh.cpp
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp
