@@ -34,6 +34,9 @@ template<typename _T> class _Vec3;
 typedef _Vec3<float> Vec3;
 typedef _Vec3<float> Vec3f;
 typedef _Vec3<char> Vec3b;
+template<typename T_>
+class _Sphere;
+typedef _Sphere<float> Sphere_f;
 }
 
 namespace Util {
@@ -87,7 +90,7 @@ class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
 		static Mesh * createSphere(const VertexDescription & vertexDesc, uint32_t inclinationSegments, uint32_t azimuthSegments);
 		
 		//! Adds a shere to the given meshBuilder. \see createSphere(...)
-		static void addSphere(MeshBuilder & mb, uint32_t inclinationSegments, uint32_t azimuthSegments);
+		static void addSphere(MeshBuilder & mb, const Geometry::Sphere_f & sphere, uint32_t inclinationSegments, uint32_t azimuthSegments);
 
 		/**
 		 * Return a sector of a disc.
