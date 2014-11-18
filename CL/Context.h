@@ -27,15 +27,13 @@ public:
 	Context() {};
 	Context(Platform* platform, uint32_t device_type, bool shareGLContext = false);
 	Context(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext = false);
+	Context(Platform* platform, Device* device, bool shareGLContext = false);
 	virtual ~Context() = default;
 
 	std::vector<Device*> getDevices() const;
 
 	cl::Context* _internal() const { return context.get(); };
 protected:
-	void init(Platform* platform, uint32_t device_type, bool shareGLContext = false);
-	void init(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext = false);
-
 	std::unique_ptr<cl::Context> context;
 };
 

@@ -52,22 +52,6 @@ std::vector<cl_context_properties> getContextProperties(const cl::Platform& plat
 }
 
 Context::Context(Platform* platform, uint32_t device_type, bool shareGLContext /*= false*/) {
-	init(platform, device_type, shareGLContext);
-}
-
-Context::Context(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext /*= false*/) {
-	init(platform, devices, shareGLContext);
-}
-
-std::vector<Device*> Context::getDevices() const {
-	std::vector<Device*> out;
-	std::vector<cl::Device> devices = context->getInfo<CL_CONTEXT_DEVICES>();
-	for(auto device : devices)
-		out.push_back(new Device(&device));
-	return out;
-}
-
-void Context::init(Platform* platform, uint32_t device_type, bool shareGLContext /*= false*/) {
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
 	context.reset(new cl::Context(static_cast<cl_device_type>(device_type), cprops.data(), nullptr, nullptr, &err));
@@ -76,7 +60,7 @@ void Context::init(Platform* platform, uint32_t device_type, bool shareGLContext
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-void Context::init(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext /*= false*/) {
+Context::Context(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext /*= false*/) {
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
 	std::vector<cl::Device> cl_devices;
@@ -87,6 +71,25 @@ void Context::init(Platform* platform, const std::vector<Device*>& devices, bool
 		WARN("Could not create context (" + getErrorString(err) + ")");
 	FAIL_IF(err != CL_SUCCESS);
 }
+
+Context::Context(Platform* platform, Device* device, bool shareGLContext /*= false*/) {
+	cl_int err;
+	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
+	std::vector<cl::Device> cl_devices;
+	context.reset(new cl::Context({*device->_internal()}, cprops.data(), nullptr, nullptr, &err));
+	if(err != CL_SUCCESS)
+		WARN("Could not create context (" + getErrorString(err) + ")");
+	FAIL_IF(err != CL_SUCCESS);
+}
+
+std::vector<Device*> Context::getDevices() const {
+	std::vector<Device*> out;
+	std::vector<cl::Device> devices = context->getInfo<CL_CONTEXT_DEVICES>();
+	for(auto device : devices)
+		out.push_back(new Device(&device));
+	return out;
+}
+
 
 } /* namespace CL */
 } /* namespace Rendering */

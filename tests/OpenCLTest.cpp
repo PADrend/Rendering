@@ -36,7 +36,7 @@
 #include <Rendering/CL/Kernel.h>
 #include <Rendering/CL/Platform.h>
 #include <Rendering/CL/Program.h>
-#include <Rendering/CL/HelperContext.h>
+#include <Rendering/CL/CLUtils.h>
 
 #include <Rendering/RenderingContext/RenderingContext.h>
 #include <Rendering/RenderingContext/RenderingParameters.h>
@@ -130,21 +130,26 @@ float rand_float(float mn, float mx)
 
 void OpenCLTest::test() {
 	using namespace Rendering;
-	CL::HelperContext context(CL::Device::TYPE_CPU);
+	CL::Platform* platform;
+	CL::Device* device;
+	CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU, platform, device);
 
-	context.setProgram(hw_kernel);
-	CPPUNIT_ASSERT(context.buildProgram());
+	CL::Context context(platform, device);
+	CL::CommandQueue queue(&context, &device);
+	CL::Program program(&context, hw_kernel);
+	CPPUNIT_ASSERT(program.build(device));
 
 	char* outH = new char[hw.length()-1];
 	CL::Buffer outCL(&context, hw.length()-1, CL::Buffer::WriteOnly, CL::Buffer::Use, outH);
 
-	std::unique_ptr<CL::Kernel> kernel(context.getKernel("hello"));
-	CPPUNIT_ASSERT(kernel->setArg(0, &outCL));
 
-	CPPUNIT_ASSERT(context.execute(kernel.get(), {0}, {hw.length()+1}, {1}));
-	context.finish();
-	CPPUNIT_ASSERT(context.read(&outCL, 0, hw.length()-1, outH));
-	context.finish();
+	CL::Kernel kernel(&program, "hello");
+	CPPUNIT_ASSERT(kernel.setArg(0, &outCL));
+
+	CPPUNIT_ASSERT(queue.execute(&kernel, {0}, {hw.length()+1}, {1}));
+	queue.finish();
+	CPPUNIT_ASSERT(queue.read(&outCL, 0, hw.length()-1, outH));
+	queue.finish();
 
 	std::cout << outH;
 }
@@ -154,10 +159,14 @@ void OpenCLTest::interopTest() {
 	using namespace Geometry;
 	using namespace Util;
 
-	CL::HelperContext context(CL::Device::TYPE_GPU, true);
+	CL::Platform* platform;
+	CL::Device* device;
+	CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU, platform, device);
 
-	context.setProgram(particle_kernel);
-	CPPUNIT_ASSERT(context.buildProgram());
+	CL::Context context(platform, device);
+	CL::CommandQueue queue(&context, &device);
+	CL::Program program(&context, particle_kernel);
+	CPPUNIT_ASSERT(program.build(device));
 
     size_t array_size; //the size of our arrays num * sizeof(Vec4)
 
@@ -219,20 +228,20 @@ void OpenCLTest::interopTest() {
 
 	//push our CPU arrays to the GPU
 	//data is tightly packed in std::vector starting with the adress of the first element
-    CPPUNIT_ASSERT(context.write(&cl_velocities, 0, array_size, &vel[0]));
-    CPPUNIT_ASSERT(context.write(&cl_pos_gen, 0, array_size, &posGen[0]));
-    CPPUNIT_ASSERT(context.write(&cl_vel_gen, 0, array_size, &vel[0]));
-    context.finish();
+    CPPUNIT_ASSERT(queue.write(&cl_velocities, 0, array_size, &vel[0]));
+    CPPUNIT_ASSERT(queue.write(&cl_pos_gen, 0, array_size, &posGen[0]));
+    CPPUNIT_ASSERT(queue.write(&cl_vel_gen, 0, array_size, &vel[0]));
+    queue.finish();
 
     //initialize our kernel from the program
-	std::unique_ptr<CL::Kernel> kernel(context.getKernel("part2"));
-    CPPUNIT_ASSERT(kernel->setArg(0, &cl_vbo)); //position vbo
-    CPPUNIT_ASSERT(kernel->setArg(1, &cl_velocities));
-    CPPUNIT_ASSERT(kernel->setArg(2, &cl_pos_gen));
-    CPPUNIT_ASSERT(kernel->setArg(3, &cl_vel_gen));
+	CL::Kernel kernel(&program, "part2");
+    CPPUNIT_ASSERT(kernel.setArg(0, &cl_vbo)); //position vbo
+    CPPUNIT_ASSERT(kernel.setArg(1, &cl_velocities));
+    CPPUNIT_ASSERT(kernel.setArg(2, &cl_pos_gen));
+    CPPUNIT_ASSERT(kernel.setArg(3, &cl_vel_gen));
 
     //Wait for the command queue to finish these commands before proceeding
-    context.finish();
+    queue.finish();
 
     rc.setViewport({0,0,256,256});
     rc.setMatrix_modelToCamera(Matrix4x4f::orthographicProjection(-1,1,-1,1,-100,100));
@@ -250,18 +259,18 @@ void OpenCLTest::interopTest() {
 		rc.finish();
 		 // map OpenGL buffer object for writing from OpenCL
 		//this passes in the vector of VBO buffer objects (position and color)
-		context.acquireGLObjects({&cl_vbo});
-		context.finish();
+		queue.acquireGLObjects({&cl_vbo});
+		queue.finish();
 
 		float dt = .01f;
-		kernel->setArg(4, dt); //pass in the timestep
+		kernel.setArg(4, dt); //pass in the timestep
 		//execute the kernel
-		context.execute(kernel.get(), {}, {num}, {});
-		context.finish();
+		queue.execute(&kernel, {}, {num}, {});
+		queue.finish();
 
 		//Release the VBOs so OpenGL can play with them
-		context.releaseGLObjects({&cl_vbo});
-		context.finish();
+		queue.releaseGLObjects({&cl_vbo});
+		queue.finish();
 
 		rc.displayMesh(mesh.get());
 
