@@ -121,14 +121,14 @@ Mesh * MeshBuilder::createDome(const double radius /*= 100.0*/,
 	return mesh;
 }
 
-void MeshBuilder::addSphere(MeshBuilder & builder, uint32_t inclinationSegments, uint32_t azimuthSegments) {
+void MeshBuilder::addSphere(MeshBuilder & builder, const Geometry::Sphere_f & sphere, uint32_t inclinationSegments, uint32_t azimuthSegments) {
 	const uint32_t indexOffset = builder.getNextIndex();
 	const double TWO_PI = 2.0 * M_PI;
 	const double inclinationIncrement = M_PI / static_cast<double>(inclinationSegments);
 	const double azimuthIncrement = TWO_PI / static_cast<double>(azimuthSegments);
 
 	// Multiple "North Poles"
-	builder.position(Geometry::Vec3f(0.0f, 1.0f, 0.0f));
+	builder.position(sphere.getCenter() + Geometry::Vec3f(0.0f, sphere.getRadius(), 0.0f));
 	builder.normal(Geometry::Vec3f(0.0f, 1.0f, 0.0f));
 	for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
 		const double u = 1.0 - ((static_cast<double>(azimuth) + 0.5) / static_cast<double>(azimuthSegments));
@@ -137,7 +137,7 @@ void MeshBuilder::addSphere(MeshBuilder & builder, uint32_t inclinationSegments,
 	}
 
 	// Multiple "South Poles"
-	builder.position(Geometry::Vec3f(0.0f, -1.0f, 0.0f));
+	builder.position(sphere.getCenter() + Geometry::Vec3f(0.0f, -sphere.getRadius(), 0.0f));
 	builder.normal(Geometry::Vec3f(0.0f, -1.0f, 0.0f));
 	for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
 		const double u = 1.0 - (static_cast<double>(azimuth) / static_cast<double>(azimuthSegments));
@@ -150,8 +150,8 @@ void MeshBuilder::addSphere(MeshBuilder & builder, uint32_t inclinationSegments,
 		for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
 			const double inclinationAngle = inclinationIncrement * static_cast<double>(inclination);
 			const double azimuthAngle = azimuthIncrement * static_cast<double>(azimuth);
-			Geometry::Vec3f position = Geometry::Sphere_f::calcCartesianCoordinateUnitSphere(inclinationAngle, azimuthAngle);
-			builder.position(position);
+			const Geometry::Vec3f position = Geometry::Sphere_f::calcCartesianCoordinateUnitSphere(inclinationAngle, azimuthAngle);
+			builder.position(sphere.getCenter() + position*sphere.getRadius());
 			builder.normal(position);
 			builder.texCoord0(Geometry::Vec2f(
 				1.0 - (static_cast<double>(azimuth) / static_cast<double>(azimuthSegments)),
@@ -186,7 +186,7 @@ void MeshBuilder::addSphere(MeshBuilder & builder, uint32_t inclinationSegments,
 Mesh * MeshBuilder::createSphere(const VertexDescription & vertexDesc,uint32_t inclinationSegments, uint32_t azimuthSegments) {
 	MeshBuilder builder(vertexDesc);
 	builder.color(Util::ColorLibrary::WHITE);
-	addSphere(builder,inclinationSegments,azimuthSegments);
+	addSphere(builder,Geometry::Sphere_f({0,0,0},1.0f),inclinationSegments,azimuthSegments);
 	return builder.buildMesh();
 }
 
