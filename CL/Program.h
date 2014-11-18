@@ -30,11 +30,12 @@ public:
 	Program(Context* context, const std::string& source);
 	virtual ~Program() = default;
 
+	bool build(Device* device, const std::string& parameters = "");
 	bool build(const std::vector<Device*>& devices, const std::string& parameters = "");
 
-	BuildStatus_t getBuildStatus(Device* device);
-	std::string getBuildOptions(Device* device);
-	std::string getBuildLog(Device* device);
+	BuildStatus_t getBuildStatus(Device* device) const;
+	std::string getBuildOptions(Device* device) const;
+	std::string getBuildLog(Device* device) const;
 
 	cl::Program* _internal() const { return program.get(); }
 private:
