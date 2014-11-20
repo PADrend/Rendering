@@ -17,11 +17,12 @@
 namespace Rendering {
 namespace CL {
 
-class BufferGL: public CL::Buffer {
+class BufferGL: public Buffer {
 public:
 	BufferGL(Context* context, ReadWrite_t readWrite, uint32_t glHandle);
 	BufferGL(Context* context, ReadWrite_t readWrite, const BufferObject& buffer) : BufferGL(context, readWrite, buffer.getGLId()) {};
-	virtual ~BufferGL() = default;
+
+	BufferGL(const BufferGL& buffer);
 };
 
 } /* namespace CL */

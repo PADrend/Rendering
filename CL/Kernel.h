@@ -12,6 +12,7 @@
 
 #include <string>
 #include <memory>
+#include <array>
 
 namespace cl {
 class Kernel;
@@ -20,15 +21,37 @@ class Kernel;
 namespace Rendering {
 namespace CL {
 class Program;
-class Buffer;
+class Device;
+class Memory;
+class Context;
 
 class Kernel {
 public:
 	Kernel(Program* program, const std::string& name);
-	virtual ~Kernel() = default;
+	~Kernel();
+	Kernel(const Kernel& kernel);
+	Kernel(Kernel&& kernel);
+	Kernel& operator=(Kernel&&);
 
-	bool setArg(uint32_t index, Buffer* value);
+	bool setArg(uint32_t index, Memory* value);
 	bool setArg(uint32_t index, float value);
+
+	Context* getContext() const;
+	Program* getProgram() const;
+
+	std::string getAttributes() const;
+	std::string getFunctionName() const;
+	uint32_t getNumArgs() const;
+
+	std::string getArgName(uint32_t index) const;
+	std::string getArgTypeName(uint32_t index) const;
+
+//	std::array<size_t, 3> getGlobalWorkSize(const Device& device) const;
+	size_t getWorkGroupSize(const Device& device) const;
+	std::array<size_t, 3> getCompileWorkGroupSize(const Device& device) const;
+	uint64_t getLocalMemSize(const Device& device) const;
+	size_t getPreferredWorkGroupSizeMultiple(const Device& device) const;
+	uint64_t getPrivateMemSize(const Device& device) const;
 
 	cl::Kernel* _internal() const { return kernel.get(); }
 private:

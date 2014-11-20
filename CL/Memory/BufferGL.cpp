@@ -38,6 +38,8 @@ BufferGL::BufferGL(Context* context, ReadWrite_t readWrite, uint32_t glHandle) {
 		}
 }
 
+BufferGL::BufferGL(const BufferGL& buffer) : Buffer(new cl::BufferGL(*buffer._internal<cl::BufferGL>())) { }
+
 } /* namespace CL */
 } /* namespace Rendering */
 #endif /* RENDERING_HAS_LIB_OPENCL */

@@ -27,15 +27,27 @@ class Program {
 public:
 	enum BuildStatus_t { None, Error, Success, InProgress };
 
-	Program(Context* context, const std::string& source);
-	virtual ~Program() = default;
+	Program(Context* context, const std::vector<std::string>& sources);
+	~Program();
+	Program(const Program& program);
+	Program(Program&& program);
+	Program& operator=(Program&&);
 
-	bool build(Device* device, const std::string& parameters = "");
-	bool build(const std::vector<Device*>& devices, const std::string& parameters = "");
+	bool build(const std::vector<Device>& devices, const std::string& options = "");
 
-	BuildStatus_t getBuildStatus(Device* device) const;
-	std::string getBuildOptions(Device* device) const;
-	std::string getBuildLog(Device* device) const;
+	BuildStatus_t getBuildStatus(const Device& device) const;
+	std::string getBuildOptions(const Device& device) const;
+	std::string getBuildLog(const Device& device) const;
+
+	std::vector<char*> getBinaries() const;
+	std::vector<size_t> getBinarySizes() const;
+	std::vector<Device> getDevices() const;
+	uint32_t getNumDevices() const;
+	std::string getKernelNames() const;
+	uint32_t getNumKernels() const;
+	std::string getSource() const;
+
+	Context* getContext() const;
 
 	cl::Program* _internal() const { return program.get(); }
 private:

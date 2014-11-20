@@ -27,8 +27,12 @@ add_library(Rendering
 	CL/Kernel.cpp
 	CL/Platform.cpp
 	CL/Program.cpp
+	CL/UserEvent.cpp
 	CL/Memory/Buffer.cpp
 	CL/Memory/BufferGL.cpp
+	CL/Memory/Image.cpp
+	CL/Memory/Memory.cpp
+	CL/Memory/Sampler.cpp
 	Mesh/Mesh.cpp
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp

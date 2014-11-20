@@ -19,8 +19,17 @@
 namespace Rendering {
 namespace CL {
 
-Platform::Platform(cl::Platform* platform) : platform(new cl::Platform(*platform)) {
-}
+Platform::Platform() = default;
+
+Platform::Platform(cl::Platform* platform) : platform(new cl::Platform(*platform)) { }
+
+Platform::~Platform() = default;
+
+Platform::Platform(const Platform& platform) : platform(new cl::Platform(*platform.platform.get())) { }
+
+Platform::Platform(Platform&& platform) = default;
+
+Platform& Platform::operator=(Platform&&) = default;
 
 std::string Platform::getExtensions() const {
 	return platform->getInfo<CL_PLATFORM_EXTENSIONS>();
@@ -42,20 +51,22 @@ std::string Platform::getVersion() const {
 	return platform->getInfo<CL_PLATFORM_VERSION>();
 }
 
-std::vector<Device*> Platform::getDevices() const {
-	std::vector<Device*> out;
+std::vector<Device> Platform::getDevices() const {
+	std::vector<Device> out;
 	std::vector<cl::Device> devices;
 	platform->getDevices(CL_DEVICE_TYPE_ALL, &devices);
 	for(auto device : devices)
-		out.push_back(new Device(&device));
+		out.push_back(&device);
 	return out;
 }
 
-void Platform::get(std::vector<Platform*>& platforms) {
-	std::vector<cl::Platform> out;
-	cl::Platform::get(&out);
-	for(auto pf : out)
-		platforms.push_back(new Platform(&pf));
+std::vector<Platform> Platform::get() {
+	std::vector<Platform> out;
+	std::vector<cl::Platform> platforms;
+	cl::Platform::get(&platforms);
+	for(auto pf : platforms)
+		out.push_back(&pf);
+	return out;
 }
 
 } /* namespace CL */

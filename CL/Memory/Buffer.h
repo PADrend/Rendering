@@ -7,10 +7,10 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #ifdef RENDERING_HAS_LIB_OPENCL
-#ifndef RENDERING_CL_MEMORY_H_
-#define RENDERING_CL_MEMORY_H_
+#ifndef RENDERING_CL_BUFFER_H_
+#define RENDERING_CL_BUFFER_H_
 
-#include <memory>
+#include "Memory.h"
 
 namespace cl {
 class Buffer;
@@ -20,22 +20,23 @@ namespace Rendering {
 namespace CL {
 class Context;
 
-class Buffer {
-public:
-	enum ReadWrite_t { ReadWrite, WriteOnly, ReadOnly, NoAccess };
-	enum HostPtr_t { None, Use, Alloc, Copy, AllocAndCopy };
-
-	Buffer() {}
-	Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage = None, void* hostPtr = nullptr, ReadWrite_t hostReadWrite = ReadWrite);
-	virtual ~Buffer() = default;
-
-	cl::Buffer* _internal() const { return mem.get(); }
+class Buffer : public Memory {
 protected:
-	std::unique_ptr<cl::Buffer> mem;
+	Buffer(cl::Memory* buffer) : Memory(buffer) {}
+public:
+
+	Buffer();
+	Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage = None, void* hostPtr = nullptr, ReadWrite_t hostReadWrite = ReadWrite);
+//	virtual ~Buffer();
+	Buffer(const Buffer& buffer);
+//	Buffer(Buffer&& buffer);
+//	Buffer& operator=(Buffer&&);
+
+	Buffer* createSubBuffer(ReadWrite_t readWrite, size_t origin, size_t size);
 };
 
 } /* namespace CL */
 } /* namespace Rendering */
 
-#endif /* RENDERING_CL_MEMORY_H_ */
+#endif /* RENDERING_CL_BUFFER_H_ */
 #endif /* RENDERING_HAS_LIB_OPENCL */

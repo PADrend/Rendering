@@ -30,12 +30,14 @@
 #include <Rendering/CL/Event.h>
 #include <Rendering/CL/Memory/Buffer.h>
 #include <Rendering/CL/Memory/BufferGL.h>
+#include <Rendering/CL/Memory/Image.h>
 #include <Rendering/CL/CommandQueue.h>
 #include <Rendering/CL/Context.h>
 #include <Rendering/CL/Device.h>
 #include <Rendering/CL/Kernel.h>
 #include <Rendering/CL/Platform.h>
 #include <Rendering/CL/Program.h>
+#include <Rendering/CL/UserEvent.h>
 #include <Rendering/CL/CLUtils.h>
 
 #include <Rendering/RenderingContext/RenderingContext.h>
@@ -51,9 +53,15 @@
 #include <Rendering/Mesh/VertexDescription.h>
 #include <Rendering/Mesh/VertexAttribute.h>
 #include <Rendering/Mesh/VertexAttributeIds.h>
+#include <Rendering/Texture/Texture.h>
+#include <Rendering/Texture/TextureUtils.h>
 
 #include <Util/Utils.h>
+#include <Util/References.h>
 #include <Util/Graphics/ColorLibrary.h>
+#include <Util/Graphics/Bitmap.h>
+#include <Util/Graphics/BitmapUtils.h>
+#include <Util/Graphics/PixelAccessor.h>
 
 #include <Geometry/Vec4.h>
 #include <Geometry/Matrix4x4.h>
@@ -121,6 +129,28 @@ const char * particle_kernel = R"kernel(
 	}
 )kernel";
 
+const char* simple_filter = R"kernel(
+	__constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_NEAREST;
+	
+	float filterValue (__constant const float* filterWeights, const int x, const int y) {
+		return filterWeights[(x+FILTER_SIZE) + (y+FILTER_SIZE)*(FILTER_SIZE*2 + 1)];
+	}
+	
+	__kernel void filter (__read_only image2d_t input, __constant float* filterWeights, __write_only image2d_t output) {
+		const int2 pos = {get_global_id(0), get_global_id(1)};
+	
+		float4 sum = (float4)(0.0f);
+		for(int y = -FILTER_SIZE; y <= FILTER_SIZE; y++) {
+			for(int x = -FILTER_SIZE; x <= FILTER_SIZE; x++) {
+				sum += filterValue(filterWeights, x, y)
+					* read_imagef(input, sampler, pos + (int2)(x,y));
+			}
+		}
+	
+		write_imagef (output, (int2)(pos.x, pos.y), sum);
+	}
+)kernel";
+
 //quick random function to distribute our initial points
 float rand_float(float mn, float mx)
 {
@@ -130,28 +160,45 @@ float rand_float(float mn, float mx)
 
 void OpenCLTest::test() {
 	using namespace Rendering;
-	CL::Platform* platform;
-	CL::Device* device;
-	CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU, platform, device);
+	CL::Platform platform;
+	CL::Device device;
+	std::tie(platform, device) = CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU);
+	std::cout << std::endl << platform.getName() << std::endl << device.getName() << std::endl;
+	std::cout << device.getOpenCL_CVersion() << std::endl;
 
-	CL::Context context(platform, device);
+	CL::Context context(&platform, &device);
 	CL::CommandQueue queue(&context, &device);
-	CL::Program program(&context, hw_kernel);
-	CPPUNIT_ASSERT(program.build(device));
+	CL::Program program(&context, {hw_kernel});
+	CPPUNIT_ASSERT(program.build({device}));
 
 	char* outH = new char[hw.length()-1];
 	CL::Buffer outCL(&context, hw.length()-1, CL::Buffer::WriteOnly, CL::Buffer::Use, outH);
 
-
 	CL::Kernel kernel(&program, "hello");
 	CPPUNIT_ASSERT(kernel.setArg(0, &outCL));
 
-	CPPUNIT_ASSERT(queue.execute(&kernel, {0}, {hw.length()+1}, {1}));
+	CPPUNIT_ASSERT(queue.execute(&kernel, {0}, {hw.length()+1}, {1}, {}));
 	queue.finish();
-	CPPUNIT_ASSERT(queue.read(&outCL, 0, hw.length()-1, outH));
+	CPPUNIT_ASSERT(queue.readBuffer(&outCL, true, 0, hw.length()-1, outH));
 	queue.finish();
 
 	std::cout << outH;
+}
+
+void OpenCLTest::nativeKernelTest() {
+	using namespace Rendering;
+	using namespace Rendering;
+	CL::Platform platform;
+	CL::Device device;
+	std::tie(platform, device) = CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU);
+	std::cout << std::endl << platform.getName() << std::endl << device.getName() << std::endl;
+	std::cout << device.getOpenCL_CVersion() << std::endl;
+
+	CL::Context context(&platform, &device);
+	CL::CommandQueue queue(&context, &device);
+	CL::Program program(&context, {hw_kernel});
+	CPPUNIT_ASSERT(program.build({device}));
+
 }
 
 void OpenCLTest::interopTest() {
@@ -159,14 +206,15 @@ void OpenCLTest::interopTest() {
 	using namespace Geometry;
 	using namespace Util;
 
-	CL::Platform* platform;
-	CL::Device* device;
-	CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU, platform, device);
+	CL::Platform platform;
+	CL::Device device;
+	std::tie(platform, device) = CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_GPU);
+	std::cout << std::endl << platform.getName() << std::endl << device.getName() << std::endl;
 
-	CL::Context context(platform, device);
-	CL::CommandQueue queue(&context, &device);
-	CL::Program program(&context, particle_kernel);
-	CPPUNIT_ASSERT(program.build(device));
+	CL::Context context(&platform, &device, true);
+	CL::CommandQueue queue(&context, &device, false, true);
+	CL::Program program(&context, {particle_kernel});
+	CPPUNIT_ASSERT(program.build({device}));
 
     size_t array_size; //the size of our arrays num * sizeof(Vec4)
 
@@ -228,9 +276,9 @@ void OpenCLTest::interopTest() {
 
 	//push our CPU arrays to the GPU
 	//data is tightly packed in std::vector starting with the adress of the first element
-    CPPUNIT_ASSERT(queue.write(&cl_velocities, 0, array_size, &vel[0]));
-    CPPUNIT_ASSERT(queue.write(&cl_pos_gen, 0, array_size, &posGen[0]));
-    CPPUNIT_ASSERT(queue.write(&cl_vel_gen, 0, array_size, &vel[0]));
+    CPPUNIT_ASSERT(queue.writeBuffer(&cl_velocities, true, 0, array_size, &vel[0]));
+    CPPUNIT_ASSERT(queue.writeBuffer(&cl_pos_gen, true, 0, array_size, &posGen[0]));
+    CPPUNIT_ASSERT(queue.writeBuffer(&cl_vel_gen, true, 0, array_size, &vel[0]));
     queue.finish();
 
     //initialize our kernel from the program
@@ -251,7 +299,9 @@ void OpenCLTest::interopTest() {
     rc.pushAndSetBlending(BlendingParameters(BlendingParameters::SRC_ALPHA, BlendingParameters::ONE_MINUS_SRC_ALPHA));
     rc.pushAndSetPointParameters(PointParameters(2, true));
 
-	for(uint_fast32_t round = 0; round < 1000; ++round) {
+    double time = 0;
+//    CL::Event event;
+	for(uint_fast32_t round = 0; round < 100; ++round) {
 		rc.applyChanges();
 
 		rc.clearScreen(ColorLibrary::WHITE);
@@ -262,11 +312,17 @@ void OpenCLTest::interopTest() {
 		queue.acquireGLObjects({&cl_vbo});
 		queue.finish();
 
+//	    CL::UserEvent userevent(&context);
+
 		float dt = .01f;
 		kernel.setArg(4, dt); //pass in the timestep
 		//execute the kernel
 		queue.execute(&kernel, {}, {num}, {});
+//		event.setCallback(0, [&](const CL::Event& e, int32_t s){ std::cout << round << std::endl;});
+//		userevent.setStatus(CL_COMPLETE);
 		queue.finish();
+
+//		time += (event.getProfilingCommandEnd() - event.getProfilingCommandStart()) * 1.0e-6;
 
 		//Release the VBOs so OpenGL can play with them
 		queue.releaseGLObjects({&cl_vbo});
@@ -274,6 +330,151 @@ void OpenCLTest::interopTest() {
 
 		rc.displayMesh(mesh.get());
 
+		TestUtils::window->swapBuffers();
+	}
+	std::cout << "Time: " << time << " ms (Avg: " << (time/1000) << " ms)"<< std::endl;
+}
+
+void OpenCLTest::textureGLFilterTest() {
+	using namespace Rendering;
+	using namespace Geometry;
+	using namespace Util;
+
+	// create rendering context
+	RenderingContext rc;
+	rc.setImmediateMode(false);
+
+    rc.setViewport({0,0,256,256});
+    rc.setMatrix_modelToCamera(Matrix4x4f::orthographicProjection(-1,1,-1,1,-100,100));
+    rc.pushAndSetLighting(LightingParameters(false));
+
+	// initialize OpenCL
+	CL::Platform platform;
+	CL::Device device;
+	std::tie(platform, device) = CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_GPU);
+	std::cout << std::endl << platform.getName() << std::endl << device.getName() << std::endl;
+	std::cout << device.getOpenCL_CVersion() << std::endl;
+
+	CL::Context context(&platform, &device, true);
+	CPPUNIT_ASSERT((*context._internal())() != nullptr);
+	CL::CommandQueue queue(&context, &device, false, false);
+	CL::Program program(&context, {simple_filter});
+	CPPUNIT_ASSERT(program.build({device}, "-D FILTER_SIZE=1"));
+
+	Reference<Texture> inTexture = TextureUtils::createChessTexture(256, 256, 32);
+	Reference<Texture> outTexture = TextureUtils::createChessTexture(256, 256, 32);
+
+	// Textures needs to be on the GPU for further processing
+	inTexture->_prepareForBinding(rc);
+	outTexture->_prepareForBinding(rc);
+
+	//make sure OpenGL is finished before we proceed
+	rc.applyChanges();
+	rc.finish();
+
+	CL::Image inImage(&context, CL::Image::ReadWrite, inTexture.get());
+	CL::Image outImage(&context, CL::Image::WriteOnly, outTexture.get());
+
+	// Simple Gaussian blur filter
+	float filter [] = {
+		1, 2, 1,
+		2, 4, 2,
+		1, 2, 1
+	};
+
+	// Normalize the filter
+	for (int i = 0; i < 9; ++i) {
+		filter [i] /= 16.0f;
+	}
+	CL::Buffer filterBuffer(&context, 9*sizeof(float), CL::Memory::ReadOnly, CL::Memory::Copy, filter);
+
+	CL::Kernel kernel(&program, "filter");
+	CPPUNIT_ASSERT(kernel.setArg(0, &inImage));
+	CPPUNIT_ASSERT(kernel.setArg(1, &filterBuffer));
+	CPPUNIT_ASSERT(kernel.setArg(2, &outImage));
+
+	CPPUNIT_ASSERT(queue.acquireGLObjects({&inImage, &outImage}));
+	queue.finish();
+	//execute the kernel
+	CPPUNIT_ASSERT(queue.execute(&kernel, {}, {256, 256}, {}));
+	queue.finish();
+	CPPUNIT_ASSERT(queue.releaseGLObjects({&inImage, &outImage}));
+	queue.finish();
+
+	for(uint_fast32_t round = 0; round < 100; ++round) {
+		rc.applyChanges();
+		rc.clearScreen(ColorLibrary::BLACK);
+	    TextureUtils::drawTextureToScreen(rc, {0,0,256,256}, round < 50 ? *inTexture.get() : *outTexture.get(), {0,0,1,1});
+		TestUtils::window->swapBuffers();
+	}
+}
+
+void OpenCLTest::bitmapFilterTest() {
+	using namespace Rendering;
+	using namespace Geometry;
+	using namespace Util;
+
+	// create rendering context
+	RenderingContext rc;
+	rc.setImmediateMode(false);
+
+	rc.setViewport({0,0,256,256});
+	rc.setMatrix_modelToCamera(Matrix4x4f::orthographicProjection(-1,1,-1,1,-100,100));
+	rc.pushAndSetLighting(LightingParameters(false));
+
+	// initialize OpenCL
+	CL::Platform platform;
+	CL::Device device;
+	std::tie(platform, device) = CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU);
+	std::cout << std::endl << platform.getName() << std::endl << device.getName() << std::endl;
+	std::cout << device.getOpenCL_CVersion() << std::endl;
+
+	CL::Context context(&platform, &device, false);
+	CPPUNIT_ASSERT((*context._internal())() != nullptr);
+	CL::CommandQueue queue(&context, &device, false, false);
+	CL::Program program(&context, {simple_filter});
+	CPPUNIT_ASSERT(program.build({device}, "-D FILTER_SIZE=1"));
+
+	Reference<Texture> inTexture = TextureUtils::createChessTexture(256, 256, 32);
+	Reference<Texture> outTexture = TextureUtils::createChessTexture(256, 256, 32);
+
+	Reference<Bitmap> inBitmap = inTexture->getLocalBitmap();
+	Reference<Bitmap> outBitmap = outTexture->getLocalBitmap();
+	std::fill(outBitmap->data(), outBitmap->data() + outBitmap->getDataSize(), 0);
+
+	CL::Image inImage(&context, CL::Image::ReadOnly, inBitmap.get());
+	CL::Image outImage(&context, CL::Image::ReadWrite, outBitmap.get());
+
+	// Simple Gaussian blur filter
+	float filter [] = {
+		1, 2, 1,
+		2, 4, 2,
+		1, 2, 1
+	};
+
+	// Normalize the filter
+	for (int i = 0; i < 9; ++i) {
+		filter [i] /= 16.0f;
+	}
+	CL::Buffer filterBuffer(&context, 9*sizeof(float), CL::Memory::ReadOnly, CL::Memory::Copy, filter);
+
+	CL::Kernel kernel(&program, "filter");
+	CPPUNIT_ASSERT(kernel.setArg(0, &inImage));
+	CPPUNIT_ASSERT(kernel.setArg(1, &filterBuffer));
+	CPPUNIT_ASSERT(kernel.setArg(2, &outImage));
+
+	//execute the kernel
+	CPPUNIT_ASSERT(queue.execute(&kernel, {}, {256, 256}, {}));
+	queue.finish();
+
+//	CPPUNIT_ASSERT(queue.readImage(&outImage, {}, {256,256},0,0,outBitmap->data()));
+//	queue.finish();
+
+
+	for(uint_fast32_t round = 0; round < 100; ++round) {
+		rc.applyChanges();
+		rc.clearScreen(ColorLibrary::BLACK);
+		TextureUtils::drawTextureToScreen(rc, {0,0,256,256}, round < 50 ? *inTexture.get() : *outTexture.get(), {0,0,1,1});
 		TestUtils::window->swapBuffers();
 	}
 }

@@ -24,13 +24,17 @@ class Device;
 
 class Context {
 public:
-	Context() {};
 	Context(Platform* platform, uint32_t device_type, bool shareGLContext = false);
 	Context(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext = false);
 	Context(Platform* platform, Device* device, bool shareGLContext = false);
-	virtual ~Context() = default;
+	~Context();
+	Context(const Context& context);
+	Context(Context&& context);
+	Context& operator=(Context&&);
 
-	std::vector<Device*> getDevices() const;
+	std::vector<intptr_t> getProperties() const;
+
+	std::vector<Device> getDevices() const;
 
 	cl::Context* _internal() const { return context.get(); };
 protected:

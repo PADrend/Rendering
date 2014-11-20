@@ -11,6 +11,7 @@
 #define RENDERING_CL_CLUTILS_H_
 
 #include <string>
+#include <tuple>
 
 namespace Rendering {
 namespace CL {
@@ -19,7 +20,7 @@ class Device;
 
 const std::string getErrorString(int error);
 
-void getFirstPlatformAndDeviceFor(uint32_t device_type, Platform*& platform, Device*& device);
+std::tuple<Platform, Device> getFirstPlatformAndDeviceFor(uint32_t device_type);
 
 } /* namespace CL */
 } /* namespace Rendering */
