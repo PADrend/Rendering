@@ -18,7 +18,27 @@
 namespace Rendering {
 namespace CL {
 
+Buffer::Buffer() = default;
+
 Buffer::Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage /*= None*/, void* hostPtr /*= nullptr*/, ReadWrite_t hostReadWrite /*=ReadWrite*/) {
+	cl_mem_flags flags = convertToCLFlags(readWrite, hostPtrUsage, hostReadWrite);
+	cl_int err;
+	mem.reset(new cl::Buffer(*context->_internal(), flags, size, hostPtr, &err));
+	if(err != CL_SUCCESS) {
+		WARN("Could not create buffer (" + std::to_string(err) + ")");
+		FAIL();
+	}
+}
+
+Buffer::Buffer(const Buffer& buffer) : Memory(new cl::Buffer(*buffer._internal<cl::Buffer>())) { }
+
+//Buffer::Buffer(Buffer&& buffer) = default;
+//
+//Buffer& Buffer::operator=(Buffer&&) = default;
+
+//Buffer::~Buffer() = default;
+
+Buffer* Buffer::createSubBuffer(ReadWrite_t readWrite, size_t origin, size_t size) {
 	cl_mem_flags flags = 0;
 	switch (readWrite) {
 		case ReadWrite:
@@ -31,44 +51,19 @@ Buffer::Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t h
 			flags = CL_MEM_WRITE_ONLY;
 			break;
 	}
-	switch (hostPtrUsage) {
-		case Use:
-			FAIL_IF(hostPtr == nullptr);
-			flags |= CL_MEM_USE_HOST_PTR;
-			break;
-		case Alloc:
-			flags |= CL_MEM_ALLOC_HOST_PTR;
-			break;
-		case Copy:
-			FAIL_IF(hostPtr == nullptr);
-			flags |= CL_MEM_COPY_HOST_PTR;
-			break;
-		case AllocAndCopy:
-			FAIL_IF(hostPtr == nullptr);
-			flags |= CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR;
-			break;
-		default:
-			FAIL_IF(hostPtr != nullptr);
-	}
-	switch (hostReadWrite) {
-		case NoAccess:
-			flags |= CL_MEM_HOST_NO_ACCESS;
-			break;
-		case ReadOnly:
-			flags |= CL_MEM_HOST_READ_ONLY;
-			break;
-		case WriteOnly:
-			flags |= CL_MEM_HOST_WRITE_ONLY;
-			break;
-	}
-	cl_int err;
-	mem.reset(new cl::Buffer(*context->_internal(), flags, size, hostPtr, &err));
+	cl_int err = 0;
+	cl_buffer_region region{origin, size};
+	cl::Buffer subbuffer = static_cast<cl::Buffer*>(mem.get())->createSubBuffer(flags, CL_BUFFER_CREATE_TYPE_REGION, &region, &err);
 	if(err != CL_SUCCESS) {
-		WARN("Could not create buffer (" + std::to_string(err) + ")");
-		FAIL();
+		WARN("Could not create subbuffer (" + std::to_string(err) + ")");
+		return nullptr;
 	}
+	Buffer* out = new Buffer();
+	out->mem.reset(new cl::Buffer(subbuffer));
+	return out;
 }
 
 } /* namespace CL */
 } /* namespace Rendering */
+
 #endif /* RENDERING_HAS_LIB_OPENCL */

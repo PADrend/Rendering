@@ -9,8 +9,10 @@
 #ifdef RENDERING_HAS_LIB_OPENCL
 #include "Kernel.h"
 
+#include "Context.h"
 #include "Program.h"
-#include "Memory/Buffer.h"
+#include "Device.h"
+#include "Memory/Memory.h"
 #include "CLUtils.h"
 
 #include <CL/cl.hpp>
@@ -28,20 +30,86 @@ Kernel::Kernel(Program* program, const std::string& name) {
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-bool Kernel::setArg(uint32_t index, Buffer* value) {
-	cl_int err = kernel->setArg(static_cast<cl_uint>(index), *value->_internal());
+Kernel::Kernel(const Kernel& kernel) : kernel(new cl::Kernel(*kernel.kernel.get())) { }
+
+Kernel::Kernel(Kernel&& kernel) = default;
+
+Kernel::~Kernel() = default;
+
+Kernel& Kernel::operator=(Kernel&&) = default;
+
+bool Kernel::setArg(uint32_t index, Memory* value) {
+	cl_int err = kernel->setArg(index, *value->_internal());
 	if(err != CL_SUCCESS)
 		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
 	return err == CL_SUCCESS;
 }
 
 bool Kernel::setArg(uint32_t index, float value) {
-	cl_int err = kernel->setArg(static_cast<cl_uint>(index), value);
+	cl_int err = kernel->setArg(index, value);
 	if(err != CL_SUCCESS)
 		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
 	return err == CL_SUCCESS;
 }
 
+Context* Kernel::getContext() const {
+	return nullptr;
+}
+
+Program* Kernel::getProgram() const {
+	return nullptr;
+}
+
+std::string Kernel::getAttributes() const {
+	return kernel->getInfo<CL_KERNEL_ATTRIBUTES>();
+}
+
+std::string Kernel::getFunctionName() const {
+	return kernel->getInfo<CL_KERNEL_FUNCTION_NAME>();
+}
+
+uint32_t Kernel::getNumArgs() const {
+	return kernel->getInfo<CL_KERNEL_NUM_ARGS>();
+}
+
+std::string Kernel::getArgName(uint32_t index) const {
+	return kernel->getArgInfo<CL_KERNEL_ARG_NAME>(index);
+}
+
+std::string Kernel::getArgTypeName(uint32_t index) const {
+	return kernel->getArgInfo<CL_KERNEL_ARG_TYPE_NAME>(index);
+}
+
+//std::array<size_t, 3> Kernel::getGlobalWorkSize(const Device& device) const {
+//	return kernel->getWorkGroupInfo<CL_KERNEL_GLOBAL_WORK_SIZE>(*device._internal());
+//}
+
+size_t Kernel::getWorkGroupSize(const Device& device) const {
+	return kernel->getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(*device._internal());
+}
+
+std::array<size_t, 3> Kernel::getCompileWorkGroupSize(const Device& device) const {
+	auto sizes = kernel->getWorkGroupInfo<CL_KERNEL_COMPILE_WORK_GROUP_SIZE>(*device._internal());
+	std::array<size_t, 3> out;
+	out[0] = sizes[0];
+	out[1] = sizes[1];
+	out[2] = sizes[2];
+	return out;
+}
+
+uint64_t Kernel::getLocalMemSize(const Device& device) const {
+	return kernel->getWorkGroupInfo<CL_KERNEL_LOCAL_MEM_SIZE>(*device._internal());
+}
+
+size_t Kernel::getPreferredWorkGroupSizeMultiple(const Device& device) const {
+	return kernel->getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(*device._internal());
+}
+
+uint64_t Kernel::getPrivateMemSize(const Device& device) const {
+	return kernel->getWorkGroupInfo<CL_KERNEL_PRIVATE_MEM_SIZE>(*device._internal());
+}
+
 } /* namespace CL */
 } /* namespace Rendering */
+
 #endif /* RENDERING_HAS_LIB_OPENCL */

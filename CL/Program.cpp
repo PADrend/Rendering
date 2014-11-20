@@ -22,25 +22,32 @@
 namespace Rendering {
 namespace CL {
 
-Program::Program(Context* context, const std::string& source) {
+Program::Program(Context* context, const std::vector<std::string>& sources) {
 	cl_int err;
-	program.reset(new cl::Program(*context->_internal(), source, false, &err));
+	cl::Program::Sources cl_sources;
+	for(auto src : sources)
+		cl_sources.push_back(std::make_pair(src.c_str(),src.size()));
+	program.reset(new cl::Program(*context->_internal(), cl_sources, &err));
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-bool Program::build(Device* device, const std::string& parameters /*= ""*/) {
-	return build({device}, parameters);
-}
+Program::~Program() = default;
 
-bool Program::build(const std::vector<Device*>& devices, const std::string& parameters /*= ""*/) {
+Program::Program(const Program& program) : program(new cl::Program(*program.program.get())) { }
+
+Program::Program(Program&& program) = default;
+
+Program& Program::operator=(Program&&) = default;
+
+bool Program::build(const std::vector<Device>& devices, const std::string& options /*= ""*/) {
 	std::vector<cl::Device> cl_devices;
 	for(auto device : devices)
-		cl_devices.push_back(*device->_internal());
-	cl_int err = program->build(cl_devices, parameters.c_str());
+		cl_devices.push_back(*device._internal());
+	cl_int err = program->build(cl_devices, options.c_str());
 	if(err != CL_SUCCESS) {
 		WARN("Failed to build program (" + getErrorString(err) + ")");
 		for(auto device : devices) {
-			std::cerr << "Device: \t" << device->getName() << std::endl;
+			std::cerr << "Device: \t" << device.getName() << std::endl;
 			std::cerr << "Build Status: " << getBuildStatus(device) << std::endl;
 			std::cerr << "Build Options:\t" << getBuildOptions(device) << std::endl;
 			std::cerr << "Build Log:\t " << getBuildLog(device) << std::endl;
@@ -49,8 +56,8 @@ bool Program::build(const std::vector<Device*>& devices, const std::string& para
 	return err == CL_SUCCESS;
 }
 
-Program::BuildStatus_t Program::getBuildStatus(Device* device) const {
-	cl_int status = program->getBuildInfo<CL_PROGRAM_BUILD_STATUS>(*device->_internal());
+Program::BuildStatus_t Program::getBuildStatus(const Device& device) const {
+	cl_int status = program->getBuildInfo<CL_PROGRAM_BUILD_STATUS>(*device._internal());
 	switch (status) {
 		case CL_BUILD_SUCCESS:
 			return Success;
@@ -63,14 +70,52 @@ Program::BuildStatus_t Program::getBuildStatus(Device* device) const {
 	}
 }
 
-std::string Program::getBuildOptions(Device* device) const {
-	return program->getBuildInfo<CL_PROGRAM_BUILD_OPTIONS>(*device->_internal());
+std::string Program::getBuildOptions(const Device& device) const {
+	return program->getBuildInfo<CL_PROGRAM_BUILD_OPTIONS>(*device._internal());
 }
 
-std::string Program::getBuildLog(Device* device) const {
-	return program->getBuildInfo<CL_PROGRAM_BUILD_LOG>(*device->_internal());
+std::string Program::getBuildLog(const Device& device) const {
+	return program->getBuildInfo<CL_PROGRAM_BUILD_LOG>(*device._internal());
+}
+
+std::vector<char*> Program::getBinaries() const {
+	return program->getInfo<CL_PROGRAM_BINARIES>();
+}
+
+std::vector<size_t> Program::getBinarySizes() const {
+	return program->getInfo<CL_PROGRAM_BINARY_SIZES>();
+}
+
+std::vector<Device> Program::getDevices() const {
+	std::vector<Device> out;
+	std::vector<cl::Device> cl_devices = program->getInfo<CL_PROGRAM_DEVICES>();
+	for(auto dev : cl_devices)
+		out.push_back(&dev);
+	return out;
+}
+
+uint32_t Program::getNumDevices() const {
+	return program->getInfo<CL_PROGRAM_NUM_DEVICES>();
+}
+
+std::string Program::getKernelNames() const {
+	return program->getInfo<CL_PROGRAM_KERNEL_NAMES>();
+}
+
+uint32_t Program::getNumKernels() const {
+	return program->getInfo<CL_PROGRAM_NUM_KERNELS>();
+}
+
+std::string Program::getSource() const {
+	return program->getInfo<CL_PROGRAM_SOURCE>();
+}
+
+Context* Program::getContext() const {
+	return nullptr;
 }
 
 } /* namespace CL */
 } /* namespace Rendering */
+
+
 #endif /* RENDERING_HAS_LIB_OPENCL */

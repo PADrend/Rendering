@@ -16,11 +16,17 @@
 class OpenCLTest : public CppUnit::TestFixture {
 	CPPUNIT_TEST_SUITE(OpenCLTest);
 	CPPUNIT_TEST(test);
+	CPPUNIT_TEST(nativeKernelTest);
 	CPPUNIT_TEST(interopTest);
+	CPPUNIT_TEST(textureGLFilterTest);
+	CPPUNIT_TEST(bitmapFilterTest);
 	CPPUNIT_TEST_SUITE_END();
 public:
 	void test();
+	void nativeKernelTest();
 	void interopTest();
+	void textureGLFilterTest();
+	void bitmapFilterTest();
 };
 
 #endif /* OPENCLTEST_H_ */

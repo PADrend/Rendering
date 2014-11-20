@@ -14,6 +14,7 @@
 #include <array>
 #include <vector>
 #include <memory>
+#include <functional>
 
 namespace cl {
 class CommandQueue;
@@ -24,6 +25,8 @@ namespace CL {
 class Device;
 class Context;
 class Buffer;
+class Image;
+class Memory;
 class Kernel;
 class Event;
 
@@ -37,20 +40,47 @@ public:
 
 class CommandQueue {
 public:
+	typedef std::vector<Event*> EventList_t;
+	enum MapFlags_t { Read, Write };
+
 	CommandQueue(Context* context, Device* device, bool outOfOrderExec = false, bool profiling = false);
-	virtual ~CommandQueue() = default;
+	~CommandQueue();
+	CommandQueue(const CommandQueue& queue);
+	CommandQueue(CommandQueue&& queue);
+	CommandQueue& operator=(CommandQueue&&);
 
-	bool read(Buffer* buffer, size_t offset, size_t size, void* ptr, bool blocking = false, Event* event = nullptr);
-	bool write(Buffer* buffer, size_t offset, size_t size, void* ptr, bool blocking = false, Event* event = nullptr);
+	bool readBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, void* ptr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	bool writeBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, void* ptr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	bool copyBuffer(Buffer* src, Buffer* dst, size_t srcOffset, size_t dstOffset, size_t size, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
 
-	bool execute(Kernel* kernel, const RangeND_t& offset, const RangeND_t& global, const RangeND_t& local, Event* event = nullptr);
+	bool readBufferRect(Buffer* buffer, bool blocking, const RangeND_t& bufferOffset, const RangeND_t& hostOffset, const RangeND_t& region, void* ptr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr, size_t bufferRowPitch = 0, size_t bufferSlicePitch = 0, size_t hostRowPitch = 0, size_t hostSlicePitch = 0);
+	bool writeBufferRect(Buffer* buffer, bool blocking, const RangeND_t& bufferOffset, const RangeND_t& hostOffset, const RangeND_t& region, void* ptr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr, size_t bufferRowPitch = 0, size_t bufferSlicePitch = 0, size_t hostRowPitch = 0, size_t hostSlicePitch = 0);
+	bool copyBufferRect(Buffer* src, Buffer* dst, const RangeND_t& srcOrigin, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr, size_t bufferRowPitch = 0, size_t bufferSlicePitch = 0, size_t hostRowPitch = 0, size_t hostSlicePitch = 0);
 
-	bool acquireGLObjects(Buffer* buffer, Event* event = nullptr);
-	bool acquireGLObjects(const std::vector<Buffer*>& buffers, Event* event = nullptr);
-	bool releaseGLObjects(const std::vector<Buffer*>& buffers, Event* event = nullptr);
-	bool releaseGLObjects(Buffer* buffer, Event* event = nullptr);
+	bool readImage(Image* image, bool blocking, const RangeND_t& origin, const RangeND_t& region, void* ptr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr, size_t rowPitch = 0, size_t slicePitch = 0);
+	bool writeImage(Image* image, bool blocking, const RangeND_t& origin, const RangeND_t& region, void* ptr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr, size_t rowPitch = 0, size_t slicePitch = 0);
+	bool copyImage(Image* src, Image* dst, const RangeND_t& srcOrigin, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
 
+	bool copyImageToBuffer(Image* src, Buffer* dst, const RangeND_t& srcOrigin, const RangeND_t& region, size_t dstOffset, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	bool copyBufferToImage(Buffer* src, Image* dst, size_t srcOffset, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+
+	void* mapBuffer(Buffer* buffer, bool blocking, MapFlags_t readWrite, size_t offset, size_t size, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	void* mapImage(Image* buffer, bool blocking, MapFlags_t readWrite, const RangeND_t& origin, const RangeND_t& region, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr, size_t rowPitch = 0, size_t slicePitch = 0);
+	bool unmapMemory(Memory* memory, void* mappedPtr, const EventList_t& waitForEvents, Event* event = nullptr);
+
+	bool execute(Kernel* kernel, const RangeND_t& offset, const RangeND_t& global, const RangeND_t& local, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	bool execute(Kernel* kernel, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	bool execute(std::function<void()> kernel, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+
+	bool acquireGLObjects(const std::vector<Memory*>& buffers, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	bool releaseGLObjects(const std::vector<Memory*>& buffers, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+
+	void marker(Event* event = nullptr);
+	void waitForEvents(const EventList_t& waitForEvents);
+
+	void barrier();
 	void finish();
+	void flush();
 private:
 	std::unique_ptr<cl::CommandQueue> queue;
 };

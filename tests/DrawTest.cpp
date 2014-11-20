@@ -20,6 +20,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(DrawTest);
 
 void DrawTest::testBox() {
 	using namespace Rendering;
+	std::cout << std::endl;
 
 	const Geometry::Box boxA(Geometry::Vec3f(2.0f, 2.0f, 2.0f), 3.0f);
 	const Geometry::Box boxB(Geometry::Vec3f(-5.0f, -5.0f, -5.0f), 1.0f);

@@ -24,8 +24,12 @@ class Device;
 
 class Platform {
 public:
+	Platform();
 	Platform(cl::Platform* platform);
-	virtual ~Platform() = default;
+	~Platform();
+	Platform(const Platform& platform);
+	Platform(Platform&& platform);
+	Platform& operator=(Platform&&);
 
 	std::string getExtensions() const;
 	std::string getName() const;
@@ -33,12 +37,12 @@ public:
 	std::string getVendor() const;
 	std::string getVersion() const;
 
-	std::vector<Device*> getDevices() const;
+	std::vector<Device> getDevices() const;
 
 	/**
 	 * Returns a list of available platforms
 	 */
-	static void get(std::vector<Platform*>& platforms);
+	static std::vector<Platform> get();
 
 	cl::Platform* _internal() const { return platform.get(); };
 private:
