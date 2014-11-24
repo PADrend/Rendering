@@ -7,6 +7,7 @@
  file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#ifdef RENDERING_HAS_LIB_OPENCL
 #include "Image.h"
 
 #include "Buffer.h"
@@ -361,4 +362,5 @@ uint32_t Image::getMipmapLevel() const {
 
 } /* namespace CL */
 } /* namespace Rendering */
+#endif /* RENDERING_HAS_LIB_OPENCL */
 

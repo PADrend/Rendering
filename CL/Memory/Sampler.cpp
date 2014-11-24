@@ -7,6 +7,7 @@
  file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#ifdef RENDERING_HAS_LIB_OPENCL
 #include "Sampler.h"
 
 #include "../CLUtils.h"
@@ -84,3 +85,4 @@ bool Sampler::hasNormalizedCoords() const {
 
 } /* namespace CL */
 } /* namespace Rendering */
+#endif /* RENDERING_HAS_LIB_OPENCL */
