@@ -10,6 +10,13 @@
 #ifndef RENDERING_CL_KERNEL_H_
 #define RENDERING_CL_KERNEL_H_
 
+#include "CLUtils.h"
+#include "Memory/Buffer.h"
+#include "Memory/Image.h"
+#include "Memory/Sampler.h"
+
+#include <Util/ReferenceCounter.h>
+
 #include <string>
 #include <memory>
 #include <array>
@@ -22,22 +29,35 @@ namespace Rendering {
 namespace CL {
 class Program;
 class Device;
-class Memory;
 class Context;
+class Sampler;
 
-class Kernel {
+class Kernel : public Util::ReferenceCounter<Kernel>  {
 public:
 	Kernel(Program* program, const std::string& name);
 	~Kernel();
 	Kernel(const Kernel& kernel);
-	Kernel(Kernel&& kernel);
-	Kernel& operator=(Kernel&&);
+//	Kernel(Kernel&& kernel);
+//	Kernel& operator=(Kernel&&);
 
-	bool setArg(uint32_t index, Memory* value);
-	bool setArg(uint32_t index, float value);
+//	bool setArg(uint32_t index, float value);
 
-	Context* getContext() const;
-	Program* getProgram() const;
+	bool setArg(uint32_t index, size_t size, void* ptr);
+
+	template<typename T>
+	inline bool setArg(uint32_t index, T value) {
+		return setArg(index, sizeof(T), &value);
+	}
+
+	template<uint32_t I, typename T>
+	inline bool setArg(T value) {
+		return setArg(I, value);
+	}
+
+	template<typename... Args>
+	inline bool setArgs(Args&&... args) {
+		return setArgs(typename gens<sizeof...(Args)>::type(), args...);
+	}
 
 	std::string getAttributes() const;
 	std::string getFunctionName() const;
@@ -53,10 +73,61 @@ public:
 	size_t getPreferredWorkGroupSizeMultiple(const Device& device) const;
 	uint64_t getPrivateMemSize(const Device& device) const;
 
+	Program* getProgram() const { return program.get(); }
+
 	cl::Kernel* _internal() const { return kernel.get(); }
 private:
+	bool _setArg(uint32_t index, Memory* value);
+	bool _setArg(uint32_t index, Sampler* value);
+
+	template<uint32_t ...S, typename... Args>
+	inline bool setArgs(seq<S...>, Args&&... args) {
+		return validate(setArg<S>(args)...);
+	}
+
 	std::unique_ptr<cl::Kernel> kernel;
+	ProgramRef program;
 };
+
+template<>
+inline bool Kernel::setArg<BufferRef>(uint32_t index, BufferRef value) {
+	return _setArg(index, value.get());
+}
+
+template<>
+inline bool Kernel::setArg<ImageRef>(uint32_t index, ImageRef value) {
+	return _setArg(index, value.get());
+}
+
+template<>
+inline bool Kernel::setArg<MemoryRef>(uint32_t index, MemoryRef value) {
+	return _setArg(index, value.get());
+}
+
+template<>
+inline bool Kernel::setArg<SamplerRef>(uint32_t index, SamplerRef value) {
+	return _setArg(index, value.get());
+}
+
+template<>
+inline bool Kernel::setArg<Memory*>(uint32_t index, Memory* value) {
+	return _setArg(index, value);
+}
+
+template<>
+inline bool Kernel::setArg<Buffer*>(uint32_t index, Buffer* value) {
+	return _setArg(index, value);
+}
+
+template<>
+inline bool Kernel::setArg<Image*>(uint32_t index, Image* value) {
+	return _setArg(index, value);
+}
+
+template<>
+inline bool Kernel::setArg<Sampler*>(uint32_t index, Sampler* value) {
+	return _setArg(index, value);
+}
 
 } /* namespace CL */
 } /* namespace Rendering */

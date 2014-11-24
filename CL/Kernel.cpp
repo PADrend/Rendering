@@ -13,6 +13,7 @@
 #include "Program.h"
 #include "Device.h"
 #include "Memory/Memory.h"
+#include "Memory/Sampler.h"
 #include "CLUtils.h"
 
 #include <CL/cl.hpp>
@@ -22,7 +23,7 @@
 namespace Rendering {
 namespace CL {
 
-Kernel::Kernel(Program* program, const std::string& name) {
+Kernel::Kernel(Program* program, const std::string& name) : program(program) {
 	cl_int err;
 	kernel.reset(new cl::Kernel(*program->_internal(), name.c_str(), &err));
 	if(err != CL_SUCCESS)
@@ -30,34 +31,39 @@ Kernel::Kernel(Program* program, const std::string& name) {
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-Kernel::Kernel(const Kernel& kernel) : kernel(new cl::Kernel(*kernel.kernel.get())) { }
-
-Kernel::Kernel(Kernel&& kernel) = default;
+Kernel::Kernel(const Kernel& kernel) : kernel(new cl::Kernel(*kernel.kernel.get())), program(kernel.program) { }
 
 Kernel::~Kernel() = default;
 
-Kernel& Kernel::operator=(Kernel&&) = default;
+//Kernel::Kernel(Kernel&& kernel) = default;
+//
+//Kernel& Kernel::operator=(Kernel&&) = default;
 
-bool Kernel::setArg(uint32_t index, Memory* value) {
+bool Kernel::_setArg(uint32_t index, Memory* value) {
+	cl_int err = kernel->setArg(index, *value->_internal());
+	if(err != CL_SUCCESS)
+		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
+	return err == CL_SUCCESS;
+}
+bool Kernel::_setArg(uint32_t index, Sampler* value) {
 	cl_int err = kernel->setArg(index, *value->_internal());
 	if(err != CL_SUCCESS)
 		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
 	return err == CL_SUCCESS;
 }
 
-bool Kernel::setArg(uint32_t index, float value) {
-	cl_int err = kernel->setArg(index, value);
+//bool Kernel::setArg(uint32_t index, float value) {
+//	cl_int err = kernel->setArg(index, value);
+//	if(err != CL_SUCCESS)
+//		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
+//	return err == CL_SUCCESS;
+//}
+
+bool Kernel::setArg(uint32_t index, size_t size, void* ptr) {
+	cl_int err = kernel->setArg(index, size, ptr);
 	if(err != CL_SUCCESS)
 		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
 	return err == CL_SUCCESS;
-}
-
-Context* Kernel::getContext() const {
-	return nullptr;
-}
-
-Program* Kernel::getProgram() const {
-	return nullptr;
 }
 
 std::string Kernel::getAttributes() const {
@@ -73,11 +79,21 @@ uint32_t Kernel::getNumArgs() const {
 }
 
 std::string Kernel::getArgName(uint32_t index) const {
+#if defined(CL_VERSION_1_2)
 	return kernel->getArgInfo<CL_KERNEL_ARG_NAME>(index);
+#else
+	WARN("Kernel::getArgName requires at least OpenCL 1.2");
+	return "";
+#endif
 }
 
 std::string Kernel::getArgTypeName(uint32_t index) const {
+#if defined(CL_VERSION_1_2)
 	return kernel->getArgInfo<CL_KERNEL_ARG_TYPE_NAME>(index);
+#else
+	WARN("Kernel::getArgInfo requires at least OpenCL 1.2");
+	return "";
+#endif
 }
 
 //std::array<size_t, 3> Kernel::getGlobalWorkSize(const Device& device) const {

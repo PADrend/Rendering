@@ -22,10 +22,12 @@ public:
 	UserEvent(Context* context);
 	~UserEvent();
 	UserEvent(const UserEvent& event);
-	UserEvent(UserEvent&& event);
-	UserEvent& operator=(UserEvent&&);
+//	UserEvent(UserEvent&& event);
+//	UserEvent& operator=(UserEvent&&);
 
 	void setStatus(int32_t status);
+private:
+	ContextRef context;
 };
 
 } /* namespace CL */

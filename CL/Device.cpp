@@ -33,9 +33,9 @@ Device::~Device() = default;
 
 Device::Device(const Device& device) : device(new cl::Device(*device.device.get())) { }
 
-Device::Device(Device&& device) = default;
-
-Device& Device::operator=(Device&&) = default;
+//Device::Device(Device&& device) = default;
+//
+//Device& Device::operator=(Device&&) = default;
 
 std::string Device::getBuiltInKernels() const {
 	return device->getInfo<CL_DEVICE_BUILT_IN_KERNELS>();
@@ -350,15 +350,15 @@ uint32_t Device::getVendorId() const {
 }
 
 
-std::vector<Device> Device::createSubDevices(const std::vector<intptr_t>& properties) {
-	std::vector<Device> out;
+std::vector<DeviceRef> Device::createSubDevices(const std::vector<intptr_t>& properties) {
+	std::vector<DeviceRef> out;
 	std::vector<cl::Device> cl_devices;
 	cl_int err = device->createSubDevices(properties.data(), &cl_devices);
 	if(err != CL_SUCCESS) {
 		WARN("Could not create subdivices (" + getErrorString(err) + ")");
 	} else {
 		for(auto dev : cl_devices) {
-			out.push_back(&dev);
+			out.push_back(new Device(&dev));
 		}
 	}
 	return out;

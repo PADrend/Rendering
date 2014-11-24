@@ -10,6 +10,10 @@
 #ifndef RENDERING_CL_PLATFORM_H_
 #define RENDERING_CL_PLATFORM_H_
 
+#include "CLUtils.h"
+
+#include <Util/ReferenceCounter.h>
+
 #include <vector>
 #include <string>
 #include <memory>
@@ -22,14 +26,14 @@ namespace Rendering {
 namespace CL {
 class Device;
 
-class Platform {
+class Platform : public Util::ReferenceCounter<Platform> {
 public:
 	Platform();
 	Platform(cl::Platform* platform);
 	~Platform();
 	Platform(const Platform& platform);
-	Platform(Platform&& platform);
-	Platform& operator=(Platform&&);
+//	Platform(Platform&& platform);
+//	Platform& operator=(Platform&&);
 
 	std::string getExtensions() const;
 	std::string getName() const;
@@ -37,12 +41,12 @@ public:
 	std::string getVendor() const;
 	std::string getVersion() const;
 
-	std::vector<Device> getDevices() const;
+	std::vector<DeviceRef> getDevices() const;
 
 	/**
 	 * Returns a list of available platforms
 	 */
-	static std::vector<Platform> get();
+	static std::vector<PlatformRef> get();
 
 	cl::Platform* _internal() const { return platform.get(); };
 private:

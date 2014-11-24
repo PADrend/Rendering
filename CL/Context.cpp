@@ -18,8 +18,6 @@
 #include <Util/Utils.h>
 #include <Util/Macros.h>
 
-#include <iostream>
-
 namespace Rendering {
 namespace CL {
 
@@ -53,7 +51,7 @@ std::vector<cl_context_properties> getContextProperties(const cl::Platform& plat
 	}
 }
 
-Context::Context(Platform* platform, uint32_t device_type, bool shareGLContext /*= false*/) {
+Context::Context(Platform* platform, uint32_t device_type, bool shareGLContext /*= false*/) : platform(platform), glInterop(shareGLContext) {
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
 	context.reset(new cl::Context(static_cast<cl_device_type>(device_type), cprops.data(), nullptr, nullptr, &err));
@@ -64,7 +62,8 @@ Context::Context(Platform* platform, uint32_t device_type, bool shareGLContext /
 
 Context::~Context() = default;
 
-Context::Context(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext /*= false*/) {
+Context::Context(Platform* platform, const std::vector<DeviceRef>& devices, bool shareGLContext /*= false*/) : platform(platform), devices(devices), glInterop(shareGLContext) {
+
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
 	std::vector<cl::Device> cl_devices;
@@ -76,7 +75,7 @@ Context::Context(Platform* platform, const std::vector<Device*>& devices, bool s
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-Context::Context(Platform* platform, Device* device, bool shareGLContext /*= false*/) {
+Context::Context(Platform* platform, Device* device, bool shareGLContext /*= false*/) : platform(platform), devices(std::vector<DeviceRef>{device}), glInterop(shareGLContext) {
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
 	std::vector<cl::Device> cl_devices;
@@ -86,22 +85,23 @@ Context::Context(Platform* platform, Device* device, bool shareGLContext /*= fal
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-Context::Context(const Context& context) : context(new cl::Context(*context.context.get())) { std::cout << "copy" << std::endl; }
+Context::Context(const Context& context) : context(new cl::Context(*context.context.get())), platform(context.platform), devices(context.devices), glInterop(context.glInterop) { }
 
-Context::Context(Context&& context) = default;
-
-Context& Context::operator=(Context&&) = default;
+//Context::Context(Context&& context) = default;
+//
+//Context& Context::operator=(Context&&) = default;
 
 std::vector<intptr_t> Context::getProperties() const {
 	return context->getInfo<CL_CONTEXT_PROPERTIES>();
 }
 
-std::vector<Device> Context::getDevices() const {
-	std::vector<Device> out;
-	std::vector<cl::Device> devices = context->getInfo<CL_CONTEXT_DEVICES>();
-	for(auto device : devices)
-		out.push_back(&device);
-	return out;
+std::vector<DeviceRef> Context::getDevices() {
+	if(devices.empty()) {
+		std::vector<cl::Device> cl_devices = context->getInfo<CL_CONTEXT_DEVICES>();
+		for(auto device : cl_devices)
+			devices.push_back(new Device(&device));
+	}
+	return devices;
 }
 
 

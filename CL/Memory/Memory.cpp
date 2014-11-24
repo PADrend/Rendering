@@ -16,18 +16,18 @@
 namespace Rendering {
 namespace CL {
 
-Memory::Memory(cl::Memory* mem) : mem(mem) {}
+Memory::Memory(Context* context, cl::Memory* mem) : mem(mem), context(context) {}
 
-Memory::Memory() = default;
-
-Memory::Memory(Memory&& buffer) = default;
+Memory::Memory(Context* context) : context(context) {};
 
 Memory::~Memory() = default;
 
-Memory& Memory::operator=(Memory&&) = default;
+//Memory::Memory(Memory&& buffer) = default;
+//
+//Memory& Memory::operator=(Memory&&) = default;
 
 Context* Memory::getContext() const {
-	return nullptr;
+	return context.get();
 }
 
 uint32_t Memory::getFlags() const {

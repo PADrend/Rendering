@@ -11,6 +11,10 @@
 #ifndef RENDERING_CL_SAMPLER_H_
 #define RENDERING_CL_SAMPLER_H_
 
+#include "../CLUtils.h"
+
+#include <Util/ReferenceCounter.h>
+
 #include <memory>
 
 namespace cl {
@@ -21,7 +25,7 @@ namespace Rendering {
 namespace CL {
 class Context;
 
-class Sampler {
+class Sampler : public Util::ReferenceCounter<Sampler> {
 public:
 	enum AdressingMode_r {
 		None, MirroredRepeat, Repeat, ClampToEdge, Clamp
@@ -33,8 +37,8 @@ public:
 	Sampler();
 	Sampler(Context* context, bool normalizedCoords, AdressingMode_r addressingMode, FilterMode_t filterMode);
 	Sampler(const Sampler& buffer);
-	Sampler(Sampler&& sampler);
-	Sampler& operator=(Sampler&&);
+//	Sampler(Sampler&& sampler);
+//	Sampler& operator=(Sampler&&);
 	~Sampler();
 
 	Context* getContext() const;
@@ -45,6 +49,7 @@ public:
 	cl::Sampler* _internal() const { return sampler.get(); }
 private:
 	std::unique_ptr<cl::Sampler> sampler;
+	ContextRef context;
 };
 
 } /* namespace CL */

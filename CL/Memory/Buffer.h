@@ -12,6 +12,8 @@
 
 #include "Memory.h"
 
+#include <Rendering/BufferObject.h>
+
 namespace cl {
 class Buffer;
 }
@@ -21,18 +23,60 @@ namespace CL {
 class Context;
 
 class Buffer : public Memory {
-protected:
-	Buffer(cl::Memory* buffer) : Memory(buffer) {}
+public:
+	enum BufferType_t { TypeBuffer, TypeBufferGL };
+private:
+	Buffer(Context* context, cl::Buffer* buffer, BufferType_t type);
 public:
 
-	Buffer();
+	/**
+	 * Creates a buffer object.
+	 *
+	 * @param context A valid OpenCL context used to create the buffer object.
+	 * @param size The size in bytes of the buffer memory object to be allocated.
+	 * @param readWrite This flag specifies if the memory object will be read or written by a kernel.
+	 * @param hostPtrUsage Specifies, how to use the hostPtr (See Memory::HostPtr_t for possible values). This is only valid if hostPtr != nullptr.
+	 * @param hostPtr A pointer to the buffer data that may already be allocated by the application. The size of the buffer that host_ptr points to must be greater than or equal to the size bytes.
+	 * @param hostReadWrite This flag specifies if the memory object will be read or written by the host.
+	 */
 	Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage = None, void* hostPtr = nullptr, ReadWrite_t hostReadWrite = ReadWrite);
-//	virtual ~Buffer();
-	Buffer(const Buffer& buffer);
-//	Buffer(Buffer&& buffer);
-//	Buffer& operator=(Buffer&&);
 
+	/**
+	 * Creates an OpenCL buffer object from an OpenGL buffer object.
+	 *
+	 * @param context A valid OpenCL context created from an OpenGL context.
+	 * @param readWrite This flag specifies if the memory object will be read or written by a kernel.
+	 * @param glHandle The name of a GL buffer object.
+	 */
+	Buffer(Context* context, ReadWrite_t readWrite, uint32_t glHandle);
+
+	/**
+	 * Creates an OpenCL buffer object from an OpenGL buffer object.
+	 *
+	 * @param context A valid OpenCL context created from an OpenGL context.
+	 * @param readWrite This flag specifies if the memory object will be read or written by a kernel.
+	 * @param buffer A GL buffer object.
+	 */
+	Buffer(Context* context, ReadWrite_t readWrite, const BufferObject& buffer) : Buffer(context, readWrite, buffer.getGLId()) {};
+
+	Buffer(const Buffer& buffer);
+
+	/**
+	 *
+	 * @param readWrite
+	 * @param origin
+	 * @param size
+	 * @return
+	 */
 	Buffer* createSubBuffer(ReadWrite_t readWrite, size_t origin, size_t size);
+
+	/**
+	 * Returns the type of the buffer (TypeBuffer or TypeBufferGL).
+	 * @return The type of the buffer.
+	 */
+	BufferType_t getType() const { return type; }
+private:
+	BufferType_t type;
 };
 
 } /* namespace CL */

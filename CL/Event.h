@@ -10,6 +10,10 @@
 #ifndef RENDERING_CL_EVENT_H_
 #define RENDERING_CL_EVENT_H_
 
+#include "CLUtils.h"
+
+#include <Util/ReferenceCounter.h>
+
 #include <memory>
 #include <vector>
 #include <functional>
@@ -21,7 +25,7 @@ class Event;
 namespace Rendering {
 namespace CL {
 
-class Event {
+class Event : public Util::ReferenceCounter<Event> {
 protected:
 	Event(cl::Event* event);
 public:
@@ -30,9 +34,12 @@ public:
 	Event();
 	virtual ~Event();
 	Event(const Event& event);
-	Event(Event&& event);
-	Event& operator=(Event&&);
+//	Event(Event&& event);
+//	Event& operator=(Event&&);
 
+	/**
+	 * Waits on the host thread for commands identified by this event object to complete.
+	 */
 	void wait();
 
 	/**
@@ -56,9 +63,23 @@ public:
 	 */
 	uint64_t getProfilingCommandEnd() const;
 
-	void setCallback(int32_t type, CallbackFn_t fun);
+	/**
+	 * Registers a user callback function for a specific command execution status.
+	 *
+	 * \warning Using lambda functions with by-reference capture do not work,
+	 * because OpenCL makes a copy of the function and loosing the references (results in a segmentation fault).
+	 *
+	 * @param fun The event callback function that can be registered by the application.
+	 * 			  This callback function may be called asynchronously by the OpenCL implementation.
+	 * 			  It is the application's responsibility to ensure that the callback function is thread-safe.
+	 */
+	void setCallback(CallbackFn_t fun);
 
-	static void waitForEvents(const std::vector<Event>& events);
+	/**
+	 * Waits on the host thread for commands identified by event objects to complete.
+	 * @param events The events specified in events act as synchronization points.
+	 */
+	static void waitForEvents(const std::vector<Event*>& events);
 
 	cl::Event* _internal() const { return event.get(); }
 protected:
