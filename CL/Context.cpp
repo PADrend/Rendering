@@ -95,7 +95,7 @@ Context::Context(Platform* platform, Device* device, bool shareGLContext /*= fal
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
 	std::vector<cl::Device> cl_devices;
-	context.reset(new cl::Context({*device->_internal()}, cprops.data(), nullptr, nullptr, &err));
+	context.reset(new cl::Context(*device->_internal(), cprops.data(), nullptr, nullptr, &err));
 	if(err != CL_SUCCESS)
 		WARN("Could not create context (" + getErrorString(err) + ")");
 	FAIL_IF(err != CL_SUCCESS);

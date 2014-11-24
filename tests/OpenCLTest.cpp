@@ -160,6 +160,18 @@ float rand_float(float mn, float mx)
 void OpenCLTest::test() {
 	using namespace Util;
 	using namespace Rendering;
+	
+	std::vector<CL::PlatformRef> platformList = CL::Platform::get();
+
+	std::cout << std::endl << "Available Platforms:" << std::endl;
+	for(auto pf : platformList) {
+		auto devices = pf->getDevices();
+		std::cout << "\t" << pf->getName() << " (" << devices.size() << " Devices):" << std::endl;
+		for(auto dev : devices) {
+			std::cout << "\t\t" << dev->getName() << std::endl;
+		}
+	}
+	
 	CL::PlatformRef platform;
 	CL::DeviceRef device;
 	std::tie(platform, device) = CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU);
