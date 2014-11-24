@@ -299,7 +299,7 @@ void OpenCLTest::interopTest() {
 		kernel->setArg(4, dt); //pass in the timestep
 		//execute the kernel
 		queue->execute(kernel.get(), {}, {num}, {}, {}, &event);
-		event.setCallback([=](const CL::Event& e, int32_t s){ std::cout << round << " ";});
+//		event.setCallback([=](const CL::Event& e, int32_t s){ std::cout << round << " ";});
 		queue->finish();
 
 		time += (event.getProfilingCommandEnd() - event.getProfilingCommandStart()) * 1.0e-6;
