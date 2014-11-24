@@ -33,52 +33,30 @@
 namespace Rendering {
 namespace CL {
 
-void* getCurrentContext() {
-	#if defined (__APPLE__) || defined(MACOSX)
-        CGLContextObj kCGLContext = CGLGetCurrentContext();
-        CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
-		return reinterpret_cast<void*>(kCGLShareGroup);
-    #else
-        #if defined WIN32 // Win32
-			return reinterpret_cast<void*>(wglGetCurrentContext());
-        #else
-			return reinterpret_cast<void*>(glXGetCurrentContext());
-        #endif
-    #endif
-}
-
-void* getCurrentDisplay() {
-	#if defined (__APPLE__) || defined(MACOSX)
-		return nullptr;
-	#else
-		#if defined WIN32 // Win32
-			return reinterpret_cast<void*>(wglGetCurrentDC());
-		#else
-			return reinterpret_cast<void*>(glXGetCurrentDisplay());
-		#endif
-	#endif
-}
-
 std::vector<cl_context_properties> getContextProperties(const cl::Platform& platform, bool shareGLContext) {
 	if(shareGLContext) {
+
+
 		#if defined (__APPLE__) || defined(MACOSX)
+			CGLContextObj kCGLContext = CGLGetCurrentContext();
+			CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
 			return {
-				CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, reinterpret_cast<cl_context_properties>(getCurrentContext()),
+				CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, reinterpret_cast<cl_context_properties>(kCGLShareGroup),
 				CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platform()),
 				0
 			};
 		#else
 			#if defined WIN32 // Win32
 				return {
-					CL_GL_CONTEXT_KHR, (cl_context_properties)getCurrentContext(),
-					CL_WGL_HDC_KHR, (cl_context_properties)getCurrentDisplay(),
-					CL_CONTEXT_PLATFORM, (cl_context_properties)(platform()),
+					CL_GL_CONTEXT_KHR, reinterpret_cast<cl_context_properties>(wglGetCurrentContext()),
+					CL_WGL_HDC_KHR, reinterpret_cast<cl_context_properties>(wglGetCurrentDC()),
+					CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platform()),
 					0
 				};
 			#else
 				return {
-					CL_GL_CONTEXT_KHR, (cl_context_properties)getCurrentContext(),
-					CL_GLX_DISPLAY_KHR, (cl_context_properties)getCurrentDisplay(),
+					CL_GL_CONTEXT_KHR, reinterpret_cast<cl_context_properties>(glXGetCurrentContext()),
+					CL_GLX_DISPLAY_KHR, reinterpret_cast<cl_context_properties>(glXGetCurrentDisplay()),
 					CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platform()),
 					0
 				};
