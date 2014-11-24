@@ -19,11 +19,17 @@ if(RENDERING_BUILD_TESTS)
 
 	target_link_libraries(RenderingTest LINK_PRIVATE Rendering)
 
-# Dependency to OpenCL
-find_package(OpenCL QUIET)
-if(OPENCL_FOUND)
-	target_link_libraries(RenderingTest LINK_PRIVATE ${OPENCL_LIBRARIES})
-endif()
+	# Dependency to OpenCL
+	find_package(OpenCL QUIET)
+	if(OPENCL_FOUND)
+		if( OPENCL_HAS_CPP_BINDINGS )
+			target_include_directories(RenderingTest PRIVATE ${OPENCL_INCLUDE_DIRS})
+			target_compile_definitions(RenderingTest PUBLIC RENDERING_HAS_LIB_OPENCL)
+			target_link_libraries(RenderingTest LINK_PRIVATE ${OPENCL_LIBRARIES})
+		else( OPENCL_HAS_CPP_BINDINGS )
+			message(SEND_ERROR "No OpenCL CPP bindings found" )
+		endif( OPENCL_HAS_CPP_BINDINGS )
+	endif()
 
 	# Dependency to CppUnit
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake)
