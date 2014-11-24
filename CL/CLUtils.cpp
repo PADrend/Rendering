@@ -1,3 +1,7 @@
+#include <cstdint>
+#include <string>
+#include <tuple>
+
 /*
 	This file is part of the Rendering library.
 	Copyright (C) 2014 Sascha Brandt <myeti@mail.upb.de>
@@ -94,21 +98,21 @@ const std::string getErrorString(int error) {
     return (index >= 0 && index < errorCount) ? errorString[index] : "";
 }
 
-std::tuple<Platform, Device> getFirstPlatformAndDeviceFor(uint32_t device_type) {
-	std::vector< CL::Platform > platformList = CL::Platform::get();
+std::tuple<PlatformRef, DeviceRef> getFirstPlatformAndDeviceFor(uint32_t device_type) {
+	std::vector<PlatformRef> platformList = CL::Platform::get();
 
 	for(auto pf : platformList) {
-		for(auto dev : pf.getDevices()) {
-			if(dev.getType() == device_type) {
+		for(auto dev : pf->getDevices()) {
+			if(dev->getType() == device_type) {
 				return std::make_tuple(pf, dev);
 			}
 		}
 	}
 
-	Platform platform = platformList.front();
-	Device device = platform.getDevices().front();
+	PlatformRef platform = platformList.front();
+	DeviceRef device = platform->getDevices().front();
 	WARN("Could not find platform and device for the given device type: " + std::to_string(device_type)
-		+ "\nFallback to " + platform.getName() + "/" + device.getName());
+		+ "\nFallback to " + platform->getName() + "/" + device->getName());
 	return std::make_tuple(platform, device);
 }
 

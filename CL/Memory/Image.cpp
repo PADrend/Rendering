@@ -248,9 +248,9 @@ Image::Format::Format() :
 		rowPitch(0), slicePitch(0) { }
 
 Image::Image(Context* context, Format format, ReadWrite_t readWrite, HostPtr_t hostPtrUsage, void* hostPtr, ReadWrite_t hostReadWrite) :
-		Memory(createImageBuffer(context, std::move(format), readWrite, hostPtrUsage, hostPtr, hostReadWrite)), type(format.type) { }
+		Memory(context, createImageBuffer(context, std::move(format), readWrite, hostPtrUsage, hostPtr, hostReadWrite)), type(format.type) { }
 
-Image::Image(Context* context, Format format, ReadWrite_t readWrite, Buffer* buffer) : type(ImageType::IMAGE_1D_BUFFER) {
+Image::Image(Context* context, Format format, ReadWrite_t readWrite, Buffer* buffer) : Memory(context), type(ImageType::IMAGE_1D_BUFFER) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, None, ReadWrite);
 	cl::ImageFormat cl_format = pixelFormatToImageFormat(format.pixelFormat);
 	cl_int err;
@@ -261,7 +261,7 @@ Image::Image(Context* context, Format format, ReadWrite_t readWrite, Buffer* buf
 	}
 }
 
-Image::Image(Context* context, ReadWrite_t readWrite, TextureType target, uint32_t glHandle, uint32_t mipLevel) : type(ImageType::IMAGE_GL) {
+Image::Image(Context* context, ReadWrite_t readWrite, TextureType target, uint32_t glHandle, uint32_t mipLevel) : Memory(context), type(ImageType::IMAGE_GL) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, None, ReadWrite);
 	uint32_t gl_target = TextureUtils::textureTypeToGLTextureType(target);
 	cl_int err;
@@ -291,10 +291,10 @@ Image::Image(Context* context, ReadWrite_t readWrite, Texture* texture, uint32_t
 		Image(context, readWrite, texture->getTextureType(), texture->getGLId(), mipLevel) { }
 
 Image::Image(Context* context, ReadWrite_t readWrite, Util::Bitmap* bitmap, HostPtr_t hostPtrUsage /*= Use*/, ReadWrite_t hostReadWrite /*= ReadWrite*/) :
-		Memory(createImageBufferFromBitmap(context, readWrite, bitmap, hostPtrUsage, hostReadWrite)), type(ImageType::IMAGE_2D) { }
+		Memory(context, createImageBufferFromBitmap(context, readWrite, bitmap, hostPtrUsage, hostReadWrite)), type(ImageType::IMAGE_2D) { }
 
 Image::Image(const Image& image) :
-		Memory(copyImageBuffer(image)), type(image.type) { }
+		Memory(image.context.get(), copyImageBuffer(image)), type(image.type) { }
 
 PixelFormatCL Image::getPixelFormat() const {
 	cl_image_format format = _internal<cl::Image>()->getImageInfo<CL_IMAGE_FORMAT>();

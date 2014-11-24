@@ -22,9 +22,9 @@ Event::~Event() = default;
 
 Event::Event(const Event& event) : event(new cl::Event(*event.event.get())) { }
 
-Event::Event(Event&& event) = default;
-
-Event& Event::operator=(Event&&) = default;
+//Event::Event(Event&& event) = default;
+//
+//Event& Event::operator=(Event&&) = default;
 
 void Event::wait() {
 	event->wait();
@@ -46,7 +46,7 @@ uint64_t Event::getProfilingCommandEnd() const {
 	return event->getProfilingInfo<CL_PROFILING_COMMAND_END>();
 }
 
-void Event::setCallback(int32_t type, CallbackFn_t fun) {
+void Event::setCallback(CallbackFn_t fun) {
 
 	struct fnWrapper{
 		CallbackFn_t function;
@@ -60,13 +60,14 @@ void Event::setCallback(int32_t type, CallbackFn_t fun) {
 		}
 	};
 
-	event->setCallback(type, fnWrapper::callback, new fnWrapper{fun});
+//	fnWrapper wrapper{fun};
+	event->setCallback(CL_COMPLETE, fnWrapper::callback, new fnWrapper{fun});
 }
 
-void Event::waitForEvents(const std::vector<Event>& events) {
+void Event::waitForEvents(const std::vector<Event*>& events) {
 	std::vector<cl::Event> cl_events;
 	for(auto e : events)
-		cl_events.push_back(*e._internal());
+		cl_events.push_back(*e->_internal());
 	cl::Event::waitForEvents(cl_events);
 }
 

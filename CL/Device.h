@@ -10,6 +10,10 @@
 #ifndef RENDERING_CL_DEVICE_H_
 #define RENDERING_CL_DEVICE_H_
 
+#include "CLUtils.h"
+
+#include <Util/ReferenceCounter.h>
+
 #include "Platform.h"
 
 #include <vector>
@@ -23,7 +27,7 @@ class Device;
 namespace Rendering {
 namespace CL {
 
-class Device {
+class Device : public Util::ReferenceCounter<Device> {
 public:
 	enum CacheType_t {NoCache, ReadOnly, ReadWrite};
 	enum MemType_t {NoMem, Local, Global};
@@ -32,8 +36,8 @@ public:
 	Device(cl::Device* device);
 	~Device();
 	Device(const Device& device);
-	Device(Device&& device);
-	Device& operator=(Device&&);
+//	Device(Device&& device);
+//	Device& operator=(Device&&);
 
     static const uint32_t TYPE_DEFAULT;
     static const uint32_t TYPE_CPU;
@@ -117,7 +121,7 @@ public:
 	std::string getVersion() const;
 	std::string getDriverVersion() const;
 
-	std::vector<Device> createSubDevices(const std::vector<intptr_t>& properties);
+	std::vector<DeviceRef> createSubDevices(const std::vector<intptr_t>& properties);
 
 	cl::Device* _internal() const { return device.get(); }
 private:

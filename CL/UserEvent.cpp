@@ -12,21 +12,26 @@
 
 #include "Context.h"
 
+#include <Util/Macros.h>
+
 #include <CL/cl.hpp>
 
 namespace Rendering {
 namespace CL {
 
-UserEvent::UserEvent(Context* context) : Event(new cl::UserEvent(*context->_internal())) {
+UserEvent::UserEvent(Context* context) : Event(new cl::UserEvent(*context->_internal())), context(context) {
+	if(context->isUsingGLInterop()) {
+		WARN("Using user events with CL-GL interoperability might be broken and can result in a segmentation fault.");
+	}
 }
 
 UserEvent::~UserEvent() {
 	setStatus(CL_COMPLETE);
 }
 
-UserEvent::UserEvent(const UserEvent& event) : Event(new cl::UserEvent(*static_cast<cl::UserEvent*>(event.event.get()))) { }
-UserEvent::UserEvent(UserEvent&& event) = default;
-UserEvent& UserEvent::operator=(UserEvent&&) = default;
+UserEvent::UserEvent(const UserEvent& event) : Event(new cl::UserEvent(*static_cast<cl::UserEvent*>(event.event.get()))), context(event.context) { }
+//UserEvent::UserEvent(UserEvent&& event) = default;
+//UserEvent& UserEvent::operator=(UserEvent&&) = default;
 
 void UserEvent::setStatus(int32_t status) {
 	if(status > 0)

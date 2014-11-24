@@ -27,9 +27,9 @@ Platform::~Platform() = default;
 
 Platform::Platform(const Platform& platform) : platform(new cl::Platform(*platform.platform.get())) { }
 
-Platform::Platform(Platform&& platform) = default;
+//Platform::Platform(Platform&& platform) = default;
 
-Platform& Platform::operator=(Platform&&) = default;
+//Platform& Platform::operator=(Platform&&) = default;
 
 std::string Platform::getExtensions() const {
 	return platform->getInfo<CL_PLATFORM_EXTENSIONS>();
@@ -51,21 +51,21 @@ std::string Platform::getVersion() const {
 	return platform->getInfo<CL_PLATFORM_VERSION>();
 }
 
-std::vector<Device> Platform::getDevices() const {
-	std::vector<Device> out;
+std::vector<DeviceRef> Platform::getDevices() const {
+	std::vector<DeviceRef> out;
 	std::vector<cl::Device> devices;
 	platform->getDevices(CL_DEVICE_TYPE_ALL, &devices);
 	for(auto device : devices)
-		out.push_back(&device);
+		out.push_back(new Device(&device));
 	return out;
 }
 
-std::vector<Platform> Platform::get() {
-	std::vector<Platform> out;
+std::vector<PlatformRef> Platform::get() {
+	std::vector<PlatformRef> out;
 	std::vector<cl::Platform> platforms;
 	cl::Platform::get(&platforms);
 	for(auto pf : platforms)
-		out.push_back(&pf);
+		out.push_back(new Platform(&pf));
 	return out;
 }
 

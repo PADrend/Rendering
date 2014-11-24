@@ -10,6 +10,10 @@
 #ifndef RENDERING_CL_CONTEXT_H_
 #define RENDERING_CL_CONTEXT_H_
 
+#include "CLUtils.h"
+
+#include <Util/ReferenceCounter.h>
+
 #include <vector>
 #include <memory>
 
@@ -22,23 +26,30 @@ namespace CL {
 class Platform;
 class Device;
 
-class Context {
+class Context : public Util::ReferenceCounter<Context> {
 public:
 	Context(Platform* platform, uint32_t device_type, bool shareGLContext = false);
-	Context(Platform* platform, const std::vector<Device*>& devices, bool shareGLContext = false);
+	Context(Platform* platform, const std::vector<DeviceRef>& devices, bool shareGLContext = false);
 	Context(Platform* platform, Device* device, bool shareGLContext = false);
 	~Context();
 	Context(const Context& context);
-	Context(Context&& context);
-	Context& operator=(Context&&);
+//	Context(Context&& context);
+//	Context& operator=(Context&&);
 
 	std::vector<intptr_t> getProperties() const;
 
-	std::vector<Device> getDevices() const;
+	std::vector<DeviceRef> getDevices();
 
-	cl::Context* _internal() const { return context.get(); };
-protected:
+	Platform* getPlatform() const { return platform.get(); }
+
+	bool isUsingGLInterop() const { return glInterop; };
+
+	cl::Context* _internal() const { return context.get(); }
+private:
 	std::unique_ptr<cl::Context> context;
+	PlatformRef platform;
+	std::vector<DeviceRef> devices;
+	bool glInterop;
 };
 
 } /* namespace CL */

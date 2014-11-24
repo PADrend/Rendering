@@ -11,6 +11,10 @@
 #ifndef RENDERING_CL_MEMORY_H_
 #define RENDERING_CL_MEMORY_H_
 
+#include "../CLUtils.h"
+
+#include <Util/ReferenceCounter.h>
+
 #include <memory>
 
 namespace cl {
@@ -21,16 +25,22 @@ namespace Rendering {
 namespace CL {
 class Context;
 
-class Memory {
+class Memory : public Util::ReferenceCounter<Memory> {
 public:
 	enum ReadWrite_t { ReadWrite, WriteOnly, ReadOnly, NoAccess };
-	enum HostPtr_t { None, Use, Alloc, Copy, AllocAndCopy };
+	enum HostPtr_t {
+		None, //! Ignore the host pointer.
+		Use, //! Indicates that the application wants the OpenCL implementation to use memory referenced by the host pointer as the storage bits for the memory object.
+		Alloc,
+		Copy,
+		AllocAndCopy
+	};
 protected:
-	Memory(cl::Memory* mem);
-	Memory();
+	Memory(Context* context, cl::Memory* mem);
+	Memory(Context* context);
 public:
-	Memory(Memory&& buffer);
-	Memory& operator=(Memory&&);
+//	Memory(Memory&& buffer);
+//	Memory& operator=(Memory&&);
 	virtual ~Memory();
 
 	Context* getContext() const;
@@ -44,6 +54,7 @@ public:
 	Type* _internal() const { return static_cast<Type*>(mem.get()); }
 protected:
 	std::unique_ptr<cl::Memory> mem;
+	ContextRef context;
 };
 
 uint32_t convertToCLFlags(Memory::ReadWrite_t readWrite, Memory::HostPtr_t hostPtrUsage, Memory::ReadWrite_t hostReadWrite);

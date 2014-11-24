@@ -21,7 +21,7 @@ namespace CL {
 
 Sampler::Sampler() = default;
 
-Sampler::Sampler(Context* context, bool normalizedCoords, AdressingMode_r addressingMode, FilterMode_t filterMode) {
+Sampler::Sampler(Context* context, bool normalizedCoords, AdressingMode_r addressingMode, FilterMode_t filterMode) : context(context){
 	cl_addressing_mode aMode;
 	switch (addressingMode) {
 		case ClampToEdge: aMode = CL_ADDRESS_CLAMP_TO_EDGE; break;
@@ -43,16 +43,16 @@ Sampler::Sampler(Context* context, bool normalizedCoords, AdressingMode_r addres
 	}
 }
 
-Sampler::Sampler(const Sampler& sampler) : sampler(new cl::Sampler(*sampler.sampler.get())) { }
+Sampler::Sampler(const Sampler& sampler) : context(sampler.context), sampler(new cl::Sampler(*sampler.sampler.get())) { }
 
-Sampler::Sampler(Sampler&& sampler) = default;
+//Sampler::Sampler(Sampler&& sampler) = default;
 
 Sampler::~Sampler() = default;
 
-Sampler& Sampler::operator=(Sampler&&) = default;
+//Sampler& Sampler::operator=(Sampler&&) = default;
 
 Context* Sampler::getContext() const {
-	return nullptr;
+	return context.get();
 }
 
 Sampler::AdressingMode_r Sampler::getAdressingMode() const {
