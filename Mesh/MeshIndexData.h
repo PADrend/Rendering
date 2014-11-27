@@ -73,6 +73,11 @@ class MeshIndexData {
 			Used by MeshDataStrategy::doDisplay(..) */
 		void drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices);
 
+		/*! Swap the internal BufferObject.
+			\note The local data is not changed!
+			\note the size of the new buffer must be equal to that of the old one.
+			\note Use only if you know what you are doing!	*/
+		void _swapBufferObject(BufferObject & other)	{	bufferObject.swap(other);	}
 	private:
 		uint32_t indexCount;
 		std::vector<uint32_t> indexArray;
