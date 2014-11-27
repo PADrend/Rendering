@@ -25,16 +25,16 @@ namespace Rendering {
 namespace CL {
 class Context;
 
+enum class ReadWrite_t : std::uint8_t { ReadWrite, WriteOnly, ReadOnly, NoAccess };
+enum class HostPtr_t : std::uint8_t {
+	None, //! Ignore the host pointer.
+	Use, //! Indicates that the application wants the OpenCL implementation to use memory referenced by the host pointer as the storage bits for the memory object.
+	Alloc,
+	Copy,
+	AllocAndCopy
+};
+
 class Memory : public Util::ReferenceCounter<Memory> {
-public:
-	enum ReadWrite_t { ReadWrite, WriteOnly, ReadOnly, NoAccess };
-	enum HostPtr_t {
-		None, //! Ignore the host pointer.
-		Use, //! Indicates that the application wants the OpenCL implementation to use memory referenced by the host pointer as the storage bits for the memory object.
-		Alloc,
-		Copy,
-		AllocAndCopy
-	};
 protected:
 	Memory(Context* context, cl::Memory* mem);
 	Memory(Context* context);
@@ -57,7 +57,7 @@ protected:
 	ContextRef context;
 };
 
-uint32_t convertToCLFlags(Memory::ReadWrite_t readWrite, Memory::HostPtr_t hostPtrUsage, Memory::ReadWrite_t hostReadWrite);
+uint32_t convertToCLFlags(ReadWrite_t readWrite, HostPtr_t hostPtrUsage, ReadWrite_t hostReadWrite);
 
 } /* namespace CL */
 } /* namespace Rendering */

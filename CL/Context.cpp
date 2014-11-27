@@ -115,7 +115,7 @@ std::vector<DeviceRef> Context::getDevices() {
 	if(devices.empty()) {
 		std::vector<cl::Device> cl_devices = context->getInfo<CL_CONTEXT_DEVICES>();
 		for(auto device : cl_devices)
-			devices.push_back(new Device(&device));
+			devices.push_back(new Device(platform.get(), &device));
 	}
 	return devices;
 }

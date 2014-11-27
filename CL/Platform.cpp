@@ -19,7 +19,7 @@
 namespace Rendering {
 namespace CL {
 
-Platform::Platform() = default;
+//Platform::Platform() = default;
 
 Platform::Platform(cl::Platform* platform) : platform(new cl::Platform(*platform)) { }
 
@@ -51,12 +51,12 @@ std::string Platform::getVersion() const {
 	return platform->getInfo<CL_PLATFORM_VERSION>();
 }
 
-std::vector<DeviceRef> Platform::getDevices() const {
+std::vector<DeviceRef> Platform::getDevices() {
 	std::vector<DeviceRef> out;
 	std::vector<cl::Device> devices;
 	platform->getDevices(CL_DEVICE_TYPE_ALL, &devices);
 	for(auto device : devices)
-		out.push_back(new Device(&device));
+		out.push_back(new Device(this, &device));
 	return out;
 }
 

@@ -1,10 +1,11 @@
 /*
- * OpenCLTest.cpp
- *
- *  Created on: Nov 11, 2014
- *      Author: sascha
- */
+	This file is part of the Rendering library.
+	Copyright (C) 2014 Sascha Brandt <myeti@mail.upb.de>
 
+	This library is subject to the terms of the Mozilla Public License, v. 2.0.
+	You should have received a copy of the MPL along with this library; see the
+	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 #ifdef RENDERING_HAS_LIB_OPENCL
 
 #define NUM_PARTICLES 20000
@@ -184,7 +185,7 @@ void OpenCLTest::test() {
 	CPPUNIT_ASSERT(program->build({device}));
 
 	char* outH = new char[hw.length()-1];
-	CL::BufferRef outCL = new CL::Buffer(context.get(), hw.length()-1, CL::Buffer::WriteOnly, CL::Buffer::Use, outH);
+	CL::BufferRef outCL = new CL::Buffer(context.get(), hw.length()-1, CL::ReadWrite_t::WriteOnly, CL::HostPtr_t::Use, outH);
 
 	CL::KernelRef kernel = new CL::Kernel(program.get(), "hello");
 	CPPUNIT_ASSERT(kernel->setArg(0, outCL.get()));
@@ -264,12 +265,15 @@ void OpenCLTest::interopTest() {
 	rc.finish();
 
 	// create OpenCL buffer from GL VBO
-	CL::BufferRef cl_vbo = new CL::Buffer(context.get(), CL::Buffer::ReadWrite, mesh->_getVertexData()._getBufferId());
+	BufferObject vbo;
+	mesh->_getVertexData()._swapBufferObject(vbo);
+	CL::BufferRef cl_vbo = new CL::Buffer(context.get(), CL::ReadWrite_t::ReadWrite, vbo);
+	mesh->_getVertexData()._swapBufferObject(vbo);
 
 	//create the OpenCL only arrays
-	CL::BufferRef cl_velocities = new CL::Buffer(context.get(), array_size, CL::Buffer::WriteOnly);
-	CL::BufferRef cl_pos_gen = new CL::Buffer(context.get(), array_size, CL::Buffer::WriteOnly);
-	CL::BufferRef cl_vel_gen = new CL::Buffer(context.get(), array_size, CL::Buffer::WriteOnly);
+	CL::BufferRef cl_velocities = new CL::Buffer(context.get(), array_size, CL::ReadWrite_t::WriteOnly);
+	CL::BufferRef cl_pos_gen = new CL::Buffer(context.get(), array_size, CL::ReadWrite_t::WriteOnly);
+	CL::BufferRef cl_vel_gen = new CL::Buffer(context.get(), array_size, CL::ReadWrite_t::WriteOnly);
 
 	//push our CPU arrays to the GPU
     CPPUNIT_ASSERT(queue->writeBuffer(cl_velocities.get(), true, 0, array_size, &vel[0]));
@@ -363,8 +367,8 @@ void OpenCLTest::textureGLFilterTest() {
 	rc.applyChanges();
 	rc.finish();
 
-	CL::ImageRef inImage = new CL::Image(context.get(), CL::Image::ReadWrite, inTexture.get());
-	CL::ImageRef outImage = new CL::Image(context.get(), CL::Image::WriteOnly, outTexture.get());
+	CL::ImageRef inImage = new CL::Image(context.get(), CL::ReadWrite_t::ReadWrite, inTexture.get());
+	CL::ImageRef outImage = new CL::Image(context.get(), CL::ReadWrite_t::WriteOnly, outTexture.get());
 
 	// Simple Gaussian blur filter
 	float filter [] = {
@@ -377,7 +381,7 @@ void OpenCLTest::textureGLFilterTest() {
 	for (int i = 0; i < 9; ++i) {
 		filter [i] /= 16.0f;
 	}
-	CL::BufferRef filterBuffer = new CL::Buffer(context.get(), 9*sizeof(float), CL::Memory::ReadOnly, CL::Memory::Copy, filter);
+	CL::BufferRef filterBuffer = new CL::Buffer(context.get(), 9*sizeof(float), CL::ReadWrite_t::ReadOnly, CL::HostPtr_t::Copy, filter);
 
 	CL::KernelRef kernel = new CL::Kernel(program.get(), "filter");
 	CPPUNIT_ASSERT(kernel->setArgs(inImage, filterBuffer, outImage));
@@ -430,8 +434,8 @@ void OpenCLTest::bitmapFilterTest() {
 	Reference<Bitmap> outBitmap = outTexture->getLocalBitmap();
 	std::fill(outBitmap->data(), outBitmap->data() + outBitmap->getDataSize(), 0);
 
-	CL::ImageRef inImage = new CL::Image(context.get(), CL::Image::ReadOnly, inBitmap.get());
-	CL::ImageRef outImage = new CL::Image(context.get(), CL::Image::ReadWrite, outBitmap.get());
+	CL::ImageRef inImage = new CL::Image(context.get(), CL::ReadWrite_t::ReadOnly, inBitmap.get());
+	CL::ImageRef outImage = new CL::Image(context.get(), CL::ReadWrite_t::ReadWrite, outBitmap.get());
 
 	// Simple Gaussian blur filter
 	float filter [] = {
@@ -444,7 +448,7 @@ void OpenCLTest::bitmapFilterTest() {
 	for (int i = 0; i < 9; ++i) {
 		filter [i] /= 16.0f;
 	}
-	CL::BufferRef filterBuffer = new CL::Buffer(context.get(), 9*sizeof(float), CL::Memory::ReadOnly, CL::Memory::Copy, filter);
+	CL::BufferRef filterBuffer = new CL::Buffer(context.get(), 9*sizeof(float), CL::ReadWrite_t::ReadOnly, CL::HostPtr_t::Copy, filter);
 
 	CL::KernelRef kernel = new CL::Kernel(program.get(), "filter");
 	CPPUNIT_ASSERT(kernel->setArgs(inImage, filterBuffer, outImage));

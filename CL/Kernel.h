@@ -66,12 +66,12 @@ public:
 	std::string getArgName(uint32_t index) const;
 	std::string getArgTypeName(uint32_t index) const;
 
-//	std::array<size_t, 3> getGlobalWorkSize(const Device& device) const;
-	size_t getWorkGroupSize(const Device& device) const;
-	std::array<size_t, 3> getCompileWorkGroupSize(const Device& device) const;
-	uint64_t getLocalMemSize(const Device& device) const;
-	size_t getPreferredWorkGroupSizeMultiple(const Device& device) const;
-	uint64_t getPrivateMemSize(const Device& device) const;
+//	std::array<size_t, 3> getGlobalWorkSize(Device* device) const;
+	size_t getWorkGroupSize(Device* device) const;
+	std::array<size_t, 3> getCompileWorkGroupSize(Device* device) const;
+	uint64_t getLocalMemSize(Device* device) const;
+	size_t getPreferredWorkGroupSizeMultiple(Device* device) const;
+	uint64_t getPrivateMemSize(Device* device) const;
 
 	Program* getProgram() const { return program.get(); }
 

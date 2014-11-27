@@ -22,9 +22,9 @@ namespace Rendering {
 namespace CL {
 class Context;
 
+enum class BufferType_t : std::uint8_t { TypeBuffer, TypeBufferGL };
+
 class Buffer : public Memory {
-public:
-	enum BufferType_t { TypeBuffer, TypeBufferGL };
 private:
 	Buffer(Context* context, cl::Buffer* buffer, BufferType_t type);
 public:
@@ -39,7 +39,7 @@ public:
 	 * @param hostPtr A pointer to the buffer data that may already be allocated by the application. The size of the buffer that host_ptr points to must be greater than or equal to the size bytes.
 	 * @param hostReadWrite This flag specifies if the memory object will be read or written by the host.
 	 */
-	Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage = None, void* hostPtr = nullptr, ReadWrite_t hostReadWrite = ReadWrite);
+	Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage = HostPtr_t::None, void* hostPtr = nullptr, ReadWrite_t hostReadWrite = ReadWrite_t::ReadWrite);
 
 	/**
 	 * Creates an OpenCL buffer object from an OpenGL buffer object.

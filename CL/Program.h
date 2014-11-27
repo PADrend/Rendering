@@ -27,9 +27,10 @@ namespace CL {
 class Context;
 class Device;
 
+enum class BuildStatus_t : std::uint8_t { None, Error, Success, InProgress };
+
 class Program : public Util::ReferenceCounter<Program> {
 public:
-	enum BuildStatus_t { None, Error, Success, InProgress };
 
 	Program(Context* context, const std::vector<std::string>& sources);
 	~Program();

@@ -20,20 +20,20 @@
 namespace Rendering {
 namespace CL {
 
-Sampler::Sampler() = default;
+//Sampler::Sampler() = default;
 
-Sampler::Sampler(Context* context, bool normalizedCoords, AdressingMode_r addressingMode, FilterMode_t filterMode) : context(context){
+Sampler::Sampler(Context* context, bool normalizedCoords, AdressingMode_t addressingMode, FilterMode_t filterMode) : context(context){
 	cl_addressing_mode aMode;
 	switch (addressingMode) {
-		case ClampToEdge: aMode = CL_ADDRESS_CLAMP_TO_EDGE; break;
-		case Clamp: aMode = CL_ADDRESS_CLAMP; break;
-		case Repeat: aMode = CL_ADDRESS_REPEAT; break;
-		case MirroredRepeat: aMode = CL_ADDRESS_MIRRORED_REPEAT; break;
+		case AdressingMode_t::ClampToEdge: aMode = CL_ADDRESS_CLAMP_TO_EDGE; break;
+		case AdressingMode_t::Clamp: aMode = CL_ADDRESS_CLAMP; break;
+		case AdressingMode_t::Repeat: aMode = CL_ADDRESS_REPEAT; break;
+		case AdressingMode_t::MirroredRepeat: aMode = CL_ADDRESS_MIRRORED_REPEAT; break;
 		default: aMode = CL_ADDRESS_NONE; break;
 	}
 	cl_filter_mode fMode;
-	switch (addressingMode) {
-		case Linear: fMode = CL_FILTER_NEAREST; break;
+	switch (filterMode) {
+		case FilterMode_t::Linear: fMode = CL_FILTER_NEAREST; break;
 		default: fMode = CL_FILTER_NEAREST; break;
 	}
 	cl_int err;
@@ -56,26 +56,26 @@ Context* Sampler::getContext() const {
 	return context.get();
 }
 
-Sampler::AdressingMode_r Sampler::getAdressingMode() const {
+AdressingMode_t Sampler::getAdressingMode() const {
 	switch (sampler->getInfo<CL_SAMPLER_FILTER_MODE>()) {
 		case CL_ADDRESS_CLAMP_TO_EDGE:
-			return ClampToEdge;
+			return AdressingMode_t::ClampToEdge;
 		case CL_ADDRESS_CLAMP:
-			return Clamp;
+			return AdressingMode_t::Clamp;
 		case CL_ADDRESS_REPEAT:
-			return Repeat;
+			return AdressingMode_t::Repeat;
 		case CL_ADDRESS_MIRRORED_REPEAT:
-			return MirroredRepeat;
+			return AdressingMode_t::MirroredRepeat;
 	}
-	return None;
+	return AdressingMode_t::None;
 }
 
-Sampler::FilterMode_t Sampler::getFilterMode() const {
+FilterMode_t Sampler::getFilterMode() const {
 	switch (sampler->getInfo<CL_SAMPLER_FILTER_MODE>()) {
 		case CL_FILTER_NEAREST:
-			return Nearest;
+			return FilterMode_t::Nearest;
 		case CL_FILTER_LINEAR:
-			return Linear;
+			return FilterMode_t::Linear;
 	}
 }
 
