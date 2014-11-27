@@ -28,7 +28,7 @@ class Device;
 
 class Platform : public Util::ReferenceCounter<Platform> {
 public:
-	Platform();
+//	Platform();
 	Platform(cl::Platform* platform);
 	~Platform();
 	Platform(const Platform& platform);
@@ -41,7 +41,7 @@ public:
 	std::string getVendor() const;
 	std::string getVersion() const;
 
-	std::vector<DeviceRef> getDevices() const;
+	std::vector<DeviceRef> getDevices();
 
 	/**
 	 * Returns a list of available platforms

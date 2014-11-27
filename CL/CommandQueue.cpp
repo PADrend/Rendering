@@ -271,7 +271,7 @@ bool CommandQueue::execute(Kernel* kernel, const RangeND_t& offset, const RangeN
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueNDRangeKernel(*kernel->_internal(), toNDRange(offset), toNDRange(global), toNDRange(local), cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 	if (err != CL_SUCCESS)
-		WARN("Could not execute kernel (" + getErrorString(err) + ")");
+		WARN("Could not execute kernel (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 

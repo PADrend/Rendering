@@ -25,24 +25,26 @@ namespace Rendering {
 namespace CL {
 class Context;
 
+enum class AdressingMode_t : std::uint8_t {
+	None, MirroredRepeat, Repeat, ClampToEdge, Clamp
+};
+
+enum class FilterMode_t : std::uint8_t {
+	Nearest, Linear
+};
+
 class Sampler : public Util::ReferenceCounter<Sampler> {
 public:
-	enum AdressingMode_r {
-		None, MirroredRepeat, Repeat, ClampToEdge, Clamp
-	};
-	enum FilterMode_t {
-		Nearest, Linear
-	};
 
-	Sampler();
-	Sampler(Context* context, bool normalizedCoords, AdressingMode_r addressingMode, FilterMode_t filterMode);
+//	Sampler();
+	Sampler(Context* context, bool normalizedCoords, AdressingMode_t addressingMode, FilterMode_t filterMode);
 	Sampler(const Sampler& buffer);
 //	Sampler(Sampler&& sampler);
 //	Sampler& operator=(Sampler&&);
 	~Sampler();
 
 	Context* getContext() const;
-	AdressingMode_r getAdressingMode() const;
+	AdressingMode_t getAdressingMode() const;
 	FilterMode_t getFilterMode() const;
 	bool hasNormalizedCoords() const;
 

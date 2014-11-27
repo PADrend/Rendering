@@ -38,8 +38,8 @@ class RangeND_t {
 public:
 	template<typename... Args>
 	RangeND_t(Args&&... args) : dim(sizeof...(Args)), range({static_cast<size_t>(args)...}) {}
-	const size_t dim;
-	const std::array<size_t, 3> range;
+	size_t dim;
+	std::array<size_t, 3> range;
 };
 
 struct MappedImage {

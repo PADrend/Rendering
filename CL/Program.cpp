@@ -48,7 +48,7 @@ bool Program::build(const std::vector<DeviceRef>& devices, const std::string& op
 		WARN("Failed to build program (" + getErrorString(err) + ")");
 		for(auto device : devices) {
 			std::cerr << "Device: \t" << device->getName() << std::endl;
-			std::cerr << "Build Status: " << getBuildStatus(device.get()) << std::endl;
+			std::cerr << "Build Status: " << static_cast<uint32_t>(getBuildStatus(device.get())) << std::endl;
 			std::cerr << "Build Options:\t" << getBuildOptions(device.get()) << std::endl;
 			std::cerr << "Build Log:\t " << getBuildLog(device.get()) << std::endl;
 		}
@@ -56,17 +56,17 @@ bool Program::build(const std::vector<DeviceRef>& devices, const std::string& op
 	return err == CL_SUCCESS;
 }
 
-Program::BuildStatus_t Program::getBuildStatus(Device* device) const {
+BuildStatus_t Program::getBuildStatus(Device* device) const {
 	cl_int status = program->getBuildInfo<CL_PROGRAM_BUILD_STATUS>(*device->_internal());
 	switch (status) {
 		case CL_BUILD_SUCCESS:
-			return Success;
+			return BuildStatus_t::Success;
 		case CL_BUILD_IN_PROGRESS:
-			return InProgress;
+			return BuildStatus_t::InProgress;
 		case CL_BUILD_ERROR:
-			return Error;
+			return BuildStatus_t::Error;
 		default:
-			return None;
+			return BuildStatus_t::None;
 	}
 }
 
@@ -90,7 +90,7 @@ std::vector<DeviceRef> Program::getDevices() const {
 	std::vector<DeviceRef> out;
 	std::vector<cl::Device> cl_devices = program->getInfo<CL_PROGRAM_DEVICES>();
 	for(auto dev : cl_devices)
-		out.push_back(new Device(&dev));
+		out.push_back(new Device(context->getPlatform(), &dev));
 	return out;
 }
 

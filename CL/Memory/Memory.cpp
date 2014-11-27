@@ -47,41 +47,41 @@ size_t Memory::getOffset() const {
 	return mem->getInfo<CL_MEM_OFFSET>();
 }
 
-uint32_t convertToCLFlags(Memory::ReadWrite_t readWrite, Memory::HostPtr_t hostPtrUsage, Memory::ReadWrite_t hostReadWrite) {
+uint32_t convertToCLFlags(ReadWrite_t readWrite, HostPtr_t hostPtrUsage, ReadWrite_t hostReadWrite) {
 	cl_mem_flags flags = 0;
 	switch (readWrite) {
-		case Memory::ReadWrite:
+		case ReadWrite_t::ReadWrite:
 			flags = CL_MEM_READ_WRITE;
 			break;
-		case Memory::ReadOnly:
+		case ReadWrite_t::ReadOnly:
 			flags = CL_MEM_READ_ONLY;
 			break;
-		case Memory::WriteOnly:
+		case ReadWrite_t::WriteOnly:
 			flags = CL_MEM_WRITE_ONLY;
 			break;
 	}
 	switch (hostPtrUsage) {
-		case Memory::Use:
+		case HostPtr_t::Use:
 			flags |= CL_MEM_USE_HOST_PTR;
 			break;
-		case Memory::Alloc:
+		case HostPtr_t::Alloc:
 			flags |= CL_MEM_ALLOC_HOST_PTR;
 			break;
-		case Memory::Copy:
+		case HostPtr_t::Copy:
 			flags |= CL_MEM_COPY_HOST_PTR;
 			break;
-		case Memory::AllocAndCopy:
+		case HostPtr_t::AllocAndCopy:
 			flags |= CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR;
 			break;
 	}
 	switch (hostReadWrite) {
-		case Memory::NoAccess:
+		case ReadWrite_t::NoAccess:
 			flags |= CL_MEM_HOST_NO_ACCESS;
 			break;
-		case Memory::ReadOnly:
+		case ReadWrite_t::ReadOnly:
 			flags |= CL_MEM_HOST_READ_ONLY;
 			break;
-		case Memory::WriteOnly:
+		case ReadWrite_t::WriteOnly:
 			flags |= CL_MEM_HOST_WRITE_ONLY;
 			break;
 	}

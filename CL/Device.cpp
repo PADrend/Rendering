@@ -25,9 +25,9 @@ const uint32_t Device::TYPE_ACCELERATOR = CL_DEVICE_TYPE_ACCELERATOR;
 const uint32_t Device::TYPE_CUSTOM = CL_DEVICE_TYPE_CUSTOM;
 const uint32_t Device::TYPE_ALL = CL_DEVICE_TYPE_ALL;
 
-Device::Device() = default;
+//Device::Device() = default;
 
-Device::Device(cl::Device* device) : device(new cl::Device(*device)) { }
+Device::Device(Platform* platform, cl::Device* device) : device(new cl::Device(*device)), platform(platform) { }
 
 Device::~Device() = default;
 
@@ -269,8 +269,8 @@ uint32_t Device::getNativeVectorWidthHalf() const {
 	return device->getInfo<CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF>();
 }
 
-Device Device::getParentDevice() const {
-	return Device(new cl::Device(device->getInfo<CL_DEVICE_PARENT_DEVICE>()));
+Device* Device::getParentDevice() const {
+	return new Device(platform.get(), new cl::Device(device->getInfo<CL_DEVICE_PARENT_DEVICE>()));
 }
 
 //uint32_t Device::getPartitionMaxSubDevices() const {
@@ -289,8 +289,8 @@ std::vector<intptr_t> Device::getPartitionType() const {
 	return device->getInfo<CL_DEVICE_PARTITION_TYPE>();
 }
 
-Platform Device::getPlatform() const {
-	return Platform(new cl::Platform(device->getInfo<CL_DEVICE_PLATFORM>()));
+Platform* Device::getPlatform() const {
+	return platform.get();
 }
 
 uint32_t Device::getPreferredVectorWidthChar() const {
@@ -358,7 +358,7 @@ std::vector<DeviceRef> Device::createSubDevices(const std::vector<intptr_t>& pro
 		WARN("Could not create subdivices (" + getErrorString(err) + ")");
 	} else {
 		for(auto dev : cl_devices) {
-			out.push_back(new Device(&dev));
+			out.push_back(new Device(platform.get(), &dev));
 		}
 	}
 	return out;

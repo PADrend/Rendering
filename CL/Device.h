@@ -32,8 +32,8 @@ public:
 	enum CacheType_t {NoCache, ReadOnly, ReadWrite};
 	enum MemType_t {NoMem, Local, Global};
 
-	Device();
-	Device(cl::Device* device);
+//	Device();
+	Device(Platform* platform, cl::Device* device);
 	~Device();
 	Device(const Device& device);
 //	Device(Device&& device);
@@ -95,12 +95,12 @@ public:
 	uint32_t getNativeVectorWidthDouble() const;
 	uint32_t getNativeVectorWidthHalf() const;
 	std::string getOpenCL_CVersion() const;
-	Device getParentDevice() const;
+	Device* getParentDevice() const;
 //	uint32_t getPartitionMaxSubDevices() const;
 	std::vector<intptr_t> getPartitionProperties() const;  //TODO: use enums
 	uint32_t getPartitionAffinityDomain() const;  //TODO: use string or bitfield
 	std::vector<intptr_t> getPartitionType() const;  //TODO: use enums
-	Platform getPlatform() const;
+	Platform* getPlatform() const;
 	uint32_t getPreferredVectorWidthChar() const;
 	uint32_t getPreferredVectorWidthShort() const;
 	uint32_t getPreferredVectorWidthInt() const;
@@ -126,6 +126,7 @@ public:
 	cl::Device* _internal() const { return device.get(); }
 private:
 	std::unique_ptr<cl::Device> device;
+	PlatformRef platform;
 };
 
 } /* namespace CL */

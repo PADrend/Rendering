@@ -101,11 +101,11 @@ public:
 		uint32_t slicePitch;
 	};
 
-	Image(Context* context, Format format, ReadWrite_t readWrite, HostPtr_t hostPtrUsage = None, void* hostPtr = nullptr, ReadWrite_t hostReadWrite = ReadWrite);
+	Image(Context* context, Format format, ReadWrite_t readWrite, HostPtr_t hostPtrUsage = HostPtr_t::None, void* hostPtr = nullptr, ReadWrite_t hostReadWrite = ReadWrite_t::ReadWrite);
 	Image(Context* context, Format format, ReadWrite_t readWrite, Buffer* buffer);
 	Image(Context* context, ReadWrite_t readWrite, TextureType target, uint32_t glHandle, uint32_t mipLevel = 0);
 	Image(Context* context, ReadWrite_t readWrite, Texture* texture, uint32_t mipLevel = 0);
-	Image(Context* context, ReadWrite_t readWrite, Util::Bitmap* bitmap, HostPtr_t hostPtrUsage = Use, ReadWrite_t hostReadWrite = ReadWrite);
+	Image(Context* context, ReadWrite_t readWrite, Util::Bitmap* bitmap, HostPtr_t hostPtrUsage = HostPtr_t::Use, ReadWrite_t hostReadWrite = ReadWrite_t::ReadWrite);
 	Image(const Image& image);
 
 	PixelFormatCL getPixelFormat() const;

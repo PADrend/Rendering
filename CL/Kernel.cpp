@@ -96,16 +96,16 @@ std::string Kernel::getArgTypeName(uint32_t index) const {
 #endif
 }
 
-//std::array<size_t, 3> Kernel::getGlobalWorkSize(const Device& device) const {
-//	return kernel->getWorkGroupInfo<CL_KERNEL_GLOBAL_WORK_SIZE>(*device._internal());
+//std::array<size_t, 3> Kernel::getGlobalWorkSize(Device* device) const {
+//	return kernel->getWorkGroupInfo<CL_KERNEL_GLOBAL_WORK_SIZE>(*device->_internal());
 //}
 
-size_t Kernel::getWorkGroupSize(const Device& device) const {
-	return kernel->getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(*device._internal());
+size_t Kernel::getWorkGroupSize(Device* device) const {
+	return kernel->getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(*device->_internal());
 }
 
-std::array<size_t, 3> Kernel::getCompileWorkGroupSize(const Device& device) const {
-	auto sizes = kernel->getWorkGroupInfo<CL_KERNEL_COMPILE_WORK_GROUP_SIZE>(*device._internal());
+std::array<size_t, 3> Kernel::getCompileWorkGroupSize(Device* device) const {
+	auto sizes = kernel->getWorkGroupInfo<CL_KERNEL_COMPILE_WORK_GROUP_SIZE>(*device->_internal());
 	std::array<size_t, 3> out;
 	out[0] = sizes[0];
 	out[1] = sizes[1];
@@ -113,16 +113,16 @@ std::array<size_t, 3> Kernel::getCompileWorkGroupSize(const Device& device) cons
 	return out;
 }
 
-uint64_t Kernel::getLocalMemSize(const Device& device) const {
-	return kernel->getWorkGroupInfo<CL_KERNEL_LOCAL_MEM_SIZE>(*device._internal());
+uint64_t Kernel::getLocalMemSize(Device* device) const {
+	return kernel->getWorkGroupInfo<CL_KERNEL_LOCAL_MEM_SIZE>(*device->_internal());
 }
 
-size_t Kernel::getPreferredWorkGroupSizeMultiple(const Device& device) const {
-	return kernel->getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(*device._internal());
+size_t Kernel::getPreferredWorkGroupSizeMultiple(Device* device) const {
+	return kernel->getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(*device->_internal());
 }
 
-uint64_t Kernel::getPrivateMemSize(const Device& device) const {
-	return kernel->getWorkGroupInfo<CL_KERNEL_PRIVATE_MEM_SIZE>(*device._internal());
+uint64_t Kernel::getPrivateMemSize(Device* device) const {
+	return kernel->getWorkGroupInfo<CL_KERNEL_PRIVATE_MEM_SIZE>(*device->_internal());
 }
 
 } /* namespace CL */

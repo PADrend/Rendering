@@ -160,7 +160,7 @@ cl::ImageFormat bitmapFormatToImageFormat(Util::PixelFormat pixelFormat) {
 	return format;
 }
 
-cl::Image* createImageBuffer(Context* context, Image::Format format, Memory::ReadWrite_t readWrite, Memory::HostPtr_t hostPtrUsage, void* hostPtr, Memory::ReadWrite_t hostReadWrite) {
+cl::Image* createImageBuffer(Context* context, Image::Format format, ReadWrite_t readWrite, HostPtr_t hostPtrUsage, void* hostPtr, ReadWrite_t hostReadWrite) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, hostPtrUsage, hostReadWrite);
 	cl::ImageFormat cl_format = pixelFormatToImageFormat(format.pixelFormat);
 	cl_int err;
@@ -194,7 +194,7 @@ cl::Image* createImageBuffer(Context* context, Image::Format format, Memory::Rea
 	return image;
 }
 
-cl::Image* createImageBufferFromBitmap(Context* context, Memory::ReadWrite_t readWrite, Util::Bitmap* bitmap, Memory::HostPtr_t hostPtrUsage, Memory::ReadWrite_t hostReadWrite) {
+cl::Image* createImageBufferFromBitmap(Context* context, ReadWrite_t readWrite, Util::Bitmap* bitmap, HostPtr_t hostPtrUsage, ReadWrite_t hostReadWrite) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, hostPtrUsage, hostReadWrite);
 	cl::ImageFormat cl_format = bitmapFormatToImageFormat(bitmap->getPixelFormat());
 	if(cl_format.image_channel_data_type == 0 || cl_format.image_channel_order == 0) {
@@ -252,7 +252,7 @@ Image::Image(Context* context, Format format, ReadWrite_t readWrite, HostPtr_t h
 		Memory(context, createImageBuffer(context, std::move(format), readWrite, hostPtrUsage, hostPtr, hostReadWrite)), type(format.type) { }
 
 Image::Image(Context* context, Format format, ReadWrite_t readWrite, Buffer* buffer) : Memory(context), type(ImageType::IMAGE_1D_BUFFER) {
-	cl_mem_flags flags = convertToCLFlags(readWrite, None, ReadWrite);
+	cl_mem_flags flags = convertToCLFlags(readWrite, HostPtr_t::None, ReadWrite_t::ReadWrite);
 	cl::ImageFormat cl_format = pixelFormatToImageFormat(format.pixelFormat);
 	cl_int err;
 	mem.reset(new cl::Image1DBuffer(*context->_internal(), flags, cl_format, format.width, *buffer->_internal<cl::Buffer>(), &err));
@@ -263,7 +263,7 @@ Image::Image(Context* context, Format format, ReadWrite_t readWrite, Buffer* buf
 }
 
 Image::Image(Context* context, ReadWrite_t readWrite, TextureType target, uint32_t glHandle, uint32_t mipLevel) : Memory(context), type(ImageType::IMAGE_GL) {
-	cl_mem_flags flags = convertToCLFlags(readWrite, None, ReadWrite);
+	cl_mem_flags flags = convertToCLFlags(readWrite, HostPtr_t::None, ReadWrite_t::ReadWrite);
 	uint32_t gl_target = TextureUtils::textureTypeToGLTextureType(target);
 	cl_int err;
 #if !defined(CL_VERSION_1_2) || defined(CL_USE_DEPRECATED_OPENCL_1_1_APIS)
