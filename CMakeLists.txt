@@ -29,6 +29,7 @@ add_library(Rendering
 	CL/Program.cpp
 	CL/UserEvent.cpp
 	CL/Memory/Buffer.cpp
+	CL/Memory/BufferAccessor.cpp
 	CL/Memory/Image.cpp
 	CL/Memory/Memory.cpp
 	CL/Memory/Sampler.cpp

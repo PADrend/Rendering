@@ -25,7 +25,6 @@ namespace Rendering {
 namespace CL {
 class Context;
 
-enum class ReadWrite_t : std::uint8_t { ReadWrite, WriteOnly, ReadOnly, NoAccess };
 enum class HostPtr_t : std::uint8_t {
 	None, //! Ignore the host pointer.
 	Use, //! Indicates that the application wants the OpenCL implementation to use memory referenced by the host pointer as the storage bits for the memory object.

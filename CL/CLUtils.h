@@ -39,6 +39,8 @@ typedef Util::Reference<Image> ImageRef;
 typedef Util::Reference<Sampler> SamplerRef;
 typedef Util::Reference<Memory> MemoryRef;
 
+enum class ReadWrite_t : std::uint8_t { ReadWrite, WriteOnly, ReadOnly, NoAccess };
+
 template<uint32_t ...>
 struct seq {};
 
