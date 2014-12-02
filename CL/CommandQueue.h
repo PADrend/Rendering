@@ -51,7 +51,6 @@ struct MappedImage {
 class CommandQueue : public Util::ReferenceCounter<CommandQueue> {
 public:
 	typedef std::vector<Event*> EventList_t;
-	enum MapFlags_t { Read, Write };
 
 	/**
 	 * Create a command-queue on a specific device.
@@ -248,7 +247,7 @@ public:
 	 * @param event Returns an event object that identifies this command and can be used to query or queue a wait for the command to complete.
 	 * @return A pointer to the mapped region.
 	 */
-	void* mapBuffer(Buffer* buffer, bool blocking, MapFlags_t readWrite, size_t offset, size_t size, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	void* mapBuffer(Buffer* buffer, bool blocking, ReadWrite_t readWrite, size_t offset, size_t size, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
 
 	/**
 	 * Enqueues a command to map a region of an image object into the host address space and returns a pointer to this mapped region.
@@ -262,7 +261,7 @@ public:
 	 * @param event Returns an event object that identifies this command and can be used to query or queue a wait for the command to complete.
 	 * @return An MappedImage struct containing the mapped pointer and the row-pitch and slice-pitch of the mapped region.
 	 */
-	MappedImage mapImage(Image* image, bool blocking, MapFlags_t readWrite, const RangeND_t& origin, const RangeND_t& region, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	MappedImage mapImage(Image* image, bool blocking, ReadWrite_t readWrite, const RangeND_t& origin, const RangeND_t& region, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
 
 	/**
 	 * Enqueues a command to unmap a previously mapped region of a memory object.
@@ -273,7 +272,7 @@ public:
 	 * @param event Returns an event object that identifies this command and can be used to query or queue a wait for the command to complete.
 	 * @return true if the operation was successful, false otherwise.
 	 */
-	bool unmapMemory(Memory* memory, void* mappedPtr, const EventList_t& waitForEvents, Event* event = nullptr);
+	bool unmapMemory(Memory* memory, void* mappedPtr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
 
 	/**
 	 * Enqueues a command to execute a kernel on a device.

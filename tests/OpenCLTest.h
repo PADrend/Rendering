@@ -21,6 +21,7 @@ class OpenCLTest : public CppUnit::TestFixture {
 	CPPUNIT_TEST(textureGLFilterTest);
 	CPPUNIT_TEST(bitmapFilterTest);
 	CPPUNIT_TEST(nativeKernelTest);
+	CPPUNIT_TEST(bufferAccessorTest);
 	CPPUNIT_TEST_SUITE_END();
 public:
 	void test();
@@ -28,6 +29,7 @@ public:
 	void interopTest();
 	void textureGLFilterTest();
 	void bitmapFilterTest();
+	void bufferAccessorTest();
 };
 
 #endif /* OPENCLTEST_H_ */

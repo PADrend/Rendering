@@ -30,6 +30,7 @@
 
 #include <Rendering/CL/Event.h>
 #include <Rendering/CL/Memory/Buffer.h>
+#include <Rendering/CL/Memory/BufferAccessor.h>
 #include <Rendering/CL/Memory/Image.h>
 #include <Rendering/CL/CommandQueue.h>
 #include <Rendering/CL/Context.h>
@@ -489,6 +490,78 @@ void OpenCLTest::nativeKernelTest() {
 
 	std::cout << test << std::endl;
 	CPPUNIT_ASSERT(answer == 42);
+}
+
+void OpenCLTest::bufferAccessorTest() {
+	using namespace Util;
+	using namespace Rendering;
+
+	CL::PlatformRef platform;
+	CL::DeviceRef device;
+	std::tie(platform, device) = CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_GPU);
+	std::cout << std::endl << platform->getName() << std::endl << device->getName() << std::endl;
+	std::cout << device->getOpenCL_CVersion() << std::endl;
+
+	CL::ContextRef context = new CL::Context(platform.get(), device.get());
+	CL::CommandQueueRef queue = new CL::CommandQueue(context.get(), device.get());
+
+	char* outH = new char[hw.length()+1];
+	outH[hw.length()] = 0; // end of string
+	CL::BufferRef outCL = new CL::Buffer(context.get(), hw.length(), CL::ReadWrite_t::ReadWrite, CL::HostPtr_t::Use, outH);
+
+	size_t size = outCL->getSize();
+	CPPUNIT_ASSERT(size == hw.length());
+
+	Reference<CL::BufferAccessor> acc = new CL::BufferAccessor(outCL, queue);
+	acc->begin();
+	CPPUNIT_ASSERT(static_cast<void*>(acc->_ptr()) == outH);
+	for(uint_fast8_t i = 0; i < hw.length(); ++i) {
+		acc->write(hw[i]);
+		CPPUNIT_ASSERT(acc->getCursor() == (i+1));
+	}
+	acc->end();
+
+	CPPUNIT_ASSERT(queue->readBuffer(outCL.get(), true, 0, hw.length(), outH));
+	queue->finish();
+
+	CPPUNIT_ASSERT(hw.compare(outH) == 0);
+
+	std::cout << outH;
+
+
+	outCL = new CL::Buffer(context.get(), 100 * sizeof(int32_t), CL::ReadWrite_t::ReadWrite);
+
+	CPPUNIT_ASSERT(outCL->getSize() == 100 * sizeof(int32_t));
+
+	std::vector<int32_t> vec1(100);
+	std::vector<int32_t> vec2;
+
+	for(uint_fast32_t i=0; i<100; ++i)
+		vec1[i] = i;
+
+	acc = new CL::BufferAccessor(outCL, queue);
+	CPPUNIT_ASSERT(!acc->isValid());
+	acc->begin();
+	CPPUNIT_ASSERT(acc->isValid());
+	CPPUNIT_ASSERT(acc->getCursor() == 0);
+	acc->writeArray(vec1);
+	CPPUNIT_ASSERT(acc->getCursor() == 100 * sizeof(int32_t));
+	acc->end();
+	CPPUNIT_ASSERT(!acc->isValid());
+
+	acc->begin();
+	CPPUNIT_ASSERT(acc->getCursor() == 0);
+	vec2.push_back(acc->read<int32_t>());
+	vec2.push_back(acc->read<int32_t>());
+	CPPUNIT_ASSERT(acc->getCursor() == 2 * sizeof(int32_t));
+	auto tmp = acc->readArray<int32_t>(98);
+	vec2.insert(vec2.end(), tmp.begin(), tmp.end());
+	CPPUNIT_ASSERT(acc->getCursor() == 100 * sizeof(int32_t));
+	acc->end();
+
+	CPPUNIT_ASSERT(vec2.size() == 100);
+	for(uint_fast32_t i=0; i<100; ++i)
+		CPPUNIT_ASSERT(vec2[i] == i);
 }
 
 #endif /* RENDERING_HAS_LIB_OPENCL */

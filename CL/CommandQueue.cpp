@@ -228,23 +228,25 @@ bool CommandQueue::copyBufferToImage(Buffer* src, Image* dst, size_t srcOffset, 
 	return err == CL_SUCCESS;
 }
 
-void* CommandQueue::mapBuffer(Buffer* buffer, bool blocking, MapFlags_t readWrite, size_t offset, size_t size, const EventList_t& waitForEvents, Event* event) {
+void* CommandQueue::mapBuffer(Buffer* buffer, bool blocking, ReadWrite_t readWrite, size_t offset, size_t size, const EventList_t& waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
-	cl_mem_flags flags = readWrite == Read ? CL_MAP_READ : CL_MAP_WRITE;
+	cl_mem_flags flags = readWrite == ReadWrite_t::ReadWrite ? CL_MAP_READ | CL_MAP_WRITE : (readWrite == ReadWrite_t::WriteOnly ? CL_MAP_WRITE : CL_MAP_READ);
 	cl_int err;
 	void* ptr = queue->enqueueMapBuffer(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, flags, offset, size, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr, &err);
-	if (err != CL_SUCCESS)
+	if (err != CL_SUCCESS) {
 		WARN("Could not map buffer (" + getErrorString(err) + ")");
+		ptr = nullptr;
+	}
 	return ptr;
 }
 
-MappedImage CommandQueue::mapImage(Image* image, bool blocking, MapFlags_t readWrite, const RangeND_t& origin, const RangeND_t& region, const EventList_t& waitForEvents, Event* event) {
+MappedImage CommandQueue::mapImage(Image* image, bool blocking, ReadWrite_t readWrite, const RangeND_t& origin, const RangeND_t& region, const EventList_t& waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
-	cl_mem_flags flags = readWrite == Read ? CL_MAP_READ : CL_MAP_WRITE;
+	cl_mem_flags flags = readWrite == ReadWrite_t::ReadWrite ? CL_MAP_READ | CL_MAP_WRITE : (readWrite == ReadWrite_t::WriteOnly ? CL_MAP_WRITE : CL_MAP_READ);
 	cl::size_t<3> cl_origin = toSize_t(origin);
 	cl::size_t<3> cl_region = toSize_t(region);
 	MappedImage out{nullptr, 0, 0};
