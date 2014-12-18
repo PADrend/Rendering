@@ -49,6 +49,7 @@ add_library(Rendering
 	MeshUtils/QuadtreeMeshBuilder.cpp
 	MeshUtils/QuadtreeMeshBuilderDebug.cpp
 	MeshUtils/Simplification.cpp
+	MeshUtils/StreamMeshDataStrategy.cpp
 	RenderingContext/internal/StatusHandler_glCompatibility.cpp
 	RenderingContext/internal/StatusHandler_glCore.cpp
 	RenderingContext/internal/StatusHandler_sgUniforms.cpp
