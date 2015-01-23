@@ -16,11 +16,18 @@
 #include <CL/cl.hpp>
 
 #include <Util/Macros.h>
+#include <Util/IO/FileUtils.h>
 
 #include <iostream>
 
 namespace Rendering {
 namespace CL {
+
+Program::Program(Context* context) : context(context) {
+	cl_int err;
+	program.reset(new cl::Program(*context->_internal(), "", &err));
+	FAIL_IF(err != CL_SUCCESS);
+}
 
 Program::Program(Context* context, const std::vector<std::string>& sources) : context(context) {
 	cl_int err;
@@ -108,6 +115,22 @@ uint32_t Program::getNumKernels() const {
 
 std::string Program::getSource() const {
 	return program->getInfo<CL_PROGRAM_SOURCE>();
+}
+
+
+void Program::attachSource(const std::string& source) {
+	sources.push_back(source);
+
+	cl_int err;
+	cl::Program::Sources cl_sources;
+	for(auto src : sources)
+		cl_sources.push_back(std::make_pair(src.c_str(),src.size()));
+	program.reset(new cl::Program(*context->_internal(), cl_sources, &err));
+	FAIL_IF(err != CL_SUCCESS);
+}
+
+void Program::attachSource(const Util::FileName& file) {
+	attachSource(Util::FileUtils::getFileContents(file));
 }
 
 } /* namespace CL */

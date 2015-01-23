@@ -208,6 +208,7 @@ void RenderingContext::initGLState() {
 
 	// Enable the possibility to write gl_PointSize from the vertex shader.
 	glEnable(GL_PROGRAM_POINT_SIZE);
+	glEnable(GL_POINT_SPRITE);
 	
 	
 	if( glewIsSupported("GL_ARB_seamless_cube_map") ) //! \see http://www.opengl.org/wiki/Cubemap_Texture#Seamless_cubemap

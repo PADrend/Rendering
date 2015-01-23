@@ -63,6 +63,22 @@ public:
 	 */
 	uint64_t getProfilingCommandEnd() const;
 
+	uint64_t getProfilingNanoseconds() const {
+		return getProfilingCommandEnd() - getProfilingCommandStart();
+	}
+
+	double getProfilingMicroseconds() const {
+		return getProfilingNanoseconds() * 1.0e-3;
+	}
+
+	double getProfilingMilliseconds() const {
+		return getProfilingNanoseconds() * 1.0e-6;
+	}
+
+	double getProfilingSeconds() const {
+		return getProfilingNanoseconds() * 1.0e-9;
+	}
+
 	/**
 	 * Registers a user callback function for a specific command execution status.
 	 *

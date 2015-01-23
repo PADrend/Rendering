@@ -10,6 +10,7 @@
 #ifdef RENDERING_HAS_LIB_OPENCL
 #include "Buffer.h"
 #include "../Context.h"
+#include "../CLUtils.h"
 
 #include <CL/cl.hpp>
 
@@ -34,7 +35,7 @@ Buffer::Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t h
 	cl_int err;
 	mem.reset(new cl::Buffer(*context->_internal(), flags, size, hostPtr, &err));
 	if(err != CL_SUCCESS) {
-		WARN("Could not create buffer (" + std::to_string(err) + ")");
+		WARN("Could not create buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 		FAIL();
 	}
 }
@@ -55,7 +56,7 @@ Buffer::Buffer(Context* context, ReadWrite_t readWrite, uint32_t glHandle) : Mem
 		cl_int err;
 		mem.reset(new cl::BufferGL(*context->_internal(), flags, glHandle, &err));
 		if(err != CL_SUCCESS) {
-			WARN("Could not create gl buffer (" + std::to_string(err) + ")");
+			WARN("Could not create gl buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 			FAIL();
 		}
 }
