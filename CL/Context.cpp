@@ -14,7 +14,7 @@
 #include "CLUtils.h"
 
 
-#include <Rendering/Helper.h>
+#include "../Helper.h"
 
 #include <Util/Macros.h>
 

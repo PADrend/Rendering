@@ -12,7 +12,7 @@
 
 #include "Memory.h"
 
-#include <Rendering/BufferObject.h>
+#include "../../BufferObject.h"
 
 namespace cl {
 class Buffer;

@@ -13,7 +13,7 @@
 
 #include "Memory.h"
 
-#include <Rendering/Texture/TextureType.h>
+#include "../../Texture/TextureType.h"
 
 namespace Util {
 class Bitmap;

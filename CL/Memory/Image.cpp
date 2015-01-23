@@ -14,9 +14,9 @@
 #include "../CLUtils.h"
 #include "../Context.h"
 
-#include <Rendering/Texture/Texture.h>
-#include <Rendering/Texture/TextureUtils.h>
-#include <Rendering/GLHeader.h>
+#include "../../Texture/Texture.h"
+#include "../../Texture/TextureUtils.h"
+#include "../../GLHeader.h"
 
 #include <Util/Macros.h>
 #include <Util/Graphics/Bitmap.h>
