@@ -224,7 +224,7 @@ bool CommandQueue::copyBufferToImage(Buffer* src, Image* dst, size_t srcOffset, 
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyBufferToImage(*src->_internal<cl::Buffer>(), *dst->_internal<cl::Image>(), srcOffset, cl_dstcorigin, cl_region, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 	if (err != CL_SUCCESS)
-		WARN("Could not copy buffer to image (" + getErrorString(err) + ")");
+		WARN("Could not copy buffer to image (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 

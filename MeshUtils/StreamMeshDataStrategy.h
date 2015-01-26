@@ -10,7 +10,7 @@
 #ifndef RENDERING_STREAMMESHDATASTRATEGY_H_
 #define RENDERING_STREAMMESHDATASTRATEGY_H_
 
-#include <Rendering/Mesh/MeshDataStrategy.h>
+#include "../Mesh/MeshDataStrategy.h"
 
 namespace Rendering {
 

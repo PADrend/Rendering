@@ -28,6 +28,7 @@ class Device;
 
 class Context : public Util::ReferenceCounter<Context> {
 public:
+	Context(uint32_t device_type, bool shareGLContext = false);
 	Context(Platform* platform, uint32_t device_type, bool shareGLContext = false);
 	Context(Platform* platform, const std::vector<DeviceRef>& devices, bool shareGLContext = false);
 	Context(Platform* platform, Device* device, bool shareGLContext = false);

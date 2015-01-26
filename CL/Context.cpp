@@ -14,7 +14,7 @@
 #include "CLUtils.h"
 
 
-#include <Rendering/Helper.h>
+#include "../Helper.h"
 
 #include <Util/Macros.h>
 
@@ -65,6 +65,17 @@ std::vector<cl_context_properties> getContextProperties(const cl::Platform& plat
 	} else {
 		return {CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platform()), 0};
 	}
+}
+
+Context::Context(uint32_t device_type, bool shareGLContext /*= false*/) : platform(nullptr), glInterop(shareGLContext) {
+	cl_int err;
+	auto pfAndDev = getFirstPlatformAndDeviceFor(device_type);
+	platform = std::get<0>(pfAndDev);
+	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
+	context.reset(new cl::Context(static_cast<cl_device_type>(device_type), cprops.data(), nullptr, nullptr, &err));
+	if(err != CL_SUCCESS)
+		WARN("Could not create context (" + getErrorString(err) + ")");
+	FAIL_IF(err != CL_SUCCESS);
 }
 
 Context::Context(Platform* platform, uint32_t device_type, bool shareGLContext /*= false*/) : platform(platform), glInterop(shareGLContext) {

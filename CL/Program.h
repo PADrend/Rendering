@@ -13,6 +13,7 @@
 #include "CLUtils.h"
 
 #include <Util/ReferenceCounter.h>
+#include <Util/IO/FileName.h>
 
 #include <vector>
 #include <string>
@@ -32,6 +33,7 @@ enum class BuildStatus_t : std::uint8_t { None, Error, Success, InProgress };
 class Program : public Util::ReferenceCounter<Program> {
 public:
 
+	Program(Context* context);
 	Program(Context* context, const std::vector<std::string>& sources);
 	~Program();
 	Program(const Program& program);
@@ -52,12 +54,16 @@ public:
 	uint32_t getNumKernels() const;
 	std::string getSource() const;
 
+	void attachSource(const std::string& source);
+	void attachSource(const Util::FileName& file);
+
 	Context* getContext() const { return context.get(); };
 
 	cl::Program* _internal() const { return program.get(); }
 private:
 	std::unique_ptr<cl::Program> program;
 	ContextRef context;
+	std::vector<std::string> sources;
 };
 
 } /* namespace CL */

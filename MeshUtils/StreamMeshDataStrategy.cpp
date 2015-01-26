@@ -8,13 +8,13 @@
  */
 
 #include "StreamMeshDataStrategy.h"
-#include <Rendering/Mesh/Mesh.h>
-#include <Rendering/Mesh/VertexDescription.h>
-#include <Rendering/Mesh/MeshIndexData.h>
-#include <Rendering/Mesh/MeshVertexData.h>
-#include <Rendering/BufferObject.h>
-#include <Rendering/GLHeader.h>
-#include <Rendering/Helper.h>
+#include "../Mesh/Mesh.h"
+#include "../Mesh/VertexDescription.h"
+#include "../Mesh/MeshIndexData.h"
+#include "../Mesh/MeshVertexData.h"
+#include "../BufferObject.h"
+#include "../GLHeader.h"
+#include "../Helper.h"
 
 #include <Util/Macros.h>
 
