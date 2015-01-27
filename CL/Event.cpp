@@ -9,7 +9,9 @@
 #ifdef RENDERING_HAS_LIB_OPENCL
 #include "Event.h"
 
+#pragma warning(push, 0)
 #include <CL/cl.hpp>
+#pragma warning(pop)
 
 namespace Rendering {
 namespace CL {

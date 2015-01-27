@@ -24,7 +24,9 @@
 #include <Util/TypeConstant.h>
 
 #define CL_USE_DEPRECATED_OPENCL_1_1_APIS
+#pragma warning(push, 0)
 #include <CL/cl.hpp>
+#pragma warning(pop)
 
 #define WARN_AND_FAIL(msg) WARN(msg); FAIL();
 

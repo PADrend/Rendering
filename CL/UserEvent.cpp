@@ -14,7 +14,9 @@
 
 #include <Util/Macros.h>
 
+#pragma warning(push, 0)
 #include <CL/cl.hpp>
+#pragma warning(pop)
 
 namespace Rendering {
 namespace CL {

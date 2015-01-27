@@ -57,6 +57,10 @@ public:
 	void attachSource(const std::string& source);
 	void attachSource(const Util::FileName& file);
 
+	void addDefine(const std::string& key, const std::string& value="");
+	void addInclude(const std::string& dir);
+	void addInclude(const Util::FileName& dir);
+
 	Context* getContext() const { return context.get(); };
 
 	cl::Program* _internal() const { return program.get(); }
@@ -64,6 +68,7 @@ private:
 	std::unique_ptr<cl::Program> program;
 	ContextRef context;
 	std::vector<std::string> sources;
+	std::vector<std::string> options;
 };
 
 } /* namespace CL */

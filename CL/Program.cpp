@@ -13,7 +13,9 @@
 #include "Device.h"
 #include "CLUtils.h"
 
+#pragma warning(push, 0)
 #include <CL/cl.hpp>
+#pragma warning(pop)
 
 #include <Util/Macros.h>
 #include <Util/IO/FileUtils.h>
@@ -46,11 +48,15 @@ Program::Program(const Program& program) : program(new cl::Program(*program.prog
 
 //Program& Program::operator=(Program&&) = default;
 
-bool Program::build(const std::vector<DeviceRef>& devices, const std::string& options /*= ""*/) {
+bool Program::build(const std::vector<DeviceRef>& devices, const std::string& options_ /*= ""*/) {
 	std::vector<cl::Device> cl_devices;
 	for(auto device : devices)
 		cl_devices.push_back(*device->_internal());
-	cl_int err = program->build(cl_devices, options.c_str());
+
+	std::string opt = options_;
+	for(auto o : options)
+		opt += o;
+	cl_int err = program->build(cl_devices, opt.c_str());
 	if(err != CL_SUCCESS) {
 		WARN("Failed to build program (" + getErrorString(err) + ")");
 		for(auto device : devices) {
@@ -133,8 +139,19 @@ void Program::attachSource(const Util::FileName& file) {
 	attachSource(Util::FileUtils::getFileContents(file));
 }
 
+void Program::addDefine(const std::string& key, const std::string& value) {
+	options.push_back(" -D" + key + (value.empty() ? "" : ("=" + value)));
+}
+
+void Program::addInclude(const std::string& dir) {
+	options.push_back(" -I " + dir);
+}
+
+void Program::addInclude(const Util::FileName& dir) {
+	addInclude(dir.getDir());
+}
+
+
 } /* namespace CL */
 } /* namespace Rendering */
-
-
 #endif /* RENDERING_HAS_LIB_OPENCL */

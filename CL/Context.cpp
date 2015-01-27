@@ -18,7 +18,9 @@
 
 #include <Util/Macros.h>
 
+#pragma warning(push, 0)
 #include <CL/cl.hpp>
+#pragma warning(pop)
 
 
 #if defined __APPLE__ || defined(MACOSX)

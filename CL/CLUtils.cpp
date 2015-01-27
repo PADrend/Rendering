@@ -1,7 +1,3 @@
-#include <cstdint>
-#include <string>
-#include <tuple>
-
 /*
 	This file is part of the Rendering library.
 	Copyright (C) 2014 Sascha Brandt <myeti@mail.upb.de>
@@ -19,6 +15,9 @@
 #include <Util/Macros.h>
 
 #include <vector>
+#include <cstdint>
+#include <string>
+#include <tuple>
 
 namespace Rendering {
 namespace CL {

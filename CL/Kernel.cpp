@@ -16,7 +16,9 @@
 #include "Memory/Sampler.h"
 #include "CLUtils.h"
 
+#pragma warning(push, 0)
 #include <CL/cl.hpp>
+#pragma warning(pop)
 
 #include <Util/Macros.h>
 
