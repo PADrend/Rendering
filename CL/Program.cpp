@@ -26,9 +26,9 @@ namespace Rendering {
 namespace CL {
 
 Program::Program(Context* context) : context(context) {
-	cl_int err;
-	program.reset(new cl::Program(*context->_internal(), "", &err));
-	FAIL_IF(err != CL_SUCCESS);
+	//cl_int err;
+	//program.reset(new cl::Program(*context->_internal(), "", &err));
+	//THROW_ERROR_IF(err != CL_SUCCESS, getErrorString(err));
 }
 
 Program::Program(Context* context, const std::vector<std::string>& sources) : context(context) {
@@ -37,7 +37,7 @@ Program::Program(Context* context, const std::vector<std::string>& sources) : co
 	for(auto src : sources)
 		cl_sources.push_back(std::make_pair(src.c_str(),src.size()));
 	program.reset(new cl::Program(*context->_internal(), cl_sources, &err));
-	FAIL_IF(err != CL_SUCCESS);
+	THROW_ERROR_IF(err != CL_SUCCESS, getErrorString(err));
 }
 
 Program::~Program() = default;
@@ -49,6 +49,7 @@ Program::Program(const Program& program) : program(new cl::Program(*program.prog
 //Program& Program::operator=(Program&&) = default;
 
 bool Program::build(const std::vector<DeviceRef>& devices, const std::string& options_ /*= ""*/) {
+	THROW_ERROR_IF(!program, "Program has no source!");
 	std::vector<cl::Device> cl_devices;
 	for(auto device : devices)
 		cl_devices.push_back(*device->_internal());
@@ -132,7 +133,7 @@ void Program::attachSource(const std::string& source) {
 	for(auto src : sources)
 		cl_sources.push_back(std::make_pair(src.c_str(),src.size()));
 	program.reset(new cl::Program(*context->_internal(), cl_sources, &err));
-	FAIL_IF(err != CL_SUCCESS);
+	THROW_ERROR_IF(err != CL_SUCCESS, getErrorString(err));
 }
 
 void Program::attachSource(const Util::FileName& file) {

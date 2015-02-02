@@ -11,9 +11,22 @@
 #define RENDERING_CL_CLUTILS_H_
 
 #include <Util/References.h>
+#include <Util/Macros.h>
 
 #include <string>
 #include <tuple>
+
+#define THROW_ERROR(M) \
+	do{ \
+		const std::string msg = Util::composeDebugMessage( M, __FILE__, __LINE__);\
+		Util::output(Util::OUTPUT_ERROR, msg);\
+		throw std::runtime_error(msg);\
+	}while(false)
+
+#define THROW_ERROR_IF(C, M) \
+	do{ \
+		if (C) THROW_ERROR(M); \
+	}while(false)
 
 namespace Rendering {
 namespace CL {

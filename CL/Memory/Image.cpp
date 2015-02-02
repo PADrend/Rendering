@@ -28,8 +28,6 @@
 #include <CL/cl.hpp>
 #pragma warning(pop)
 
-#define WARN_AND_FAIL(msg) WARN(msg); FAIL();
-
 namespace Rendering {
 namespace CL {
 
@@ -236,7 +234,7 @@ cl::Image* copyImageBuffer(const Image& source) {
 				} else if(target == TextureUtils::textureTypeToGLTextureType(TextureType::TEXTURE_3D)) {
 					return new cl::Image3D(*source._internal<cl::Image3D>());
 				} else {
-					WARN_AND_FAIL("Unsupported texture target (OpenCL 1.1 only supports GL_TEXTURE_2D and GL_TEXTURE_3D).");
+					THROW_ERROR("Unsupported texture target (OpenCL 1.1 only supports GL_TEXTURE_2D and GL_TEXTURE_3D).");
 				}
 			#else
 				return new cl::ImageGL(*source._internal<cl::ImageGL>());
@@ -280,13 +278,13 @@ Image::Image(Context* context, ReadWrite_t readWrite, TextureType target, uint32
 		cl_mem cl_obj = ::clCreateFromGLTexture3D((*context->_internal())(), flags, gl_target, mipLevel, glHandle, &err);
 		mem.reset(new cl::Image3D(cl_obj));
 	} else {
-		WARN_AND_FAIL("Unsupported texture target (OpenCL 1.1 only supports GL_TEXTURE_2D and GL_TEXTURE_3D).");
+		THROW_ERROR("Unsupported texture target (OpenCL 1.1 only supports GL_TEXTURE_2D and GL_TEXTURE_3D).");
 	}
 #else
 	mem.reset(new cl::ImageGL(*context->_internal(), flags, gl_target, mipLevel, glHandle, &err));
 #endif
 	if(err != CL_SUCCESS) {
-		WARN_AND_FAIL("Could not create Image from texture (" + getErrorString(err) + ").");
+		THROW_ERROR("Could not create Image from texture (" + getErrorString(err) + ").");
 	}
 }
 

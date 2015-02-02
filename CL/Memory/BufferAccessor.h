@@ -12,6 +12,7 @@
 #define RENDERING_CL_BUFFERACCESSOR_H_
 
 #include "Buffer.h"
+#include "../CLUtils.h"
 
 #include <Util/ReferenceCounter.h>
 #include <Util/Macros.h>
@@ -63,28 +64,16 @@ private:
 
 template<typename T>
 void BufferAccessor::write(const T& value) {
-	if(!isValid()) {
-		WARN("Called write() before begin().");
-		return;
-	}
-	if(cursor+sizeof(T) > size) {
-		WARN("Could not write value. End of buffer reached.");
-		return;
-	}
+	THROW_ERROR_IF(!isValid(), "Called write() before begin().");
+	THROW_ERROR_IF(cursor+sizeof(T) > size, "Could not write value. End of buffer reached.");
 	*(reinterpret_cast<T*>(dataPtr + cursor)) = value;
 	cursor += sizeof(T);
 }
 
 template<typename T>
 inline void BufferAccessor::writeArray(const std::vector<T>& value) {
-	if(!isValid()) {
-		WARN("Called writeArray() before begin().");
-		return;
-	}
-	if(cursor+sizeof(T)*value.size() > size) {
-		WARN("Could not write array. End of buffer reached.");
-		return;
-	}
+	THROW_ERROR_IF(!isValid(), "Called writeArray() before begin().");
+	THROW_ERROR_IF(cursor+sizeof(T)*value.size() > size, "Could not write array. End of buffer reached.");
 	std::copy(value.begin(), value.end(), reinterpret_cast<T*>(dataPtr + cursor));
 	cursor += sizeof(T) * value.size();
 }
@@ -92,14 +81,8 @@ inline void BufferAccessor::writeArray(const std::vector<T>& value) {
 template<typename T>
 inline T BufferAccessor::read() {
 	T out;
-	if(!isValid()) {
-		WARN("Called read() before begin().");
-		return out;
-	}
-	if(cursor+sizeof(T) > size) {
-		WARN("Could not read value. End of buffer reached.");
-		return out;
-	}
+	THROW_ERROR_IF(!isValid(), "Called read() before begin().");
+	THROW_ERROR_IF(cursor+sizeof(T) > size, "Could not read value. End of buffer reached.");
 	out = *(reinterpret_cast<T*>(dataPtr + cursor));
 	cursor += sizeof(T);
 	return out;
@@ -107,14 +90,8 @@ inline T BufferAccessor::read() {
 
 template<typename T>
 inline std::vector<T> BufferAccessor::readArray(size_t numValues) {
-	if(!isValid()) {
-		WARN("Called readArray() before begin().");
-		return {};
-	}
-	if(cursor+sizeof(T)*numValues > size) {
-		WARN("Could not read array. End of buffer reached.");
-		return {};
-	}
+	THROW_ERROR_IF(!isValid(), "Called readArray() before begin().");
+	THROW_ERROR_IF(cursor+sizeof(T)*numValues > size, "Could not read array. End of buffer reached.");
 
 	std::vector<T> out(reinterpret_cast<T*>(dataPtr + cursor), reinterpret_cast<T*>(dataPtr + cursor + sizeof(T) * numValues));
 	cursor += sizeof(T) * numValues;

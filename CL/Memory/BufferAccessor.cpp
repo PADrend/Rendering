@@ -31,19 +31,13 @@ BufferAccessor::~BufferAccessor() {
 }
 
 void BufferAccessor::begin(ReadWrite_t readWrite /*= ReadWrite_t::ReadWrite*/) {
-	if(isValid()) {
-		WARN("Called begin() before end().");
-		return;
-	}
+	THROW_ERROR_IF(isValid(), "Called begin() before end().");
 	cursor = 0;
 	dataPtr = static_cast<uint8_t*>(queue->mapBuffer(buffer.get(), true, readWrite, cursor, size));
 }
 
 void BufferAccessor::end() {
-	if(!isValid()) {
-		WARN("Called end() before begin().");
-		return;
-	}
+	THROW_ERROR_IF(!isValid(), "Called end() before begin().");
 	queue->unmapMemory(buffer.get(), dataPtr);
 	dataPtr = nullptr;
 }
