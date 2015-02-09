@@ -292,6 +292,15 @@ void transformNormals(MeshVertexData & vd, Util::StringIdentifier attrName , con
  */
 VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & vertexDescs);
 
+/**
+ * Cuts the given mesh along the given plane.
+ *
+ * @param mesh the mesh to be cut
+ * @param plane the cutting plane
+ * @author Sascha Brandt
+ */
+void cutMesh(Mesh* m, const Geometry::Plane& plane);
+
 }
 }
 

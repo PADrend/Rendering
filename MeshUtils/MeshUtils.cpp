@@ -23,15 +23,18 @@
 #include <Geometry/Triangle.h>
 #include <Geometry/Vec2.h>
 #include <Geometry/Vec3.h>
+#include <Geometry/Plane.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Macros.h>
 #include <Util/Utils.h>
+#include <Util/Numeric.h>
 #include <algorithm>
 #include <cmath>
 #include <cstring> /* for memcmp */
 #include <map>
 #include <memory>
 #include <queue>
+#include <deque>
 #include <set>
 #include <stack>
 #include <stdexcept>
@@ -100,6 +103,17 @@ public:
 	 * @author Ralf Petring
 	 */
 	static RawVertex midPoint(const RawVertex & rwa, const RawVertex & rwb, const uint32_t & newIndex, const VertexDescription & vd);
+
+	/**
+	 * @param rwa first RawVertex for interpolation
+	 * @param rwb second RawVertex for interpolation
+	 * @param a interpolation factor (between 0.0 and 1.0)
+	 * @param newIndex the index of the created RawVertex
+	 * @param vd the VertexDescription of both RawVertices
+	 * @return a linear interpolated RawVertex in the middle of rwa and rwb
+	 * @author Sascha Brandt
+	 */
+	static RawVertex interpolate(const RawVertex & rwa, const RawVertex & rwb, float a, const uint32_t & newIndex, const VertexDescription & vd);
 
 private:
 	//! Index of the vertex in the mesh.
@@ -172,6 +186,61 @@ public:
 	uint32_t longestSideIndex;
 	float longestSideLength;
 };
+
+template<typename GLType>
+inline
+void interpolateValue(uint8_t* data, const RawVertex & rwa, const RawVertex & rwb, const VertexAttribute& attr, unsigned j, float a, float a_inv) {
+	float f = static_cast<float>((reinterpret_cast<const GLType *> (rwa.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a_inv;
+	f += static_cast<float>((reinterpret_cast<const GLType *> (rwb.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a;
+	(reinterpret_cast<GLType *> (data + attr.getOffset() + j * sizeof(GLType)))[0] = static_cast<GLType>(f);
+}
+
+RawVertex RawVertex::interpolate(const RawVertex & rwa, const RawVertex & rwb, float a, const uint32_t & newIndex, const VertexDescription & vd) {
+	FAIL_IF(rwa.getSize()!=rwb.getSize());
+	auto data = new uint8_t[rwa.getSize()];
+	RawVertex ret(newIndex, data, rwa.getSize());
+	float a_inv = 1.0f - a;
+	for(const auto & attr : vd.getAttributes()) {
+		if (attr.empty())
+			continue;
+		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
+			switch (attr.getDataType()) {
+			case GL_FLOAT:
+				interpolateValue<GLfloat>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_UNSIGNED_BYTE:
+				interpolateValue<GLubyte>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_BYTE:
+				break;
+			case GL_UNSIGNED_SHORT:
+				interpolateValue<GLushort>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_SHORT:
+				interpolateValue<GLshort>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_UNSIGNED_INT:
+				interpolateValue<GLuint>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_INT:
+				interpolateValue<GLint>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+#ifdef LIB_GL
+				case GL_DOUBLE:
+					interpolateValue<GLdouble>(data, rwa, rwb, attr, j, a, a_inv);
+					break;
+#endif /* LIB_GL */
+			case GL_BOOL:
+				continue;
+			default:
+				FAIL();
+			}
+		}
+	}
+	return ret;
+}
+
+
 
 RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, const uint32_t & newIndex, const VertexDescription & vd) {
 	FAIL_IF(rwa.getSize()!=rwb.getSize());
@@ -1470,6 +1539,126 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 	}
 }
 
+inline bool isZero(float f) {
+	return std::abs(f) <= std::numeric_limits<float>::epsilon();
+}
+
+//!	(static)
+void cutMesh(Mesh* m, const Geometry::Plane& plane) {
+	const VertexDescription & vd = m->getVertexDescription();
+	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
+	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+		WARN("cutMesh: Unsupported vertex format.");
+		return;
+	}
+
+	std::deque<SplitTriangle> triangles;
+	std::deque<SplitTriangle> trianglesOut;
+	std::vector<RawVertex> vertexArray;
+
+	MeshVertexData & vertices = m->openVertexData();
+	MeshIndexData & indices = m->openIndexData();
+
+	// extract triangles
+	size_t vertexSize = vd.getVertexSize();
+	for (uint32_t i = 0; i < vertices.getVertexCount(); ++i) {
+		auto tmpData = new uint8_t[vertexSize];
+		std::copy(vertices[i], vertices[i] + vertexSize, tmpData);
+		vertexArray.emplace_back(i, tmpData, vertexSize);
+	}
+	uint32_t * iData = indices.data();
+	for (unsigned i = 0; i < indices.getIndexCount(); i += 3)
+		triangles.push_back(SplitTriangle(vertexArray.at(iData[i + 0]), vertexArray.at(iData[i + 1]), vertexArray.at(iData[i + 2])));
+
+	// split triangles intersecting plane
+	while(!triangles.empty()) {
+		auto t = triangles.front();
+		triangles.pop_front();
+		RawVertex a = t.getRawVertex(0);
+		RawVertex b = t.getRawVertex(1);
+		RawVertex c = t.getRawVertex(2);
+
+		const Geometry::Vec3 va(reinterpret_cast<const float *> (a.getData()));
+		const Geometry::Vec3 vb(reinterpret_cast<const float *> (b.getData()));
+		const Geometry::Vec3 vc(reinterpret_cast<const float *> (c.getData()));
+
+		float pa = plane.planeTest(va);
+		float pb = plane.planeTest(vb);
+		float pc = plane.planeTest(vc);
+
+		if( (pa>=0 && pb>=0 && pc>=0) || (pa<=0 && pb<=0 && pc<=0)) {
+			// triangle is completely above/below plane -> keep
+			trianglesOut.push_back(t);
+		} else if (isZero(pa) || isZero(pb) || isZero(pc)){
+			// one point lies on the plane -> split into two triangles
+
+			// reorder vertices s.t. vertex a lies on the plane
+			if(isZero(pb)) {
+				std::swap(a, b); std::swap(b, c);
+				std::swap(pa, pb); std::swap(pb, pc);
+			} else if(isZero(pc)) {
+				std::swap(a, c); std::swap(b, c);
+				std::swap(pa, pc); std::swap(pb, pc);
+			}
+
+			float blend = std::abs(pb)/(std::abs(pb) + std::abs(pc));
+			RawVertex d = RawVertex::interpolate(b, c, blend, vertexArray.size(), vd);
+			vertexArray.push_back(d);
+			trianglesOut.push_back(SplitTriangle(a, b, d));
+			trianglesOut.push_back(SplitTriangle(a, d, c));
+		} else {
+			// only one point is above/below plane -> split into three triangles
+
+			// reorder vertices s.t. vertex a is the single point above/below the plane
+			if( (pb>=0 && pa<=0 && pc<=0) || (pb<=0 && pa>=0 && pc>=0) ) { // b above/below plane
+				std::swap(a, b); std::swap(b, c);
+				std::swap(pa, pb); std::swap(pb, pc);
+			} else if((pc>=0 && pa<=0 && pb<=0) || (pc<=0 && pa>=0 && pb>=0)) { // c above/below plane
+				std::swap(a, c); std::swap(b, c);
+				std::swap(pa, pc); std::swap(pb, pc);
+			}
+
+			float blend_ab = std::abs(pa)/(std::abs(pa) + std::abs(pb));
+			float blend_ac = std::abs(pa)/(std::abs(pa) + std::abs(pc));
+			RawVertex d_ab = RawVertex::interpolate(a, b, blend_ab, vertexArray.size(), vd);
+			vertexArray.push_back(d_ab);
+			RawVertex d_ac = RawVertex::interpolate(a, c, blend_ac, vertexArray.size(), vd);
+			vertexArray.push_back(d_ac);
+
+			trianglesOut.push_back(SplitTriangle(a, d_ab, d_ac));
+			trianglesOut.push_back(SplitTriangle(d_ab, b, c));
+			trianglesOut.push_back(SplitTriangle(d_ab, c, d_ac));
+		}
+	}
+
+	// reassemble mesh
+	// - indices
+	uint32_t iCount = trianglesOut.size() * 3;
+	indices.allocate(iCount);
+	for (uint32_t i = 0; i < iCount; i += 3) {
+		SplitTriangle t = trianglesOut.front();
+		trianglesOut.pop_front();
+		indices[i + 0] = t.a.getIndex();
+		indices[i + 1] = t.b.getIndex();
+		indices[i + 2] = t.c.getIndex();
+	}
+	indices.updateIndexRange();
+
+	// - vertices
+	vertices.allocate(vertexArray.size(), vd);
+	for (size_t i = 0; i < vertexArray.size(); i++) {
+		std::copy(vertexArray.at(i).getData(), vertexArray.at(i).getData() + vertexSize, vertices[i]);
+	}
+	vertices.updateBoundingBox();
+
+	// cleanup
+	for (auto & rawVertex : vertexArray) {
+		delete[] rawVertex.getData();
+	}
+}
+
 // -----------------------------------------------------------------------------
+
+
 }
 }
