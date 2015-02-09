@@ -39,6 +39,7 @@
 #include <stack>
 #include <stdexcept>
 #include <vector>
+#include <unordered_map>
 
 using Geometry::Matrix4x4f;
 using Geometry::Vec3f;
@@ -115,6 +116,8 @@ public:
 	 */
 	static RawVertex interpolate(const RawVertex & rwa, const RawVertex & rwb, float a, const uint32_t & newIndex, const VertexDescription & vd);
 
+	static RawVertex move(const RawVertex & rw, const Geometry::Vec3 & dir, const uint32_t & newIndex, const VertexDescription & vd);
+
 private:
 	//! Index of the vertex in the mesh.
 	uint32_t index;
@@ -187,60 +190,6 @@ public:
 	float longestSideLength;
 };
 
-template<typename GLType>
-inline
-void interpolateValue(uint8_t* data, const RawVertex & rwa, const RawVertex & rwb, const VertexAttribute& attr, unsigned j, float a, float a_inv) {
-	float f = static_cast<float>((reinterpret_cast<const GLType *> (rwa.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a_inv;
-	f += static_cast<float>((reinterpret_cast<const GLType *> (rwb.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a;
-	(reinterpret_cast<GLType *> (data + attr.getOffset() + j * sizeof(GLType)))[0] = static_cast<GLType>(f);
-}
-
-RawVertex RawVertex::interpolate(const RawVertex & rwa, const RawVertex & rwb, float a, const uint32_t & newIndex, const VertexDescription & vd) {
-	FAIL_IF(rwa.getSize()!=rwb.getSize());
-	auto data = new uint8_t[rwa.getSize()];
-	RawVertex ret(newIndex, data, rwa.getSize());
-	float a_inv = 1.0f - a;
-	for(const auto & attr : vd.getAttributes()) {
-		if (attr.empty())
-			continue;
-		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
-			switch (attr.getDataType()) {
-			case GL_FLOAT:
-				interpolateValue<GLfloat>(data, rwa, rwb, attr, j, a, a_inv);
-				break;
-			case GL_UNSIGNED_BYTE:
-				interpolateValue<GLubyte>(data, rwa, rwb, attr, j, a, a_inv);
-				break;
-			case GL_BYTE:
-				break;
-			case GL_UNSIGNED_SHORT:
-				interpolateValue<GLushort>(data, rwa, rwb, attr, j, a, a_inv);
-				break;
-			case GL_SHORT:
-				interpolateValue<GLshort>(data, rwa, rwb, attr, j, a, a_inv);
-				break;
-			case GL_UNSIGNED_INT:
-				interpolateValue<GLuint>(data, rwa, rwb, attr, j, a, a_inv);
-				break;
-			case GL_INT:
-				interpolateValue<GLint>(data, rwa, rwb, attr, j, a, a_inv);
-				break;
-#ifdef LIB_GL
-				case GL_DOUBLE:
-					interpolateValue<GLdouble>(data, rwa, rwb, attr, j, a, a_inv);
-					break;
-#endif /* LIB_GL */
-			case GL_BOOL:
-				continue;
-			default:
-				FAIL();
-			}
-		}
-	}
-	return ret;
-}
-
-
 
 RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, const uint32_t & newIndex, const VertexDescription & vd) {
 	FAIL_IF(rwa.getSize()!=rwb.getSize());
@@ -308,6 +257,73 @@ RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, cons
 			}
 		}
 	}
+	return ret;
+}
+
+template<typename GLType>
+inline
+void interpolateValue(uint8_t* data, const RawVertex & rwa, const RawVertex & rwb, const VertexAttribute& attr, unsigned j, float a, float a_inv) {
+	float f = static_cast<float>((reinterpret_cast<const GLType *> (rwa.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a_inv;
+	f += static_cast<float>((reinterpret_cast<const GLType *> (rwb.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a;
+	(reinterpret_cast<GLType *> (data + attr.getOffset() + j * sizeof(GLType)))[0] = static_cast<GLType>(f);
+}
+
+RawVertex RawVertex::interpolate(const RawVertex & rwa, const RawVertex & rwb, float a, const uint32_t & newIndex, const VertexDescription & vd) {
+	FAIL_IF(rwa.getSize()!=rwb.getSize());
+	auto data = new uint8_t[rwa.getSize()];
+	RawVertex ret(newIndex, data, rwa.getSize());
+	float a_inv = 1.0f - a;
+	for(const auto & attr : vd.getAttributes()) {
+		if (attr.empty())
+			continue;
+		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
+			switch (attr.getDataType()) {
+			case GL_FLOAT:
+				interpolateValue<GLfloat>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_UNSIGNED_BYTE:
+				interpolateValue<GLubyte>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_BYTE:
+				break;
+			case GL_UNSIGNED_SHORT:
+				interpolateValue<GLushort>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_SHORT:
+				interpolateValue<GLshort>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_UNSIGNED_INT:
+				interpolateValue<GLuint>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+			case GL_INT:
+				interpolateValue<GLint>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
+#ifdef LIB_GL
+				case GL_DOUBLE:
+					interpolateValue<GLdouble>(data, rwa, rwb, attr, j, a, a_inv);
+					break;
+#endif /* LIB_GL */
+			case GL_BOOL:
+				continue;
+			default:
+				FAIL();
+			}
+		}
+	}
+	return ret;
+}
+
+RawVertex RawVertex::move(const RawVertex & rw, const Geometry::Vec3 & dir, const uint32_t & newIndex, const VertexDescription & vd) {
+	auto data = new uint8_t[rw.getSize()];
+	std::copy(rw.getData(), rw.getData() + rw.getSize(), data);
+	const VertexAttribute & attr = vd.getAttribute(VertexAttributeIds::POSITION);
+	// assume float
+	float* posData = reinterpret_cast<float *> (data + attr.getOffset());
+	posData[0] += dir.x();
+	posData[1] += dir.y();
+	posData[2] += dir.z();
+
+	RawVertex ret(newIndex, data, rw.getSize());
 	return ret;
 }
 
@@ -1578,9 +1594,9 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane) {
 		RawVertex b = t.getRawVertex(1);
 		RawVertex c = t.getRawVertex(2);
 
-		const Geometry::Vec3 va(reinterpret_cast<const float *> (a.getData()));
-		const Geometry::Vec3 vb(reinterpret_cast<const float *> (b.getData()));
-		const Geometry::Vec3 vc(reinterpret_cast<const float *> (c.getData()));
+		const Geometry::Vec3 va(reinterpret_cast<const float *> (a.getData() + posAttr.getOffset()));
+		const Geometry::Vec3 vb(reinterpret_cast<const float *> (b.getData() + posAttr.getOffset()));
+		const Geometry::Vec3 vc(reinterpret_cast<const float *> (c.getData() + posAttr.getOffset()));
 
 		float pa = plane.planeTest(va);
 		float pb = plane.planeTest(vb);
@@ -1641,6 +1657,133 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane) {
 		indices[i + 0] = t.a.getIndex();
 		indices[i + 1] = t.b.getIndex();
 		indices[i + 2] = t.c.getIndex();
+	}
+	indices.updateIndexRange();
+
+	// - vertices
+	vertices.allocate(vertexArray.size(), vd);
+	for (size_t i = 0; i < vertexArray.size(); i++) {
+		std::copy(vertexArray.at(i).getData(), vertexArray.at(i).getData() + vertexSize, vertices[i]);
+	}
+	vertices.updateBoundingBox();
+
+	// cleanup
+	for (auto & rawVertex : vertexArray) {
+		delete[] rawVertex.getData();
+	}
+}
+
+#define ADJ_AB 1
+#define ADJ_BC 2
+#define ADJ_CA 4
+
+inline uint8_t getAdjacence(const SplitTriangle& t1, const SplitTriangle& t2, const VertexAttribute & posAttr) {
+	const static float EPS = std::numeric_limits<float>::epsilon();
+	const Geometry::Vec3 va1(reinterpret_cast<const float *> (t1.a.getData() + posAttr.getOffset()));
+	const Geometry::Vec3 vb1(reinterpret_cast<const float *> (t1.b.getData() + posAttr.getOffset()));
+	const Geometry::Vec3 vc1(reinterpret_cast<const float *> (t1.c.getData() + posAttr.getOffset()));
+	const Geometry::Vec3 va2(reinterpret_cast<const float *> (t2.a.getData() + posAttr.getOffset()));
+	const Geometry::Vec3 vb2(reinterpret_cast<const float *> (t2.b.getData() + posAttr.getOffset()));
+	const Geometry::Vec3 vc2(reinterpret_cast<const float *> (t2.c.getData() + posAttr.getOffset()));
+
+	bool eq_a = va1.equals(va2, EPS) || va1.equals(vb2, EPS) || va1.equals(vc2, EPS);
+	bool eq_b = vb1.equals(va2, EPS) || vb1.equals(vb2, EPS) || vb1.equals(vc2, EPS);
+	bool eq_c = vc1.equals(va2, EPS) || vc1.equals(vb2, EPS) || vc1.equals(vc2, EPS);
+
+	if(eq_a && eq_b)
+		return ADJ_AB;
+	if(eq_b && eq_c)
+		return ADJ_BC;
+	if(eq_c && eq_a)
+		return ADJ_CA;
+}
+
+//!	(static)
+void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::vector<uint32_t> tIndices) {
+	const VertexDescription & vd = m->getVertexDescription();
+	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
+	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+		WARN("extrudeTriangles: Unsupported vertex format.");
+		return;
+	}
+
+	std::vector<SplitTriangle> triangles;
+	std::vector<RawVertex> vertexArray;
+
+	MeshVertexData & vertices = m->openVertexData();
+	MeshIndexData & indices = m->openIndexData();
+
+	// extract triangles
+	size_t vertexSize = vd.getVertexSize();
+	for (uint32_t i = 0; i < vertices.getVertexCount(); ++i) {
+		auto tmpData = new uint8_t[vertexSize];
+		std::copy(vertices[i], vertices[i] + vertexSize, tmpData);
+		vertexArray.emplace_back(i, tmpData, vertexSize);
+	}
+	uint32_t * iData = indices.data();
+	for (unsigned i = 0; i < indices.getIndexCount(); i += 3)
+		triangles.push_back(SplitTriangle(vertexArray.at(iData[i + 0]), vertexArray.at(iData[i + 1]), vertexArray.at(iData[i + 2])));
+
+
+	// find adjacent triangles
+	std::unordered_map<uint32_t, uint8_t> adjacencies;
+	for(auto ti : tIndices) {
+		if(ti >= triangles.size())
+			continue;
+		adjacencies[ti] = 0;
+		for(auto tj : tIndices) {
+			if(tj >= triangles.size() || ti == tj)
+				continue;
+			adjacencies[ti] |= getAdjacence(triangles[ti], triangles[tj], posAttr);
+		}
+	}
+
+	// extrude triangles
+	for(auto ti : tIndices) {
+		if(ti >= triangles.size())
+			continue;
+		RawVertex a = triangles[ti].a;
+		RawVertex b = triangles[ti].b;
+		RawVertex c = triangles[ti].c;
+
+		RawVertex an = RawVertex::move(a, dir, vertexArray.size(), vd);
+		vertexArray.push_back(an);
+		RawVertex bn = RawVertex::move(b, dir, vertexArray.size(), vd);
+		vertexArray.push_back(bn);
+		RawVertex cn = RawVertex::move(c, dir, vertexArray.size(), vd);
+		vertexArray.push_back(cn);
+		triangles[ti].a = an;
+		triangles[ti].b = bn;
+		triangles[ti].c = cn;
+
+		// add new triangles
+		uint8_t adj = adjacencies[ti];
+
+		if( (adj & ADJ_CA) == 0) {
+			triangles.push_back(SplitTriangle(a, an, cn));
+			triangles.push_back(SplitTriangle(a, cn, c));
+		}
+
+		if( (adj & ADJ_AB) == 0) {
+			triangles.push_back(SplitTriangle(b, bn, an));
+			triangles.push_back(SplitTriangle(b, an, a));
+		}
+
+		if( (adj & ADJ_BC) == 0) {
+			triangles.push_back(SplitTriangle(c, cn, bn));
+			triangles.push_back(SplitTriangle(c, bn, b));
+		}
+	}
+
+	// reassemble mesh
+	// - indices
+	uint32_t iCount = triangles.size() * 3;
+	indices.allocate(iCount);
+	uint32_t i=0;
+	for (auto t : triangles) {
+		indices[i++] = t.a.getIndex();
+		indices[i++] = t.b.getIndex();
+		indices[i++] = t.c.getIndex();
 	}
 	indices.updateIndexRange();
 

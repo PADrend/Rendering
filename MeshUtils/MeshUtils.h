@@ -295,11 +295,21 @@ VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & 
 /**
  * Cuts the given mesh along the given plane.
  *
- * @param mesh the mesh to be cut
+ * @param m the mesh to be cut
  * @param plane the cutting plane
  * @author Sascha Brandt
  */
 void cutMesh(Mesh* m, const Geometry::Plane& plane);
+
+/**
+ * Extrudes the specified triangles of the given mesh.
+ *
+ * @param m the mesh
+ * @param dir extrusion direction
+ * @param tIndices list of triangle indices to extrude
+ * @author Sascha Brandt
+ */
+void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::vector<uint32_t> tIndices);
 
 }
 }
