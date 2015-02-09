@@ -63,7 +63,7 @@ CommandQueue::CommandQueue(Context* context, Device* device, bool outOfOrderExec
 		prop |= CL_QUEUE_PROFILING_ENABLE;
 	cl_int err;
 	queue.reset(new cl::CommandQueue(*context->_internal(), *device->_internal(), prop, &err));
-	FAIL_IF(err != CL_SUCCESS);
+	THROW_ERROR_IF(err != CL_SUCCESS, getErrorString(err) + "[" + std::to_string(err) + "]");
 }
 
 CommandQueue::~CommandQueue() = default;
@@ -81,8 +81,7 @@ bool CommandQueue::readBuffer(Buffer* buffer, bool blocking, size_t offset, size
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueReadBuffer(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, offset, size, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not read buffer (" + getErrorString(err) + ")");
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not read buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -91,8 +90,7 @@ bool CommandQueue::writeBuffer(Buffer* buffer, bool blocking, size_t offset, siz
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueWriteBuffer(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, offset, size, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not write buffer (" + getErrorString(err) + ")");
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not write buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -101,8 +99,7 @@ bool CommandQueue::copyBuffer(Buffer* src, Buffer* dst, size_t srcOffset, size_t
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyBuffer(*src->_internal<cl::Buffer>(), *dst->_internal<cl::Buffer>(), srcOffset, dstOffset, size, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not copy buffer (" + getErrorString(err) + ")");
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not copy buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -117,8 +114,7 @@ bool CommandQueue::readBufferRect(Buffer* buffer, bool blocking, const RangeND_t
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueReadBufferRect(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, cl_buf_off, cl_host_off, cl_region, bufferRowPitch, bufferSlicePitch, hostRowPitch, hostSlicePitch, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not read buffer rect (" + getErrorString(err) + ")");
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not read buffer rect (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -133,8 +129,7 @@ bool CommandQueue::writeBufferRect(Buffer* buffer, bool blocking, const RangeND_
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueWriteBufferRect(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, cl_buf_off, cl_host_off, cl_region, bufferRowPitch, bufferSlicePitch, hostRowPitch, hostSlicePitch, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not write buffer rect (" + getErrorString(err) + ")");
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not write buffer rect (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -149,8 +144,8 @@ bool CommandQueue::copyBufferRect(Buffer* src, Buffer* dst, const RangeND_t& src
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyBufferRect(*src->_internal<cl::Buffer>(), *dst->_internal<cl::Buffer>(), cl_srcorigin, cl_dstcorigin, cl_region, srcRowPitch, srcSlicePitch, dstRowPitch, dstSlicePitch, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not copy buffer rect (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not copy buffer rect (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -164,8 +159,8 @@ bool CommandQueue::readImage(Image* image, bool blocking, const RangeND_t& origi
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueReadImage(*image->_internal<cl::Image>(), blocking ? CL_TRUE : CL_FALSE, cl_origin, cl_region, rowPitch, slicePitch, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not read image (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not read image (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -179,8 +174,8 @@ bool CommandQueue::writeImage(Image* image, bool blocking, const RangeND_t& orig
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueWriteImage(*image->_internal<cl::Image>(), blocking ? CL_TRUE : CL_FALSE, cl_origin, cl_region, rowPitch, slicePitch, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not write image (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not write image (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -195,8 +190,8 @@ bool CommandQueue::copyImage(Image* src, Image* dst, const RangeND_t& srcOrigin,
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyImage(*src->_internal<cl::Image>(), *dst->_internal<cl::Image>(), cl_srcorigin, cl_dstcorigin, cl_region, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not copy image (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not copy image (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -210,8 +205,8 @@ bool CommandQueue::copyImageToBuffer(Image* src, Buffer* dst, const RangeND_t& s
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyImageToBuffer(*src->_internal<cl::Image>(), *dst->_internal<cl::Buffer>(), cl_srcorigin, cl_region, dstOffset, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not copy image to buffer (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not copy image to buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -225,8 +220,8 @@ bool CommandQueue::copyBufferToImage(Buffer* src, Image* dst, size_t srcOffset, 
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyBufferToImage(*src->_internal<cl::Buffer>(), *dst->_internal<cl::Image>(), srcOffset, cl_dstcorigin, cl_region, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not copy buffer to image (" + getErrorString(err) + "[" + std::to_string(err) + "])");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not copy buffer to image (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -237,10 +232,8 @@ void* CommandQueue::mapBuffer(Buffer* buffer, bool blocking, ReadWrite_t readWri
 	cl_mem_flags flags = readWrite == ReadWrite_t::ReadWrite ? CL_MAP_READ | CL_MAP_WRITE : (readWrite == ReadWrite_t::WriteOnly ? CL_MAP_WRITE : CL_MAP_READ);
 	cl_int err;
 	void* ptr = queue->enqueueMapBuffer(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, flags, offset, size, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr, &err);
-	if (err != CL_SUCCESS) {
-		WARN("Could not map buffer (" + getErrorString(err) + ")");
-		ptr = nullptr;
-	}
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not map buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return ptr;
 }
 
@@ -254,8 +247,8 @@ MappedImage CommandQueue::mapImage(Image* image, bool blocking, ReadWrite_t read
 	MappedImage out{nullptr, 0, 0};
 	cl_int err;
 	out.ptr = queue->enqueueMapImage(*image->_internal<cl::Image>(), blocking ? CL_TRUE : CL_FALSE, flags, cl_origin, cl_region, &out.rowPitch, &out.slicePitch, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr, &err);
-	if (err != CL_SUCCESS)
-		WARN("Could not map image (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not map image (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return out;
 }
 
@@ -264,8 +257,8 @@ bool CommandQueue::unmapMemory(Memory* memory, void* mappedPtr, const EventList_
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueUnmapMemObject(*memory->_internal(), mappedPtr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not unmap memory (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not unmap memory (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -274,8 +267,8 @@ bool CommandQueue::execute(Kernel* kernel, const RangeND_t& offset, const RangeN
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueNDRangeKernel(*kernel->_internal(), toNDRange(offset), toNDRange(global), toNDRange(local), cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not execute kernel (" + getErrorString(err) + "[" + std::to_string(err) + "])");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not execute kernel (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -284,8 +277,8 @@ bool CommandQueue::execute(Kernel* kernel, const EventList_t& waitForEvents, Eve
 	for (auto e : waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueTask(*kernel->_internal(), cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not execute kernel (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not execute kernel (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -302,8 +295,8 @@ bool CommandQueue::execute(std::function<void()> kernel, const EventList_t& wait
 		cl_wait.push_back(*e->_internal());
 	fnWrapper wrapper{kernel};
 	cl_int err = queue->enqueueNativeKernel(fnWrapper::kernel, std::make_pair(&wrapper, sizeof(fnWrapper)), nullptr, nullptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not execute kernel (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not execute kernel (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -315,8 +308,8 @@ bool CommandQueue::acquireGLObjects(const std::vector<Memory*>& buffers, const E
 	for (auto buf : buffers)
 		cl_buffers.push_back(*buf->_internal());
 	cl_int err = queue->enqueueAcquireGLObjects(&cl_buffers, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not acquire gl objects (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not acquire gl objects (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
@@ -328,8 +321,8 @@ bool CommandQueue::releaseGLObjects(const std::vector<Memory*>& buffers, const E
 	for (auto buf : buffers)
 		cl_buffers.push_back(*buf->_internal());
 	cl_int err = queue->enqueueReleaseGLObjects(&cl_buffers, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
-	if (err != CL_SUCCESS)
-		WARN("Could not release gl objects (" + getErrorString(err) + ")");
+
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not release gl objects (" + getErrorString(err) + "[" + std::to_string(err) + "])");
 	return err == CL_SUCCESS;
 }
 
