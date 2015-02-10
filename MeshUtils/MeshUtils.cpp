@@ -1677,8 +1677,9 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane) {
 #define ADJ_BC 2
 #define ADJ_CA 4
 
-inline uint8_t getAdjacence(const SplitTriangle& t1, const SplitTriangle& t2, const VertexAttribute & posAttr) {
-	const static float EPS = std::numeric_limits<float>::epsilon();
+inline
+uint8_t getAdjacence(const SplitTriangle& t1, const SplitTriangle& t2, const VertexAttribute & posAttr) {
+	const static float EPS = std::numeric_limits<float>::epsilon()*10;
 	const Geometry::Vec3 va1(reinterpret_cast<const float *> (t1.a.getData() + posAttr.getOffset()));
 	const Geometry::Vec3 vb1(reinterpret_cast<const float *> (t1.b.getData() + posAttr.getOffset()));
 	const Geometry::Vec3 vc1(reinterpret_cast<const float *> (t1.c.getData() + posAttr.getOffset()));
@@ -1690,16 +1691,21 @@ inline uint8_t getAdjacence(const SplitTriangle& t1, const SplitTriangle& t2, co
 	bool eq_b = vb1.equals(va2, EPS) || vb1.equals(vb2, EPS) || vb1.equals(vc2, EPS);
 	bool eq_c = vc1.equals(va2, EPS) || vc1.equals(vb2, EPS) || vc1.equals(vc2, EPS);
 
+	//std::cout << eq_a << "; " << eq_b << "; " << eq_c << std::endl;
+	//std::cout << va1 << "; " << vb1 << "; " << vc1 << std::endl;
+	//std::cout << va2 << "; " << vb2 << "; " << vc2 << std::endl;
+
 	if(eq_a && eq_b)
 		return ADJ_AB;
 	if(eq_b && eq_c)
 		return ADJ_BC;
 	if(eq_c && eq_a)
 		return ADJ_CA;
+	return 0;
 }
 
 //!	(static)
-void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::vector<uint32_t> tIndices) {
+void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_t> tIndices) {
 	const VertexDescription & vd = m->getVertexDescription();
 	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
 	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
@@ -1734,7 +1740,9 @@ void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::vector<uint
 		for(auto tj : tIndices) {
 			if(tj >= triangles.size() || ti == tj)
 				continue;
-			adjacencies[ti] |= getAdjacence(triangles[ti], triangles[tj], posAttr);
+			uint8_t adj = getAdjacence(triangles[ti], triangles[tj], posAttr);
+			adjacencies[ti] |= adj;
+			//std::cout << ti << "-" << tj << " ab " << ((adj&ADJ_AB)>0) << " bc " << ((adj&ADJ_BC)>0) << " ca " << ((adj&ADJ_CA)>0) << std::endl;
 		}
 	}
 

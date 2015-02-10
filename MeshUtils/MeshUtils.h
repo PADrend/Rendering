@@ -15,6 +15,7 @@
 #include <deque>
 #include <utility>
 #include <vector>
+#include <set>
 
 namespace Geometry {
 template<typename _T> class _Matrix4x4;
@@ -306,10 +307,10 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane);
  *
  * @param m the mesh
  * @param dir extrusion direction
- * @param tIndices list of triangle indices to extrude
+ * @param tIndices set of triangle indices to extrude
  * @author Sascha Brandt
  */
-void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::vector<uint32_t> tIndices);
+void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_t> tIndices);
 
 }
 }
