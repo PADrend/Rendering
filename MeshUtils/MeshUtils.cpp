@@ -1557,12 +1557,12 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 	}
 }
 
-inline bool isZero(float f) {
-	return std::abs(f) <= std::numeric_limits<float>::epsilon();
+inline bool isZero(float f, float tolerance=std::numeric_limits<float>::epsilon()) {
+	return std::abs(f) <= tolerance;
 }
 
 //!	(static)
-void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices) {
+void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices, float tolerance) {
 	const VertexDescription & vd = m->getVertexDescription();
 	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
 	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
@@ -1606,17 +1606,17 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIn
 		float pb = plane.planeTest(vb);
 		float pc = plane.planeTest(vc);
 
-		if( (pa>=0 && pb>=0 && pc>=0) || (pa<=0 && pb<=0 && pc<=0) || (!tIndices.empty() && tIndices.count(tIndex)==0)) {
+		if( (pa>=-tolerance && pb>=-tolerance && pc>=-tolerance) || (pa<=tolerance && pb<=tolerance && pc<=tolerance) || (!tIndices.empty() && tIndices.count(tIndex)==0)) {
 			// triangle is completely above/below plane -> keep
 			trianglesOut.push_back(t);
-		} else if (isZero(pa) || isZero(pb) || isZero(pc)){
+		} else if (isZero(pa, tolerance) || isZero(pb, tolerance) || isZero(pc, tolerance)){
 			// one point lies on the plane -> split into two triangles
 
 			// reorder vertices s.t. vertex a lies on the plane
-			if(isZero(pb)) {
+			if(isZero(pb, tolerance)) {
 				std::swap(a, b); std::swap(b, c);
 				std::swap(pa, pb); std::swap(pb, pc);
-			} else if(isZero(pc)) {
+			} else if(isZero(pc, tolerance)) {
 				std::swap(a, c); std::swap(b, c);
 				std::swap(pa, pc); std::swap(pb, pc);
 			}
@@ -1848,14 +1848,14 @@ int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray) {
 
 
 //! (static)
-void mergeCloseVertices(Mesh * mesh) {
+void mergeCloseVertices(Mesh * mesh, float tolerance) {
 	const VertexDescription & desc = mesh->getVertexDescription();
 	const uint32_t indexCount = mesh->getIndexCount();
 
 	auto posAcc = PositionAttributeAccessor::create(mesh->openVertexData(), VertexAttributeIds::POSITION);
 
-	auto comp = [&posAcc](const RawVertex& lhs, const RawVertex& rhs) -> bool {
-		return posAcc->getPosition(lhs.getIndex()).equals(posAcc->getPosition(rhs.getIndex()), 0.001f) ? false : lhs < rhs;
+	auto comp = [&posAcc, &tolerance](const RawVertex& lhs, const RawVertex& rhs) -> bool {
+		return posAcc->getPosition(lhs.getIndex()).equals(posAcc->getPosition(rhs.getIndex()), tolerance) ? false : lhs < rhs;
 	};
 
 	// Set of vertices used to create unique vertices.

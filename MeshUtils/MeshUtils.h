@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 #include <set>
+#include <limits>
 
 namespace Geometry {
 template<typename _T> class _Matrix4x4;
@@ -300,9 +301,11 @@ VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & 
  *
  * @param m the mesh to be cut
  * @param plane the cutting plane
+ * @param tIndices list of triangle indices to cut. If empty, the whole mesh is cut.
+ * @param tolerance if a vertex lies on the plane with the given tolerance, no new vertex is created
  * @author Sascha Brandt
  */
-void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices={});
+void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices={}, float tolerance=std::numeric_limits<float>::epsilon());
 
 /**
  * Extrudes the specified triangles of the given mesh.
@@ -333,7 +336,7 @@ int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray);
  *
  * @author Sascha Brandt
  */
-void mergeCloseVertices(Mesh * mesh);
+void mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<float>::epsilon());
 
 }
 }
