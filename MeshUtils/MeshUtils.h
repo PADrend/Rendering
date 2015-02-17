@@ -26,6 +26,8 @@ template<typename _T> class _Sphere;
 typedef _Sphere<float> Sphere_f;
 template<typename _T> class _Vec3;
 typedef _Vec3<float> Vec3;
+template<typename _T> class _Ray;
+typedef _Ray<Vec3> Ray3;
 }
 
 namespace Util {
@@ -300,7 +302,7 @@ VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & 
  * @param plane the cutting plane
  * @author Sascha Brandt
  */
-void cutMesh(Mesh* m, const Geometry::Plane& plane);
+void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices={});
 
 /**
  * Extrudes the specified triangles of the given mesh.
@@ -311,6 +313,27 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane);
  * @author Sascha Brandt
  */
 void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_t> tIndices);
+
+/**
+ * Slow method for finding the first triangle in a mesh that intersects the given ray.
+ * @param m the mesh
+ * @param ray the ray
+ * @return -1 if no intersecting triangle was found, the triangle index otherwise.
+ * @author Sascha Brandt
+ */
+int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray);
+
+/**
+ * Remove vertices which are close to each other from the mesh and
+ * store them only once. The indices to the vertices are adjusted.
+ * This function has runtime O(n * log(n)) where n is the
+ * number of vertices in @a mesh.
+ *
+ * @param mesh Mesh to do the elimination on.
+ *
+ * @author Sascha Brandt
+ */
+void mergeCloseVertices(Mesh * mesh);
 
 }
 }

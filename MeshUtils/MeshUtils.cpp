@@ -24,6 +24,8 @@
 #include <Geometry/Vec2.h>
 #include <Geometry/Vec3.h>
 #include <Geometry/Plane.h>
+#include <Geometry/Line.h>
+#include <Geometry/LineTriangleIntersection.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Macros.h>
 #include <Util/Utils.h>
@@ -1560,7 +1562,7 @@ inline bool isZero(float f) {
 }
 
 //!	(static)
-void cutMesh(Mesh* m, const Geometry::Plane& plane) {
+void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices) {
 	const VertexDescription & vd = m->getVertexDescription();
 	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
 	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
@@ -1570,6 +1572,7 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane) {
 
 	std::deque<SplitTriangle> triangles;
 	std::deque<SplitTriangle> trianglesOut;
+	std::deque<SplitTriangle> trianglesNew;
 	std::vector<RawVertex> vertexArray;
 
 	MeshVertexData & vertices = m->openVertexData();
@@ -1587,6 +1590,7 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane) {
 		triangles.push_back(SplitTriangle(vertexArray.at(iData[i + 0]), vertexArray.at(iData[i + 1]), vertexArray.at(iData[i + 2])));
 
 	// split triangles intersecting plane
+	uint32_t tIndex = 0;
 	while(!triangles.empty()) {
 		auto t = triangles.front();
 		triangles.pop_front();
@@ -1602,7 +1606,7 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane) {
 		float pb = plane.planeTest(vb);
 		float pc = plane.planeTest(vc);
 
-		if( (pa>=0 && pb>=0 && pc>=0) || (pa<=0 && pb<=0 && pc<=0)) {
+		if( (pa>=0 && pb>=0 && pc>=0) || (pa<=0 && pb<=0 && pc<=0) || (!tIndices.empty() && tIndices.count(tIndex)==0)) {
 			// triangle is completely above/below plane -> keep
 			trianglesOut.push_back(t);
 		} else if (isZero(pa) || isZero(pb) || isZero(pc)){
@@ -1621,7 +1625,7 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane) {
 			RawVertex d = RawVertex::interpolate(b, c, blend, vertexArray.size(), vd);
 			vertexArray.push_back(d);
 			trianglesOut.push_back(SplitTriangle(a, b, d));
-			trianglesOut.push_back(SplitTriangle(a, d, c));
+			trianglesNew.push_back(SplitTriangle(a, d, c));
 		} else {
 			// only one point is above/below plane -> split into three triangles
 
@@ -1642,10 +1646,14 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane) {
 			vertexArray.push_back(d_ac);
 
 			trianglesOut.push_back(SplitTriangle(a, d_ab, d_ac));
-			trianglesOut.push_back(SplitTriangle(d_ab, b, c));
-			trianglesOut.push_back(SplitTriangle(d_ab, c, d_ac));
+			trianglesNew.push_back(SplitTriangle(d_ab, b, c));
+			trianglesNew.push_back(SplitTriangle(d_ab, c, d_ac));
 		}
+		++tIndex;
 	}
+	for(auto t : trianglesNew)
+		trianglesOut.push_back(t);
+	trianglesNew.clear();
 
 	// reassemble mesh
 	// - indices
@@ -1808,6 +1816,106 @@ void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_
 	}
 }
 
+//!	(static)
+int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray) {
+	const VertexDescription & vd = m->getVertexDescription();
+	if (m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+		WARN("getFirstTriangleIntersectingRay: Unsupported vertex format.");
+		return -1;
+	}
+	auto posAcc = PositionAttributeAccessor::create(m->openVertexData(), VertexAttributeIds::POSITION);
+	MeshIndexData & indices = m->openIndexData();
+
+	float tLine, uTri, vTri;
+	int32_t closest = -1;
+	float closestDist = std::numeric_limits<float>::infinity();
+	for(uint32_t i=0; i<indices.getIndexCount(); i+=3) {
+		Geometry::Triangle<Geometry::Vec3> triangle(
+			posAcc->getPosition(indices[i+0]),
+			posAcc->getPosition(indices[i+1]),
+			posAcc->getPosition(indices[i+2]));
+		// TODO: check triangle normal
+		if(Geometry::Intersection::getLineTriangleIntersection(ray, triangle, tLine, uTri, vTri)) {
+			if(tLine < closestDist) {
+				closestDist = tLine;
+				closest = i/3;
+			}
+		}
+	}
+
+	return closest;
+}
+
+
+//! (static)
+void mergeCloseVertices(Mesh * mesh) {
+	const VertexDescription & desc = mesh->getVertexDescription();
+	const uint32_t indexCount = mesh->getIndexCount();
+
+	auto posAcc = PositionAttributeAccessor::create(mesh->openVertexData(), VertexAttributeIds::POSITION);
+
+	auto comp = [&posAcc](const RawVertex& lhs, const RawVertex& rhs) -> bool {
+		return posAcc->getPosition(lhs.getIndex()).equals(posAcc->getPosition(rhs.getIndex()), 0.001f) ? false : lhs < rhs;
+	};
+
+	// Set of vertices used to create unique vertices.
+	std::set<RawVertex, decltype(comp)> rawVertices(comp);
+	// Mapping from old index to new index.
+	std::map<uint32_t, uint32_t> indexReplace;
+
+	// Simply go over the indices and add one vertex after another.
+	{
+		const MeshVertexData & vertices = mesh->openVertexData();
+		const MeshIndexData & indices = mesh->openIndexData();
+		const std::size_t vertexSize = desc.getVertexSize();
+
+		for (uint32_t counter = 0; counter < indexCount; ++counter) {
+			const uint32_t index = indices[counter];
+			const uint8_t * vertex = vertices[index];
+			RawVertex raw(index, vertex, vertexSize);
+			auto it = rawVertices.insert(raw).first;
+			indexReplace.insert(std::make_pair(index, it->getIndex()));
+		}
+	}
+
+	// Mapping from new index to vertex position.
+	std::map<uint32_t, uint32_t> indexPosition;
+
+	// Create the new mesh and add the rawVertices.
+	Util::Reference<Mesh> result = new Mesh;
+	result->setDataStrategy(mesh->getDataStrategy());
+
+	MeshVertexData & vertices = result->openVertexData();
+	vertices.allocate(rawVertices.size(), desc);
+
+	MeshIndexData & indices = result->openIndexData();
+	indices.allocate(indexCount);
+
+	{
+		uint8_t * data = vertices.data();
+		uint32_t vertexPos = 0;
+		for(const auto & vertex : rawVertices) {
+			std::copy(vertex.getData(), vertex.getData() + vertex.getSize(), data);
+			data += vertex.getSize();
+			indexPosition.insert(std::make_pair(vertex.getIndex(), vertexPos));
+			++vertexPos;
+		}
+		// Translate the indices.
+		const uint32_t * srcIndex = mesh->openIndexData().data();
+		uint32_t * dstIndex = indices.data();
+		for (uint32_t counter = 0; counter < indexCount; ++counter) {
+			const uint32_t newIndex = indexReplace.find(*srcIndex)->second;
+			*dstIndex = indexPosition.find(newIndex)->second;
+			++srcIndex;
+			++dstIndex;
+		}
+	}
+
+	vertices.updateBoundingBox();
+	indices.updateIndexRange();
+
+	mesh->swap(*result.get());
+}
 // -----------------------------------------------------------------------------
 
 

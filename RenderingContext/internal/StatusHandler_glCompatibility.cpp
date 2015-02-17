@@ -56,6 +56,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 				glEnable(GL_COLOR_MATERIAL);
 				glColor4fv(materialParams.getDiffuse().data());
 			} else {
+				glColor4fv(diffuse);
 				glDisable(GL_COLOR_MATERIAL);
 				glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, materialParams.getAmbient().data());
 				glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, materialParams.getDiffuse().data());
@@ -68,6 +69,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
 			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
 			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
+			glColor4fv(diffuse);
 		}
 		target.updateMaterial(actual);
 	}
