@@ -458,6 +458,45 @@ void drawVector(RenderingContext & rc, const Geometry::Vec3 & from, const Geomet
 
 	rc.displayMesh(mesh.get());
 }
+void drawVector(RenderingContext & rc, const Geometry::Vec3 & from, const Geometry::Vec3 & to, const Util::Color4f & color1, const Util::Color4f & color2) {
+	static Util::Reference<Mesh> mesh;
+	if (mesh.isNull()) {
+		VertexDescription vertexDescription;
+		vertexDescription.appendPosition3D();
+		vertexDescription.appendColorRGBAFloat();
+		mesh = new Mesh(vertexDescription, 2, 2);
+		mesh->setDrawMode(Mesh::DRAW_LINES);
+
+		MeshIndexData & id = mesh->openIndexData();
+		uint32_t * indices = id.data();
+		indices[0] = 0;
+		indices[1] = 1;
+		id.updateIndexRange();
+		id.markAsChanged();
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
+	}
+
+	MeshVertexData & vd = mesh->openVertexData();
+	float * vertices = reinterpret_cast<float *> (vd.data());
+	*vertices++ = from.getX(); // From
+	*vertices++ = from.getY();
+	*vertices++ = from.getZ();
+	*vertices++ = color1.r(); // FromColor
+	*vertices++ = color1.g();
+	*vertices++ = color1.b();
+	*vertices++ = color1.a();
+	*vertices++ = to.getX(); // To
+	*vertices++ = to.getY();
+	*vertices++ = to.getZ();
+	*vertices++ = color2.r(); // ToColor
+	*vertices++ = color2.g();
+	*vertices++ = color2.b();
+	*vertices++ = color2.a();
+	vd.updateBoundingBox();
+	vd.markAsChanged();
+
+	rc.displayMesh(mesh.get());
+}
 
 void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);

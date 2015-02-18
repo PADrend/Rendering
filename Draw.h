@@ -87,6 +87,7 @@ void drawTriangle(RenderingContext & rc, const Geometry::Vec3f & vertexA, const 
 
 void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to);
 void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color);
+void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color1, const Util::Color4f & color2);
 
 /**
  * Set the projection and modelview matrices to enable drawing in screen space.
