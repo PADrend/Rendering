@@ -333,10 +333,10 @@ int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray);
  * number of vertices in @a mesh.
  *
  * @param mesh Mesh to do the elimination on.
- *
+ * @return number of merged vertices
  * @author Sascha Brandt
  */
-void mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<float>::epsilon());
+uint32_t mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<float>::epsilon());
 
 }
 }

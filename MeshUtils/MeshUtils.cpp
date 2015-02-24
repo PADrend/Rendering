@@ -1848,15 +1848,25 @@ int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray) {
 
 
 //! (static)
-void mergeCloseVertices(Mesh * mesh, float tolerance) {
+uint32_t mergeCloseVertices(Mesh * mesh, float tolerance) {
 	const VertexDescription & desc = mesh->getVertexDescription();
 	const uint32_t indexCount = mesh->getIndexCount();
 
 	auto posAcc = PositionAttributeAccessor::create(mesh->openVertexData(), VertexAttributeIds::POSITION);
 
 	auto comp = [&posAcc, &tolerance](const RawVertex& lhs, const RawVertex& rhs) -> bool {
-		return posAcc->getPosition(lhs.getIndex()).equals(posAcc->getPosition(rhs.getIndex()), tolerance) ? false : lhs < rhs;
+		auto v1 = posAcc->getPosition(lhs.getIndex());
+		auto v2 = posAcc->getPosition(rhs.getIndex());
+		if(std::abs(v1.x()-v2.x()) > tolerance)
+			return v1.x() < v2.x();
+		if(std::abs(v1.y()-v2.y()) > tolerance)
+			return v1.y() < v2.y();
+		if(std::abs(v1.z()-v2.z()) > tolerance)
+			return v1.z() < v2.z();
+		return false;
 	};
+
+	uint32_t oldCount = mesh->getVertexCount();
 
 	// Set of vertices used to create unique vertices.
 	std::set<RawVertex, decltype(comp)> rawVertices(comp);
@@ -1873,8 +1883,8 @@ void mergeCloseVertices(Mesh * mesh, float tolerance) {
 			const uint32_t index = indices[counter];
 			const uint8_t * vertex = vertices[index];
 			RawVertex raw(index, vertex, vertexSize);
-			auto it = rawVertices.insert(raw).first;
-			indexReplace.insert(std::make_pair(index, it->getIndex()));
+			auto it = rawVertices.insert(raw);
+			indexReplace.insert(std::make_pair(index, it.first->getIndex()));
 		}
 	}
 
@@ -1915,6 +1925,8 @@ void mergeCloseVertices(Mesh * mesh, float tolerance) {
 	indices.updateIndexRange();
 
 	mesh->swap(*result.get());
+
+	return oldCount-mesh->getVertexCount();
 }
 // -----------------------------------------------------------------------------
 
