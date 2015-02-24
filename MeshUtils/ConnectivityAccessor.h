@@ -138,6 +138,39 @@ public:
 	 * @return the next corner within the triangle associated with the corner.
 	 */
 	uint32_t getNextTriangleCorner(uint32_t cIndex) const;
+
+	/**
+	 * Return the triangles that are adjacent to a vertex.
+	 * @param vIndex the vertex index
+	 * @return list of adjacent triangle indices
+	 */
+	std::vector<uint32_t> getVertexAdjacentTriangles(uint32_t vIndex) const;
+
+	/**
+	 * Return the triangles that share an edge with a triangle.
+	 * Triangles are only adjacent, if the directions of the shared edge are opposite to each other.
+	 * @param tIndex the triangle index
+	 * @return list of adjacent triangle indices
+	 */
+	std::vector<uint32_t> getAdjacentTriangles(uint32_t tIndex) const;
+
+	/**
+	 * Tests if an edge is a border edge.
+	 * An edge is a border edge if it is not shared with an edge in opposite direction.
+	 * @param vIndex1 the first vertex index
+	 * @param vIndex2 the second vertex index
+	 * @return true, if the edge is a border edge (and is, in fact, an edge)
+	 */
+	bool isBorderEdge(uint32_t vIndex1, uint32_t vIndex2) const;
+
+	/**
+	 * Tests if a triangle is a border triangle.
+	 * A triangle is a border triangle if it has at least one border edge.
+	 * @param tIndex the triangle index
+	 * @return true, if the triangle is a border triangle.
+	 */
+	bool isBorderTriangle(uint32_t tIndex) const;
+
 };
 
 } /* namespace MeshUtils */
