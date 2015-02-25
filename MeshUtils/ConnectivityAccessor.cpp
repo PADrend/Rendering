@@ -148,12 +148,12 @@ std::vector<uint32_t> ConnectivityAccessor::getAdjacentTriangles(uint32_t tIndex
 	auto e2 = std::make_pair(std::get<1>(triangle), std::get<2>(triangle)); // edge b-c
 	auto e3 = std::make_pair(std::get<2>(triangle), std::get<0>(triangle)); // edge c-a
 	for(auto e : {e1,e2,e3}) {
-		for(auto t : getVertexAdjacentTriangles(e1.first)) {
+		for(auto t : getVertexAdjacentTriangles(e.first)) {
 			uint32_t c = getTriangleCorner(t);
-			while(getCornerVertex(c) != e1.first)
+			while(getCornerVertex(c) != e.first)
 				c = getNextTriangleCorner(c);
 			uint32_t pc = getNextTriangleCorner(getNextTriangleCorner(c)); // previous corner = 2 * next corner
-			if(e1.second == getCornerVertex(pc))
+			if(e.second == getCornerVertex(pc))
 				out.push_back(t);
 		}
 	}
