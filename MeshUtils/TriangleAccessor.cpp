@@ -15,6 +15,8 @@
 #include "../Mesh/VertexAttributeAccessors.h"
 #include "../Mesh/VertexAttributeIds.h"
 
+#include <Util/StringUtils.h>
+
 #include <Geometry/Vec3.h>
 #include <Geometry/Triangle.h>
 
@@ -30,7 +32,7 @@ TriangleAccessor::TriangleAccessor(Mesh* mesh) : indices(mesh->openIndexData()),
 
 void TriangleAccessor::assertRange(uint32_t index) const {
 	if(index*3 >= indices.getIndexCount())
-		throw std::invalid_argument("Trying to access triangle " + std::to_string(index) + " of overall " + std::to_string(indices.getIndexCount()/3) + " triangles.");
+		throw std::invalid_argument("Trying to access triangle " + Util::StringUtils::toString(index) + " of overall " + Util::StringUtils::toString(indices.getIndexCount()/3) + " triangles.");
 }
 
 //! (static)

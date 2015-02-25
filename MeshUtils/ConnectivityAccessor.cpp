@@ -15,6 +15,8 @@
 #include "../Mesh/VertexAttributeAccessors.h"
 #include "../Mesh/VertexAttributeIds.h"
 
+#include <Util/StringUtils.h>
+
 #include <Geometry/Vec3.h>
 #include <Geometry/Triangle.h>
 
@@ -29,17 +31,17 @@ static const std::string unimplementedFormatMsg("Mesh is not a valid triangle me
 
 void ConnectivityAccessor::assertCornerRange(uint32_t cIndex) const {
 	if(cIndex >= indices.getIndexCount())
-		throw std::invalid_argument("Trying to access corner " + std::to_string(cIndex) + " of overall " + std::to_string(indices.getIndexCount()) + " corners.");
+		throw std::invalid_argument("Trying to access corner " + Util::StringUtils::toString(cIndex) + " of overall " + Util::StringUtils::toString(indices.getIndexCount()) + " corners.");
 }
 
 void ConnectivityAccessor::assertVertexRange(uint32_t vIndex) const {
 	if(vIndex >= vertexCorners.size())
-		throw std::invalid_argument("Trying to access vertex " + std::to_string(vIndex) + " of overall " + std::to_string(vertexCorners.size()) + " vertices.");
+		throw std::invalid_argument("Trying to access vertex " + Util::StringUtils::toString(vIndex) + " of overall " + Util::StringUtils::toString(vertexCorners.size()) + " vertices.");
 }
 
 void ConnectivityAccessor::assertTriangleRange(uint32_t tIndex) const {
 	if(tIndex*3 >= indices.getIndexCount())
-		throw std::invalid_argument("Trying to access triangle " + std::to_string(tIndex) + " of overall " + std::to_string(indices.getIndexCount()/3) + " triangles.");
+		throw std::invalid_argument("Trying to access triangle " + Util::StringUtils::toString(tIndex) + " of overall " + Util::StringUtils::toString(indices.getIndexCount()/3) + " triangles.");
 }
 
 ConnectivityAccessor::ConnectivityAccessor(Mesh* mesh) : indices(mesh->openIndexData()),

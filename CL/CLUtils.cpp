@@ -13,6 +13,7 @@
 #include "Device.h"
 
 #include <Util/Macros.h>
+#include <Util/StringUtils.h>
 
 #include <vector>
 #include <cstdint>
@@ -110,7 +111,7 @@ std::tuple<PlatformRef, DeviceRef> getFirstPlatformAndDeviceFor(uint32_t device_
 
 	PlatformRef platform = platformList.front();
 	DeviceRef device = platform->getDevices().front();
-	WARN("Could not find platform and device for the given device type: " + std::to_string(device_type)
+	WARN("Could not find platform and device for the given device type: " + Util::StringUtils::toString(device_type)
 		+ "\nFallback to " + platform->getName() + "/" + device->getName());
 	return std::make_tuple(platform, device);
 }

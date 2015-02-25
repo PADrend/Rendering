@@ -11,6 +11,7 @@
 #include "Buffer.h"
 #include "../Context.h"
 #include "../CLUtils.h"
+#include <Util/StringUtils.h>
 
 #pragma warning(push, 0)
 #include <CL/cl.hpp>
@@ -37,7 +38,7 @@ Buffer::Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t h
 	cl_int err;
 	mem.reset(new cl::Buffer(*context->_internal(), flags, size, hostPtr, &err));
 	if(err != CL_SUCCESS) {
-		WARN("Could not create buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
+		WARN("Could not create buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 		FAIL();
 	}
 }
@@ -58,7 +59,7 @@ Buffer::Buffer(Context* context, ReadWrite_t readWrite, uint32_t glHandle) : Mem
 		cl_int err;
 		mem.reset(new cl::BufferGL(*context->_internal(), flags, glHandle, &err));
 		if(err != CL_SUCCESS) {
-			WARN("Could not create gl buffer (" + getErrorString(err) + "[" + std::to_string(err) + "])");
+			WARN("Could not create gl buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 			FAIL();
 		}
 }
@@ -97,7 +98,7 @@ Buffer* Buffer::createSubBuffer(ReadWrite_t readWrite, size_t origin, size_t siz
 	cl_buffer_region region{origin, size};
 	cl::Buffer subbuffer = static_cast<cl::Buffer*>(mem.get())->createSubBuffer(flags, CL_BUFFER_CREATE_TYPE_REGION, &region, &err);
 	if(err != CL_SUCCESS) {
-		WARN("Could not create subbuffer (" + std::to_string(err) + ")");
+		WARN("Could not create subbuffer (" + Util::StringUtils::toString(err) + ")");
 		return nullptr;
 	}
 	return new Buffer(context.get(), &subbuffer, type);
