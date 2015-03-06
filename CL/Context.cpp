@@ -25,7 +25,7 @@
 
 #if defined __APPLE__ || defined(MACOSX)
 #else
-    #if defined WIN32
+    #if defined _WIN32
     #else
         //needed for context sharing functions
         #include <GL/glx.h>
@@ -48,7 +48,7 @@ std::vector<cl_context_properties> getContextProperties(const cl::Platform& plat
 				0
 			};
 		#else
-			#if defined WIN32 // Win32
+			#if defined _WIN32 // Win32
 				return {
 					CL_GL_CONTEXT_KHR, reinterpret_cast<cl_context_properties>(wglGetCurrentContext()),
 					CL_WGL_HDC_KHR, reinterpret_cast<cl_context_properties>(wglGetCurrentDC()),
