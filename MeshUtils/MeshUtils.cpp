@@ -1793,15 +1793,16 @@ void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_
 
 	// reassemble mesh
 	// - indices
-	uint32_t iCount = triangles.size() * 3;
-	indices.allocate(iCount);
-	uint32_t i=0;
-	for (auto t : triangles) {
-		indices[i++] = t.a.getIndex();
-		indices[i++] = t.b.getIndex();
-		indices[i++] = t.c.getIndex();
+	{
+		indices.allocate(triangles.size() * 3);
+		uint32_t i=0;
+		for (auto t : triangles) {
+			indices[i++] = t.a.getIndex();
+			indices[i++] = t.b.getIndex();
+			indices[i++] = t.c.getIndex();
+		}
+		indices.updateIndexRange();
 	}
-	indices.updateIndexRange();
 
 	// - vertices
 	vertices.allocate(vertexArray.size(), vd);

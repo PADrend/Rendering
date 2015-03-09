@@ -21,6 +21,7 @@
 #include <Geometry/Triangle.h>
 
 #include <limits>
+#include <set>
 
 #define INVALID std::numeric_limits<uint32_t>::max()
 
@@ -46,7 +47,7 @@ void ConnectivityAccessor::assertTriangleRange(uint32_t tIndex) const {
 
 ConnectivityAccessor::ConnectivityAccessor(Mesh* mesh) : indices(mesh->openIndexData()),
 		posAcc(PositionAttributeAccessor::create(mesh->openVertexData(), VertexAttributeIds::POSITION)),
-		triAcc(TriangleAccessor::create(mesh)) {
+		triAcc(TriangleAccessor::create(mesh)), meshDataHolder(new LocalMeshDataHolder(mesh)) {
 	vertexCorners.resize(mesh->getVertexCount(), INVALID);
 	triangleNextCorners.resize(indices.getIndexCount(), INVALID);
 
@@ -139,6 +140,20 @@ std::vector<uint32_t> ConnectivityAccessor::getVertexAdjacentTriangles(uint32_t 
 		nc = getNextVertexCorner(nc);
 	}
 	return out;
+}
+
+std::vector<uint32_t> ConnectivityAccessor::getVertexAdjacentVertices(uint32_t vIndex) const {
+	std::set<uint32_t> out;
+	uint32_t c = getVertexCorner(vIndex);
+	out.insert(getCornerVertex(getNextTriangleCorner(c)));
+	out.insert(getCornerVertex(getNextTriangleCorner(getNextTriangleCorner(c))));
+	uint32_t nc = getNextVertexCorner(c);
+	while(nc != c && nc != INVALID) {
+		out.insert(getCornerVertex(getNextTriangleCorner(nc)));
+		out.insert(getCornerVertex(getNextTriangleCorner(getNextTriangleCorner(nc))));
+		nc = getNextVertexCorner(nc);
+	}
+	return std::vector<uint32_t>(out.begin(), out.end());
 }
 
 std::vector<uint32_t> ConnectivityAccessor::getAdjacentTriangles(uint32_t tIndex) const {

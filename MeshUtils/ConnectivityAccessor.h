@@ -10,6 +10,7 @@
 #ifndef RENDERING_CONNECTIVITYACCESSOR_H_
 #define RENDERING_CONNECTIVITYACCESSOR_H_
 
+#include "LocalMeshDataHolder.h"
 #include "TriangleAccessor.h"
 
 #include <Util/References.h>
@@ -17,6 +18,7 @@
 
 #include <tuple>
 #include <vector>
+#include <memory>
 
 namespace Geometry {
 template<typename _T> class _Vec3;
@@ -60,6 +62,7 @@ private:
 	MeshIndexData& indices;
 	Util::Reference<PositionAttributeAccessor> posAcc;
 	Util::Reference<TriangleAccessor> triAcc;
+	std::unique_ptr<LocalMeshDataHolder> meshDataHolder;
 	std::vector<uint32_t> vertexCorners;
 	std::vector<uint32_t> triangleNextCorners;
 protected:
@@ -145,6 +148,13 @@ public:
 	 * @return list of adjacent triangle indices
 	 */
 	std::vector<uint32_t> getVertexAdjacentTriangles(uint32_t vIndex) const;
+
+	/**
+	 * Return the vertices that are adjacent to a vertex.
+	 * @param vIndex the vertex index
+	 * @return list of adjacent vertex indices
+	 */
+	std::vector<uint32_t> getVertexAdjacentVertices(uint32_t vIndex) const;
 
 	/**
 	 * Return the triangles that share an edge with a triangle.

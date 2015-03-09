@@ -50,8 +50,8 @@ public:
 
 	cl::Sampler* _internal() const { return sampler.get(); }
 private:
-	std::unique_ptr<cl::Sampler> sampler;
 	ContextRef context;
+	std::unique_ptr<cl::Sampler> sampler;
 };
 
 } /* namespace CL */

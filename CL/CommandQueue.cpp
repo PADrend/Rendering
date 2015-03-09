@@ -21,9 +21,14 @@
 #include <Util/StringUtils.h>
 
 #define CL_USE_DEPRECATED_OPENCL_1_1_APIS
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 #include <iostream>
 
@@ -31,10 +36,12 @@ namespace Rendering {
 namespace CL {
 
 template<uint32_t ...S, typename T>
+inline
 cl::NDRange _toNDRange(T&& tuple) {
 	return cl::NDRange(std::get<S>(tuple)...);
 }
 
+inline
 cl::NDRange toNDRange(const RangeND_t& range) {
 	switch (range.dim) {
 	case 1:
@@ -46,10 +53,12 @@ cl::NDRange toNDRange(const RangeND_t& range) {
 	case 3:
 		return _toNDRange<0, 1, 2>(range.range);
 		break;
+	default:
+		return cl::NullRange;
 	}
-	return cl::NullRange;
 }
 
+inline
 cl::size_t<3> toSize_t(const RangeND_t& range) {
 	cl::size_t<3> sizes;
 	sizes[0] = range.range[0];
@@ -58,7 +67,7 @@ cl::size_t<3> toSize_t(const RangeND_t& range) {
 	return sizes;
 }
 
-CommandQueue::CommandQueue(Context* context, Device* device, bool outOfOrderExec /*= false*/, bool profiling /*= false*/) : context(context), device(device) {
+CommandQueue::CommandQueue(Context* _context, Device* _device, bool outOfOrderExec /*= false*/, bool profiling /*= false*/) : Util::ReferenceCounter<CommandQueue>(), context(_context), device(_device) {
 	cl_command_queue_properties prop = outOfOrderExec ? CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE : 0;
 	if (profiling)
 		prop |= CL_QUEUE_PROFILING_ENABLE;
@@ -69,42 +78,42 @@ CommandQueue::CommandQueue(Context* context, Device* device, bool outOfOrderExec
 
 CommandQueue::~CommandQueue() = default;
 
-CommandQueue::CommandQueue(const CommandQueue& queue) :
-		queue(new cl::CommandQueue(*queue.queue.get())), context(queue.context), device(queue.device) {
+CommandQueue::CommandQueue(const CommandQueue& _queue) :  Util::ReferenceCounter<CommandQueue>(),
+		queue(new cl::CommandQueue(*_queue.queue.get())), context(_queue.context), device(_queue.device) {
 }
 
 //CommandQueue::CommandQueue(CommandQueue&& queue) = default;
 //
 //CommandQueue& CommandQueue::operator=(CommandQueue&&) = default;
 
-bool CommandQueue::readBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, void* ptr, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::readBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, void* ptr, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueReadBuffer(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, offset, size, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 	THROW_ERROR_IF(err != CL_SUCCESS, "Could not read buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::writeBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, void* ptr, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::writeBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, void* ptr, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueWriteBuffer(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, offset, size, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 	THROW_ERROR_IF(err != CL_SUCCESS, "Could not write buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::copyBuffer(Buffer* src, Buffer* dst, size_t srcOffset, size_t dstOffset, size_t size, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::copyBuffer(Buffer* src, Buffer* dst, size_t srcOffset, size_t dstOffset, size_t size, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyBuffer(*src->_internal<cl::Buffer>(), *dst->_internal<cl::Buffer>(), srcOffset, dstOffset, size, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 	THROW_ERROR_IF(err != CL_SUCCESS, "Could not copy buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::readBufferRect(Buffer* buffer, bool blocking, const RangeND_t& bufferOffset, const RangeND_t& hostOffset, const RangeND_t& region, void* ptr, const EventList_t& waitForEvents, Event* event, size_t bufferRowPitch, size_t bufferSlicePitch, size_t hostRowPitch, size_t hostSlicePitch) {
+bool CommandQueue::readBufferRect(Buffer* buffer, bool blocking, const RangeND_t& bufferOffset, const RangeND_t& hostOffset, const RangeND_t& region, void* ptr, const EventList_t& _waitForEvents, Event* event, size_t bufferRowPitch, size_t bufferSlicePitch, size_t hostRowPitch, size_t hostSlicePitch) {
 	cl::size_t<3> cl_buf_off = toSize_t(bufferOffset);
 	cl::size_t<3> cl_host_off = toSize_t(hostOffset);
 	cl::size_t<3> cl_region = toSize_t(region);
@@ -112,14 +121,14 @@ bool CommandQueue::readBufferRect(Buffer* buffer, bool blocking, const RangeND_t
 		if (cl_region[i] == 0)
 			cl_region[i] = 1;
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueReadBufferRect(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, cl_buf_off, cl_host_off, cl_region, bufferRowPitch, bufferSlicePitch, hostRowPitch, hostSlicePitch, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 	THROW_ERROR_IF(err != CL_SUCCESS, "Could not read buffer rect (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::writeBufferRect(Buffer* buffer, bool blocking, const RangeND_t& bufferOffset, const RangeND_t& hostOffset, const RangeND_t& region, void* ptr, const EventList_t& waitForEvents, Event* event, size_t bufferRowPitch, size_t bufferSlicePitch, size_t hostRowPitch, size_t hostSlicePitch) {
+bool CommandQueue::writeBufferRect(Buffer* buffer, bool blocking, const RangeND_t& bufferOffset, const RangeND_t& hostOffset, const RangeND_t& region, void* ptr, const EventList_t& _waitForEvents, Event* event, size_t bufferRowPitch, size_t bufferSlicePitch, size_t hostRowPitch, size_t hostSlicePitch) {
 	cl::size_t<3> cl_buf_off = toSize_t(bufferOffset);
 	cl::size_t<3> cl_host_off = toSize_t(hostOffset);
 	cl::size_t<3> cl_region = toSize_t(region);
@@ -127,14 +136,14 @@ bool CommandQueue::writeBufferRect(Buffer* buffer, bool blocking, const RangeND_
 		if (cl_region[i] == 0)
 			cl_region[i] = 1;
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueWriteBufferRect(*buffer->_internal<cl::Buffer>(), blocking ? CL_TRUE : CL_FALSE, cl_buf_off, cl_host_off, cl_region, bufferRowPitch, bufferSlicePitch, hostRowPitch, hostSlicePitch, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 	THROW_ERROR_IF(err != CL_SUCCESS, "Could not write buffer rect (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::copyBufferRect(Buffer* src, Buffer* dst, const RangeND_t& srcOrigin, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& waitForEvents, Event* event, size_t srcRowPitch, size_t srcSlicePitch, size_t dstRowPitch, size_t dstSlicePitch) {
+bool CommandQueue::copyBufferRect(Buffer* src, Buffer* dst, const RangeND_t& srcOrigin, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& _waitForEvents, Event* event, size_t srcRowPitch, size_t srcSlicePitch, size_t dstRowPitch, size_t dstSlicePitch) {
 	cl::size_t<3> cl_srcorigin = toSize_t(srcOrigin);
 	cl::size_t<3> cl_dstcorigin = toSize_t(dstOrigin);
 	cl::size_t<3> cl_region = toSize_t(region);
@@ -142,7 +151,7 @@ bool CommandQueue::copyBufferRect(Buffer* src, Buffer* dst, const RangeND_t& src
 		if (cl_region[i] == 0)
 			cl_region[i] = 1;
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyBufferRect(*src->_internal<cl::Buffer>(), *dst->_internal<cl::Buffer>(), cl_srcorigin, cl_dstcorigin, cl_region, srcRowPitch, srcSlicePitch, dstRowPitch, dstSlicePitch, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -150,14 +159,14 @@ bool CommandQueue::copyBufferRect(Buffer* src, Buffer* dst, const RangeND_t& src
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::readImage(Image* image, bool blocking, const RangeND_t& origin, const RangeND_t& region, void* ptr, const EventList_t& waitForEvents, Event* event, size_t rowPitch, size_t slicePitch) {
+bool CommandQueue::readImage(Image* image, bool blocking, const RangeND_t& origin, const RangeND_t& region, void* ptr, const EventList_t& _waitForEvents, Event* event, size_t rowPitch, size_t slicePitch) {
 	cl::size_t<3> cl_origin = toSize_t(origin);
 	cl::size_t<3> cl_region = toSize_t(region);
 	for (uint_fast8_t i = 0; i < 3; ++i)
 		if (cl_region[i] == 0)
 			cl_region[i] = 1;
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueReadImage(*image->_internal<cl::Image>(), blocking ? CL_TRUE : CL_FALSE, cl_origin, cl_region, rowPitch, slicePitch, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -165,14 +174,14 @@ bool CommandQueue::readImage(Image* image, bool blocking, const RangeND_t& origi
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::writeImage(Image* image, bool blocking, const RangeND_t& origin, const RangeND_t& region, void* ptr, const EventList_t& waitForEvents, Event* event, size_t rowPitch, size_t slicePitch) {
+bool CommandQueue::writeImage(Image* image, bool blocking, const RangeND_t& origin, const RangeND_t& region, void* ptr, const EventList_t& _waitForEvents, Event* event, size_t rowPitch, size_t slicePitch) {
 	cl::size_t<3> cl_origin = toSize_t(origin);
 	cl::size_t<3> cl_region = toSize_t(region);
 	for (uint_fast8_t i = 0; i < 3; ++i)
 		if (cl_region[i] == 0)
 			cl_region[i] = 1;
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueWriteImage(*image->_internal<cl::Image>(), blocking ? CL_TRUE : CL_FALSE, cl_origin, cl_region, rowPitch, slicePitch, ptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -180,7 +189,7 @@ bool CommandQueue::writeImage(Image* image, bool blocking, const RangeND_t& orig
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::copyImage(Image* src, Image* dst, const RangeND_t& srcOrigin, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::copyImage(Image* src, Image* dst, const RangeND_t& srcOrigin, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& _waitForEvents, Event* event) {
 	cl::size_t<3> cl_srcorigin = toSize_t(srcOrigin);
 	cl::size_t<3> cl_dstcorigin = toSize_t(dstOrigin);
 	cl::size_t<3> cl_region = toSize_t(region);
@@ -188,7 +197,7 @@ bool CommandQueue::copyImage(Image* src, Image* dst, const RangeND_t& srcOrigin,
 		if (cl_region[i] == 0)
 			cl_region[i] = 1;
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyImage(*src->_internal<cl::Image>(), *dst->_internal<cl::Image>(), cl_srcorigin, cl_dstcorigin, cl_region, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -196,14 +205,14 @@ bool CommandQueue::copyImage(Image* src, Image* dst, const RangeND_t& srcOrigin,
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::copyImageToBuffer(Image* src, Buffer* dst, const RangeND_t& srcOrigin, const RangeND_t& region, size_t dstOffset, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::copyImageToBuffer(Image* src, Buffer* dst, const RangeND_t& srcOrigin, const RangeND_t& region, size_t dstOffset, const EventList_t& _waitForEvents, Event* event) {
 	cl::size_t<3> cl_srcorigin = toSize_t(srcOrigin);
 	cl::size_t<3> cl_region = toSize_t(region);
 	for (uint_fast8_t i = 0; i < 3; ++i)
 		if (cl_region[i] == 0)
 			cl_region[i] = 1;
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyImageToBuffer(*src->_internal<cl::Image>(), *dst->_internal<cl::Buffer>(), cl_srcorigin, cl_region, dstOffset, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -211,14 +220,14 @@ bool CommandQueue::copyImageToBuffer(Image* src, Buffer* dst, const RangeND_t& s
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::copyBufferToImage(Buffer* src, Image* dst, size_t srcOffset, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::copyBufferToImage(Buffer* src, Image* dst, size_t srcOffset, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& _waitForEvents, Event* event) {
 	cl::size_t<3> cl_dstcorigin = toSize_t(dstOrigin);
 	cl::size_t<3> cl_region = toSize_t(region);
 	for (uint_fast8_t i = 0; i < 3; ++i)
 		if (cl_region[i] == 0)
 			cl_region[i] = 1;
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueCopyBufferToImage(*src->_internal<cl::Buffer>(), *dst->_internal<cl::Image>(), srcOffset, cl_dstcorigin, cl_region, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -226,9 +235,9 @@ bool CommandQueue::copyBufferToImage(Buffer* src, Image* dst, size_t srcOffset, 
 	return err == CL_SUCCESS;
 }
 
-void* CommandQueue::mapBuffer(Buffer* buffer, bool blocking, ReadWrite_t readWrite, size_t offset, size_t size, const EventList_t& waitForEvents, Event* event) {
+void* CommandQueue::mapBuffer(Buffer* buffer, bool blocking, ReadWrite_t readWrite, size_t offset, size_t size, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_mem_flags flags = readWrite == ReadWrite_t::ReadWrite ? CL_MAP_READ | CL_MAP_WRITE : (readWrite == ReadWrite_t::WriteOnly ? CL_MAP_WRITE : CL_MAP_READ);
 	cl_int err;
@@ -238,9 +247,9 @@ void* CommandQueue::mapBuffer(Buffer* buffer, bool blocking, ReadWrite_t readWri
 	return ptr;
 }
 
-MappedImage CommandQueue::mapImage(Image* image, bool blocking, ReadWrite_t readWrite, const RangeND_t& origin, const RangeND_t& region, const EventList_t& waitForEvents, Event* event) {
+MappedImage CommandQueue::mapImage(Image* image, bool blocking, ReadWrite_t readWrite, const RangeND_t& origin, const RangeND_t& region, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_mem_flags flags = readWrite == ReadWrite_t::ReadWrite ? CL_MAP_READ | CL_MAP_WRITE : (readWrite == ReadWrite_t::WriteOnly ? CL_MAP_WRITE : CL_MAP_READ);
 	cl::size_t<3> cl_origin = toSize_t(origin);
@@ -253,9 +262,9 @@ MappedImage CommandQueue::mapImage(Image* image, bool blocking, ReadWrite_t read
 	return out;
 }
 
-bool CommandQueue::unmapMemory(Memory* memory, void* mappedPtr, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::unmapMemory(Memory* memory, void* mappedPtr, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueUnmapMemObject(*memory->_internal(), mappedPtr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -263,9 +272,9 @@ bool CommandQueue::unmapMemory(Memory* memory, void* mappedPtr, const EventList_
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::execute(Kernel* kernel, const RangeND_t& offset, const RangeND_t& global, const RangeND_t& local, const std::vector<Event*>& waitForEvents, Event* event) {
+bool CommandQueue::execute(Kernel* kernel, const RangeND_t& offset, const RangeND_t& global, const RangeND_t& local, const std::vector<Event*>& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueNDRangeKernel(*kernel->_internal(), toNDRange(offset), toNDRange(global), toNDRange(local), cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -273,9 +282,9 @@ bool CommandQueue::execute(Kernel* kernel, const RangeND_t& offset, const RangeN
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::execute(Kernel* kernel, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::execute(Kernel* kernel, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	cl_int err = queue->enqueueTask(*kernel->_internal(), cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 
@@ -283,7 +292,7 @@ bool CommandQueue::execute(Kernel* kernel, const EventList_t& waitForEvents, Eve
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::execute(std::function<void()> kernel, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::execute(std::function<void()> kernel, const EventList_t& _waitForEvents, Event* event) {
 	struct fnWrapper{
 		std::function<void()> function;
 		static void kernel(void * userData) {
@@ -292,7 +301,7 @@ bool CommandQueue::execute(std::function<void()> kernel, const EventList_t& wait
 		}
 	};
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	fnWrapper wrapper{kernel};
 	cl_int err = queue->enqueueNativeKernel(fnWrapper::kernel, std::make_pair(&wrapper, sizeof(fnWrapper)), nullptr, nullptr, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
@@ -301,9 +310,9 @@ bool CommandQueue::execute(std::function<void()> kernel, const EventList_t& wait
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::acquireGLObjects(const std::vector<Memory*>& buffers, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::acquireGLObjects(const std::vector<Memory*>& buffers, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	std::vector<cl::Memory> cl_buffers;
 	for (auto buf : buffers)
@@ -314,9 +323,9 @@ bool CommandQueue::acquireGLObjects(const std::vector<Memory*>& buffers, const E
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::releaseGLObjects(const std::vector<Memory*>& buffers, const EventList_t& waitForEvents, Event* event) {
+bool CommandQueue::releaseGLObjects(const std::vector<Memory*>& buffers, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 	std::vector<cl::Memory> cl_buffers;
 	for (auto buf : buffers)
@@ -335,9 +344,9 @@ void CommandQueue::marker(Event* event) {
 #endif
 }
 
-void CommandQueue::waitForEvents(const EventList_t& waitForEvents) {
+void CommandQueue::waitForEvents(const EventList_t& _waitForEvents) {
 	std::vector<cl::Event> cl_wait;
-	for (auto e : waitForEvents)
+	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
 #if defined(CL_VERSION_1_2) && !defined(CL_USE_DEPRECATED_OPENCL_1_1_APIS)
 	queue->enqueueMarkerWithWaitList(&cl_wait, nullptr);

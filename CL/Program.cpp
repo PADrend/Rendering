@@ -13,9 +13,14 @@
 #include "Device.h"
 #include "CLUtils.h"
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 #include <Util/Macros.h>
 #include <Util/IO/FileUtils.h>
@@ -25,16 +30,16 @@
 namespace Rendering {
 namespace CL {
 
-Program::Program(Context* context) : context(context) {
+Program::Program(Context* _context) : Util::ReferenceCounter<Program>(), context(_context) {
 	//cl_int err;
 	//program.reset(new cl::Program(*context->_internal(), "", &err));
 	//THROW_ERROR_IF(err != CL_SUCCESS, getErrorString(err));
 }
 
-Program::Program(Context* context, const std::vector<std::string>& sources) : context(context) {
+Program::Program(Context* _context, const std::vector<std::string>& _sources) : Util::ReferenceCounter<Program>(), context(_context) {
 	cl_int err;
 	cl::Program::Sources cl_sources;
-	for(auto src : sources)
+	for(auto src : _sources)
 		cl_sources.push_back(std::make_pair(src.c_str(),src.size()));
 	program.reset(new cl::Program(*context->_internal(), cl_sources, &err));
 	THROW_ERROR_IF(err != CL_SUCCESS, getErrorString(err));
@@ -42,7 +47,7 @@ Program::Program(Context* context, const std::vector<std::string>& sources) : co
 
 Program::~Program() = default;
 
-Program::Program(const Program& program) : program(new cl::Program(*program.program.get())), context(program.context) { }
+Program::Program(const Program& _program) : Util::ReferenceCounter<Program>(), program(new cl::Program(*_program.program.get())), context(_program.context) { }
 
 //Program::Program(Program&& program) = default;
 

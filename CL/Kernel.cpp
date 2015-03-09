@@ -16,16 +16,20 @@
 #include "Memory/Sampler.h"
 #include "CLUtils.h"
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
-
+COMPILER_WARN_POP
 #include <Util/Macros.h>
 
 namespace Rendering {
 namespace CL {
 
-Kernel::Kernel(Program* program, const std::string& name) : program(program) {
+Kernel::Kernel(Program* _program, const std::string& name) : Util::ReferenceCounter<Kernel>(), program(_program) {
 	cl_int err;
 	kernel.reset(new cl::Kernel(*program->_internal(), name.c_str(), &err));
 	if(err != CL_SUCCESS)
@@ -33,7 +37,7 @@ Kernel::Kernel(Program* program, const std::string& name) : program(program) {
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-Kernel::Kernel(const Kernel& kernel) : kernel(new cl::Kernel(*kernel.kernel.get())), program(kernel.program) { }
+Kernel::Kernel(const Kernel& _kernel) : Util::ReferenceCounter<Kernel>(), kernel(new cl::Kernel(*_kernel.kernel.get())), program(_kernel.program) { }
 
 Kernel::~Kernel() = default;
 

@@ -13,9 +13,14 @@
 
 #include <Util/Macros.h>
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 namespace Rendering {
 namespace CL {
@@ -29,11 +34,11 @@ const uint32_t Device::TYPE_ALL = CL_DEVICE_TYPE_ALL;
 
 //Device::Device() = default;
 
-Device::Device(Platform* platform, cl::Device* device) : device(new cl::Device(*device)), platform(platform) { }
+Device::Device(Platform* _platform, cl::Device* _device) : Util::ReferenceCounter<Device>(), device(new cl::Device(*_device)), platform(_platform) { }
 
 Device::~Device() = default;
 
-Device::Device(const Device& device) : device(new cl::Device(*device.device.get())) { }
+Device::Device(const Device& _device) : Util::ReferenceCounter<Device>(), device(new cl::Device(*_device.device.get())) { }
 
 //Device::Device(Device&& device) = default;
 //

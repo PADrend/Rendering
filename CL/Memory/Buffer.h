@@ -57,7 +57,7 @@ public:
 	 * @param readWrite This flag specifies if the memory object will be read or written by a kernel.
 	 * @param buffer A GL buffer object.
 	 */
-	Buffer(Context* context, ReadWrite_t readWrite, const BufferObject& buffer) : Buffer(context, readWrite, buffer.getGLId()) {};
+	Buffer(Context* _context, ReadWrite_t readWrite, const BufferObject& buffer) : Buffer(_context, readWrite, buffer.getGLId()) {};
 
 	Buffer(const Buffer& buffer);
 

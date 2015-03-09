@@ -10,10 +10,13 @@
 #ifndef RENDERING_TRIANGLEACCESSOR_H_
 #define RENDERING_TRIANGLEACCESSOR_H_
 
+#include "LocalMeshDataHolder.h"
+
 #include <Util/References.h>
 #include <Util/ReferenceCounter.h>
 
 #include <tuple>
+#include <memory>
 
 namespace Geometry {
 template<typename _T> class _Vec3;
@@ -33,6 +36,7 @@ class TriangleAccessor : public Util::ReferenceCounter<TriangleAccessor> {
 private:
 	MeshIndexData& indices;
 	Util::Reference<PositionAttributeAccessor> posAcc;
+	std::unique_ptr<LocalMeshDataHolder> meshDataHolder;
 protected:
 	TriangleAccessor(Mesh* mesh);
 

@@ -24,13 +24,19 @@
 #include <Util/TypeConstant.h>
 
 #define CL_USE_DEPRECATED_OPENCL_1_1_APIS
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 namespace Rendering {
 namespace CL {
 
+inline
 cl::ImageFormat pixelFormatToImageFormat(PixelFormatCL pixelFormat) {
 	cl::ImageFormat format;
 	switch(pixelFormat.channelOrder) {
@@ -47,6 +53,7 @@ cl::ImageFormat pixelFormatToImageFormat(PixelFormatCL pixelFormat) {
 	case ChannelOrder::Rx: 			format.image_channel_order = CL_Rx;			break;
 	case ChannelOrder::RGx: 		format.image_channel_order = CL_RGx; 		break;
 	case ChannelOrder::RGBx: 		format.image_channel_order = CL_RGBx; 		break;
+	default: break;
 	}
 	switch(pixelFormat.channelType) {
 	case ChannelType::SNORM_INT8:		format.image_channel_data_type = CL_SNORM_INT8; 		break;
@@ -64,10 +71,12 @@ cl::ImageFormat pixelFormatToImageFormat(PixelFormatCL pixelFormat) {
 	case ChannelType::UNSIGNED_INT32:	format.image_channel_data_type = CL_UNSIGNED_INT32; 	break;
 	case ChannelType::HALF_FLOAT:		format.image_channel_data_type = CL_HALF_FLOAT; 		break;
 	case ChannelType::FLOAT:			format.image_channel_data_type = CL_FLOAT; 				break;
+	default: break;
 	}
 	return format;
 }
 
+inline
 PixelFormatCL imageFormatToPixelFormat(cl_image_format imageFormat) {
 	PixelFormatCL format;
 	switch(imageFormat.image_channel_order) {
@@ -84,6 +93,7 @@ PixelFormatCL imageFormatToPixelFormat(cl_image_format imageFormat) {
 	case CL_Rx: 		format.channelOrder = ChannelOrder::Rx;			break;
 	case CL_RGx: 		format.channelOrder = ChannelOrder::RGx; 		break;
 	case CL_RGBx: 		format.channelOrder = ChannelOrder::RGBx; 		break;
+	default: break;
 	}
 	switch(imageFormat.image_channel_data_type) {
 	case CL_SNORM_INT8:			format.channelType = ChannelType::SNORM_INT8; 		break;
@@ -101,10 +111,12 @@ PixelFormatCL imageFormatToPixelFormat(cl_image_format imageFormat) {
 	case CL_UNSIGNED_INT32:		format.channelType = ChannelType::UNSIGNED_INT32; 	break;
 	case CL_HALF_FLOAT:			format.channelType = ChannelType::HALF_FLOAT; 		break;
 	case CL_FLOAT:				format.channelType = ChannelType::FLOAT; 			break;
+	default: break;
 	}
 	return format;
 }
 
+inline
 cl::ImageFormat bitmapFormatToImageFormat(Util::PixelFormat pixelFormat) {
 	using namespace Util;
 	cl::ImageFormat format{0,0};
@@ -141,6 +153,7 @@ cl::ImageFormat bitmapFormatToImageFormat(Util::PixelFormat pixelFormat) {
 				&& pixelFormat.getByteOffset_r() < pixelFormat.getByteOffset_a())
 			format.image_channel_order = CL_BGRA;
 		break;
+	default: break;
 	}
 
 	switch(pixelFormat.getValueType()) {
@@ -155,11 +168,13 @@ cl::ImageFormat bitmapFormatToImageFormat(Util::PixelFormat pixelFormat) {
 	case TypeConstant::INT64:	// unsupported
 	case TypeConstant::DOUBLE:	// unsupported
 		break;
+	default: break;
 	}
 
 	return format;
 }
 
+inline
 cl::Image* createImageBuffer(Context* context, Image::Format format, ReadWrite_t readWrite, HostPtr_t hostPtrUsage, void* hostPtr, ReadWrite_t hostReadWrite) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, hostPtrUsage, hostReadWrite);
 	cl::ImageFormat cl_format = pixelFormatToImageFormat(format.pixelFormat);
@@ -182,18 +197,17 @@ cl::Image* createImageBuffer(Context* context, Image::Format format, ReadWrite_t
 		case ImageType::IMAGE_3D:
 			image = new cl::Image3D(*context->_internal(), flags, cl_format,format.width, format.height, format.numLayers, format.rowPitch, format.slicePitch, hostPtr, &err);
 			break;
+		case ImageType::IMAGE_GL:
+		case ImageType::IMAGE_1D_BUFFER:
 		default:
-			WARN("Could not create image (Unsupported image format).");
-			FAIL();
+			THROW_ERROR("Could not create image (Unsupported image format).");
 	}
 
-	if(err != CL_SUCCESS) {
-		WARN("Could not create image (" + getErrorString(err) + ").");
-		FAIL();
-	}
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not create image (" + getErrorString(err) + ").");
 	return image;
 }
 
+inline
 cl::Image* createImageBufferFromBitmap(Context* context, ReadWrite_t readWrite, Util::Bitmap* bitmap, HostPtr_t hostPtrUsage, ReadWrite_t hostReadWrite) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, hostPtrUsage, hostReadWrite);
 	cl::ImageFormat cl_format = bitmapFormatToImageFormat(bitmap->getPixelFormat());
@@ -212,6 +226,7 @@ cl::Image* createImageBufferFromBitmap(Context* context, ReadWrite_t readWrite, 
 	return image;
 }
 
+inline
 cl::Image* copyImageBuffer(const Image& source) {
 	switch (source.getType()) {
 		case ImageType::IMAGE_1D:
@@ -226,7 +241,7 @@ cl::Image* copyImageBuffer(const Image& source) {
 			return new cl::Image3D(*source._internal<cl::Image3D>());
 		case ImageType::IMAGE_1D_BUFFER:
 			return new cl::Image1DBuffer(*source._internal<cl::Image1DBuffer>());
-		case ImageType::IMAGE_GL:
+		case ImageType::IMAGE_GL: {
 			#if !defined(CL_VERSION_1_2) || defined(CL_USE_DEPRECATED_OPENCL_1_1_APIS)
 				uint32_t target = source.getGLTextureTarget();
 				if(target == TextureUtils::textureTypeToGLTextureType(TextureType::TEXTURE_2D)) {
@@ -239,8 +254,11 @@ cl::Image* copyImageBuffer(const Image& source) {
 			#else
 				return new cl::ImageGL(*source._internal<cl::ImageGL>());
 			#endif
+			} break;
+		default:
+			WARN("unsupported image type.");
+			return nullptr;
 	}
-	return nullptr;
 }
 
 Image::Format::Format() :
@@ -248,10 +266,10 @@ Image::Format::Format() :
 		pixelFormat({ChannelOrder::RGBA, ChannelType::UNSIGNED_INT8}),
 		rowPitch(0), slicePitch(0) { }
 
-Image::Image(Context* context, Format format, ReadWrite_t readWrite, HostPtr_t hostPtrUsage, void* hostPtr, ReadWrite_t hostReadWrite) :
-		Memory(context, createImageBuffer(context, std::move(format), readWrite, hostPtrUsage, hostPtr, hostReadWrite)), type(format.type) { }
+Image::Image(Context* _context, Format format, ReadWrite_t readWrite, HostPtr_t hostPtrUsage, void* hostPtr, ReadWrite_t hostReadWrite) :
+		Memory(_context, createImageBuffer(_context, std::move(format), readWrite, hostPtrUsage, hostPtr, hostReadWrite)), type(format.type) { }
 
-Image::Image(Context* context, Format format, ReadWrite_t readWrite, Buffer* buffer) : Memory(context), type(ImageType::IMAGE_1D_BUFFER) {
+Image::Image(Context* _context, Format format, ReadWrite_t readWrite, Buffer* buffer) : Memory(_context), type(ImageType::IMAGE_1D_BUFFER) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, HostPtr_t::None, ReadWrite_t::ReadWrite);
 	cl::ImageFormat cl_format = pixelFormatToImageFormat(format.pixelFormat);
 	cl_int err;
@@ -262,7 +280,7 @@ Image::Image(Context* context, Format format, ReadWrite_t readWrite, Buffer* buf
 	}
 }
 
-Image::Image(Context* context, ReadWrite_t readWrite, TextureType target, uint32_t glHandle, uint32_t mipLevel) : Memory(context), type(ImageType::IMAGE_GL) {
+Image::Image(Context* _context, ReadWrite_t readWrite, TextureType target, uint32_t glHandle, uint32_t mipLevel) : Memory(_context), type(ImageType::IMAGE_GL) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, HostPtr_t::None, ReadWrite_t::ReadWrite);
 	uint32_t gl_target = TextureUtils::textureTypeToGLTextureType(target);
 	cl_int err;
@@ -288,11 +306,11 @@ Image::Image(Context* context, ReadWrite_t readWrite, TextureType target, uint32
 	}
 }
 
-Image::Image(Context* context, ReadWrite_t readWrite, Texture* texture, uint32_t mipLevel) :
-		Image(context, readWrite, texture->getTextureType(), texture->getGLId(), mipLevel) { }
+Image::Image(Context* _context, ReadWrite_t readWrite, Texture* texture, uint32_t mipLevel) :
+		Image(_context, readWrite, texture->getTextureType(), texture->getGLId(), mipLevel) { }
 
-Image::Image(Context* context, ReadWrite_t readWrite, Util::Bitmap* bitmap, HostPtr_t hostPtrUsage /*= Use*/, ReadWrite_t hostReadWrite /*= ReadWrite*/) :
-		Memory(context, createImageBufferFromBitmap(context, readWrite, bitmap, hostPtrUsage, hostReadWrite)), type(ImageType::IMAGE_2D) { }
+Image::Image(Context* _context, ReadWrite_t readWrite, Util::Bitmap* bitmap, HostPtr_t hostPtrUsage /*= Use*/, ReadWrite_t hostReadWrite /*= ReadWrite*/) :
+		Memory(_context, createImageBufferFromBitmap(_context, readWrite, bitmap, hostPtrUsage, hostReadWrite)), type(ImageType::IMAGE_2D) { }
 
 Image::Image(const Image& image) :
 		Memory(image.context.get(), copyImageBuffer(image)), type(image.type) { }

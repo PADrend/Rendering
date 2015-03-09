@@ -12,16 +12,21 @@
 
 #include "../Context.h"
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 namespace Rendering {
 namespace CL {
 
-Memory::Memory(Context* context, cl::Memory* mem) : mem(mem), context(context) {}
+Memory::Memory(Context* _context, cl::Memory* _mem) : Util::ReferenceCounter<Memory>(), mem(_mem), context(_context) {}
 
-Memory::Memory(Context* context) : context(context) {};
+Memory::Memory(Context* _context) : Util::ReferenceCounter<Memory>(), context(_context) {}
 
 Memory::~Memory() = default;
 
@@ -61,6 +66,9 @@ uint32_t convertToCLFlags(ReadWrite_t readWrite, HostPtr_t hostPtrUsage, ReadWri
 		case ReadWrite_t::WriteOnly:
 			flags = CL_MEM_WRITE_ONLY;
 			break;
+		case ReadWrite_t::NoAccess:
+		default:
+			break;
 	}
 	switch (hostPtrUsage) {
 		case HostPtr_t::Use:
@@ -75,6 +83,9 @@ uint32_t convertToCLFlags(ReadWrite_t readWrite, HostPtr_t hostPtrUsage, ReadWri
 		case HostPtr_t::AllocAndCopy:
 			flags |= CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR;
 			break;
+		case HostPtr_t::None:
+		default:
+			break;
 	}
 	switch (hostReadWrite) {
 		case ReadWrite_t::NoAccess:
@@ -85,6 +96,9 @@ uint32_t convertToCLFlags(ReadWrite_t readWrite, HostPtr_t hostPtrUsage, ReadWri
 			break;
 		case ReadWrite_t::WriteOnly:
 			flags |= CL_MEM_HOST_WRITE_ONLY;
+			break;
+		case ReadWrite_t::ReadWrite:
+		default:
 			break;
 	}
 	return flags;

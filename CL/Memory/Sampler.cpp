@@ -15,38 +15,42 @@
 
 #include <Util/Macros.h>
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 namespace Rendering {
 namespace CL {
 
 //Sampler::Sampler() = default;
 
-Sampler::Sampler(Context* context, bool normalizedCoords, AdressingMode_t addressingMode, FilterMode_t filterMode) : context(context){
+Sampler::Sampler(Context* context_, bool normalizedCoords, AdressingMode_t addressingMode, FilterMode_t filterMode) : Util::ReferenceCounter<Sampler>(), context(context_){
 	cl_addressing_mode aMode;
 	switch (addressingMode) {
 		case AdressingMode_t::ClampToEdge: aMode = CL_ADDRESS_CLAMP_TO_EDGE; break;
 		case AdressingMode_t::Clamp: aMode = CL_ADDRESS_CLAMP; break;
 		case AdressingMode_t::Repeat: aMode = CL_ADDRESS_REPEAT; break;
 		case AdressingMode_t::MirroredRepeat: aMode = CL_ADDRESS_MIRRORED_REPEAT; break;
+		case AdressingMode_t::None: aMode = CL_ADDRESS_NONE; break;
 		default: aMode = CL_ADDRESS_NONE; break;
 	}
 	cl_filter_mode fMode;
 	switch (filterMode) {
-		case FilterMode_t::Linear: fMode = CL_FILTER_NEAREST; break;
+		case FilterMode_t::Linear: fMode = CL_FILTER_LINEAR; break;
+		case FilterMode_t::Nearest: fMode = CL_FILTER_NEAREST; break;
 		default: fMode = CL_FILTER_NEAREST; break;
 	}
 	cl_int err;
-	sampler.reset(new cl::Sampler(*context->_internal(), normalizedCoords ? CL_TRUE : CL_FALSE, aMode, fMode));
-	if(err != CL_SUCCESS) {
-		WARN("Could not create sampler (" + getErrorString(err) + ").");
-		FAIL();
-	}
+	sampler.reset(new cl::Sampler(*context->_internal(), normalizedCoords ? CL_TRUE : CL_FALSE, aMode, fMode, &err));
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not create sampler (" + getErrorString(err) + ").");
 }
 
-Sampler::Sampler(const Sampler& sampler) : context(sampler.context), sampler(new cl::Sampler(*sampler.sampler.get())) { }
+Sampler::Sampler(const Sampler& sampler_) : Util::ReferenceCounter<Sampler>(), context(sampler_.context), sampler(new cl::Sampler(*sampler_.sampler.get())) { }
 
 //Sampler::Sampler(Sampler&& sampler) = default;
 
@@ -68,8 +72,9 @@ AdressingMode_t Sampler::getAdressingMode() const {
 			return AdressingMode_t::Repeat;
 		case CL_ADDRESS_MIRRORED_REPEAT:
 			return AdressingMode_t::MirroredRepeat;
+		default:
+			return AdressingMode_t::None;
 	}
-	return AdressingMode_t::None;
 }
 
 FilterMode_t Sampler::getFilterMode() const {
@@ -78,6 +83,8 @@ FilterMode_t Sampler::getFilterMode() const {
 			return FilterMode_t::Nearest;
 		case CL_FILTER_LINEAR:
 			return FilterMode_t::Linear;
+		default:
+			return FilterMode_t::Nearest;
 	}
 }
 

@@ -14,20 +14,25 @@
 
 #include <Util/Macros.h>
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 namespace Rendering {
 namespace CL {
 
 //Platform::Platform() = default;
 
-Platform::Platform(cl::Platform* platform) : platform(new cl::Platform(*platform)) { }
+Platform::Platform(cl::Platform* _platform) : Util::ReferenceCounter<Platform>(), platform(new cl::Platform(*_platform)) { }
 
 Platform::~Platform() = default;
 
-Platform::Platform(const Platform& platform) : platform(new cl::Platform(*platform.platform.get())) { }
+Platform::Platform(const Platform& _platform) : Util::ReferenceCounter<Platform>(), platform(new cl::Platform(*_platform.platform.get())) { }
 
 //Platform::Platform(Platform&& platform) = default;
 

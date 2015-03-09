@@ -18,9 +18,14 @@
 
 #include <Util/Macros.h>
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 
 #if defined __APPLE__ || defined(MACOSX)
@@ -35,6 +40,7 @@
 namespace Rendering {
 namespace CL {
 
+inline
 std::vector<cl_context_properties> getContextProperties(const cl::Platform& platform, bool shareGLContext) {
 	if(shareGLContext) {
 
@@ -69,7 +75,8 @@ std::vector<cl_context_properties> getContextProperties(const cl::Platform& plat
 	}
 }
 
-Context::Context(uint32_t device_type, bool shareGLContext /*= false*/) : platform(nullptr), glInterop(shareGLContext) {
+Context::Context(uint32_t device_type, bool shareGLContext /*= false*/) : Util::ReferenceCounter<Context>(),
+		platform(nullptr), glInterop(shareGLContext) {
 	cl_int err;
 	auto pfAndDev = getFirstPlatformAndDeviceFor(device_type);
 	platform = std::get<0>(pfAndDev);
@@ -80,7 +87,8 @@ Context::Context(uint32_t device_type, bool shareGLContext /*= false*/) : platfo
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-Context::Context(Platform* platform, uint32_t device_type, bool shareGLContext /*= false*/) : platform(platform), glInterop(shareGLContext) {
+Context::Context(Platform* _platform, uint32_t device_type, bool shareGLContext /*= false*/) : Util::ReferenceCounter<Context>(),
+		platform(_platform), glInterop(shareGLContext) {
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
 	context.reset(new cl::Context(static_cast<cl_device_type>(device_type), cprops.data(), nullptr, nullptr, &err));
@@ -91,7 +99,8 @@ Context::Context(Platform* platform, uint32_t device_type, bool shareGLContext /
 
 Context::~Context() = default;
 
-Context::Context(Platform* platform, const std::vector<DeviceRef>& devices, bool shareGLContext /*= false*/) : platform(platform), devices(devices), glInterop(shareGLContext) {
+Context::Context(Platform* _platform, const std::vector<DeviceRef>& _devices, bool shareGLContext /*= false*/) : Util::ReferenceCounter<Context>(),
+		platform(_platform), devices(_devices), glInterop(shareGLContext) {
 
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
@@ -104,17 +113,19 @@ Context::Context(Platform* platform, const std::vector<DeviceRef>& devices, bool
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-Context::Context(Platform* platform, Device* device, bool shareGLContext /*= false*/) : platform(platform), devices(std::vector<DeviceRef>{device}), glInterop(shareGLContext) {
+Context::Context(Platform* _platform, Device* _device, bool shareGLContext /*= false*/) : Util::ReferenceCounter<Context>(),
+		platform(_platform), devices(std::vector<DeviceRef>{_device}), glInterop(shareGLContext) {
 	cl_int err;
 	auto cprops = getContextProperties(*platform->_internal(), shareGLContext);
 	std::vector<cl::Device> cl_devices;
-	context.reset(new cl::Context(*device->_internal(), cprops.data(), nullptr, nullptr, &err));
+	context.reset(new cl::Context(*_device->_internal(), cprops.data(), nullptr, nullptr, &err));
 	if(err != CL_SUCCESS)
 		WARN("Could not create context (" + getErrorString(err) + ")");
 	FAIL_IF(err != CL_SUCCESS);
 }
 
-Context::Context(const Context& context) : context(new cl::Context(*context.context.get())), platform(context.platform), devices(context.devices), glInterop(context.glInterop) { }
+Context::Context(const Context& _context) : Util::ReferenceCounter<Context>(),
+		context(new cl::Context(*_context.context.get())), platform(_context.platform), devices(_context.devices), glInterop(_context.glInterop) { }
 
 //Context::Context(Context&& context) = default;
 //

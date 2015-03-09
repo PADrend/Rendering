@@ -13,16 +13,21 @@
 #include "../CLUtils.h"
 #include <Util/StringUtils.h>
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 #include <Util/Macros.h>
 
 namespace Rendering {
 namespace CL {
 
-Buffer::Buffer(Context* context, cl::Buffer* buffer, BufferType_t type) : Memory(context), type(type) {
+Buffer::Buffer(Context* _context, cl::Buffer* buffer, BufferType_t _type) : Memory(_context), type(_type) {
 	switch(type) {
 	case BufferType_t::TypeBuffer:
 		mem.reset(new cl::Buffer(*buffer));
@@ -30,20 +35,20 @@ Buffer::Buffer(Context* context, cl::Buffer* buffer, BufferType_t type) : Memory
 	case BufferType_t::TypeBufferGL:
 		mem.reset(new cl::BufferGL(*static_cast<cl::BufferGL*>(buffer)));
 		break;
+	default:
+		mem.reset(new cl::Buffer(*buffer));
+		break;
 	}
 }
 
-Buffer::Buffer(Context* context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage /*= None*/, void* hostPtr /*= nullptr*/, ReadWrite_t hostReadWrite /*=ReadWrite*/) : Memory(context), type(BufferType_t::TypeBuffer) {
+Buffer::Buffer(Context* _context, size_t size, ReadWrite_t readWrite, HostPtr_t hostPtrUsage /*= None*/, void* hostPtr /*= nullptr*/, ReadWrite_t hostReadWrite /*=ReadWrite*/) : Memory(_context), type(BufferType_t::TypeBuffer) {
 	cl_mem_flags flags = convertToCLFlags(readWrite, hostPtrUsage, hostReadWrite);
 	cl_int err;
 	mem.reset(new cl::Buffer(*context->_internal(), flags, size, hostPtr, &err));
-	if(err != CL_SUCCESS) {
-		WARN("Could not create buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
-		FAIL();
-	}
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not create buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 }
 
-Buffer::Buffer(Context* context, ReadWrite_t readWrite, uint32_t glHandle) : Memory(context), type(BufferType_t::TypeBufferGL) {
+Buffer::Buffer(Context* _context, ReadWrite_t readWrite, uint32_t glHandle) : Memory(_context), type(BufferType_t::TypeBufferGL) {
 	cl_mem_flags flags = 0;
 		switch (readWrite) {
 			case ReadWrite_t::ReadWrite:
@@ -55,13 +60,13 @@ Buffer::Buffer(Context* context, ReadWrite_t readWrite, uint32_t glHandle) : Mem
 			case ReadWrite_t::WriteOnly:
 				flags = CL_MEM_WRITE_ONLY;
 				break;
+			case ReadWrite_t::NoAccess:
+			default:
+				break;
 		}
 		cl_int err;
 		mem.reset(new cl::BufferGL(*context->_internal(), flags, glHandle, &err));
-		if(err != CL_SUCCESS) {
-			WARN("Could not create gl buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
-			FAIL();
-		}
+		THROW_ERROR_IF(err != CL_SUCCESS, "Could not create gl buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 }
 
 Buffer::Buffer(const Buffer& buffer) : Memory(buffer.context.get()), type(buffer.type) {
@@ -71,6 +76,9 @@ Buffer::Buffer(const Buffer& buffer) : Memory(buffer.context.get()), type(buffer
 		break;
 	case BufferType_t::TypeBufferGL:
 		mem.reset(new cl::BufferGL(*buffer._internal<cl::BufferGL>()));
+		break;
+	default:
+		mem.reset(new cl::Buffer(*buffer._internal<cl::Buffer>()));
 		break;
 	}
 }
@@ -93,14 +101,14 @@ Buffer* Buffer::createSubBuffer(ReadWrite_t readWrite, size_t origin, size_t siz
 		case ReadWrite_t::WriteOnly:
 			flags = CL_MEM_WRITE_ONLY;
 			break;
+		case ReadWrite_t::NoAccess:
+		default:
+			break;
 	}
 	cl_int err = 0;
 	cl_buffer_region region{origin, size};
 	cl::Buffer subbuffer = static_cast<cl::Buffer*>(mem.get())->createSubBuffer(flags, CL_BUFFER_CREATE_TYPE_REGION, &region, &err);
-	if(err != CL_SUCCESS) {
-		WARN("Could not create subbuffer (" + Util::StringUtils::toString(err) + ")");
-		return nullptr;
-	}
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not create subbuffer (" + Util::StringUtils::toString(err) + ")");
 	return new Buffer(context.get(), &subbuffer, type);
 }
 

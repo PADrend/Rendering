@@ -26,7 +26,8 @@ namespace MeshUtils {
 static const std::string unimplementedFormatMsg("Mesh is not a valid triangle mesh.");
 
 TriangleAccessor::TriangleAccessor(Mesh* mesh) : indices(mesh->openIndexData()),
-		posAcc(PositionAttributeAccessor::create(mesh->openVertexData(), VertexAttributeIds::POSITION)) {
+		posAcc(PositionAttributeAccessor::create(mesh->openVertexData(), VertexAttributeIds::POSITION)),
+		meshDataHolder(new LocalMeshDataHolder(mesh)) {
 }
 
 

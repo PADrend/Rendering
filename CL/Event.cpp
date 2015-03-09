@@ -9,20 +9,25 @@
 #ifdef RENDERING_HAS_LIB_OPENCL
 #include "Event.h"
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 namespace Rendering {
 namespace CL {
 
-Event::Event(cl::Event* event) : event(event) {}
+Event::Event(cl::Event* _event) : Util::ReferenceCounter<Event>(), event(_event) {}
 
-Event::Event() : event(new cl::Event()) {}
+Event::Event() : Util::ReferenceCounter<Event>(), event(new cl::Event()) {}
 
 Event::~Event() = default;
 
-Event::Event(const Event& event) : event(new cl::Event(*event.event.get())) { }
+Event::Event(const Event& _event) : Util::ReferenceCounter<Event>(), event(new cl::Event(*_event.event.get())) { }
 
 //Event::Event(Event&& event) = default;
 //

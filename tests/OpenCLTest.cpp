@@ -13,6 +13,8 @@
 #include "OpenCLTest.h"
 #include "TestUtils.h"
 
+#include <Util/Macros.h>
+
 #include <cppunit/TestAssert.h>
 
 #include <utility>
@@ -26,7 +28,14 @@
 #include <iterator>
 
 #define __CL_ENABLE_EXCEPTIONS
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
+COMPILER_WARN_POP
 
 #include <Rendering/CL/Event.h>
 #include <Rendering/CL/Memory/Buffer.h>
@@ -153,6 +162,7 @@ const char* simple_filter = R"kernel(
 )kernel";
 
 //quick random function to distribute our initial points
+inline
 float rand_float(float mn, float mx)
 {
     float r = random() / (float) RAND_MAX;
@@ -474,12 +484,12 @@ void OpenCLTest::nativeKernelTest() {
 	std::tie(platform, device) = CL::getFirstPlatformAndDeviceFor(CL::Device::TYPE_CPU);
 	std::cout << std::endl << platform->getName() << std::endl << device->getName() << std::endl;
 	std::cout << device->getOpenCL_CVersion() << std::endl;
-	std::cout << "Native kernel support " << (device->getExecutionCapabilities() & CL_EXEC_NATIVE_KERNEL == CL_EXEC_NATIVE_KERNEL) << std::endl;
+	std::cout << "Native kernel support " << ((device->getExecutionCapabilities() & CL_EXEC_NATIVE_KERNEL) == CL_EXEC_NATIVE_KERNEL) << std::endl;
 
 	CL::ContextRef context = new CL::Context(platform.get(), device.get());
 	CL::CommandQueueRef queue = new CL::CommandQueue(context.get(), device.get());
 
-	std::string test = "World";
+	std::string testStr = "World";
 	uint32_t answer = 42;
 
 	// apparently lambda functions with reference capture does not work and results in a segmentation fault
@@ -488,7 +498,7 @@ void OpenCLTest::nativeKernelTest() {
 
 	queue->finish();
 
-	std::cout << test << std::endl;
+	std::cout << testStr << std::endl;
 	CPPUNIT_ASSERT(answer == 42);
 }
 
@@ -517,7 +527,7 @@ void OpenCLTest::bufferAccessorTest() {
 	CPPUNIT_ASSERT(static_cast<void*>(acc->_ptr()) == outH);
 	for(uint_fast8_t i = 0; i < hw.length(); ++i) {
 		acc->write(hw[i]);
-		CPPUNIT_ASSERT(acc->getCursor() == (i+1));
+		CPPUNIT_ASSERT(acc->getCursor() == static_cast<size_t>(i+1));
 	}
 	acc->end();
 
@@ -561,7 +571,7 @@ void OpenCLTest::bufferAccessorTest() {
 
 	CPPUNIT_ASSERT(vec2.size() == 100);
 	for(uint_fast32_t i=0; i<100; ++i)
-		CPPUNIT_ASSERT(vec2[i] == i);
+		CPPUNIT_ASSERT(vec2[i] == static_cast<int32_t>(i));
 }
 
 #endif /* RENDERING_HAS_LIB_OPENCL */

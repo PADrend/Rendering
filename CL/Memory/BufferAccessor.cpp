@@ -15,14 +15,14 @@
 namespace Rendering {
 namespace CL {
 
-BufferAccessor::BufferAccessor(Buffer* buffer, CommandQueue* queue) :
-		ReferenceCounter_t(), buffer(buffer), queue(queue),
-		dataPtr(nullptr), cursor(0), size(buffer->getSize()) {
+BufferAccessor::BufferAccessor(Buffer* _buffer, CommandQueue* _queue) :
+		ReferenceCounter_t(), buffer(_buffer), queue(_queue),
+		dataPtr(nullptr), cursor(0), size(_buffer->getSize()) {
 }
 
-BufferAccessor::BufferAccessor(BufferRef buffer, CommandQueueRef queue) :
-		ReferenceCounter_t(), buffer(buffer), queue(queue),
-		dataPtr(nullptr), cursor(0), size(buffer->getSize()) {
+BufferAccessor::BufferAccessor(BufferRef _buffer, CommandQueueRef _queue) :
+		ReferenceCounter_t(), buffer(_buffer), queue(_queue),
+		dataPtr(nullptr), cursor(0), size(_buffer->getSize()) {
 }
 
 BufferAccessor::~BufferAccessor() {

@@ -36,8 +36,11 @@ class Event;
 
 class RangeND_t {
 public:
+	COMPILER_WARN_PUSH
+	COMPILER_WARN_OFF(-Wmissing-field-initializers) // we don't care about uninitialized values above dim
 	template<typename... Args>
 	RangeND_t(Args&&... args) : dim(sizeof...(Args)), range({static_cast<size_t>(args)...}) {}
+	COMPILER_WARN_POP
 	size_t dim;
 	std::array<size_t, 3> range;
 };

@@ -14,14 +14,19 @@
 
 #include <Util/Macros.h>
 
-#pragma warning(push, 0)
+COMPILER_WARN_PUSH
+COMPILER_WARN_OFF(-Wpedantic)
+COMPILER_WARN_OFF(-Wold-style-cast)
+COMPILER_WARN_OFF(-Wcast-qual)
+COMPILER_WARN_OFF(-Wshadow)
+COMPILER_WARN_OFF(-Wstack-protector)
 #include <CL/cl.hpp>
-#pragma warning(pop)
+COMPILER_WARN_POP
 
 namespace Rendering {
 namespace CL {
 
-UserEvent::UserEvent(Context* context) : Event(new cl::UserEvent(*context->_internal())), context(context) {
+UserEvent::UserEvent(Context* _context) : Event(new cl::UserEvent(*_context->_internal())), context(_context) {
 	if(context->isUsingGLInterop()) {
 		WARN("Using user events with CL-GL interoperability might be broken and can result in a segmentation fault.");
 	}
@@ -31,7 +36,7 @@ UserEvent::~UserEvent() {
 	setStatus(CL_COMPLETE);
 }
 
-UserEvent::UserEvent(const UserEvent& event) : Event(new cl::UserEvent(*static_cast<cl::UserEvent*>(event.event.get()))), context(event.context) { }
+UserEvent::UserEvent(const UserEvent& _event) : Event(new cl::UserEvent(*static_cast<cl::UserEvent*>(_event.event.get()))), context(_event.context) { }
 //UserEvent::UserEvent(UserEvent&& event) = default;
 //UserEvent& UserEvent::operator=(UserEvent&&) = default;
 
