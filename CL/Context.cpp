@@ -13,7 +13,6 @@
 #include "Device.h"
 #include "CLUtils.h"
 
-
 #include "../Helper.h"
 
 #include <Util/Macros.h>
@@ -31,6 +30,7 @@ COMPILER_WARN_POP
 #if defined __APPLE__ || defined(MACOSX)
 #else
     #if defined _WIN32
+		#include <gl/gl.h> //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     #else
         //needed for context sharing functions
         #include <GL/glx.h>
