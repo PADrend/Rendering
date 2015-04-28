@@ -163,7 +163,7 @@ float readDepthValue(int32_t x, int32_t y) {
 #if defined(LIB_GLEW) && defined(LIB_GL) && defined(GL_ARB_debug_output)
 
 #if defined(_WIN32)
-static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, void * ) __attribute__((__stdcall__));
+static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, const void * ) __attribute__((__stdcall__));
 #endif
 
 static void debugCallback(GLenum source,
@@ -172,7 +172,7 @@ static void debugCallback(GLenum source,
 						  GLenum severity,
 						  GLsizei /*length*/,
 						  const char * message,
-						  void * /*userParam*/) {
+                          const void * /*userParam*/) {
 	std::cerr << "GL DEBUG source=";
 	switch(source) {
 		case GL_DEBUG_SOURCE_API_ARB:
