@@ -267,7 +267,7 @@ void OpenCLTest::interopTest() {
 	//store the number of particles and the size in bytes of our arrays
 	num = mesh->getVertexCount();
 	array_size = num * sizeof(Vec4);
-	mesh->setGLDrawMode(GL_POINTS);
+	mesh->setGLDrawMode(Mesh::DRAW_POINTS);
 	mesh->setDataStrategy(SimpleMeshDataStrategy::getDynamicVertexStrategy());
 	mesh->getDataStrategy()->prepare(mesh.get());
 	//mesh->_getVertexData().upload(GL_DYNAMIC_DRAW);
