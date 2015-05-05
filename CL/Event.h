@@ -79,6 +79,8 @@ public:
 		return getProfilingNanoseconds() * 1.0e-9;
 	}
 
+	int32_t getStatus() const;
+
 	/**
 	 * Registers a user callback function for a specific command execution status.
 	 *

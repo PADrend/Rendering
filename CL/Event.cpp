@@ -53,6 +53,10 @@ uint64_t Event::getProfilingCommandEnd() const {
 	return event->getProfilingInfo<CL_PROFILING_COMMAND_END>();
 }
 
+int32_t Event::getStatus() const {
+	return event->getInfo<CL_EVENT_COMMAND_EXECUTION_STATUS>();
+}
+
 void Event::setCallback(CallbackFn_t fun) {
 
 	struct fnWrapper{

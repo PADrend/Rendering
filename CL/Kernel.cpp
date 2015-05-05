@@ -32,9 +32,7 @@ namespace CL {
 Kernel::Kernel(Program* _program, const std::string& name) : Util::ReferenceCounter<Kernel>(), program(_program) {
 	cl_int err;
 	kernel.reset(new cl::Kernel(*program->_internal(), name.c_str(), &err));
-	if(err != CL_SUCCESS)
-		WARN("Could not create kernel (" + getErrorString(err) + ")");
-	FAIL_IF(err != CL_SUCCESS);
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not create kernel (" + getErrorString(err) + ")");
 }
 
 Kernel::Kernel(const Kernel& _kernel) : Util::ReferenceCounter<Kernel>(), kernel(new cl::Kernel(*_kernel.kernel.get())), program(_kernel.program) { }
@@ -47,14 +45,12 @@ Kernel::~Kernel() = default;
 
 bool Kernel::_setArg(uint32_t index, Memory* value) {
 	cl_int err = kernel->setArg(index, *value->_internal());
-	if(err != CL_SUCCESS)
-		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not set kernel argument (" + getErrorString(err) + ")");
 	return err == CL_SUCCESS;
 }
 bool Kernel::_setArg(uint32_t index, Sampler* value) {
 	cl_int err = kernel->setArg(index, *value->_internal());
-	if(err != CL_SUCCESS)
-		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not set kernel argument (" + getErrorString(err) + ")");
 	return err == CL_SUCCESS;
 }
 
@@ -67,8 +63,7 @@ bool Kernel::_setArg(uint32_t index, Sampler* value) {
 
 bool Kernel::setArg(uint32_t index, size_t size, void* ptr) {
 	cl_int err = kernel->setArg(index, size, ptr);
-	if(err != CL_SUCCESS)
-		WARN("Could not set kernel argument (" + getErrorString(err) + ")");
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not set kernel argument (" + getErrorString(err) + ")");
 	return err == CL_SUCCESS;
 }
 
