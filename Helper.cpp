@@ -167,11 +167,10 @@ static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *
 // the following alias function is required as different versions of glew define GLDEBUGPROCARB differently:
 //   with void*userParam OR const void*userParam
 static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, void * ) __attribute__((__stdcall__));
-#endif
-
 static void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char *message, void *userParam ){
 	debugCallback(source,type,id,severity,length,message,static_cast<const void*>(userParam));
 }
+#endif
 
 static void debugCallback(GLenum source,
 						  GLenum type,
