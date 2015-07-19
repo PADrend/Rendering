@@ -26,6 +26,7 @@
 #include <iostream>
 #include <string>
 #include <iterator>
+#include <random>
 
 #define __CL_ENABLE_EXCEPTIONS
 COMPILER_WARN_PUSH
@@ -165,8 +166,10 @@ const char* simple_filter = R"kernel(
 inline
 float rand_float(float mn, float mx)
 {
-    float r = random() / (float) RAND_MAX;
-    return mn + (mx-mn)*r;
+	static std::random_device rd;
+	static std::mt19937 mt(rd());
+	static std::uniform_real_distribution<> dis(0, 1);
+    return mn + (mx-mn)*dis(mt);
 }
 
 void OpenCLTest::test() {
