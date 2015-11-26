@@ -35,7 +35,10 @@ class PositionAttributeAccessor;
 namespace MeshUtils {
 
 /**
- * Allows to get connectivity informations of vertices and triangles of a mesh
+ * Allows to get connectivity informations of vertices and triangles of a mesh.
+ *
+ * Based on 'Random-Accessible Compressed Triangle Meshes' by Yoon et al.
+ * @see http://dx.doi.org/10.1109/TVCG.2007.70585
  *
  * @author Sascha Brandt
  * @verbatim
