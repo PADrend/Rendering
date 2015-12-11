@@ -73,7 +73,7 @@ class VertexDescription {
 		const VertexAttribute & appendPosition4D();
 
 		//! Add a texture coordinate attribute. It is stored as two float values.
-		const VertexAttribute & appendTexCoord();
+		const VertexAttribute & appendTexCoord(uint_fast8_t textureUnit = 0);
 
 		/*! Get a reference to the attribute with the corresponding name.
 			\return Always returns an attribute.
