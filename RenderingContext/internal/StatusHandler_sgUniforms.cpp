@@ -178,7 +178,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			textureUnitsUsedForRendering.emplace_back(usage != TexUnitUsageParameter::GENERAL_PURPOSE && usage!=TexUnitUsageParameter::DISABLED);
 
 			// for each shader, this is only necessary once...
-			uniforms.emplace_back(UNIFORM_SG_TEXTURES[unit], unit);
+			uniforms.emplace_back(UNIFORM_SG_TEXTURES[unit], static_cast<int32_t>(unit));
 		}
 		uniforms.emplace_back(UNIFORM_SG_TEXTURE_ENABLED, textureUnitsUsedForRendering);
 		target.updateTextureUnits(actual);
