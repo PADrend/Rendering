@@ -83,6 +83,7 @@ add_library(Rendering
 	OcclusionQuery.cpp
 	PBO.cpp
 	QueryObject.cpp
+	StatisticsQuery.cpp
 	TextRenderer.cpp
 )
 
