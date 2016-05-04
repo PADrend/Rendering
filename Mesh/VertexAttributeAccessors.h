@@ -38,6 +38,7 @@ class VertexAttributeAccessor : public Util::ReferenceCounter<VertexAttributeAcc
 				dataPtr( vData.data() + attribute.getOffset() ) {}
 
 		void assertRange(uint32_t index)const			{	if(index>=vData.getVertexCount()) throwRangeError(index); }
+		void assertNumValues(uint32_t index, uint32_t count) const;
 	public:
 		virtual ~VertexAttributeAccessor() {}
 
@@ -47,7 +48,7 @@ class VertexAttributeAccessor : public Util::ReferenceCounter<VertexAttributeAcc
 		template<typename number_t>
 		number_t * _ptr(uint32_t index)const			{	return reinterpret_cast<number_t*>(dataPtr+index*vertexSize); }
 	private:
-		void throwRangeError(uint32_t index)const;
+		void throwRangeError(uint32_t index)const;		
 };
 
 
@@ -155,6 +156,94 @@ class TexCoordAttributeAccessor : public VertexAttributeAccessor{
 			assertRange(index);
 			float * v=_ptr<float>(index);
 			v[0] = p.x() , v[1] = p.y();
+		}
+};
+
+
+
+// ---------------------------------
+// Float
+
+/*! FloatAttributeAccessor ---|> VertexAttributeAccessor
+	Accessor for generic float vertex attributes. */
+class FloatAttributeAccessor : public VertexAttributeAccessor{
+	protected:
+		FloatAttributeAccessor(MeshVertexData & _vData,const VertexAttribute & _attribute) :
+				VertexAttributeAccessor(_vData,_attribute){}
+	public:
+		/*! (static factory)
+			Create a FloatAttributeAccessor for the given MeshVertexData's attribute having the given name.
+			If no Accessor can be created, an std::invalid_argument exception is thrown. */
+		static Util::Reference<FloatAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name);
+
+		virtual ~FloatAttributeAccessor(){}
+
+		float getValue(uint32_t index) const {
+			assertRange(index);
+			const float * v=_ptr<const float>(index);
+			return v[0];
+		}
+
+		void setValue(uint32_t index, float value){
+			assertRange(index);
+			float * v=_ptr<float>(index);
+			v[0] = value;
+		}
+
+		const std::vector<float> getValues(uint32_t index) const {
+			assertRange(index);
+			const float * v=_ptr<const float>(index);
+			return std::vector<float>(v, v + getAttribute().getNumValues());
+		}
+
+		void setValues(uint32_t index, const std::vector<float>& values){
+			assertRange(index);
+			assertNumValues(index, values.size());
+			float * v=_ptr<float>(index);
+			std::copy(values.begin(), values.end(), v);
+		}
+};
+
+// ---------------------------------
+// Unisigned Integer
+
+/*! UIntAttributeAccessor ---|> VertexAttributeAccessor
+	Accessor for generic float vertex attributes. */
+class UIntAttributeAccessor : public VertexAttributeAccessor{
+	protected:
+		UIntAttributeAccessor(MeshVertexData & _vData,const VertexAttribute & _attribute) :
+				VertexAttributeAccessor(_vData,_attribute){}
+	public:
+		/*! (static factory)
+			Create a UIntAttributeAccessor for the given MeshVertexData's attribute having the given name.
+			If no Accessor can be created, an std::invalid_argument exception is thrown. */
+		static Util::Reference<UIntAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name);
+
+		virtual ~UIntAttributeAccessor(){}
+
+		uint32_t getValue(uint32_t index) const {
+			assertRange(index);
+			const uint32_t * v=_ptr<const uint32_t>(index);
+			return v[0];
+		}
+
+		void setValue(uint32_t index, uint32_t value){
+			assertRange(index);
+			uint32_t * v=_ptr<uint32_t>(index);
+			v[0] = value;
+		}
+
+		const std::vector<uint32_t> getValues(uint32_t index) const {
+			assertRange(index);
+			const uint32_t * v=_ptr<const uint32_t>(index);
+			return std::vector<uint32_t>(v, v + getAttribute().getNumValues());
+		}
+
+		void setValues(uint32_t index, const std::vector<uint32_t>& values){
+			assertRange(index);
+			assertNumValues(index, values.size());
+			uint32_t * v=_ptr<uint32_t>(index);
+			std::copy(values.begin(), values.end(), v);
 		}
 };
 

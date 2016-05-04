@@ -24,6 +24,16 @@ void VertexAttributeAccessor::throwRangeError(uint32_t index)const {
 	throw std::range_error(s.str());
 }
 
+//! (internal)
+void VertexAttributeAccessor::assertNumValues(uint32_t index, uint32_t count) const {
+	uint32_t num = this->getAttribute().getNumValues();
+	if( num != count ) {
+		std::ostringstream s;
+		s << "Trying to access " << count << " number of values of vertex " << index << " of overall " << num << " values.";
+		throw std::range_error(s.str());
+	}
+}
+
 // -----------
 
 static const std::string noAttrErrorMsg("No attribute named '");
@@ -241,6 +251,32 @@ Util::Reference<TexCoordAttributeAccessor> TexCoordAttributeAccessor::create(Mes
 	const VertexAttribute & attr = assertAttribute(_vData, name);
 	if(attr.getNumValues() == 2 && attr.getDataType() == GL_FLOAT) {
 		return new TexCoordAttributeAccessor(_vData, attr);
+	} else {
+		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
+	}
+}
+
+// ---------------------------------
+// Float
+
+//! (static)
+Util::Reference<FloatAttributeAccessor> FloatAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
+	const VertexAttribute & attr = assertAttribute(_vData, name);
+	if(attr.getDataType() == GL_FLOAT) {
+		return new FloatAttributeAccessor(_vData, attr);
+	} else {
+		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
+	}
+}
+
+// ---------------------------------
+// Unisigned Integer
+
+//! (static)
+Util::Reference<UIntAttributeAccessor> UIntAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
+	const VertexAttribute & attr = assertAttribute(_vData, name);
+	if(attr.getDataType() == GL_UNSIGNED_INT) {
+		return new UIntAttributeAccessor(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
 	}
