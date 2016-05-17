@@ -9,12 +9,16 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "Draw.h"
+#include "BufferObject.h"
 #include "Mesh/Mesh.h"
 #include "Mesh/MeshDataStrategy.h"
+#include "Mesh/VertexAttribute.h"
 #include "Mesh/VertexAttributeIds.h"
 #include "MeshUtils/MeshBuilder.h"
 #include "MeshUtils/MeshUtils.h"
 #include "MeshUtils/PlatonicSolids.h"
+#include "Shader/Shader.h"
+#include "Shader/Uniform.h"
 #include "GLHeader.h"
 #include "Helper.h"
 #include "RenderingContext/RenderingContext.h"
@@ -26,6 +30,7 @@
 #include <Util/Graphics/ColorLibrary.h>
 #include <Util/Graphics/Color.h>
 #include <Util/References.h>
+#include <Util/Macros.h>
 #include <cstddef>
 #include <list>
 #include <cstdint>
@@ -518,6 +523,94 @@ void enable2DMode(RenderingContext & rc) {
 void disable2DMode(RenderingContext & rc) {
 	rc.popMatrix_modelToCamera();
 	rc.popMatrix_cameraToClipping();
+}
+
+void drawInstances(RenderingContext & rc, Mesh* m, BufferObject & instanceBuffer, uint32_t elements, uint32_t count) {	
+		static Util::StringIdentifier INSTANCE_OFFSET = Util::StringIdentifier("sg_InstanceOffset");
+		static Util::StringIdentifier INSTANCE_MATRIX = Util::StringIdentifier("sg_InstanceMatrix");
+		static Rendering::Uniform instancingModeDisabled("sg_InstancingMode", 0);
+		static Rendering::Uniform instancingModeOffset("sg_InstancingMode", 1);
+		static Rendering::Uniform instancingModeMatrix("sg_InstancingMode", 2);
+		
+		if( m->empty() || !m->isUsingIndexData() || !rc.getActiveShader())
+			return;		
+			
+#if defined(LIB_GL) && defined(GL_VERSION_3_3)
+
+		MeshVertexData & vd=m->_getVertexData();
+		MeshIndexData & id=m->_getIndexData();
+								
+		if(!vd.isUploaded())
+			vd.upload();			
+		if(!id.isUploaded())
+			id.upload();
+			
+		vd.bind(rc, vd.isUploaded());				
+		instanceBuffer.bind(GL_ARRAY_BUFFER);
+		
+		Shader * shader = rc.getActiveShader();
+		GLint location;
+		
+		if(elements==16) {
+			// Matrix4x4
+			VertexAttribute instAttr = VertexAttribute(elements, GL_FLOAT, INSTANCE_MATRIX, false);		
+			location = shader->getVertexAttributeLocation(instAttr.getNameId());
+			if(location != -1) {
+				for(uint_fast8_t i=0; i<elements/4; ++i) {
+					GLuint attribLocation = static_cast<GLuint> (location + i);
+					uint8_t * data = 0;
+					data += instAttr.getOffset() + i*4*sizeof(GLfloat);
+					glVertexAttribPointer(attribLocation, 4, instAttr.getDataType(), instAttr.getNormalize() ? GL_TRUE : GL_FALSE, 
+						elements*sizeof(GLfloat), data);
+					glEnableVertexAttribArray(attribLocation);
+					glVertexAttribDivisor(attribLocation, 1);
+				}
+			}
+			rc.setGlobalUniform(instancingModeMatrix);
+		} else if(elements<4) {
+			VertexAttribute instAttr = VertexAttribute(elements, GL_FLOAT, INSTANCE_OFFSET, false);		
+			location = shader->getVertexAttributeLocation(instAttr.getNameId());
+			rc.enableVertexAttribArray(instAttr, 0, elements * sizeof(GLfloat));		
+			if(location != -1) 
+				glVertexAttribDivisor(static_cast<GLuint> (location), 1);
+			rc.setGlobalUniform(instancingModeOffset);
+		} else {
+			WARN("Invalid number of elements for instancing (supported are 1,2,3,4 or 16 elements).");
+			return;
+		}
+		
+		BufferObject indexBuffer;
+		id._swapBufferObject(indexBuffer);
+		indexBuffer.bind(GL_ELEMENT_ARRAY_BUFFER);
+		
+		rc.applyChanges();
+		
+		glDrawElementsInstanced(m->getGLDrawMode(), id.getIndexCount(), GL_UNSIGNED_INT, 0, count);
+		
+		rc.setGlobalUniform(instancingModeDisabled);
+		
+		indexBuffer.unbind(GL_ELEMENT_ARRAY_BUFFER);
+		id._swapBufferObject(indexBuffer);
+		
+		if(elements==16) {
+			// Matrix4x4
+			if(location != -1) {
+				for(uint_fast8_t i=0; i<elements/4; ++i) {
+					GLuint attribLocation = static_cast<GLuint> (location + i);
+					glDisableVertexAttribArray(attribLocation);
+					glVertexAttribDivisor(attribLocation, 0);
+				}
+			}
+		} else {
+			if(location != -1) 
+				glVertexAttribDivisor(static_cast<GLuint> (location), 0);
+		}
+		
+		instanceBuffer.unbind(GL_ARRAY_BUFFER);
+		vd.unbind(rc, vd.isUploaded());
+#else
+	WARN("Instancing is not supported.");
+#endif
 }
 
 }

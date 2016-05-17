@@ -1536,10 +1536,11 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 			const Vec3 tan((t - normal * normal.dot(t)).getNormalized() * 127); // Gram-Schmidt orthogonalize
 
 			int8_t * const tPtr = reinterpret_cast<int8_t*> (vertices[i] + tanAttr.getOffset());
-			tPtr[0] = static_cast<int8_t> (tan.x());
-			tPtr[1] = static_cast<int8_t> (tan.y());
-			tPtr[2] = static_cast<int8_t> (tan.z());
-			tPtr[3] = (normal.cross(t).dot(tan2[i]) < 0.0f) ? -1 : 1; // Calculate handedness
+			int8_t handedness = (normal.cross(t).dot(tan2[i]) < 0.0f) ? -1 : 1; // Calculate handedness
+			tPtr[0] = handedness * static_cast<int8_t> (tan.x());
+			tPtr[1] = handedness * static_cast<int8_t> (tan.y());
+			tPtr[2] = handedness * static_cast<int8_t> (tan.z());
+			tPtr[3] = handedness;
 		}
 	} else if (normalAttr.getDataType() == GL_BYTE) {
 		for (uint32_t i = 0; i < vertices.getVertexCount(); ++i) {
@@ -1549,10 +1550,11 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 			const Vec3 tan((t - normal * normal.dot(t)).getNormalized() * 127); // Gram-Schmidt orthogonalize
 
 			int8_t * const tPtr = reinterpret_cast<int8_t*> (vertices[i] + tanAttr.getOffset());
-			tPtr[0] = static_cast<int8_t> (tan.x());
-			tPtr[1] = static_cast<int8_t> (tan.y());
-			tPtr[2] = static_cast<int8_t> (tan.z());
-			tPtr[3] = (normal.cross(t).dot(tan2[i]) < 0.0f) ? -1 : 1; // Calculate handedness
+			int8_t handedness = (normal.cross(t).dot(tan2[i]) < 0.0f) ? -1 : 1; // Calculate handedness
+			tPtr[0] = handedness * static_cast<int8_t> (tan.x());
+			tPtr[1] = handedness * static_cast<int8_t> (tan.y());
+			tPtr[2] = handedness * static_cast<int8_t> (tan.z());
+			tPtr[3] = handedness;
 		}
 	}
 }

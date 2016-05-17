@@ -11,6 +11,9 @@
 #ifndef DRAW_H_
 #define DRAW_H_
 
+#include <cstdint>
+#include <vector>
+
 /**
  * @file
  * Draw functions for simple objects
@@ -25,9 +28,13 @@ typedef _Rect<float> Rect;
 typedef _Rect<int> Rect_i;
 template<typename _T> class _Vec3;
 typedef _Vec3<float> Vec3f;
+template<typename _T> class _Matrix4x4;
+typedef _Matrix4x4<float> Matrix4x4f;
 }
 namespace Rendering {
 class RenderingContext;
+class Mesh;
+class BufferObject;
 }
 namespace Util {
 class Color4f;
@@ -99,6 +106,8 @@ void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect);
 
 //! Reset the projection and modelview matrices to the state before the last call to enable2DMode().
 void disable2DMode(RenderingContext & rc);
+
+void drawInstances(RenderingContext & rc, Mesh* m, BufferObject & instanceBuffer, uint32_t elements, uint32_t count);
 
 }
 
