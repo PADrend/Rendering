@@ -626,7 +626,6 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 				}
 			}
 			GET_GL_ERROR();
-
 			glBindImageTexture(unit,texture->_prepareForBinding(*this),
 								iParam.getLevel(),iParam.getMultiLayer()? GL_TRUE : GL_FALSE,iParam.getLayer(), access,
 								format);
@@ -1337,7 +1336,12 @@ void RenderingContext::enableVertexAttribArray(const VertexAttribute & attr, con
 	if(location != -1) {
 		GLuint attribLocation = static_cast<GLuint> (location);
 		internalData->activeVertexAttributeBindings.emplace(attribLocation);
-		glVertexAttribPointer(attribLocation, attr.getNumValues(), attr.getDataType(), attr.getNormalize() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
+		auto dataType = attr.getDataType();
+		if( dataType == GL_UNSIGNED_INT){
+			glVertexAttribIPointer(attribLocation, attr.getNumValues(), dataType, stride, data + attr.getOffset());
+		} else {
+			glVertexAttribPointer(attribLocation, attr.getNumValues(), dataType, attr.getNormalize() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
+		}
 		glEnableVertexAttribArray(attribLocation);
 	}
 }
