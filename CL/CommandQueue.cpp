@@ -20,7 +20,7 @@
 #include <Util/Macros.h>
 #include <Util/StringUtils.h>
 
-#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
+//#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
 COMPILER_WARN_PUSH
 COMPILER_WARN_OFF(-Wpedantic)
 COMPILER_WARN_OFF(-Wold-style-cast)
@@ -95,7 +95,7 @@ bool CommandQueue::readBuffer(Buffer* buffer, bool blocking, size_t offset, size
 	return err == CL_SUCCESS;
 }
 
-bool CommandQueue::writeBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, void* ptr, const EventList_t& _waitForEvents, Event* event) {
+bool CommandQueue::writeBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, const void* ptr, const EventList_t& _waitForEvents, Event* event) {
 	std::vector<cl::Event> cl_wait;
 	for (auto e : _waitForEvents)
 		cl_wait.push_back(*e->_internal());
@@ -111,6 +111,42 @@ bool CommandQueue::copyBuffer(Buffer* src, Buffer* dst, size_t srcOffset, size_t
 	cl_int err = queue->enqueueCopyBuffer(*src->_internal<cl::Buffer>(), *dst->_internal<cl::Buffer>(), srcOffset, dstOffset, size, cl_wait.size() > 0 ? &cl_wait : nullptr, event ? event->_internal() : nullptr);
 	THROW_ERROR_IF(err != CL_SUCCESS, "Could not copy buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
 	return err == CL_SUCCESS;
+}
+
+bool CommandQueue::fillBuffer(Buffer* buffer, size_t offset, size_t size, const void* pattern, size_t patternSize, const EventList_t& _waitForEvents, Event* event) {
+	std::vector<cl::Event> cl_wait;
+	for (auto e : _waitForEvents)
+		cl_wait.push_back(*e->_internal());		
+		
+#if defined(CL_VERSION_1_2) && !defined(CL_USE_DEPRECATED_OPENCL_1_1_APIS)
+	cl_event tmp;
+	cl_int err = ::clEnqueueFillBuffer(
+				(*queue)(), 
+				(*buffer->_internal<cl::Buffer>())(),
+				pattern,
+				patternSize, 
+				offset, 
+				size,
+				cl_wait.size(),
+				cl_wait.size() > 0 ? static_cast<cl_event*>(&cl_wait.front()()) : nullptr,
+				(event != nullptr) ? &tmp : NULL);
+
+	if (event != NULL && err == CL_SUCCESS)
+		*event->_internal() = tmp;
+	THROW_ERROR_IF(err != CL_SUCCESS, "Could not fill buffer (" + getErrorString(err) + "[" + Util::StringUtils::toString(err) + "])");
+	return err == CL_SUCCESS;	
+#else
+	THROW_ERROR_IF(patternSize == 0, "Could not fill buffer (invalid pattern size 0)");
+	THROW_ERROR_IF((size%patternSize) != 0 || (offset%patternSize) != 0, "Could not fill buffer (size and offset needs to be multiple of patternSize)");
+	// WARNING: This might be very slow
+	bool succ = writeBuffer(buffer, false, offset, patternSize, pattern, _waitForEvents, event);
+	size_t off;
+	for(off = patternSize; off*2 < size && succ; off *= 2) {
+		succ &= copyBuffer(buffer, buffer, offset, offset+off, off, _waitForEvents, event);
+	}
+	succ &= copyBuffer(buffer, buffer, offset, offset+off, size-off, _waitForEvents, event);
+	return succ;	
+#endif
 }
 
 bool CommandQueue::readBufferRect(Buffer* buffer, bool blocking, const RangeND_t& bufferOffset, const RangeND_t& hostOffset, const RangeND_t& region, void* ptr, const EventList_t& _waitForEvents, Event* event, size_t bufferRowPitch, size_t bufferSlicePitch, size_t hostRowPitch, size_t hostSlicePitch) {

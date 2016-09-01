@@ -93,7 +93,7 @@ public:
 	 * @param event Returns an event object that identifies this command and can be used to query or queue a wait for the command to complete.
 	 * @return true if the operation was successful, false otherwise.
 	 */
-	bool writeBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, void* ptr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	bool writeBuffer(Buffer* buffer, bool blocking, size_t offset, size_t size, const void* ptr, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
 
 	/**
 	 * Enqueues a command to copy from one buffer object to another.
@@ -108,6 +108,20 @@ public:
 	 * @return true if the operation was successful, false otherwise.
 	 */
 	bool copyBuffer(Buffer* src, Buffer* dst, size_t srcOffset, size_t dstOffset, size_t size, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
+	
+	/**
+	 * Enqueue commands to write to a buffer object from host memory.
+	 *
+	 * @param buffer Refers to a valid buffer object.
+	 * @param offset The location in bytes of the region being filled in buffer and must be a multiple of patternSize.
+	 * @param size The size in bytes of region being filled in buffer and must be a multiple of patternSize.
+	 * @param pattern A pointer to the data pattern of size patternSize in bytes.
+	 * @param patternSize The size in bytes of data being written.
+	 * @param waitForEvents Specify events that need to complete before this particular command can be executed.
+	 * @param event Returns an event object that identifies this command and can be used to query or queue a wait for the command to complete.
+	 * @return true if the operation was successful, false otherwise.
+	 */
+	bool fillBuffer(Buffer* buffer, size_t offset, size_t size, const void* pattern, size_t patternSize, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr);
 
 	/**
 	 * Enqueue commands to read from a rectangular region from a buffer object to host memory.
@@ -163,7 +177,7 @@ public:
 	 * @return true if the operation was successful, false otherwise.
 	 */
 	bool copyBufferRect(Buffer* src, Buffer* dst, const RangeND_t& srcOrigin, const RangeND_t& dstOrigin, const RangeND_t& region, const EventList_t& waitForEvents = EventList_t(), Event* event = nullptr, size_t bufferRowPitch = 0, size_t bufferSlicePitch = 0, size_t hostRowPitch = 0, size_t hostSlicePitch = 0);
-
+	
 	/**
 	 * Enqueues a command to read from a 2D or 3D image object to host memory.
 	 *
