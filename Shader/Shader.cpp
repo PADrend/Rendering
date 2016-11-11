@@ -400,6 +400,8 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_SAMPLER_3D:
 			case GL_SAMPLER_1D_SHADOW:
 			case GL_SAMPLER_2D_SHADOW:
+			case GL_UNSIGNED_INT_SAMPLER_2D:
+			case GL_INT_SAMPLER_2D:
 			case GL_IMAGE_1D:
 			case GL_IMAGE_2D:
 			case GL_IMAGE_3D:
