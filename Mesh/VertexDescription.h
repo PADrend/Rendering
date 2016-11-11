@@ -38,15 +38,15 @@ class VertexDescription {
 			\return the new attribute
 			\note the owner of the attribute is the vertexDescription
 			\note Before using this function, check a default method can be used instead (e.g. append appendPosition3D) */
-		const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType, bool normalize);
+		const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType, bool normalize, bool convertToFloat=true);
 		const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType);
-		const VertexAttribute & appendAttribute(const std::string & name, uint8_t numValues, uint32_t glType, bool normalize);
+		const VertexAttribute & appendAttribute(const std::string & name, uint8_t numValues, uint32_t glType, bool normalize, bool convertToFloat=true);
 
 		//! Add an attribute with the given name and the given number of float values.
 		const VertexAttribute & appendFloatAttribute(const Util::StringIdentifier & nameId, uint8_t numValues);
 
 		//! Add an attribute with the given name and the given number of unsigned int values.
-		const VertexAttribute & appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint8_t numValues);
+		const VertexAttribute & appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, bool convertToFloat=true);
 
 		//! Add an RGBA color attribute. It is stored as four unsigned byte values.
 		const VertexAttribute & appendColorRGBAByte();

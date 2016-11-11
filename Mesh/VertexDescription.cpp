@@ -22,8 +22,8 @@ namespace Rendering {
 VertexDescription::VertexDescription() : attributes(), vertexSize(0) {
 }
 
-const VertexAttribute & VertexDescription::appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType, bool normalize) {
-	attributes.push_back(VertexAttribute(getVertexSize(), numValues, glType, nameId, nameId.toString(),normalize));
+const VertexAttribute & VertexDescription::appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType, bool normalize, bool convertToFloat/*=true*/) {
+	attributes.push_back(VertexAttribute(getVertexSize(), numValues, glType, nameId, nameId.toString(),normalize,convertToFloat));
 	vertexSize += attributes.back().getDataSize();
 	return attributes.back();
 }
@@ -31,8 +31,8 @@ const VertexAttribute & VertexDescription::appendAttribute(const Util::StringIde
 	return appendAttribute(nameId,numValues,glType,glType==GL_BYTE || glType==GL_UNSIGNED_BYTE);
 }
 
-const VertexAttribute & VertexDescription::appendAttribute(const std::string & name, uint8_t numValues, uint32_t type, bool normalize) {
-	attributes.push_back(VertexAttribute(getVertexSize(), numValues, type, Util::StringIdentifier(name), name, normalize));
+const VertexAttribute & VertexDescription::appendAttribute(const std::string & name, uint8_t numValues, uint32_t type, bool normalize, bool convertToFloat/*=true*/) {
+	attributes.push_back(VertexAttribute(getVertexSize(), numValues, type, Util::StringIdentifier(name), name, normalize, convertToFloat));
 	vertexSize += attributes.back().getDataSize();
 	return attributes.back();
 }
@@ -41,8 +41,8 @@ const VertexAttribute & VertexDescription::appendFloatAttribute(const Util::Stri
 	return appendAttribute(nameId, numValues, GL_FLOAT, false);
 }
 
-const VertexAttribute & VertexDescription::appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint8_t numValues) {
-	return appendAttribute(nameId, numValues, GL_UNSIGNED_INT, false);
+const VertexAttribute & VertexDescription::appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, bool convertToFloat/*=true*/) {
+	return appendAttribute(nameId, numValues, GL_UNSIGNED_INT, false, convertToFloat);
 }
 
 const VertexAttribute & VertexDescription::getAttribute(const std::string & name) const {
@@ -76,7 +76,7 @@ void VertexDescription::updateAttribute(const VertexAttribute & attr) {
 	for(auto it = attributes.begin(); it != attributes.end(); ++it) {
 		VertexAttribute & currentAttr = *it;
 		if(currentAttr.getNameId() == attr.getNameId()) {
-			currentAttr = VertexAttribute(currentAttr.getOffset(), attr.getNumValues(), attr.getDataType(), currentAttr.getNameId(), currentAttr.getName(),currentAttr.getNormalize());
+			currentAttr = VertexAttribute(currentAttr.getOffset(), attr.getNumValues(), attr.getDataType(), currentAttr.getNameId(), currentAttr.getName(),currentAttr.getNormalize(), currentAttr.getConvertToFloat());
 			// Update the offsets.
 			vertexSize = static_cast<std::size_t>(currentAttr.getOffset() + currentAttr.getDataSize());
 
@@ -91,7 +91,7 @@ void VertexDescription::updateAttribute(const VertexAttribute & attr) {
 		}
 	}
 	// Attribute was not found.
-	appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType(), attr.getNormalize());
+	appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType(), attr.getNormalize(), attr.getConvertToFloat());
 }
 
 std::string VertexDescription::toString() const {

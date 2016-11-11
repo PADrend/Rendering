@@ -61,8 +61,20 @@ void BufferObject::bind(uint32_t bufferTarget) const {
 	glBindBuffer(bufferTarget, bufferId);
 }
 
+void BufferObject::bind(uint32_t bufferTarget, uint32_t location) const {
+#if defined(LIB_GL)
+	glBindBufferBase(bufferTarget, location, bufferId);
+#endif
+}
+
 void BufferObject::unbind(uint32_t bufferTarget) const {
 	glBindBuffer(bufferTarget, 0);
+}
+
+void BufferObject::unbind(uint32_t bufferTarget, uint32_t location) const {
+#if defined(LIB_GL)
+	glBindBufferBase(bufferTarget, location, 0);
+#endif
 }
 
 void BufferObject::uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint){
@@ -103,12 +115,34 @@ std::vector<T> BufferObject::downloadData(uint32_t /*bufferTarget*/, std::size_t
 }
 #endif
 
+void BufferObject::clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data) {
+#if defined(GL_ARB_clear_buffer_object)
+	bind(bufferTarget);
+	glClearBufferData(bufferTarget, internalFormat, format, type, data);
+	unbind(bufferTarget);
+	//glClearNamedBufferDataEXT(bufferId, internalFormat, format, type, data);
+#else
+	WARN("BufferObject::clear not supported!");
+#endif
+}
+
+void BufferObject::clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data) {
+#if defined(GL_ARB_clear_buffer_object)
+	glClearNamedBufferDataEXT(bufferId, internalFormat, format, type, data);
+#else
+	WARN("BufferObject::clear not supported!");
+#endif
+}
+
 // Instantiate the template functions
 template void BufferObject::allocateData<uint8_t>(uint32_t, std::size_t, uint32_t);
 template void BufferObject::allocateData<uint32_t>(uint32_t, std::size_t, uint32_t);
+template void BufferObject::allocateData<float>(uint32_t, std::size_t, uint32_t);
 template void BufferObject::uploadData<uint8_t>(uint32_t, const std::vector<uint8_t> &, uint32_t);
 template void BufferObject::uploadData<uint32_t>(uint32_t, const std::vector<uint32_t> &, uint32_t);
+template void BufferObject::uploadData<float>(uint32_t, const std::vector<float> &, uint32_t);
 template std::vector<uint8_t> BufferObject::downloadData<uint8_t>(uint32_t, std::size_t) const;
 template std::vector<uint32_t> BufferObject::downloadData<uint32_t>(uint32_t, std::size_t) const;
+template std::vector<float> BufferObject::downloadData<float>(uint32_t, std::size_t) const;
 
 }

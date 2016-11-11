@@ -1336,11 +1336,10 @@ void RenderingContext::enableVertexAttribArray(const VertexAttribute & attr, con
 	if(location != -1) {
 		GLuint attribLocation = static_cast<GLuint> (location);
 		internalData->activeVertexAttributeBindings.emplace(attribLocation);
-		auto dataType = attr.getDataType();
-		if( dataType == GL_UNSIGNED_INT){
-			glVertexAttribIPointer(attribLocation, attr.getNumValues(), dataType, stride, data + attr.getOffset());
+		if( attr.getConvertToFloat() ){
+			glVertexAttribPointer(attribLocation, attr.getNumValues(), attr.getDataType(), attr.getNormalize() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
 		} else {
-			glVertexAttribPointer(attribLocation, attr.getNumValues(), dataType, attr.getNormalize() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
+			glVertexAttribIPointer(attribLocation, attr.getNumValues(), attr.getDataType(), stride, data + attr.getOffset());
 		}
 		glEnableVertexAttribArray(attribLocation);
 	}

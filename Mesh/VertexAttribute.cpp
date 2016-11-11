@@ -19,24 +19,50 @@ namespace Rendering {
 
 VertexAttribute::VertexAttribute() :
 		offset(0),dataSize(0),
-		numValues(0), dataType(GL_FLOAT), nameId(0), normalize(false){
+		numValues(0), dataType(GL_FLOAT), nameId(0), normalize(false), convertToFloat(true){
 }
 
 //! (ctor)
-VertexAttribute::VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId, bool _normalize) :
+VertexAttribute::VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId, bool _normalize, bool _convertToFloat /*= true*/) :
 		offset(0), dataSize(getGLTypeSize(_dataType) * _numValues),
-		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)), name(), normalize(_normalize) {
+		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)), name(), normalize(_normalize), convertToFloat(_convertToFloat) {
 	if((dataSize % 4) != 0) {
 		WARN("VertexAttribute is not 4-byte aligned.");
+	}
+	if(!convertToFloat) {
+		switch(dataType) {
+			case GL_BYTE:
+			case GL_UNSIGNED_BYTE:
+			case GL_SHORT:
+			case GL_UNSIGNED_SHORT:
+			case GL_INT:
+			case GL_UNSIGNED_INT:
+				break;
+			default:
+				WARN("VertexAttribute with convertToFloat=false is only allowed for GL_BYTE, GL_UNSIGNED_BYTE, GL_SHORT, GL_UNSIGNED_SHORT, GL_INT, GL_UNSIGNED_INT");
+		}
 	}
 }
 
 //! (ctor)
-VertexAttribute::VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name, bool _normalize) :
+VertexAttribute::VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name, bool _normalize, bool _convertToFloat /*= true*/) :
 		offset(_offset),dataSize(getGLTypeSize(_dataType)*_numValues),
-		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)),name(std::move(_name)), normalize(_normalize){
+		numValues(_numValues), dataType(_dataType), nameId(std::move(_nameId)),name(std::move(_name)), normalize(_normalize), convertToFloat(_convertToFloat){
 	if((dataSize % 4) != 0) {
 		WARN("VertexAttribute is not 4-byte aligned.");
+	}
+	if(!convertToFloat) {
+		switch(dataType) {
+			case GL_BYTE:
+			case GL_UNSIGNED_BYTE:
+			case GL_SHORT:
+			case GL_UNSIGNED_SHORT:
+			case GL_INT:
+			case GL_UNSIGNED_INT:
+				break;
+			default:
+				WARN("VertexAttribute with convertToFloat=false is only allowed for GL_BYTE, GL_UNSIGNED_BYTE, GL_SHORT, GL_UNSIGNED_SHORT, GL_INT, GL_UNSIGNED_INT");
+		}
 	}
 }
 
@@ -52,6 +78,8 @@ bool VertexAttribute::operator<(const VertexAttribute & other)const{
 		return offset<other.offset;
 	}else if(normalize!=other.normalize){
 		return normalize<other.normalize;
+	}else if(convertToFloat!=other.convertToFloat){
+		return convertToFloat<other.convertToFloat;
 	} else return false;
 }
 

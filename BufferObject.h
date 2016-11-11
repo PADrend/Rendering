@@ -59,9 +59,11 @@ class BufferObject {
 
 		//! Bind the buffer object to the given target.
 		void bind(uint32_t bufferTarget) const;
+		void bind(uint32_t bufferTarget, uint32_t location) const;
 
 		//! Remove any binding of the given target.
 		void unbind(uint32_t bufferTarget) const;
+		void unbind(uint32_t bufferTarget, uint32_t location) const;
 
 		/**
 		 * @brief Allocate buffer data
@@ -99,6 +101,9 @@ class BufferObject {
 			return bufferId != 0;
 		}
 		uint32_t getGLId()const{	return bufferId;	}
+		
+		void clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
+		void clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
 };
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;

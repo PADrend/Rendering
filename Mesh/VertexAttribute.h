@@ -27,7 +27,7 @@ namespace Rendering {
 class VertexAttribute {
 	public:
 		VertexAttribute();
-		VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId, bool _normalize);
+		VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId, bool _normalize, bool _convertToFloat = true);
 		bool operator==(const VertexAttribute & other)const{
 			return nameId==other.nameId && offset==other.offset && numValues==other.numValues && dataType==other.dataType && normalize==other.normalize;
 		}
@@ -42,8 +42,9 @@ class VertexAttribute {
 		bool getNormalize()const			{	return normalize;	}
 		Util::StringIdentifier getNameId()const	{	return nameId;	}
 		const std::string & getName()const	{	return name;	}
+		bool getConvertToFloat()const			{	return convertToFloat;	}
 	private:
-		VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name, bool _normalize);
+		VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name, bool _normalize, bool _convertToFloat = true);
 		friend class VertexDescription;
 		uint16_t offset;
 		uint16_t dataSize;
@@ -52,6 +53,7 @@ class VertexAttribute {
 		Util::StringIdentifier nameId;
 		std::string name;
 		bool normalize;
+		bool convertToFloat;
 };
 
 }
