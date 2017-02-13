@@ -1821,7 +1821,6 @@ void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_
 
 //!	(static)
 int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray) {
-	const VertexDescription & vd = m->getVertexDescription();
 	if (m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
 		WARN("getFirstTriangleIntersectingRay: Unsupported vertex format.");
 		return -1;
@@ -1839,7 +1838,7 @@ int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray) {
 			posAcc->getPosition(indices[i+2]));
 		// TODO: check triangle normal
 		if(Geometry::Intersection::getLineTriangleIntersection(ray, triangle, tLine, uTri, vTri)) {
-			if(tLine < closestDist) {
+			if(tLine >= 0 && tLine < closestDist) {
 				closestDist = tLine;
 				closest = i/3;
 			}
