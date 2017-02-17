@@ -39,7 +39,7 @@ Program::Program(Context* _context) : Util::ReferenceCounter<Program>(), context
 Program::Program(Context* _context, const std::vector<std::string>& _sources) : Util::ReferenceCounter<Program>(), context(_context) {
 	cl_int err;
 	cl::Program::Sources cl_sources;
-	for(auto src : _sources)
+	for(auto& src : _sources)
 		cl_sources.push_back(std::make_pair(src.c_str(),src.size()));
 	program.reset(new cl::Program(*context->_internal(), cl_sources, &err));
 	THROW_ERROR_IF(err != CL_SUCCESS, getErrorString(err));
@@ -60,7 +60,7 @@ bool Program::build(const std::vector<DeviceRef>& devices, const std::string& op
 		cl_devices.push_back(*device->_internal());
 
 	std::string opt = options_;
-	for(auto o : options)
+	for(auto& o : options)
 		opt += o;
 	cl_int err = program->build(cl_devices, opt.c_str());
 	if(err != CL_SUCCESS) {
@@ -108,7 +108,7 @@ std::vector<size_t> Program::getBinarySizes() const {
 std::vector<DeviceRef> Program::getDevices() const {
 	std::vector<DeviceRef> out;
 	std::vector<cl::Device> cl_devices = program->getInfo<CL_PROGRAM_DEVICES>();
-	for(auto dev : cl_devices)
+	for(auto& dev : cl_devices)
 		out.push_back(new Device(context->getPlatform(), &dev));
 	return out;
 }
@@ -135,7 +135,7 @@ void Program::attachSource(const std::string& source) {
 
 	cl_int err;
 	cl::Program::Sources cl_sources;
-	for(auto src : sources)
+	for(auto& src : sources)
 		cl_sources.push_back(std::make_pair(src.c_str(),src.size()));
 	program.reset(new cl::Program(*context->_internal(), cl_sources, &err));
 	THROW_ERROR_IF(err != CL_SUCCESS, getErrorString(err));
@@ -150,7 +150,7 @@ void Program::addDefine(const std::string& key, const std::string& value) {
 }
 
 void Program::addInclude(const std::string& dir) {
-	options.push_back(" -I " + dir);
+	options.push_back(" -I \"" + dir + "\"");
 }
 
 void Program::addInclude(const Util::FileName& dir) {
