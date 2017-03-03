@@ -141,6 +141,11 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		private:
 			Util::FileName fileName;
 	// @}
+	public:
+	/*! (internal) sets the glId of the texture. Used for creating textures from existing gl textures. 
+	 * WARNING: The format is not updated and needs to fit the gl texture. 
+	 */
+	void _setGLId(uint32_t glId);
 
 	private:
 		TextureType tType;

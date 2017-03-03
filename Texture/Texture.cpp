@@ -19,6 +19,7 @@
 #include <Util/Macros.h>
 #include <Util/References.h>
 #include <Util/Graphics/PixelAccessor.h>
+#include <Util/StringUtils.h>
 #include <cstddef>
 #include <iostream>
 
@@ -417,6 +418,15 @@ uint8_t * Texture::openLocalData(RenderingContext & context){
 			downloadGLTexture(context);
 	}
 	return getLocalData();
+}
+
+void Texture::_setGLId(uint32_t _glId) {
+	removeGLData();
+	glId = _glId;
+	if(!isGLTextureValid()) {
+		WARN("Texture::_setGLId: The given id is not a valid texture " + Util::StringUtils::toString(_glId));
+		glId = 0;
+	}	
 }
 
 }
