@@ -3,9 +3,9 @@
 	Copyright (C) 2007-2013 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2013 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2013 Ralf Petring <ralf@petring.net>
-	
+
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
+	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "StatusHandler_sgUniforms.h"
@@ -37,6 +37,7 @@ static const Uniform::UniformName UNIFORM_SG_MATRIX_WORLD_TO_CAMERA("sg_matrix_w
 static const Uniform::UniformName UNIFORM_SG_MATRIX_WORLD_TO_CAMERA_OLD("sg_cameraMatrix");
 static const Uniform::UniformName UNIFORM_SG_MATRIX_CAMERA_TO_WORLD("sg_matrix_cameraToWorld");
 static const Uniform::UniformName UNIFORM_SG_MATRIX_CAMERA_TO_WORLD_OLD("sg_cameraInverseMatrix");
+static const Uniform::UniformName UNIFORM_SG_MATRIX_CLIPPING_TO_CAMERA("sg_matrix_clippingToCamera");
 
 static const Uniform::UniformName UNIFORM_SG_LIGHT_COUNT("sg_lightCount");
 static const Uniform::UniformName UNIFORM_SG_POINT_SIZE("sg_pointSize");
@@ -74,7 +75,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_WORLD_TO_CAMERA, actual.getMatrix_worldToCamera());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_WORLD, actual.getMatrix_cameraToWorld());
-		
+
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_WORLD_TO_CAMERA_OLD, actual.getMatrix_worldToCamera());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_WORLD_OLD, actual.getMatrix_cameraToWorld());
 	}
@@ -156,6 +157,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			target.updateMatrix_cameraToClipping(actual);
 			uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING, actual.getMatrix_cameraToClipping());
 			uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING_OLD, actual.getMatrix_cameraToClipping());
+			uniforms.emplace_back(UNIFORM_SG_MATRIX_CLIPPING_TO_CAMERA, actual.getMatrix_cameraToClipping().inverse());
 		}
 		if (forced || pc || mc) {
 			const auto m = actual.getMatrix_cameraToClipping() * actual.getMatrix_modelToCamera();
