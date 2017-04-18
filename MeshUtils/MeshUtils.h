@@ -338,6 +338,16 @@ int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray);
  */
 uint32_t mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<float>::epsilon());
 
+/**
+ * Splits a mesh into its connected components.
+ *
+ * @param mesh Mesh to split into connected components
+ * @param relDistance relative distance (w.r.t. mesh's bounding box) between vertices that are considered as connected.
+ * @return connected components of the mesh
+ * @author Sascha Brandt
+ */
+std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.001);
+
 }
 }
 

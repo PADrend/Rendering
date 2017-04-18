@@ -15,6 +15,7 @@
 #include "../Mesh/VertexAttributeIds.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
+#include "TriangleAccessor.h"
 #include <Geometry/BoundingSphere.h>
 #include <Geometry/Box.h>
 #include <Geometry/Matrix4x4.h>
@@ -26,6 +27,8 @@
 #include <Geometry/Plane.h>
 #include <Geometry/Line.h>
 #include <Geometry/LineTriangleIntersection.h>
+#include <Geometry/PointOctree.h>
+#include <Geometry/Point.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Macros.h>
 #include <Util/Utils.h>
@@ -951,20 +954,25 @@ Mesh * eliminateUnusedVertices(Mesh * mesh) {
 
 	// Mapping from old index to new index.
 	static const uint32_t NONE = 0xffffffff;
-	std::vector<uint32_t> oldToNewIndices(mesh->getVertexCount(), NONE);
+	//std::vector<uint32_t> oldToNewIndices(mesh->getVertexCount(), NONE);
+	std::unordered_map<uint32_t,uint32_t> oldToNewIndices;
+	oldToNewIndices.reserve(indexCount);
 	std::vector<uint32_t> usedOldVertices;
-	usedOldVertices.reserve(mesh->getVertexCount());
+	//usedOldVertices.reserve(mesh->getVertexCount());
+	usedOldVertices.reserve(std::min(indexCount, mesh->getVertexCount()));
 	std::vector<uint32_t> newIndices;
 	newIndices.reserve(indexCount);
 
 	for (uint32_t counter = 0; counter < indexCount; ++counter) {
 		const uint32_t & oldIndex = indices[counter];
-
-		uint32_t newIndex = oldToNewIndices[oldIndex];
-		if (newIndex == NONE) {
+		auto it = oldToNewIndices.find(oldIndex);		
+		uint32_t newIndex = NONE;
+		if (it == oldToNewIndices.end()) {
 			newIndex = usedOldVertices.size();
 			usedOldVertices.push_back(oldIndex);
 			oldToNewIndices[oldIndex] = newIndex;
+		} else {
+			newIndex = it->second;
 		}
 		newIndices.push_back(newIndex);
 	}
@@ -1896,6 +1904,9 @@ uint32_t mergeCloseVertices(Mesh * mesh, float tolerance) {
 	// Create the new mesh and add the rawVertices.
 	Util::Reference<Mesh> result = new Mesh;
 	result->setDataStrategy(mesh->getDataStrategy());
+	result->setFileName(mesh->getFileName());
+	result->setUseIndexData(mesh->isUsingIndexData());
+	result->setDrawMode(mesh->getDrawMode());
 
 	MeshVertexData & vertices = result->openVertexData();
 	vertices.allocate(rawVertices.size(), desc);
@@ -1932,6 +1943,128 @@ uint32_t mergeCloseVertices(Mesh * mesh, float tolerance) {
 }
 // -----------------------------------------------------------------------------
 
+std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance/*=0.001*/) {
+	std::deque<Mesh*> result;
+	auto bb = mesh->getBoundingBox();
+	float distance =bb.getDiameter() * relDistance;
+	
+	if(mesh->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+		WARN("Mesh is not a triangle mesh.");
+		return result;
+	}
+	
+	struct ConnectedComponent;
+	struct Triangle {
+		uint32_t idx;
+		ConnectedComponent* component;
+		Triangle(uint32_t i) : idx(i), component(nullptr) {}
+	};	
+	struct ConnectedComponent {
+		std::vector<Triangle*> triangles;
+		void join(ConnectedComponent* other) {
+			if(other != this) {
+				if(other->triangles.size() < triangles.size()) {
+					for(auto& t : other->triangles) 
+						t->component = this;
+					triangles.reserve(triangles.size() + other->triangles.size());
+					triangles.insert(triangles.end(), other->triangles.begin(), other->triangles.end());
+					other->triangles.clear();
+				} else {
+					for(auto& t : triangles) 
+						t->component = other;
+					other->triangles.reserve(triangles.size() + other->triangles.size());
+					other->triangles.insert(other->triangles.end(), triangles.begin(), triangles.end());
+					triangles.clear();
+				}
+			}
+		}
+		void add(Triangle* t) {
+			t->component = this;
+			triangles.emplace_back(t);
+		}
+	};
+	struct OctreeEntry : public Geometry::Point<Geometry::Vec3f> {
+		Triangle* triangle;
+		OctreeEntry(const Geometry::Vec3 & p, Triangle* tri) : Geometry::Point<Geometry::Vec3f>(p), triangle(tri) {}
+	};
+	
+	Geometry::PointOctree<OctreeEntry> octree(bb,distance,100);
+	Geometry::Sphere_f searchSphere({0,0,0}, distance);
+	std::vector<std::unique_ptr<ConnectedComponent>> components;
+	std::vector<std::unique_ptr<Triangle>> triangles;
+	triangles.reserve(mesh->getPrimitiveCount());
+	
+	auto triAcc = TriangleAccessor::create(mesh);
+	std::cout << "Identifying connected components " << 0 << "%        ";
+	for(uint32_t i=0; i<mesh->getPrimitiveCount(); ++i) {
+		auto triangle = new Triangle(i);
+		triangles.emplace_back(triangle);
+		auto tri = triAcc->getTriangle(i);
+		for(const auto& pos : {tri.getVertexA(), tri.getVertexB(), tri.getVertexC()}) {
+			searchSphere.setCenter(pos);
+			std::deque<OctreeEntry> points;
+			octree.collectPointsWithinSphere(searchSphere, points);
+			for(auto& point : points) {
+				auto otherTriangle = point.triangle;
+				if(!triangle->component)
+					otherTriangle->component->add(triangle);
+				else
+					otherTriangle->component->join(triangle->component);
+			}
+		}
+		if(!triangle->component) {
+			auto cc = new ConnectedComponent;
+			cc->add(triangle);
+			components.emplace_back(cc);
+		}		
+		for(const auto& pos : {tri.getVertexA(), tri.getVertexB(), tri.getVertexC()}) {
+			octree.insert({pos, triangle});
+		}
+		if(i%1000==0) {
+			std::cout << "\rIdentifying connected components " << (static_cast<float>(i*100)/static_cast<float>(mesh->getPrimitiveCount())) << "%        ";
+		}
+	}
+	std::cout << "\rIdentifying connected components 100%        " << std::endl;
+	
+	uint32_t cmpCount=0;
+	for(const auto& cc : components) {
+		if(cc->triangles.size() > 0) {
+			++cmpCount;
+		}
+	}
+	
+	std::cout << "Identifyied " << cmpCount << " components" << std::endl;
+	std::cout << "Creating meshes 0%        ";
+	uint32_t j=0;
+	
+	MeshIndexData tmpIndexData;
+	tmpIndexData.allocate(1);
+	MeshVertexData vertexData(mesh->openVertexData());
+	Mesh tmpMesh(tmpIndexData, vertexData);
+	tmpMesh.setDataStrategy(mesh->getDataStrategy());
+	tmpMesh.setDrawMode(mesh->getDrawMode());
+	tmpMesh.setUseIndexData(true);
+	
+	for(const auto& cc : components) {
+		if(cc->triangles.size() > 0) {
+			MeshIndexData indexData;
+			indexData.allocate(cc->triangles.size()*3);
+			uint32_t i=0;
+			for(auto t : cc->triangles) {
+				auto triIdx = triAcc->getIndices(t->idx);
+				indexData[i++] = std::get<0>(triIdx);
+				indexData[i++] = std::get<1>(triIdx);
+				indexData[i++] = std::get<2>(triIdx);
+			}
+			tmpMesh.openIndexData().swap(indexData);
+			result.push_back(eliminateUnusedVertices(&tmpMesh));
+			std::cout << "\rCreating meshes " << (static_cast<float>(++j*100)/static_cast<float>(cmpCount)) << "%        ";
+		}
+	}
+	std::cout << "\rCreating meshes 100%        " << std::endl; 
+	
+	return result;
+}
 
 }
 }
