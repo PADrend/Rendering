@@ -297,7 +297,7 @@ uint32_t textureTypeToGLTextureType(TextureType type){
 // ----------------------------------------------------------------------------
 // factory functions
 
-static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering){
+static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering,bool clampToEdge=false){
 	Texture::Format format;
 	format.glTextureType = textureTypeToGLTextureType(type);
 	format.sizeX = sizeX;
@@ -309,11 +309,18 @@ static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t
 	
 	format.linearMinFilter = filtering;
 	format.linearMagFilter = filtering;
+	
+	if(clampToEdge) {
+		format.glWrapS = GL_CLAMP_TO_EDGE;
+		format.glWrapT = GL_CLAMP_TO_EDGE;
+		format.glWrapR = GL_CLAMP_TO_EDGE;
+	}
+	
 	return new Texture(format);
 }
 
 //! [static] Factory
-Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering){
+Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge/*=false*/){
 	if( numComponents<1||numComponents>4 )
 		throw std::logic_error("createTexture: Invalid numComponents.");
 	
@@ -324,7 +331,7 @@ Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint
 																		numComponents>2 ? bytes*2 : Util::PixelFormat::NONE, 
 																		numComponents>3 ? bytes*3 : Util::PixelFormat::NONE));
 
-	return create( type, sizeX, sizeY, numLayers, glPixelFormat.glLocalDataFormat, glPixelFormat.glLocalDataType, glPixelFormat.glInternalFormat, filtering);
+	return create( type, sizeX, sizeY, numLayers, glPixelFormat.glLocalDataFormat, glPixelFormat.glLocalDataType, glPixelFormat.glInternalFormat, filtering, clampToEdge);
 }
 
 //! (static)

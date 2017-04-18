@@ -58,7 +58,7 @@ Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height);
 	@p dataType == FLOAT || UINT8 || UINT32 || INT32
 	@note If the texture should be used as image(load and store), only 1,2,or 4 components are valid.
 */
-Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering);
+Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge=false);
 
 /*! @p numComponents == 1 || 2 || 3|| 4
 	@p dataType == FLOAT || UINT8 || UINT32 || INT32
