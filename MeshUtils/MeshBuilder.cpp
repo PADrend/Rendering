@@ -538,6 +538,48 @@ Mesh * MeshBuilder::createMeshFromBitmaps(const VertexDescription & d,
 	return builder.buildMesh();
 }
 
+
+Mesh * MeshBuilder::createHexGrid(const VertexDescription & desc, float width, float height, uint32_t rows, uint32_t columns) {
+	MeshBuilder builder(desc);
+	static const Geometry::Vec3 Y_AXIS(0,1,0);
+	builder.normal(Y_AXIS);
+	builder.color(Util::ColorLibrary::WHITE);
+	Geometry::Vec2 uv(0,0);
+	
+	if(columns < 4 || rows < 3) {
+		WARN("createHexGrid: there has to be at least 4 columns and 3 rows.");
+		return nullptr;
+	}
+		
+	for(int32_t r=0; r<rows; ++r) {
+	  for(int32_t c=0; c<columns; ++c) {
+			int32_t b = (r%2==0 && c==1) ? 1 : ((r%2==0 && c==columns-2) ? -1 : 0);
+			int32_t gridX = 2*c + r%2 + b - 3;
+			int32_t gridY = r-1;
+			
+			uv.setValue(static_cast<float>(gridX) / (2.0f * (columns-4)), 1.0f - static_cast<float>(gridY) / (rows - 3));			
+			builder.texCoord0(uv);
+	    builder.position({uv.x()*width, 0, (1.0f-uv.y())*height});
+			builder.addVertex();
+			
+			if(c>0 && c<columns-2 && r>0 && r<rows-2) {
+				uint32_t idx = c + r*columns;
+				if(r%2==1) {
+					builder.addTriangle(idx, idx + columns, idx + columns + 1);
+	        if(c<columns-3)
+					  builder.addTriangle(idx, idx + columns + 1, idx + 1);
+				} else {
+					builder.addTriangle(idx, idx + columns, idx + 1);
+	        if(c<columns-3)
+					  builder.addTriangle(idx + 1, idx + columns, idx +columns + 1);
+				}
+			}
+	  }
+	}
+	return builder.buildMesh();
+	
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 void MeshBuilder::MBVertex::setPosition(const VertexAttribute & attr,const Geometry::Vec2 &pos){
 	if(attr.getNumValues() != 2 || attr.getDataType() != GL_FLOAT ){

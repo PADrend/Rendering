@@ -174,6 +174,8 @@ class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
 											Util::Reference<Util::Bitmap> depth,
 											Util::Reference<Util::Bitmap> color = nullptr,
 											Util::Reference<Util::Bitmap> normals = nullptr );
+											
+		static Mesh * createHexGrid(const VertexDescription & desc, float width, float height, uint32_t rows, uint32_t columns);
 
 	// @}
 	// -----
