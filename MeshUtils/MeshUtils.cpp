@@ -15,6 +15,8 @@
 #include "../Mesh/VertexAttributeIds.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
+#include "../Texture/Texture.h"
+#include "../Texture/TextureUtils.h"
 #include "TriangleAccessor.h"
 #include <Geometry/BoundingSphere.h>
 #include <Geometry/Box.h>
@@ -30,6 +32,7 @@
 #include <Geometry/PointOctree.h>
 #include <Geometry/Point.h>
 #include <Util/Graphics/Color.h>
+#include <Util/Graphics/PixelAccessor.h>
 #include <Util/Macros.h>
 #include <Util/Utils.h>
 #include <Util/Numeric.h>
@@ -2064,6 +2067,33 @@ std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance/*=0
 	std::cout << "\rCreating meshes 100%        " << std::endl; 
 	
 	return result;
+}
+
+void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale, bool clampToEdge) {
+	if(!mesh || !displaceAcc) {
+		return;
+	} 
+	const auto& vd = mesh->getVertexDescription();
+	if(!vd.hasAttribute(VertexAttributeIds::NORMAL) || !vd.hasAttribute(VertexAttributeIds::TEXCOORD0)) {
+		WARN("applyDisplacementMap: Mesh requires normals and texture coordinates.");
+		return;
+	}
+	const uint32_t width = displaceAcc->getWidth();
+	const uint32_t height = displaceAcc->getHeight();
+	auto& vData = mesh->openVertexData();
+	auto pAcc(PositionAttributeAccessor::create(vData, VertexAttributeIds::POSITION));
+	auto tcAcc(TexCoordAttributeAccessor::create(vData, VertexAttributeIds::TEXCOORD0));
+	auto nAcc(NormalAttributeAccessor::create(vData, VertexAttributeIds::NORMAL));
+	for(uint32_t i=0; i<mesh->getVertexCount(); ++i) {
+		auto pos = pAcc->getPosition(i);
+		auto tc = tcAcc->getCoordinate(i);
+		auto n = nAcc->getNormal(0);
+		uint32_t px = clampToEdge ? std::max(0, std::min<int32_t>(width-1, tc.x()*width)) : ((tc.x() - std::floor(tc.x())) * width);
+		uint32_t py = clampToEdge ? std::max(0, std::min<int32_t>(height-1, tc.y()*height)) : ((tc.y() - std::floor(tc.y())) * height);
+		auto value = displaceAcc->readSingleValueFloat(px, py) * scale;
+		pAcc->setPosition(i, pos + n * value);
+	}
+	vData.markAsChanged();
 }
 
 }

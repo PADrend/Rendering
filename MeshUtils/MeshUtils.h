@@ -34,6 +34,7 @@ typedef _Ray<Vec3> Ray3;
 namespace Util {
 class Color4f;
 class StringIdentifier;
+class PixelAccessor;
 }
 
 namespace Rendering {
@@ -347,6 +348,8 @@ uint32_t mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<flo
  * @author Sascha Brandt
  */
 std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.001);
+
+void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale=1.0, bool clampToEdge=false);
 
 }
 }
