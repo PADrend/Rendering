@@ -28,6 +28,8 @@ typedef _Rect<float> Rect;
 typedef _Rect<int> Rect_i;
 template<typename _T> class _Vec3;
 typedef _Vec3<float> Vec3f;
+template<typename _T> class _Vec2;
+typedef _Vec2<float> Vec2f;
 template<typename _T> class _Matrix4x4;
 typedef _Matrix4x4<float> Matrix4x4f;
 }
@@ -84,6 +86,9 @@ void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const
 
 void drawRect(RenderingContext & rc, const Geometry::Rect & rect);
 void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color);
+
+void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius);
+void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius, const Util::Color4f & color);
 
 /**
  * Draw a triangle in three-dimensional space.

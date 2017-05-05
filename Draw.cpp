@@ -27,6 +27,8 @@
 #include <Geometry/Matrix4x4.h>
 #include <Geometry/Rect.h>
 #include <Geometry/Vec3.h>
+#include <Geometry/Vec2.h>
+#include <Geometry/Convert.h>
 #include <Util/Graphics/ColorLibrary.h>
 #include <Util/Graphics/Color.h>
 #include <Util/References.h>
@@ -394,6 +396,46 @@ void drawRect(RenderingContext & rc, const Geometry::Rect & rect) {
 void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawRect(rc, rect);
+	rc.popMaterial();
+}
+
+void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius) {
+	static Util::Reference<Mesh> mesh;
+	if (mesh.isNull()) {
+		VertexDescription vertexDescription;
+		vertexDescription.appendPosition2D();
+		uint32_t segments = 32;
+		mesh = new Mesh(vertexDescription, segments, segments);
+		mesh->setDrawMode(Mesh::DRAW_LINE_LOOP);
+
+		MeshVertexData & vd = mesh->openVertexData();
+		MeshIndexData & id = mesh->openIndexData();
+		float * vertices = reinterpret_cast<float *> (vd.data());
+		uint32_t * indices = id.data();
+		for(uint32_t s=0; s<segments; ++s) {
+			float a = s * Geometry::Convert::degToRad(360.0f) / segments;
+			*vertices++ = std::sin(a); 
+			*vertices++ = std::cos(a); ;
+			indices[s] = s;
+		}
+		vd.updateBoundingBox();
+		vd.markAsChanged();
+		id.updateIndexRange();
+		id.markAsChanged();
+	}
+
+	Geometry::Matrix4x4 matrix;
+	matrix.translate(center.getX(), center.getY(), 0.0f);
+	matrix.scale(radius, radius, 1.0f);
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(matrix);
+	rc.displayMesh(mesh.get());
+	rc.popMatrix_modelToCamera();
+}
+
+void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius, const Util::Color4f & color) {
+	rc.pushAndSetColorMaterial(color);
+	drawWireframeCircle(rc, center, radius);
 	rc.popMaterial();
 }
 
