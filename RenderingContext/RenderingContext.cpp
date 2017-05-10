@@ -1094,8 +1094,8 @@ void RenderingContext::_startTransformFeedback(uint32_t primitiveMode){
 	}
 	internalData->activeFeedbackStatus.second = primitiveMode;
 }
-void RenderingContext::startTransformFeedback_lines()		{	_startTransformFeedback(GL_POINTS);	}
-void RenderingContext::startTransformFeedback_points()		{	_startTransformFeedback(GL_LINES);	}
+void RenderingContext::startTransformFeedback_lines()		{	_startTransformFeedback(GL_LINES);	}
+void RenderingContext::startTransformFeedback_points()		{	_startTransformFeedback(GL_POINTS);	}
 void RenderingContext::startTransformFeedback_triangles()	{	_startTransformFeedback(GL_TRIANGLES);	}
 void RenderingContext::stopTransformFeedback()				{	_startTransformFeedback(0);	}
 
