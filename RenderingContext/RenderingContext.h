@@ -30,6 +30,7 @@ namespace Rendering {
 class AlphaTestParameters;
 class BlendingParameters;
 class BufferObject;
+class ClipPlaneParameters;
 class ColorBufferParameters;
 class CullFaceParameters;
 class DepthBufferParameters;
@@ -157,7 +158,18 @@ public:
 	void pushAndSetBlending(const BlendingParameters & blendingParameter);
 	void setBlending(const BlendingParameters & blendingParameter);
 	// @}
+	
+	// ------
 
+	//! @name Scissor
+	//	@{
+	const ClipPlaneParameters & getClipPlane(uint8_t index) const;
+	void popClipPlane(uint8_t index);
+	void pushClipPlane(uint8_t index);
+	void pushAndSetClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters);
+	void setClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters);
+	// @}
+	
 	// ------
 
 	//! @name ColorBuffer

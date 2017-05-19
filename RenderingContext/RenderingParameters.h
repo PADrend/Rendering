@@ -14,6 +14,7 @@
 #include <Geometry/Convert.h>
 #include <Geometry/Rect.h>
 #include <Geometry/Vec4.h>
+#include <Geometry/Plane.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Macros.h>
 #include <Util/References.h>
@@ -272,6 +273,34 @@ class BlendingParameters {
 			return blendColor;
 		}
 };
+
+// -------------------------------------------
+
+class ClipPlaneParameters {
+	private:
+		Geometry::Plane plane;
+		bool enabled;
+
+	public:
+		//! Disable the clip plane.
+		ClipPlaneParameters() : plane(), enabled(false) {}
+		//! Enable the clip plane with the given plane.
+		explicit ClipPlaneParameters(Geometry::Plane plane) : plane(std::move(plane)), enabled(true) {}
+		bool operator!=(const ClipPlaneParameters & other) const { return enabled != other.enabled || !(plane == other.plane); }
+		bool operator==(const ClipPlaneParameters & other) const { return enabled == other.enabled && plane == other.plane; }
+
+		const Geometry::Plane & getPlane() const { return plane; }
+		bool isEnabled() const {
+			return enabled;
+		}
+		void enable() {
+			enabled = true;
+		}
+		void disable() {
+			enabled = false;
+		}
+};
+static const uint8_t MAX_CLIP_PLANES = 6;
 
 // -------------------------------------------
 

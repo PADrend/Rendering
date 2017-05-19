@@ -77,7 +77,10 @@ class RenderingContext::InternalData {
 		std::stack<ScissorParameters> scissorParametersStack;
 		ScissorParameters currentScissorParameters;
 		std::stack<StencilParameters> stencilParameterStack;
-
+		
+		std::array<std::stack<ClipPlaneParameters>, MAX_CLIP_PLANES> clipPlaneStacks;
+		std::array<ClipPlaneParameters, MAX_CLIP_PLANES> activeClipPlanes;
+				
 		std::stack<Util::Reference<FBO> > fboStack;
 		Util::Reference<FBO> activeFBO;
 
@@ -425,6 +428,57 @@ void RenderingContext::setBlending(const BlendingParameters & p) {
 	internalData->actualCoreRenderingStatus.setBlendingParameters(p);
 	if(immediate)
 		applyChanges();
+}
+
+
+// ClipPlane ************************************************************************************
+
+const ClipPlaneParameters & RenderingContext::getClipPlane(uint8_t index) const {
+	static ClipPlaneParameters emptyClipPlane;
+	if(index >= MAX_CLIP_PLANES) {
+		WARN("getClipPlane: invalid plane index");
+		return emptyClipPlane;
+	}
+	return internalData->activeClipPlanes.at(index);
+}
+
+void RenderingContext::popClipPlane(uint8_t index) {
+	if(internalData->clipPlaneStacks.at(index).empty()) {
+		WARN("popClipPlane: Empty ClipPlane-Stack");
+		return;
+	}
+	setClipPlane(index, internalData->clipPlaneStacks.at(index).top());
+	internalData->clipPlaneStacks.at(index).pop();
+}
+
+void RenderingContext::pushClipPlane(uint8_t index) {
+	internalData->clipPlaneStacks.at(index).emplace(getClipPlane(index));
+}
+
+void RenderingContext::pushAndSetClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters) {
+	pushClipPlane(index);
+	setClipPlane(index, planeParameters);
+}
+
+void RenderingContext::setClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters) {	
+	if(index >= MAX_CLIP_PLANES) {
+		WARN("setClipPlane: invalid plane index");
+		return;
+	}
+	if(internalData->activeClipPlanes.at(index) != planeParameters) {
+		internalData->activeClipPlanes[index] = planeParameters;
+		#if defined(LIB_GL)
+			applyChanges();
+			if(planeParameters.isEnabled()) {
+				glEnable(GL_CLIP_PLANE0 + index);
+				auto plane = planeParameters.getPlane();
+				std::vector<double> planeEq = {plane.getNormal().x(), plane.getNormal().y(), plane.getNormal().z(), plane.getOffset()};
+				glClipPlane(GL_CLIP_PLANE0 + index, planeEq.data());
+			} else {
+				glDisable(GL_CLIP_PLANE0 + index);
+			}
+		#endif
+	}
 }
 
 // ColorBuffer ************************************************************************************
