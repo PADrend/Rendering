@@ -567,93 +567,87 @@ void disable2DMode(RenderingContext & rc) {
 	rc.popMatrix_cameraToClipping();
 }
 
-void drawInstances(RenderingContext & rc, Mesh* m, BufferObject & instanceBuffer, uint32_t elements, uint32_t count, uint32_t meshEltCount) {	
-		static Util::StringIdentifier INSTANCE_OFFSET = Util::StringIdentifier("sg_InstanceOffset");
-		static Util::StringIdentifier INSTANCE_MATRIX = Util::StringIdentifier("sg_InstanceMatrix");
-		static Rendering::Uniform instancingModeDisabled("sg_InstancingMode", 0);
-		static Rendering::Uniform instancingModeOffset("sg_InstancingMode", 1);
-		static Rendering::Uniform instancingModeMatrix("sg_InstancingMode", 2);
+void enableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements) {	
+	if(location < 0)
+		return;
 		
-		if( m->empty() || !m->isUsingIndexData())
+#if defined(LIB_GL) && defined(GL_VERSION_3_3)
+	instanceBuffer.bind(GL_ARRAY_BUFFER);	
+	
+	if(elements == 16) {
+		// Matrix4x4
+		for(uint_fast8_t i=0; i<elements/4; ++i) {
+			GLuint attribLocation = static_cast<GLuint> (location + i);
+			uint8_t * data = 0;
+			data += i*4*sizeof(GLfloat);
+			glVertexAttribPointer(attribLocation, 4, GL_FLOAT, GL_FALSE, elements*sizeof(GLfloat), data);
+			glEnableVertexAttribArray(attribLocation);
+			glVertexAttribDivisor(attribLocation, 1);
+		}
+	} else if(elements <= 4) {
+		GLuint attribLocation = static_cast<GLuint> (location);
+		glVertexAttribPointer(attribLocation, elements, GL_FLOAT, GL_FALSE, elements*sizeof(GLfloat), nullptr);
+		glEnableVertexAttribArray(attribLocation);
+		glVertexAttribDivisor(attribLocation, 1);
+	} else {
+		WARN("Invalid number of elements for instancing (supported are 1,2,3,4 or 16 elements).");
+		return;
+	}
+#endif
+}
+
+void disableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements) {
+	if(location < 0)
+		return;
+		
+#if defined(LIB_GL) && defined(GL_VERSION_3_3)
+	if(elements == 16) {
+		// Matrix4x4
+		for(uint_fast8_t i=0; i<elements/4; ++i) {
+			GLuint attribLocation = static_cast<GLuint> (location + i);
+			glDisableVertexAttribArray(attribLocation);
+			glVertexAttribDivisor(attribLocation, 0);
+		}
+	} else {
+		glVertexAttribDivisor(static_cast<GLuint> (location), 0);
+	}
+	
+	instanceBuffer.unbind(GL_ARRAY_BUFFER);
+#endif
+}
+
+void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32_t elementCount, uint32_t instanceCount) {		
+		if( m->empty())
 			return;		
 			
 #if defined(LIB_GL) && defined(GL_VERSION_3_3)
 
-		MeshVertexData & vd=m->_getVertexData();
-		MeshIndexData & id=m->_getIndexData();
-								
+		rc.applyChanges();
+
+		MeshVertexData & vd=m->_getVertexData();		
 		if(!vd.isUploaded())
 			vd.upload();			
-		if(!id.isUploaded())
-			id.upload();
 			
-		vd.bind(rc, vd.isUploaded());				
+		vd.bind(rc, vd.isUploaded());			
 		
-		Shader * shader = rc.getActiveShader();
-		GLint location;
-		
-		if(shader && elements>0) {
-			instanceBuffer.bind(GL_ARRAY_BUFFER);
-		
-			if(elements==16) {
-				// Matrix4x4
-				VertexAttribute instAttr = VertexAttribute(elements, GL_FLOAT, INSTANCE_MATRIX, false);		
-				location = shader->getVertexAttributeLocation(instAttr.getNameId());
-				if(location != -1) {
-					for(uint_fast8_t i=0; i<elements/4; ++i) {
-						GLuint attribLocation = static_cast<GLuint> (location + i);
-						uint8_t * data = 0;
-						data += instAttr.getOffset() + i*4*sizeof(GLfloat);
-						glVertexAttribPointer(attribLocation, 4, instAttr.getDataType(), instAttr.getNormalize() ? GL_TRUE : GL_FALSE, 
-							elements*sizeof(GLfloat), data);
-						glEnableVertexAttribArray(attribLocation);
-						glVertexAttribDivisor(attribLocation, 1);
-					}
-				}
-				rc.setGlobalUniform(instancingModeMatrix);
-			} else if(elements<=4) {
-				VertexAttribute instAttr = VertexAttribute(elements, GL_FLOAT, INSTANCE_OFFSET, false);		
-				location = shader->getVertexAttributeLocation(instAttr.getNameId());
-				rc.enableVertexAttribArray(instAttr, 0, elements * sizeof(GLfloat));		
-				if(location != -1) 
-					glVertexAttribDivisor(static_cast<GLuint> (location), 1);
-				rc.setGlobalUniform(instancingModeOffset);
-			} else {
-				WARN("Invalid number of elements for instancing (supported are 1,2,3,4 or 16 elements).");
-				return;
-			}
+		if(m->isUsingIndexData()) {			
+			MeshIndexData & id=m->_getIndexData();								
+			if(!id.isUploaded())
+				id.upload();	
+							
+			BufferObject indexBuffer;
+			id._swapBufferObject(indexBuffer);
+			indexBuffer.bind(GL_ELEMENT_ARRAY_BUFFER);
+			
+			glDrawElementsInstanced(m->getGLDrawMode(), elementCount > 0 ? std::min(elementCount,id.getIndexCount()) : id.getIndexCount(), 
+					GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*firstElement), instanceCount);
+					
+			indexBuffer.unbind(GL_ELEMENT_ARRAY_BUFFER);
+			id._swapBufferObject(indexBuffer);
+		} else {
+			glDrawArraysInstanced(m->getGLDrawMode(), firstElement, elementCount, instanceCount);
 		}
 		
-		BufferObject indexBuffer;
-		id._swapBufferObject(indexBuffer);
-		indexBuffer.bind(GL_ELEMENT_ARRAY_BUFFER);
-		
-		rc.applyChanges();
-		
-		glDrawElementsInstanced(m->getGLDrawMode(), meshEltCount > 0 ? std::min(meshEltCount,id.getIndexCount()) : id.getIndexCount(), GL_UNSIGNED_INT, 0, count);
-		
-		rc.setGlobalUniform(instancingModeDisabled);
-		
-		indexBuffer.unbind(GL_ELEMENT_ARRAY_BUFFER);
-		id._swapBufferObject(indexBuffer);
-		
-		if(shader && elements>0) {
-			if(elements==16) {
-				// Matrix4x4
-				if(location != -1) {
-					for(uint_fast8_t i=0; i<elements/4; ++i) {
-						GLuint attribLocation = static_cast<GLuint> (location + i);
-						glDisableVertexAttribArray(attribLocation);
-						glVertexAttribDivisor(attribLocation, 0);
-					}
-				}
-			} else {
-				if(location != -1) 
-					glVertexAttribDivisor(static_cast<GLuint> (location), 0);
-			}
-			
-			instanceBuffer.unbind(GL_ARRAY_BUFFER);
-		}
 		vd.unbind(rc, vd.isUploaded());
 #else
 	WARN("Instancing is not supported.");
