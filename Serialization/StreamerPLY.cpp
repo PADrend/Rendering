@@ -52,14 +52,14 @@ class PLY_Element {
 		};
 
 		static uint8_t getTypeId(const std::string & type) {
-			if(type=="char") return TYPE_CHAR;
-			else if(type=="uchar") return TYPE_UCHAR;
-			else if(type=="short") return TYPE_SHORT;
-			else if(type=="ushort") return TYPE_USHORT;
-			else if(type=="int") return TYPE_INT;
-			else if(type=="uint") return TYPE_UINT;
-			else if(type=="float") return TYPE_FLOAT;
-			else if(type=="double") return TYPE_DOUBLE;
+			if(type=="char" || type=="int8") return TYPE_CHAR;
+			else if(type=="uchar" || type=="uint8") return TYPE_UCHAR;
+			else if(type=="short" || type=="int16") return TYPE_SHORT;
+			else if(type=="ushort" || type=="uint16") return TYPE_USHORT;
+			else if(type=="int" || type=="int32") return TYPE_INT;
+			else if(type=="uint" || type=="uint32") return TYPE_UINT;
+			else if(type=="float" || type=="float32") return TYPE_FLOAT;
+			else if(type=="double" || type=="float64") return TYPE_DOUBLE;
 			else return TYPE_UNDEFINED;
 		};
 		static uint8_t getDataSize(uint8_t typeId) {
