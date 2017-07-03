@@ -228,16 +228,16 @@ Util::GenericAttributeList * StreamerOBJ::loadGeneric(std::istream & input) {
 			}
 		} else if (*cursor == 'f') {
 			++cursor;
-			uint32_t v = 0, vt = 0, vn = 0;
-			v = strtoul(cursor, &cursor, 10);
+			int32_t v = 0, vt = 0, vn = 0;
+			v = strtol(cursor, &cursor, 10);
 			std::list<uint32_t> vertexIndexList;
 			while (v != 0) {
 				if (*cursor == '/') {
 					++cursor;
-					vt = strtoul(cursor, &cursor, 10);
+					vt = strtol(cursor, &cursor, 10);
 					if (*cursor == '/') {
 						++cursor;
-						vn = strtoul(cursor, &cursor, 10);
+						vn = strtol(cursor, &cursor, 10);
 					}
 				}
 				if (!vertexDesc) {
@@ -253,6 +253,13 @@ Util::GenericAttributeList * StreamerOBJ::loadGeneric(std::istream & input) {
 
 				float * tex = nullptr;
 				float * nor = nullptr;
+				if(v < 0)
+					v = positions.size()/3 + v;
+				if(vt < 0)
+					vt = texcoords.size()/2 + vt;
+				if(vn < 0)
+					vn = normals.size()/3 + vn;
+				
 				if (vt != 0) {
 					tex = &texcoords[2 * vt];
 				}
@@ -311,7 +318,7 @@ Util::GenericAttributeList * StreamerOBJ::loadGeneric(std::istream & input) {
 			}
 			cursor += 6;
 			currentMtl = StringUtils::trim(cursor);
-		} else if (*cursor != '#' && *cursor != '\0' && *cursor != '\n' && *cursor != '\r') {
+		} else if (*cursor != '#' && *cursor != '\0' && *cursor != '\n' && *cursor != '\r' && *cursor != 'o') {
 			WARN(std::string("Unknown OBJ keyword \"") + *cursor + "\".");
 		}
 	}
