@@ -485,6 +485,14 @@ Mesh * StreamerPLY::loadMesh(std::istream & input) {
 				useTex0=true;
 				tex0Attr = vFormat.appendTexCoord();
 			}
+			if(!useTex0) {
+				sIndex=e.getPropertyIndex("u");
+				tIndex=e.getPropertyIndex("v");
+				if(sIndex>=0&&tIndex>=0) {
+					useTex0=true;
+					tex0Attr = vFormat.appendTexCoord();
+				}
+			}
 			VertexAttribute colorAttr;
 			int redIndex=e.getPropertyIndex("red");
 			int greenIndex=e.getPropertyIndex("green");
