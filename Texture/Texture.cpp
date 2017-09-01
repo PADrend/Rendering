@@ -282,9 +282,23 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 			}else{
 				// assume the buffer already contains the data; this may lead to a crash if this is not the case!
 				// \todo if this can be checked somehow, do it!
+			}			
+			// special case:the used internalFormat in TextureUtils is not applicable here
+			const auto& pixelFormat = getFormat().pixelFormat;
+			GLenum format = pixelFormat.glInternalFormat;
+			if(pixelFormat.glLocalDataType==GL_BYTE || pixelFormat.glLocalDataType==GL_UNSIGNED_BYTE){
+				if(pixelFormat.glInternalFormat==GL_RED){
+					format = GL_R8;
+				}else if(pixelFormat.glInternalFormat==GL_RG){
+					format = GL_RG8;
+				}else if(pixelFormat.glInternalFormat==GL_RGB){
+					format = GL_RGB8; // not supported by opengl!
+				}else if(pixelFormat.glInternalFormat==GL_RGBA){
+					format = GL_RGBA8;
+				}
 			}
 			// bind the buffer to the texture
-			glTexBuffer( GL_TEXTURE_BUFFER, getFormat().pixelFormat.glInternalFormat, bufferObject->getGLId() );
+			glTexBuffer( GL_TEXTURE_BUFFER, format, bufferObject->getGLId() );
 			break;
 		
 		}
