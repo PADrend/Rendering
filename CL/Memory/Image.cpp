@@ -23,7 +23,7 @@
 #include <Util/Graphics/PixelFormat.h>
 #include <Util/TypeConstant.h>
 
-#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
+//#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
 COMPILER_WARN_PUSH
 COMPILER_WARN_OFF(-Wpedantic)
 COMPILER_WARN_OFF(-Wold-style-cast)
