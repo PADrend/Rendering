@@ -43,6 +43,7 @@ namespace Util {
 class Color4f;
 class Color4ub;
 class Bitmap;
+class PixelAccessor;
 }
 
 namespace Rendering {
@@ -177,6 +178,19 @@ class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
 											
 		static Mesh * createHexGrid(const VertexDescription & desc, float width, float height, uint32_t rows, uint32_t columns);
 
+		/**
+		 * Creates a mesh from a voxel bitmap as exported from a 3D Texture.
+		 * The bitmap should have a height of depth*heiht, i.e., each depth layer is stored from top to bottom in the vertical direction of the bitmap.
+		 * The height and width of the voxel grid is derived from the bitmap width and height. The actual height of the voxel grid is bitmap-height/depth.
+		 * A voxel box of size 1^3 is created for every pixel with a positive alpha value. 
+		 * The local point (0,0,0) in the resulting mesh corresponds to the (0,0,0) coordinate in the voxel bitmap.
+		 * To scale the mesh afterwards, use MeshUtils::transform
+		 *
+		 * @param desc the desired VertexDescription. Should at least contain 3d positions.
+		 * @param colorAcc the bitmap that defines the voxel grid. Every pixel with non-zero alpha value defines a voxel.
+		 * @param the depth of the voxel grid. The height of the bitmap should be divisible by this value
+		 */
+		static Mesh * createVoxelMesh(const VertexDescription & desc, const Util::PixelAccessor& colorAcc, uint32_t depth);
 	// @}
 	// -----
 private:

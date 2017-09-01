@@ -580,6 +580,58 @@ Mesh * MeshBuilder::createHexGrid(const VertexDescription & desc, float width, f
 	
 }
 
+
+Mesh * MeshBuilder::createVoxelMesh(const VertexDescription & desc, const Util::PixelAccessor& colorAcc, uint32_t depth) {	
+	//Util::Reference<Util::PixelAccessor> colorAcc = Util::PixelAccessor::create(std::move(voxelBitmap));
+	if( colorAcc.getPixelFormat().getNumComponents() < 4 ){
+		WARN("createVoxelMesh: unsupported color texture format. Requires 4 components.");
+		return nullptr;
+	}
+	if(colorAcc.getHeight()%depth != 0) {
+		WARN("createVoxelMesh: Bitmap height is not divisible by depth.");
+		return nullptr;
+	}
+	
+	MeshBuilder builder(desc);
+	Geometry::Vec3i res(colorAcc.getWidth(), colorAcc.getHeight()/depth, depth);
+	
+	const auto createQuad = [&](uint32_t x, uint32_t y, uint32_t z, uint8_t xMod, uint8_t yMod, uint8_t zMod, const Geometry::Vec3& normal){
+    uint32_t idx = builder.getNextIndex();
+    builder.normal(normal);
+    Geometry::Vec3 pos(x,y,z);
+    builder.position({pos.x() + ((xMod&1)>0?1.0f:0.0f),pos.y() + ((yMod&1)>0?1.0f:0.0f),pos.z() + ((zMod&1)>0?1.0f:0.0f)}); builder.addVertex();
+    builder.position({pos.x() + ((xMod&2)>0?1.0f:0.0f),pos.y() + ((yMod&2)>0?1.0f:0.0f),pos.z() + ((zMod&2)>0?1.0f:0.0f)}); builder.addVertex();
+    builder.position({pos.x() + ((xMod&4)>0?1.0f:0.0f),pos.y() + ((yMod&4)>0?1.0f:0.0f),pos.z() + ((zMod&4)>0?1.0f:0.0f)}); builder.addVertex();
+    builder.position({pos.x() + ((xMod&8)>0?1.0f:0.0f),pos.y() + ((yMod&8)>0?1.0f:0.0f),pos.z() + ((zMod&8)>0?1.0f:0.0f)}); builder.addVertex();
+    builder.addQuad(idx,idx+1,idx+2,idx+3);
+	};
+	
+  for(uint32_t z=0; z<res.z(); ++z) {    
+    for(uint32_t y=0; y<res.y(); ++y) {      
+      for(uint32_t x=0; x<res.x(); ++x) {
+        auto color = colorAcc.readColor4f(x, y + z*res.y()); 
+        if(color.a() > 0) {
+          builder.color(color);
+          if(x==0 || colorAcc.readColor4f(x-1, y + z*res.y()).a() < 0.1) 
+            createQuad(x, y, z, 0, 4|8, 2|4, {-1,0,0});
+          if(x==res.x()-1 || colorAcc.readColor4f(x+1, y + z*res.y()).a() < 0.1) 
+            createQuad(x, y, z, 1|2|4|8, 2|4, 4|8, {1,0,0});
+          if(y==0 || colorAcc.readColor4f(x, y-1 + z*res.y()).a() < 0.1) 
+            createQuad(x, y, z, 2|4, 0, 4|8, {0,-1,0});
+          if(y==res.y()-1 || colorAcc.readColor4f(x, y+1 + z*res.y()).a() < 0.1) 
+            createQuad(x, y, z, 4|8, 1|2|4|8, 2|4, {0,1,0});
+          if(z==0 || colorAcc.readColor4f(x, y + (z-1)*res.y()).a() < 0.1) 
+            createQuad(x, y, z, 4|8, 2|4, 0, {0,0,-1});
+          if(z==res.z()-1 || colorAcc.readColor4f(x, y + (z+1)*res.y()).a() < 0.1) 
+            createQuad(x, y, z, 2|4, 4|8, 1|2|4|8, {0,0,1});
+        }
+      }
+    }
+  }
+	
+	return builder.getNextIndex() == 0 ? nullptr : builder.buildMesh();
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 void MeshBuilder::MBVertex::setPosition(const VertexAttribute & attr,const Geometry::Vec2 &pos){
 	if(attr.getNumValues() != 2 || attr.getDataType() != GL_FLOAT ){
