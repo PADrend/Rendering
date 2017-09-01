@@ -354,8 +354,8 @@ void RenderingContext::popAtomicCounterTextureBuffer(uint32_t index){
 	if(stack.size()<=1){
 		WARN("popAtomicCounterTexture: Empty stack");
 	}else{
-		setAtomicCounterTextureBuffer(index,stack.top().get());
 		stack.pop();
+		setAtomicCounterTextureBuffer(index,stack.top().get());
 	}
 }
 
@@ -402,6 +402,7 @@ void RenderingContext::setAtomicCounterTextureBuffer(uint32_t index, Texture * t
 	else
 		stack.top() = texture;
 }
+
 // Blending ************************************************************************************
 const BlendingParameters & RenderingContext::getBlendingParameters() const {
 	return internalData->actualCoreRenderingStatus.getBlendingParameters();
@@ -668,7 +669,7 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 			const auto& pixelFormat = texture->getFormat().pixelFormat;
 			GLenum format = pixelFormat.glInternalFormat;
 			// special case:the used internalFormat in TextureUtils is not applicable here
-			if(pixelFormat.glLocalDataType==GL_BYTE){
+			if(pixelFormat.glLocalDataType==GL_BYTE || pixelFormat.glLocalDataType==GL_UNSIGNED_BYTE){
 				if(pixelFormat.glInternalFormat==GL_RED){
 					format = GL_R8;
 				}else if(pixelFormat.glInternalFormat==GL_RG){
