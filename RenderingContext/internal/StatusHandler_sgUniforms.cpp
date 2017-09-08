@@ -60,6 +60,7 @@ static const Uniform::UniformName UNIFORM_SG_USE_MATERIALS("sg_useMaterials");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_AMBIENT("sg_Material.ambient");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_DIFFUSE("sg_Material.diffuse");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_SPECULAR("sg_Material.specular");
+static const Uniform::UniformName UNIFORM_SG_MATERIAL_EMISSION("sg_Material.emission");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_SHININESS("sg_Material.shininess");
 
 void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced){
@@ -136,6 +137,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			uniforms.emplace_back(UNIFORM_SG_MATERIAL_AMBIENT, material.getAmbient());
 			uniforms.emplace_back(UNIFORM_SG_MATERIAL_DIFFUSE, material.getDiffuse());
 			uniforms.emplace_back(UNIFORM_SG_MATERIAL_SPECULAR, material.getSpecular());
+			uniforms.emplace_back(UNIFORM_SG_MATERIAL_EMISSION, material.getEmission());
 			uniforms.emplace_back(UNIFORM_SG_MATERIAL_SHININESS, material.getShininess());
 		}
 	}

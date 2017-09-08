@@ -44,6 +44,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 		static const float ambient[4] = {0.2f, 0.2f, 0.2f, 1.0f};
 		static const float diffuse[4] = {0.8f, 0.8f, 0.8f, 1.0f};
 		static const float specular[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+		static const float emission[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 		const MaterialParameters & materialParams = actual.getMaterialParameters();
 
@@ -52,6 +53,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 				glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
 				glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
 				glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
 				glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
 				glEnable(GL_COLOR_MATERIAL);
 				glColor4fv(materialParams.getDiffuse().data());
@@ -61,6 +63,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 				glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, materialParams.getAmbient().data());
 				glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, materialParams.getDiffuse().data());
 				glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, materialParams.getSpecular().data());
+				glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, materialParams.getEmission().data());
 				glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, materialParams.getShininess());
 			}
 		} else {
@@ -68,6 +71,7 @@ void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced
 			glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
 			glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
 			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, emission);
 			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 0.0f);
 			glColor4fv(diffuse);
 		}

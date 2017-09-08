@@ -632,6 +632,7 @@ class MaterialParameters {
 		Util::Color4f ambient;
 		Util::Color4f diffuse;
 		Util::Color4f specular;
+		Util::Color4f emission;
 		float shininess;
 	public:
 		MaterialParameters() :
@@ -639,6 +640,7 @@ class MaterialParameters {
 			ambient(Util::Color4f(0.2f, 0.2f, 0.2f, 1.0f)),
 			diffuse(Util::Color4f(0.8f, 0.8f, 0.8f, 1.0f)),
 			specular(Util::Color4f(0.0f, 0.0f, 0.0f, 1.0f)),
+			emission(Util::Color4f(0.0f, 0.0f, 0.0f, 1.0f)),
 			shininess(0.0f) {
 		}
 
@@ -647,6 +649,7 @@ class MaterialParameters {
 				   ambient == other.ambient &&
 				   diffuse == other.diffuse &&
 				   specular == other.specular &&
+				   emission == other.emission &&
 				   shininess == other.shininess;
 		}
 		bool operator!=(const MaterialParameters & other) const {
@@ -654,6 +657,7 @@ class MaterialParameters {
 				   ambient != other.ambient ||
 				   diffuse != other.diffuse ||
 				   specular != other.specular ||
+				   emission != other.emission ||
 				   shininess != other.shininess;
 		}
 
@@ -683,6 +687,12 @@ class MaterialParameters {
 		}
 		void setSpecular(const Util::Color4f & newSpecular) {
 			specular = newSpecular;
+		}
+		const Util::Color4f & getEmission() const {
+			return emission;
+		}
+		void setEmission(const Util::Color4f & newEmission) {
+			emission = newEmission;
 		}
 		float getShininess() const {
 			return shininess;
