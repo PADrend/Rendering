@@ -193,6 +193,7 @@ class NormalAttributeAccessor4b : public NormalAttributeAccessor {
 			v[0] = Geometry::Convert::toSigned<int8_t>(n.x());
 			v[1] = Geometry::Convert::toSigned<int8_t>(n.y());
 			v[2] = Geometry::Convert::toSigned<int8_t>(n.z());
+			v[3] = 0;
 		}
 };
 
@@ -259,11 +260,134 @@ Util::Reference<TexCoordAttributeAccessor> TexCoordAttributeAccessor::create(Mes
 // ---------------------------------
 // Float
 
+/*! FloatAttributeAccessorub ---|> FloatAttributeAccessor */
+class FloatAttributeAccessorub : public FloatAttributeAccessor {
+	public:
+		FloatAttributeAccessorub(MeshVertexData & _vData, const VertexAttribute & _attribute) :
+			FloatAttributeAccessor(_vData, _attribute) {}
+		virtual ~FloatAttributeAccessorub() {}
+		
+		//! ---|> FloatAttributeAccessor
+		float getValue(uint32_t index) const override {
+			assertRange(index);
+			const uint8_t * v = _ptr<const uint8_t>(index);
+			return Geometry::Convert::fromUnsignedTo<float>(v[0]);
+		}
+
+		//! ---|> FloatAttributeAccessor
+		void setValue(uint32_t index, float value) override {
+			assertRange(index);
+			uint8_t * v = _ptr<uint8_t>(index);
+			v[0] = Geometry::Convert::toUnsigned<uint8_t>(value);
+		}
+
+		//! ---|> FloatAttributeAccessor
+		const std::vector<float> getValues(uint32_t index) const override {
+			assertRange(index);
+			const uint8_t * v = _ptr<const uint8_t>(index);
+			std::vector<float> out(getAttribute().getNumValues());
+			for(uint32_t i=0; i<out.size(); ++i)
+				out[i] = Geometry::Convert::fromUnsignedTo<float>(v[i]);
+			return out;
+		}
+
+		//! ---|> FloatAttributeAccessor
+		void setValues(uint32_t index, const std::vector<float>& values) override {
+			assertRange(index);
+			uint32_t count = std::min<uint32_t>(values.size(), getAttribute().getNumValues());
+			uint8_t * v = _ptr<uint8_t>(index);
+			for(uint32_t i=0; i<count; ++i)
+				v[i] = Geometry::Convert::toUnsigned<uint8_t>(values[i]);
+		}
+};
+
+/*! FloatAttributeAccessorb ---|> FloatAttributeAccessor */
+class FloatAttributeAccessorb : public FloatAttributeAccessor {
+	public:
+		FloatAttributeAccessorb(MeshVertexData & _vData, const VertexAttribute & _attribute) :
+			FloatAttributeAccessor(_vData, _attribute) {}
+		virtual ~FloatAttributeAccessorb() {}
+		
+		//! ---|> FloatAttributeAccessor
+		float getValue(uint32_t index) const override {
+			assertRange(index);
+			const int8_t * v = _ptr<const int8_t>(index);
+			return Geometry::Convert::fromSignedTo<float>(v[0]);
+		}
+
+		//! ---|> FloatAttributeAccessor
+		void setValue(uint32_t index, float value) override {
+			assertRange(index);
+			int8_t * v = _ptr<int8_t>(index);
+			v[0] = Geometry::Convert::toSigned<int8_t>(value);
+		}
+
+		//! ---|> FloatAttributeAccessor
+		const std::vector<float> getValues(uint32_t index) const override {
+			assertRange(index);
+			const int8_t * v = _ptr<const int8_t>(index);
+			std::vector<float> out(getAttribute().getNumValues());
+			for(uint32_t i=0; i<out.size(); ++i)
+				out[i] = Geometry::Convert::fromSignedTo<float>(v[i]);
+			return out;
+		}
+
+		//! ---|> FloatAttributeAccessor
+		void setValues(uint32_t index, const std::vector<float>& values) override {
+			assertRange(index);
+			uint32_t count = std::min<uint32_t>(values.size(), getAttribute().getNumValues());
+			int8_t * v = _ptr<int8_t>(index);
+			for(uint32_t i=0; i<count; ++i)
+				v[i] = Geometry::Convert::toSigned<int8_t>(values[i]);
+		}
+};
+
+/*! NormalAttributeAccessor3f ---|> FloatAttributeAccessor */
+class FloatAttributeAccessorf : public FloatAttributeAccessor {
+	public:
+		FloatAttributeAccessorf(MeshVertexData & _vData, const VertexAttribute & _attribute) :
+			FloatAttributeAccessor(_vData, _attribute) {}
+		virtual ~FloatAttributeAccessorf() {}
+
+		//! ---|> FloatAttributeAccessor
+		float getValue(uint32_t index) const override {
+			assertRange(index);
+			const float * v=_ptr<const float>(index);
+			return v[0];
+		}
+		
+		//! ---|> FloatAttributeAccessor
+		void setValue(uint32_t index, float value) override {
+			assertRange(index);
+			float * v=_ptr<float>(index);
+			v[0] = value;
+		}
+		
+		//! ---|> FloatAttributeAccessor
+		const std::vector<float> getValues(uint32_t index) const override {
+			assertRange(index);
+			const float * v=_ptr<const float>(index);
+			return std::vector<float>(v, v + getAttribute().getNumValues());
+		}
+		
+		//! ---|> FloatAttributeAccessor
+		void setValues(uint32_t index, const std::vector<float>& values) override {
+			assertRange(index);
+			uint32_t count = std::min<uint32_t>(values.size(), getAttribute().getNumValues());
+			float * v=_ptr<float>(index);
+			std::copy(values.begin(), values.begin() + count, v);
+		}
+};
+
 //! (static)
 Util::Reference<FloatAttributeAccessor> FloatAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
 	if(attr.getDataType() == GL_FLOAT) {
-		return new FloatAttributeAccessor(_vData, attr);
+		return new FloatAttributeAccessorf(_vData, attr);
+	} else if(attr.getDataType() == GL_BYTE) {
+		return new FloatAttributeAccessorb(_vData, attr);
+	} else if(attr.getDataType() == GL_UNSIGNED_BYTE) {
+		return new FloatAttributeAccessorub(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
 	}

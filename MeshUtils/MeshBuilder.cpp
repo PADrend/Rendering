@@ -632,6 +632,47 @@ Mesh * MeshBuilder::createVoxelMesh(const VertexDescription & desc, const Util::
 	return builder.getNextIndex() == 0 ? nullptr : builder.buildMesh();
 }
 
+
+Mesh * MeshBuilder::createTorus(const VertexDescription & desc, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments) {
+	MeshBuilder builder(desc);
+	builder.color(Util::ColorLibrary::WHITE);
+	addTorus(builder, innerRadius, outerRadius, majorSegments, minorSegments);
+	return builder.buildMesh();
+}
+
+void MeshBuilder::addTorus(MeshBuilder & mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments) {
+	using namespace Geometry;
+	
+	innerRadius = std::max(0.0f, innerRadius);
+	majorSegments = std::max(3U, majorSegments);
+	minorSegments = std::max(3U, minorSegments);
+	if(innerRadius > outerRadius) {
+		WARN("MeshBuilder::addTorus: innerRadius is greater than outerRadius.");
+		return;
+	}
+	float minorRadius = (outerRadius - innerRadius) * 0.5;
+	float majorRadius = innerRadius + minorRadius;
+	for(uint32_t major=0; major<majorSegments; ++major) {
+		float u = major * 2.0 * M_PI / majorSegments;
+		Vec3 center(std::cos(u) * majorRadius, 0, std::sin(u) * majorRadius);
+		for(uint32_t minor=0; minor<minorSegments; ++minor) {
+			float v = minor * 2.0 * M_PI / minorSegments;
+			Vec3 n = (center.getNormalized() * std::cos(v) + Vec3(0, std::sin(v), 0)).getNormalized();
+			Vec3 p = center + n * minorRadius;
+			mb.position(p);
+			mb.normal(n);
+			mb.texCoord0(Vec2(1.0f - static_cast<float>(major)/majorSegments, static_cast<float>(minor)/minorSegments));
+			mb.addVertex();
+			mb.addQuad(
+				 major*minorSegments 										+  minor,
+		 	   major*minorSegments 										+ (minor+1)%minorSegments,
+				((major+1)%majorSegments)*minorSegments + (minor+1)%minorSegments,
+				((major+1)%majorSegments)*minorSegments +  minor
+			);
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 void MeshBuilder::MBVertex::setPosition(const VertexAttribute & attr,const Geometry::Vec2 &pos){
 	if(attr.getNumValues() != 2 || attr.getDataType() != GL_FLOAT ){

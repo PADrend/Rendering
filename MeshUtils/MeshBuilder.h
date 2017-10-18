@@ -191,6 +191,23 @@ class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
 		 * @param the depth of the voxel grid. The height of the bitmap should be divisible by this value
 		 */
 		static Mesh * createVoxelMesh(const VertexDescription & desc, const Util::PixelAccessor& colorAcc, uint32_t depth);
+		
+
+		 /**
+		 * Creates a torus mesh.
+		 * The center of the torus is located at the origin.
+		 * The aligned is aligned with the x-z plane.
+		 *
+		 * @param innerRadius inner radius of the torus. Should be greater than or equal 0.
+		 * @param outerRadius outer radius of the torus. Should be greater than inner radius.
+		 * @param majorSegments Number of major segments. Minimum is 3.
+		 * @param minorSegments Number of minor segments. Minimum is 3.
+		 * @return The mesh
+		 */
+		static Mesh * createTorus(const VertexDescription & desc, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);
+		
+		//! Adds a torus to the MeshBuilder. \see addTorus(...)
+		static void addTorus(MeshBuilder & mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);
 	// @}
 	// -----
 private:

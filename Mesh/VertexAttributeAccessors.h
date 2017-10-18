@@ -178,30 +178,13 @@ class FloatAttributeAccessor : public VertexAttributeAccessor{
 
 		virtual ~FloatAttributeAccessor(){}
 
-		float getValue(uint32_t index) const {
-			assertRange(index);
-			const float * v=_ptr<const float>(index);
-			return v[0];
-		}
+		virtual float getValue(uint32_t index) const = 0;
 
-		void setValue(uint32_t index, float value){
-			assertRange(index);
-			float * v=_ptr<float>(index);
-			v[0] = value;
-		}
+		virtual void setValue(uint32_t index, float value) = 0;
 
-		const std::vector<float> getValues(uint32_t index) const {
-			assertRange(index);
-			const float * v=_ptr<const float>(index);
-			return std::vector<float>(v, v + getAttribute().getNumValues());
-		}
+		virtual const std::vector<float> getValues(uint32_t index) const = 0;
 
-		void setValues(uint32_t index, const std::vector<float>& values){
-			assertRange(index);
-			assertNumValues(index, values.size());
-			float * v=_ptr<float>(index);
-			std::copy(values.begin(), values.end(), v);
-		}
+		virtual void setValues(uint32_t index, const std::vector<float>& values) = 0;
 };
 
 // ---------------------------------

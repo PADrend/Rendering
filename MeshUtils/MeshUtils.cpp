@@ -630,6 +630,15 @@ void transformNormals(MeshVertexData & vData, Util::StringIdentifier attrName, c
 	vData.markAsChanged();
 }
 
+inline bool canConvert(const VertexAttribute& oldAttr, const VertexAttribute& newAttr) {
+	if(oldAttr.getDataType() == GL_FLOAT) {
+		return newAttr.getDataType() == GL_BYTE || newAttr.getDataType() == GL_UNSIGNED_BYTE; // float to byte
+	} else if(newAttr.getDataType() == GL_FLOAT) {
+		return oldAttr.getDataType() == GL_BYTE || oldAttr.getDataType() == GL_UNSIGNED_BYTE; // byte to float
+	}
+	return false;
+}
+
 //! (static)
 MeshVertexData * convertVertices(const MeshVertexData & oldVertices, const VertexDescription & newVertexDescription) {
 
@@ -649,16 +658,24 @@ MeshVertexData * convertVertices(const MeshVertexData & oldVertices, const Verte
 	for(const auto & oldAttr : oldVertexDescription.getAttributes()) {
 		const VertexAttribute & newAttr = newVertexDescription.getAttribute(oldAttr.getNameId());
 
-		if (oldAttr.empty() || newAttr.empty() || oldAttr.getDataType() != newAttr.getDataType()) {
+		if (oldAttr.empty() || newAttr.empty()) {
 			continue;
 		}
-		uint32_t dataSize = std::min(oldAttr.getDataSize(), newAttr.getDataSize());
-		const uint8_t * source = oldVertices.data() + oldAttr.getOffset();
-		uint8_t * target = newVertices->data() + newAttr.getOffset();
-		for (uint32_t i = 0; i < numVertices; ++i) {
-			std::copy(source, source + dataSize, target);
-			source += oldVertexSize;
-			target += newVertexSize;
+		if(oldAttr.getDataType() == newAttr.getDataType()) {					
+			uint32_t dataSize = std::min(oldAttr.getDataSize(), newAttr.getDataSize());
+			const uint8_t * source = oldVertices.data() + oldAttr.getOffset();
+			uint8_t * target = newVertices->data() + newAttr.getOffset();
+			for (uint32_t i = 0; i < numVertices; ++i) {
+				std::copy(source, source + dataSize, target);
+				source += oldVertexSize;
+				target += newVertexSize;
+			}			
+		} else if( canConvert(oldAttr, newAttr) ) {
+			auto oldAcc = FloatAttributeAccessor::create(const_cast<MeshVertexData&>(oldVertices), newAttr.getNameId());
+			auto newAcc = FloatAttributeAccessor::create(*newVertices, newAttr.getNameId());
+			for (uint32_t i = 0; i < numVertices; ++i) {
+				newAcc->setValues(i, oldAcc->getValues(i));
+			}
 		}
 	}
 	newVertices->updateBoundingBox();

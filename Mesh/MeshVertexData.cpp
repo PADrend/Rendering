@@ -143,11 +143,11 @@ bool MeshVertexData::upload() {
 }
 
 bool MeshVertexData::upload(uint32_t usageHint){
-	if( isUploaded() )
-		removeGlBuffer();
-
 	if(vertexCount == 0 || binaryData.empty() )
 		return false;
+		
+	if( isUploaded() )
+		removeGlBuffer();
 
 	try {
 		bufferObject.uploadData(GL_ARRAY_BUFFER, binaryData, usageHint);
