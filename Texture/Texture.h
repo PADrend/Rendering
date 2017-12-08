@@ -69,6 +69,19 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 			uint32_t getPixelSize() const;
 			uint32_t getDataSize() const 	{	return pixelFormat.compressed ? compressedImageSize : getPixelSize() * sizeX * sizeY * numLayers;}
 			uint32_t getRowSize() const		{	return pixelFormat.compressed ? 0 : getPixelSize() * sizeX;	}
+			
+			bool operator==(const Format& other) const {
+				return sizeX == other.sizeX && sizeY == other.sizeY && numLayers == other.numLayers
+					  && glTextureType == other.glTextureType
+					  && compressedImageSize == other.compressedImageSize
+					  && glWrapS == other.glWrapS && glWrapT == other.glWrapT && glWrapR == other.glWrapR
+					  && pixelFormat.compressed == other.pixelFormat.compressed
+					  && pixelFormat.glInternalFormat == other.pixelFormat.glInternalFormat
+					  && pixelFormat.glLocalDataFormat == other.pixelFormat.glLocalDataFormat
+					  && pixelFormat.glLocalDataType == other.pixelFormat.glLocalDataType
+					  && linearMinFilter == other.linearMinFilter && linearMagFilter == other.linearMagFilter;
+			}
+			bool operator!=(const Format& other) const { return !(*this == other); }
 		};
 		// ---------------------------------------
 
