@@ -640,7 +640,7 @@ class MaterialParameters {
 			ambient(Util::Color4f(0.2f, 0.2f, 0.2f, 1.0f)),
 			diffuse(Util::Color4f(0.8f, 0.8f, 0.8f, 1.0f)),
 			specular(Util::Color4f(0.0f, 0.0f, 0.0f, 1.0f)),
-			emission(Util::Color4f(0.0f, 0.0f, 0.0f, 1.0f)),
+			emission(Util::Color4f(0.0f, 0.0f, 0.0f, 0.0f)),
 			shininess(0.0f) {
 		}
 
