@@ -351,6 +351,8 @@ std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.0
 
 void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale=1.0, bool clampToEdge=false);
 
+void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float falloff);
+
 }
 }
 

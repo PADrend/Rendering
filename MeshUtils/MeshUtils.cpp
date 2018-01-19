@@ -31,6 +31,7 @@
 #include <Geometry/LineTriangleIntersection.h>
 #include <Geometry/PointOctree.h>
 #include <Geometry/Point.h>
+#include <Geometry/Interpolation.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Graphics/PixelAccessor.h>
 #include <Util/Macros.h>
@@ -2111,6 +2112,24 @@ void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float sc
 		pAcc->setPosition(i, pos + n * value);
 	}
 	vData.markAsChanged();
+}
+
+void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float falloff) {
+	using namespace Geometry;
+	if(!mesh) return;
+	auto& vData = mesh->openVertexData();
+	auto pAcc(PositionAttributeAccessor::create(vData, VertexAttributeIds::POSITION));
+	for(uint32_t i=0; i<mesh->getVertexCount(); ++i) {
+		auto p = pAcc->getPosition(i);
+		float d = pos.distance(p);
+		if(d <= radius) {
+			p.y(pos.y());
+		} else if(d < radius+falloff) {
+			float b = (d-radius)/falloff;
+			p.y(Interpolation::cubicBezier(pos.y(),pos.y(),p.y(), p.y(), b));
+		}
+		pAcc->setPosition(i, p);
+	}
 }
 
 }
