@@ -12,6 +12,7 @@
 #include <Util/GenericAttribute.h>
 #include <Util/GenericAttributeSerialization.h>
 #include <Util/Encoding.h>
+#include <Util/IO/FileLocator.h>
 
 namespace Rendering {
 namespace Serialization {
@@ -35,14 +36,20 @@ std::pair<std::string, std::string> serializeGAMesh(const std::pair<const Util::
 	}
 }
 
-MeshAttribute_t * unserializeGAMesh(const std::pair<std::string, const Util::GenericAttributeMap *> & contentAndContext) {
+MeshAttribute_t * unserializeGAMesh(const std::pair<std::string, const Util::GenericAttributeMap *> & contentAndContext) {	
+	static const Util::StringIdentifier CONTEXT_FILE_LOCATOR("FileLocator");
 	const std::string & s = contentAndContext.first;
 	Mesh * mesh = nullptr;
 	if(s.compare(0, embeddedMeshPrefix.length(), embeddedMeshPrefix) == 0) {
 		const std::vector<uint8_t> meshData = Util::decodeBase64(s.substr(embeddedMeshPrefix.length()));
 		mesh = loadMesh("mmf", std::string(meshData.begin(), meshData.end()));
 	} else {
-		mesh = loadMesh(Util::FileName(s));
+		auto filename = Util::FileName(s);
+		if(contentAndContext.second->contains(CONTEXT_FILE_LOCATOR)) {
+			auto locator = contentAndContext.second->getValue<Util::WrapperAttribute<Util::FileLocator&>>(CONTEXT_FILE_LOCATOR)->get();
+			filename = locator.locateFile(filename).second;
+		} 
+		mesh = loadMesh(filename);
 	}
 	return mesh == nullptr ? nullptr : new MeshAttribute_t(mesh);
 }
