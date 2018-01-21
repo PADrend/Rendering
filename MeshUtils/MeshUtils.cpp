@@ -2132,5 +2132,14 @@ void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float fall
 	}
 }
 
+float computeSurfaceArea(Mesh* mesh) {
+	if(!mesh || mesh->getDrawMode() != Mesh::DRAW_TRIANGLES) return 0;
+	auto tAcc = TriangleAccessor::create(mesh);
+	float area = 0;
+	for(uint32_t i=0; i<mesh->getPrimitiveCount(); ++i) 
+		area += tAcc->getTriangle(i).calcArea();
+	return area;
+}
+
 }
 }

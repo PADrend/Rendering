@@ -353,6 +353,8 @@ void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float sc
 
 void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float falloff);
 
+float computeSurfaceArea(Mesh* mesh);
+
 }
 }
 
