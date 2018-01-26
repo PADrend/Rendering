@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <string>
 #include <utility>
+#include <vector>
 
 // Forward declarations
 namespace Util {
@@ -30,6 +31,7 @@ class ShaderObjectInfo {
 	private:
 		uint32_t type;
 		std::string code;
+		std::string defines;
 
 		ShaderObjectInfo(uint32_t _type, std::string _code) :
 			type(_type), code(std::move(_code)) {
@@ -41,6 +43,10 @@ class ShaderObjectInfo {
 		}
 		uint32_t getType() const {
 			return type;
+		}
+		ShaderObjectInfo& addDefine(const std::string& key, const std::string& value="") {
+			defines += "#define " + key + " " + value + "\n";
+			return *this;
 		}
 
 		/**
@@ -54,21 +60,21 @@ class ShaderObjectInfo {
 		/**
 		 * Create a VertexShaderObject from the given code
 		 * 
-		 * @note Inserts "#define SG_VS" before the first line.
+		 * @note Inserts "#define SG_VERTEX_SHADER" before the first line.
 		 */
 		static ShaderObjectInfo createVertex(const std::string & code);
 
 		/**
 		 * Create a FragmentShaderObject from the given code
 		 * 
-		 * @note Inserts "#define SG_FS" before the first line.
+		 * @note Inserts "#define SG_FRAGMENT_SHADER" before the first line.
 		 */
 		static ShaderObjectInfo createFragment(const std::string & code);
 
 		/**
 		 * Create a GeometryShaderObject from the given code
 		 * 
-		 * @note Inserts "#define SG_GS" before the first line.
+		 * @note Inserts "#define SG_GEOMETRY_SHADER" before the first line.
 		 */
 		static ShaderObjectInfo createGeometry(const std::string & code);
 

@@ -43,23 +43,24 @@ uint32_t ShaderObjectInfo::compile() const {
 	// This postfix assures that the file not be empty even if everything is cut out due to an ifdef-commando.
 	// Files without content do not compile with AMD cards.
 	std::string strCode = getCode() + "\nvoid _();\n";
-	std::string typeDefine;
+	std::string header;
 
 	// prepend a "#define SG_shaderType" or insert it after the initial "#version..." line.
 	if(getType() == GL_FRAGMENT_SHADER) {
-		typeDefine = "#define SG_FRAGMENT_SHADER\n";
+		header = "#define SG_FRAGMENT_SHADER\n";
 #ifdef LIB_GL
 	} else if(getType() == GL_GEOMETRY_SHADER) {
-		typeDefine = "#define SG_GEOMETRY_SHADER\n";
+		header = "#define SG_GEOMETRY_SHADER\n";
 #endif /* LIB_GL */
 	} else if(getType() == GL_VERTEX_SHADER) {
-		typeDefine = "#define SG_VERTEX_SHADER\n";
+		header = "#define SG_VERTEX_SHADER\n";
 	}
+	header += defines;
 	static const std::string versionPrefix = "#version";
 	if(strCode.compare(0, versionPrefix.length(), versionPrefix) == 0) {
-		strCode.replace(strCode.find('\n') + 1, 0, typeDefine);
+		strCode.replace(strCode.find('\n') + 1, 0, header);
 	} else {
-		strCode = typeDefine + strCode;
+		strCode = header + strCode;
 	}
 
 	const char * str = strCode.c_str();
