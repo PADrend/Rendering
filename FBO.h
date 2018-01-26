@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -69,14 +70,14 @@ class FBO : public Util::ReferenceCounter<FBO> {
 
 		const char * getStatusMessage(RenderingContext & context);
 
-		void attachTexture(RenderingContext & context, uint32_t attachmentPoint,Texture * t,uint32_t level, uint32_t layer);
-		void detachTexture(RenderingContext & context, uint32_t attachmentPoint)				{   attachTexture(context,attachmentPoint,nullptr,0,0);    }
+		void attachTexture(RenderingContext & context, uint32_t attachmentPoint, Texture * t, uint32_t level, int32_t layer=-1);
+		void detachTexture(RenderingContext & context, uint32_t attachmentPoint) { attachTexture(context,attachmentPoint,nullptr,0,-1); }
 
-		void attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId = 0,uint32_t level=0,uint32_t layer=0);
+		void attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId = 0, uint32_t level=0, int32_t layer=-1);
 		void detachColorTexture(RenderingContext & context, uint32_t colorBufferId = 0);
-		void attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t level=0,uint32_t layer=0);
+		void attachDepthStencilTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
 		void detachDepthStencilTexture(RenderingContext & context);
-		void attachDepthTexture(RenderingContext & context, Texture * t,uint32_t level=0,uint32_t layer=0);
+		void attachDepthTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
 		void detachDepthTexture(RenderingContext & context);
 
 		/**
