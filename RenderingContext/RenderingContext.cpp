@@ -1345,6 +1345,12 @@ void RenderingContext::setViewport(const Geometry::Rect_i & viewport) {
 	vp.push_back(internalData->currentViewport.getHeight());
 	setGlobalUniform(Uniform(UNIFORM_SG_VIEWPORT, vp));
 }
+
+void RenderingContext::pushAndSetViewport(const Geometry::Rect_i & viewport) {
+	pushViewport();
+	setViewport(viewport);
+}
+
 void RenderingContext::setWindowClientArea(const Geometry::Rect_i & clientArea) {
 	internalData->windowClientArea = clientArea;
 }

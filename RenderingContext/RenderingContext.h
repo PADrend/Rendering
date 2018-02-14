@@ -519,6 +519,9 @@ public:
 	//! Set the current viewport.
 	void setViewport(const Geometry::Rect_i & viewport);
 
+	//! Save the current viewport onto the viewport stack and set the current viewport.
+	void pushAndSetViewport(const Geometry::Rect_i & viewport);
+
 	void setWindowClientArea(const Geometry::Rect_i & clientArea);
 	// @}
 };
