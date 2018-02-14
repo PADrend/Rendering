@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2014-2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -25,6 +26,32 @@ namespace Rendering {
  * @date 2012-04-19
  */
 class BufferObject {
+	public:		
+		static const uint32_t TARGET_ARRAY_BUFFER;
+		static const uint32_t TARGET_ATOMIC_COUNTER_BUFFER;
+		static const uint32_t TARGET_COPY_READ_BUFFER;
+		static const uint32_t TARGET_COPY_WRITE_BUFFER;
+		static const uint32_t TARGET_DISPATCH_INDIRECT_BUFFER;
+		static const uint32_t TARGET_DRAW_INDIRECT_BUFFER;
+		static const uint32_t TARGET_ELEMENT_ARRAY_BUFFER;
+		static const uint32_t TARGET_PIXEL_PACK_BUFFER;
+		static const uint32_t TARGET_PIXEL_UNPACK_BUFFER;
+		static const uint32_t TARGET_QUERY_BUFFER;
+		static const uint32_t TARGET_SHADER_STORAGE_BUFFER;
+		static const uint32_t TARGET_TEXTURE_BUFFER;
+		static const uint32_t TARGET_TRANSFORM_FEEDBACK_BUFFER;
+		static const uint32_t TARGET_UNIFORM_BUFFER;
+		
+		static const uint32_t USAGE_STREAM_DRAW;
+		static const uint32_t USAGE_STREAM_READ;
+		static const uint32_t USAGE_STREAM_COPY;
+		static const uint32_t USAGE_STATIC_DRAW;
+		static const uint32_t USAGE_STATIC_READ;
+		static const uint32_t USAGE_STATIC_COPY;
+		static const uint32_t USAGE_DYNAMIC_DRAW;
+		static const uint32_t USAGE_DYNAMIC_READ;
+		static const uint32_t USAGE_DYNAMIC_COPY;
+	
 	private:
 		//! OpenGL handle for this buffer object.
 		uint32_t bufferId;
