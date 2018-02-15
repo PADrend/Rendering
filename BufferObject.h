@@ -112,7 +112,18 @@ class BufferObject {
 		template<typename T>
 		void uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint);
 		void uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint);
-
+		
+		/**
+		 * @brief Copy data to the buffer object
+		 * 
+		 * Bind the buffer object to the given target,
+		 * copy <tt>data.size()</tt> times <tt>sizeof(T)</tt> bytes from the vector to the buffer object,
+		 * and unbind the buffer object.
+		 */
+		template<typename T>
+		void uploadSubData(uint32_t bufferTarget, const std::vector<T> & data, size_t offset=0);
+		void uploadSubData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, size_t offset=0);
+		
 		/**
 		 * @brief Retrieve data from the buffer object
 		 * 
