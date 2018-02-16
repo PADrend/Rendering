@@ -1023,6 +1023,20 @@ const Shader * RenderingContext::getActiveShader() const {
 	return internalData->getActiveRenderingStatus()->getShader();
 }
 
+void RenderingContext::dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) {	
+	#if defined(LIB_GL) and defined(GL_ARB_compute_shader)
+		if(!getActiveShader()) {
+			WARN("dispatchCompute: There is no active compute shader.");
+		} else {
+			applyChanges();
+			glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+			GET_GL_ERROR();
+		}
+	#else
+		WARN("dispatchCompute: Compute shaders are not supported.");
+	#endif
+}
+
 void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced) {
 	shader->_getUniformRegistry()->setUniform(uniform, warnIfUnused, forced);
 	if(immediate && getActiveShader() == shader)

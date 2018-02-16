@@ -51,6 +51,8 @@ uint32_t ShaderObjectInfo::compile() const {
 #ifdef LIB_GL
 	} else if(getType() == GL_GEOMETRY_SHADER) {
 		header = "#define SG_GEOMETRY_SHADER\n";
+	} else if(getType() == GL_COMPUTE_SHADER) {
+		header = "#define SG_COMPUTE_SHADER\n";
 #endif /* LIB_GL */
 	} else if(getType() == GL_VERTEX_SHADER) {
 		header = "#define SG_VERTEX_SHADER\n";
@@ -100,6 +102,14 @@ ShaderObjectInfo ShaderObjectInfo::createGeometry(const std::string & code) {
 #endif /* defined(GL_ARB_geometry_shader4) */
 }
 
+ShaderObjectInfo ShaderObjectInfo::createCompute(const std::string & code) {
+#if defined (LIB_GL) and defined (GL_ARB_compute_shader)
+	return ShaderObjectInfo(GL_COMPUTE_SHADER, code);
+#else /* defined(GL_ARB_compute_shader) */
+	throw std::logic_error("No support for GL_ARB_compute_shader.");
+#endif /* defined(GL_ARB_compute_shader) */
+}
+
 ShaderObjectInfo ShaderObjectInfo::loadVertex(const Util::FileName & file) {
 	return createVertex(Util::FileUtils::getParsedFileContents(file));
 }
@@ -110,6 +120,10 @@ ShaderObjectInfo ShaderObjectInfo::loadFragment(const Util::FileName & file) {
 
 ShaderObjectInfo ShaderObjectInfo::loadGeometry(const Util::FileName & file) {
 	return createGeometry(Util::FileUtils::getParsedFileContents(file));
+}
+
+ShaderObjectInfo ShaderObjectInfo::loadCompute(const Util::FileName & file) {
+	return createCompute(Util::FileUtils::getParsedFileContents(file));
 }
 
 }

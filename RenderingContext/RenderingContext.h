@@ -394,6 +394,7 @@ public:
 	Shader * getActiveShader();
 	const Shader * getActiveShader() const;
 	void setShader(Shader * shader); // shader may be nullptr
+	void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
 
 	//! (internal) called by Shader::setUniform(...)
 	void _setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced);

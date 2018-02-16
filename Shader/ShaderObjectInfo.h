@@ -78,6 +78,13 @@ class ShaderObjectInfo {
 		 */
 		static ShaderObjectInfo createGeometry(const std::string & code);
 
+		/**
+		 * Create a ComputeShaderObject from the given code
+		 * 
+		 * @note Inserts "#define SG_COMPUTE_SHADER" before the first line.
+		 */
+		static ShaderObjectInfo createCompute(const std::string & code);
+
 		//! Load a VertexShaderObject from the given file.
 		static ShaderObjectInfo loadVertex(const Util::FileName & file);
 
@@ -86,6 +93,9 @@ class ShaderObjectInfo {
 
 		//! Load a GeometryShaderObject from the given file.
 		static ShaderObjectInfo loadGeometry(const Util::FileName & file);
+
+		//! Load a ComputeShaderObject from the given file.
+		static ShaderObjectInfo loadCompute(const Util::FileName & file);
 };
 
 }
