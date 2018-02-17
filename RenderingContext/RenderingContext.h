@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <memory>
 #include <functional>
+#include <vector>
 
 namespace Geometry {
 template<typename _T> class _Matrix4x4;
@@ -395,6 +396,7 @@ public:
 	const Shader * getActiveShader() const;
 	void setShader(Shader * shader); // shader may be nullptr
 	void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
+	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices);
 
 	//! (internal) called by Shader::setUniform(...)
 	void _setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced);

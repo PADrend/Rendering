@@ -1037,6 +1037,20 @@ void RenderingContext::dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY,
 	#endif
 }
 
+void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices) {
+	#if defined(LIB_GL) and defined(GL_ARB_shader_subroutine)
+		if(!getActiveShader()) {
+			WARN("loadUniformSubroutines: There is no active shader.");
+		} else {
+			applyChanges();
+			glUniformSubroutinesuiv(shaderStage, indices.size(), static_cast<const GLuint*>(indices.data()));
+			GET_GL_ERROR();
+		}
+	#else
+		WARN("loadUniformSubroutines: Uniform subroutines are not supported.");
+	#endif
+}
+
 void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced) {
 	shader->_getUniformRegistry()->setUniform(uniform, warnIfUnused, forced);
 	if(immediate && getActiveShader() == shader)

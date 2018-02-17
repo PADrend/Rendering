@@ -17,6 +17,13 @@
 #include <vector>
 
 namespace Rendering {
+	
+const uint32_t ShaderObjectInfo::SHADER_STAGE_VERTEX = GL_VERTEX_SHADER;
+const uint32_t ShaderObjectInfo::SHADER_STAGE_FRAGMENT = GL_FRAGMENT_SHADER;
+const uint32_t ShaderObjectInfo::SHADER_STAGE_GEOMETRY = GL_GEOMETRY_SHADER;
+const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_CONTROL = GL_TESS_CONTROL_SHADER;
+const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_EVALUATION = GL_TESS_EVALUATION_SHADER;
+const uint32_t ShaderObjectInfo::SHADER_STAGE_COMPUTE = GL_COMPUTE_SHADER;
 
 static void printShaderInfoLog(uint32_t obj, const std::string & code) {
 	GLint infoLogLength = 0;

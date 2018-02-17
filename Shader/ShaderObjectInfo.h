@@ -28,6 +28,13 @@ namespace Rendering {
  * by the caller.
  */
 class ShaderObjectInfo {
+	public:
+		static const uint32_t SHADER_STAGE_VERTEX;
+		static const uint32_t SHADER_STAGE_FRAGMENT;
+		static const uint32_t SHADER_STAGE_GEOMETRY;
+		static const uint32_t SHADER_STAGE_TESS_CONTROL;
+		static const uint32_t SHADER_STAGE_TESS_EVALUATION;
+		static const uint32_t SHADER_STAGE_COMPUTE;
 	private:
 		uint32_t type;
 		std::string code;
