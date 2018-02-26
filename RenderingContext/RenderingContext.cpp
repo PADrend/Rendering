@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2013 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2013 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2014-2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -251,6 +252,10 @@ void RenderingContext::finish() {
 	glFinish();
 }
 
+void RenderingContext::barrier(uint32_t flags) {
+	applyChanges();
+	glMemoryBarrier(flags == 0 ? GL_ALL_BARRIER_BITS : static_cast<GLbitfield>(flags));
+}
 // Applying changes ***************************************************************************
 
 void RenderingContext::applyChanges(bool forced) {
