@@ -404,6 +404,7 @@ public:
 	const Shader * getActiveShader() const;
 	void setShader(Shader * shader); // shader may be nullptr
 	void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
+	void dispatchComputeIndirect(size_t offset=0);
 	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices);
 
 	//! (internal) called by Shader::setUniform(...)

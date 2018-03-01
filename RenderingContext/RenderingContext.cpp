@@ -1042,6 +1042,20 @@ void RenderingContext::dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY,
 	#endif
 }
 
+void RenderingContext::dispatchComputeIndirect(size_t offset) {	
+	#if defined(LIB_GL) and defined(GL_ARB_compute_shader)
+		if(!getActiveShader()) {
+			WARN("glDispatchComputeIndirect: There is no active compute shader.");
+		} else {
+			applyChanges();
+			glDispatchComputeIndirect(offset);
+			GET_GL_ERROR();
+		}
+	#else
+		WARN("glDispatchComputeIndirect: Compute shaders are not supported.");
+	#endif
+}
+
 void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices) {
 	#if defined(LIB_GL) and defined(GL_ARB_shader_subroutine)
 		if(!getActiveShader()) {

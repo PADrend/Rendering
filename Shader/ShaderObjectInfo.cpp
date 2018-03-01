@@ -67,8 +67,10 @@ uint32_t ShaderObjectInfo::compile() const {
 	header += defines;
 	static const std::string versionPrefix = "#version";
 	if(strCode.compare(0, versionPrefix.length(), versionPrefix) == 0) {
+		header += "#line 2\n";
 		strCode.replace(strCode.find('\n') + 1, 0, header);
 	} else {
+		header += "#line 1\n";
 		strCode = header + strCode;
 	}
 
