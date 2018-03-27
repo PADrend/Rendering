@@ -1070,6 +1070,18 @@ void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::v
 	#endif
 }
 
+void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::vector<std::string>& names) {	
+	auto shader = getActiveShader();
+	if(!shader) {
+		WARN("loadUniformSubroutines: There is no active shader.");
+	} else {
+		std::vector<uint32_t> indices;
+		for(const auto& name : names)
+			indices.emplace_back(shader->getSubroutineIndex(shaderStage, name));
+		loadUniformSubroutines(shaderStage, indices);
+	}
+}
+
 void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced) {
 	shader->_getUniformRegistry()->setUniform(uniform, warnIfUnused, forced);
 	if(immediate && getActiveShader() == shader)

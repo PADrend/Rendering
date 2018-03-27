@@ -540,4 +540,17 @@ void Shader::setSeparateFeedbackVaryings(const std::vector<std::string>& names){
 		status = UNKNOWN;
 	}
 }
+
+// ---------------------------------
+// Shader Subroutines
+
+int32_t Shader::getSubroutineIndex(uint32_t stage, const std::string & name) {
+	#if defined(LIB_GL) and defined(GL_ARB_shader_subroutine)
+	return glGetSubroutineIndex(getShaderProg(), stage, name.c_str());
+	#else
+	return -1;
+	#endif
+}
+
+
 }

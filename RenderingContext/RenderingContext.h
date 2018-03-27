@@ -406,6 +406,7 @@ public:
 	void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
 	void dispatchComputeIndirect(size_t offset=0);
 	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices);
+	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<std::string>& names);
 
 	//! (internal) called by Shader::setUniform(...)
 	void _setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced);

@@ -191,7 +191,13 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		std::vector<std::string> feedbackVaryings;
 		uint32_t glFeedbackVaryingType; //!< 0...disabled, interleaved, or separate
 	// @}
+	
 
+	/*! @name Shader Subroutines */
+	// @{
+	public:
+		int32_t getSubroutineIndex(uint32_t stage, const std::string & name);
+	// @}
 };
 }
 
