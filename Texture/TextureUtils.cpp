@@ -288,6 +288,8 @@ uint32_t textureTypeToGLTextureType(TextureType type){
 			return static_cast<uint32_t>(GL_TEXTURE_CUBE_MAP_ARRAY);
 		case TextureType::TEXTURE_BUFFER:
 			return static_cast<uint32_t>(GL_TEXTURE_BUFFER);
+		case TextureType::TEXTURE_2D_MULTISAMPLE:
+			return static_cast<uint32_t>(GL_TEXTURE_2D_MULTISAMPLE);
 #endif
 		default:
 			throw std::logic_error("createTextureFromBitmap: Invalid type.");
@@ -297,7 +299,7 @@ uint32_t textureTypeToGLTextureType(TextureType type){
 // ----------------------------------------------------------------------------
 // factory functions
 
-static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering,bool clampToEdge=false){
+static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering,bool clampToEdge=false,uint32_t samples=4){
 	Texture::Format format;
 	format.glTextureType = textureTypeToGLTextureType(type);
 	format.sizeX = sizeX;
@@ -315,12 +317,13 @@ static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t
 		format.glWrapT = GL_CLAMP_TO_EDGE;
 		format.glWrapR = GL_CLAMP_TO_EDGE;
 	}
+	format.numSamples = samples;
 	
 	return new Texture(format);
 }
 
 //! [static] Factory
-Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge/*=false*/){
+Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge/*=false*/,uint32_t samples){
 	if( numComponents<1||numComponents>4 )
 		throw std::logic_error("createTexture: Invalid numComponents.");
 	
@@ -331,7 +334,7 @@ Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint
 																		numComponents>2 ? bytes*2 : Util::PixelFormat::NONE, 
 																		numComponents>3 ? bytes*3 : Util::PixelFormat::NONE));
 
-	return create( type, sizeX, sizeY, numLayers, glPixelFormat.glLocalDataFormat, glPixelFormat.glLocalDataType, glPixelFormat.glInternalFormat, filtering, clampToEdge);
+	return create( type, sizeX, sizeY, numLayers, glPixelFormat.glLocalDataFormat, glPixelFormat.glLocalDataType, glPixelFormat.glInternalFormat, filtering, clampToEdge, samples);
 }
 
 //! (static)
@@ -375,6 +378,20 @@ Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
 #else
 	return nullptr;
 #endif
+}
+
+//! [static] Factory
+Util::Reference<Texture> createMultisampleDepthTexture(uint32_t width, uint32_t height, uint32_t samples) {
+#if defined(LIB_GL)
+	return create(TextureType::TEXTURE_2D_MULTISAMPLE, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false, samples);
+#else
+	return nullptr;
+#endif
+}
+
+//! (static)
+Util::Reference<Texture> createMultisampleTexture(uint32_t width, uint32_t height, bool alpha, uint32_t samples) {
+	return createColorTexture(TextureType::TEXTURE_2D_MULTISAMPLE, width, height, 1, Util::TypeConstant::UINT8, alpha ? 4 : 3, true, samples);
 }
 
 //! [static] Factory

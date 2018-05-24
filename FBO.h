@@ -12,6 +12,7 @@
 #ifndef RENDERING_FBO_H
 #define RENDERING_FBO_H
 
+#include <Geometry/Rect.h>
 #include <Util/ReferenceCounter.h>
 #include <cstdint>
 
@@ -90,6 +91,8 @@ class FBO : public Util::ReferenceCounter<FBO> {
 		 */
 		void setDrawBuffers(uint32_t number);
 
+		//! copy a block of pixels from this framebuffer to the screen
+		void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect);
 	private:
 		uint32_t glId;
 };

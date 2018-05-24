@@ -51,6 +51,8 @@ Util::Reference<Texture> createHDRTexture(uint32_t width, uint32_t height, bool 
 Util::Reference<Texture> createRedTexture(uint32_t width, uint32_t height, bool useByte = false);
 Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t height);
 Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height);
+Util::Reference<Texture> createMultisampleDepthTexture(uint32_t width, uint32_t height, uint32_t samples=4);
+Util::Reference<Texture> createMultisampleTexture(uint32_t width, uint32_t height, bool alpha, uint32_t samples=4);
 
 
 /*! @p TextureType == TextureType::TEXTURE_1D/2D/3D/1D_ARRAY/2D_ARRAY/CUBE_MAP
@@ -58,7 +60,7 @@ Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height);
 	@p dataType == FLOAT || UINT8 || UINT32 || INT32
 	@note If the texture should be used as image(load and store), only 1,2,or 4 components are valid.
 */
-Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge=false);
+Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge=false,uint32_t samples=4);
 
 /*! @p numComponents == 1 || 2 || 3|| 4
 	@p dataType == FLOAT || UINT8 || UINT32 || INT32

@@ -77,6 +77,7 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_EXT_framebuffer_object
 				break;
 			case TextureType::TEXTURE_2D:
+			case TextureType::TEXTURE_2D_MULTISAMPLE:
 				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_EXT_framebuffer_object
 				break;
 			case TextureType::TEXTURE_CUBE_MAP:
@@ -244,5 +245,19 @@ void FBO::setDrawBuffers(uint32_t number) {
 #endif /* LIB_GL */
 }
 
+void FBO::blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect) {
+#ifdef LIB_GL
+	context.pushFBO();
+	context.applyChanges(true);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, glId);
+	glDrawBuffer(GL_BACK);
+	glBlitFramebuffer(	srcRect.getX(), srcRect.getY(), srcRect.getWidth(), srcRect.getHeight(), 
+											tgtRect.getX(), tgtRect.getY(), tgtRect.getWidth(), tgtRect.getHeight(), 
+											GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	GET_GL_ERROR();
+	context.popFBO();
+#endif /* LIB_GL */
+}
 
 }

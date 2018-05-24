@@ -123,6 +123,11 @@ Texture::Texture(Format _format):
 			tType = TextureType::TEXTURE_BUFFER;
 			bufferObject.reset( new BufferObject );
 			break;
+		case GL_TEXTURE_2D_MULTISAMPLE:
+			tType = TextureType::TEXTURE_2D_MULTISAMPLE;
+			if(format.numLayers!=1)
+				throw std::logic_error("Texture: TEXTURE_2D_MULTISAMPLE expects numLayers == 1.");
+			break;
 #endif
 		default:
 			throw std::runtime_error("Texture: Unsupported texture type.");
@@ -160,7 +165,7 @@ void Texture::_createGLID(RenderingContext & context){
 	glBindTexture(format.glTextureType,glId);
 	
 	GET_GL_ERROR();
-	if( tType!=TextureType::TEXTURE_BUFFER ){
+	if( tType!=TextureType::TEXTURE_BUFFER && tType!=TextureType::TEXTURE_2D_MULTISAMPLE ){
 		// set parameters
 		glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_S,format.glWrapS);
 		glTexParameteri(format.glTextureType,GL_TEXTURE_WRAP_T,format.glWrapT);
@@ -318,6 +323,13 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 							0,
 							static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
 							static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
+			break;
+		}
+		case TextureType::TEXTURE_2D_MULTISAMPLE: {
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, format.numSamples, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+									static_cast<GLsizei>(getWidth()),
+									static_cast<GLsizei>(getHeight()), false);
+			GET_GL_ERROR();
 			break;
 		}
 #endif

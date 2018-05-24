@@ -66,6 +66,8 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		
 			bool linearMinFilter,linearMagFilter;	//! true, true
 			
+			uint32_t numSamples = 4; //!< GL_TEXTURE_2D_MULTISAMPLE
+			
 			uint32_t getPixelSize() const;
 			uint32_t getDataSize() const 	{	return pixelFormat.compressed ? compressedImageSize : getPixelSize() * sizeX * sizeY * numLayers;}
 			uint32_t getRowSize() const		{	return pixelFormat.compressed ? 0 : getPixelSize() * sizeX;	}
