@@ -2141,5 +2141,25 @@ float computeSurfaceArea(Mesh* mesh) {
 	return area;
 }
 
+MeshVertexData* extractVertices(Mesh* mesh, const std::vector<uint32_t>& indices) {
+  const VertexDescription & desc = mesh->getVertexDescription();
+  MeshVertexData & meshVertices = mesh->openVertexData();
+
+  if(indices.empty())
+    return nullptr;
+
+  auto result = new MeshVertexData;
+  result->allocate(indices.size(), desc);
+  
+  uint32_t i=0;
+  for(const auto& index : indices) {
+    uint32_t start = index * desc.getVertexSize();
+    uint32_t end = start + desc.getVertexSize();
+    std::copy(meshVertices.data() + start, meshVertices.data() + end, result->data() + desc.getVertexSize()*i++);
+  }
+
+  return result;
+}
+
 }
 }

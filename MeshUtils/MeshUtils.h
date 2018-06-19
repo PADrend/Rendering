@@ -349,11 +349,46 @@ uint32_t mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<flo
  */
 std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.001);
 
+/**
+ * Moves every vertex along their normal according to the given texture (using its u,v coordinates).
+ *
+ * @param mesh The mesh
+ * @param displaceAcc pixel accessor of the displacement map
+ * @param scale scale factor multiplied with the value of the texture
+ * @param clampToEdge clamp to texture borders (true) or wrap around (false)
+ * @author Sascha Brandt
+ */
 void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale=1.0, bool clampToEdge=false);
 
+/**
+ * Sets the y-coordinates of all vertices in a radius around a given 3d position to it's y-coordinate (with cubic bezier falloff) 
+ *
+ * @param mesh The mesh
+ * @param pos the 3d position
+ * @param radius radius around the 3d position to flatten vertices
+ * @param falloff blend falloff for vertices beyond the radius
+ * @author Sascha Brandt
+ */
 void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float falloff);
 
+/**
+ * Computes the combined surface area of all triangles in a mesh 
+ *
+ * @param mesh The mesh
+ * @return the surface area
+ * @author Sascha Brandt
+ */
 float computeSurfaceArea(Mesh* mesh);
+
+/**
+ * Extracts the vertices of a mesh with corresponding indices and moves them to a new mesh 
+ *
+ * @param mesh Mesh to extract vertices from
+ * @param indices array of indices of the vertices to be extracted
+ * @return new mesh
+ * @author Sascha Brandt
+ */
+Rendering::MeshVertexData* extractVertices(Rendering::Mesh* mesh, const std::vector<uint32_t>& indices);
 
 }
 }
