@@ -234,11 +234,63 @@ Util::Reference<NormalAttributeAccessor> NormalAttributeAccessor::create(MeshVer
 // ---------------------------------
 // Position
 
+/*! PositionAttributeAccessorF ---|> PositionAttributeAccessor */
+class PositionAttributeAccessorF : public PositionAttributeAccessor {
+	public:
+		PositionAttributeAccessorF(MeshVertexData & _vData, const VertexAttribute & _attribute) :
+			PositionAttributeAccessor(_vData, _attribute) {}
+		virtual ~PositionAttributeAccessorF() {}
+
+		//! ---|> PositionAttributeAccessor
+		const Geometry::Vec3 getPosition(uint32_t index) const override {
+			assertRange(index);
+			const float * v=_ptr<const float>(index);
+			return Geometry::Vec3(v[0],v[1],v[2]);
+		}
+		
+		//! ---|> PositionAttributeAccessor
+		void setPosition(uint32_t index,const Geometry::Vec3 & p) override {
+			assertRange(index);
+			float * v=_ptr<float>(index);
+			v[0] = p.x() , v[1] = p.y() , v[2] = p.z();
+		}
+};
+
+/*! PositionAttributeAccessorHF ---|> PositionAttributeAccessor */
+class PositionAttributeAccessorHF : public PositionAttributeAccessor {
+	public:
+		PositionAttributeAccessorHF(MeshVertexData & _vData, const VertexAttribute & _attribute) :
+			PositionAttributeAccessor(_vData, _attribute) {}
+		virtual ~PositionAttributeAccessorHF() {}
+
+		//! ---|> PositionAttributeAccessor
+		const Geometry::Vec3 getPosition(uint32_t index) const override {
+			assertRange(index);
+			const uint16_t * v=_ptr<const uint16_t>(index);			
+			return Geometry::Vec3(
+				Geometry::Convert::halfToFloat(v[0]),
+				Geometry::Convert::halfToFloat(v[1]),
+				Geometry::Convert::halfToFloat(v[2])
+			);
+		}
+		
+		//! ---|> PositionAttributeAccessor
+		void setPosition(uint32_t index,const Geometry::Vec3 & p) override {
+			assertRange(index);
+			uint16_t * v=_ptr<uint16_t>(index);
+			v[0] = Geometry::Convert::floatToHalf(p.x());
+			v[1] = Geometry::Convert::floatToHalf(p.y());
+			v[2] = Geometry::Convert::floatToHalf(p.z());
+		}
+};
+
 //! (static)
 Util::Reference<PositionAttributeAccessor> PositionAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
 	if(attr.getNumValues() >= 3 && attr.getDataType() == GL_FLOAT) {
-		return new PositionAttributeAccessor(_vData, attr);
+		return new PositionAttributeAccessorF(_vData, attr);
+	} else if(attr.getNumValues() >= 3 && attr.getDataType() == GL_HALF_FLOAT) {
+		return new PositionAttributeAccessorHF(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
 	}
@@ -342,7 +394,48 @@ class FloatAttributeAccessorb : public FloatAttributeAccessor {
 		}
 };
 
-/*! NormalAttributeAccessor3f ---|> FloatAttributeAccessor */
+/*! FloatAttributeAccessorHF ---|> FloatAttributeAccessor */
+class FloatAttributeAccessorHF : public FloatAttributeAccessor {
+	public:
+		FloatAttributeAccessorHF(MeshVertexData & _vData, const VertexAttribute & _attribute) :
+			FloatAttributeAccessor(_vData, _attribute) {}
+		virtual ~FloatAttributeAccessorHF() {}
+
+		//! ---|> FloatAttributeAccessor
+		float getValue(uint32_t index) const override {
+			assertRange(index);
+			const uint16_t * v = _ptr<const uint16_t>(index);
+			return Geometry::Convert::halfToFloat(v[0]);
+		}
+		
+		//! ---|> FloatAttributeAccessor
+		void setValue(uint32_t index, float value) override {
+			assertRange(index);
+			uint16_t * v = _ptr<uint16_t>(index);
+			v[0] = Geometry::Convert::floatToHalf(value);
+		}
+		
+		//! ---|> FloatAttributeAccessor
+		const std::vector<float> getValues(uint32_t index) const override {
+			assertRange(index);
+			const uint16_t * v = _ptr<const uint16_t>(index);
+			std::vector<float> out(getAttribute().getNumValues());
+			for(uint32_t i=0; i<out.size(); ++i)
+				out[i] = Geometry::Convert::halfToFloat(v[i]);
+			return out;
+		}
+		
+		//! ---|> FloatAttributeAccessor
+		void setValues(uint32_t index, const std::vector<float>& values) override {
+			assertRange(index);
+			uint32_t count = std::min<uint32_t>(values.size(), getAttribute().getNumValues());
+			uint8_t * v = _ptr<uint8_t>(index);
+			for(uint32_t i=0; i<count; ++i)
+				v[i] = Geometry::Convert::floatToHalf(values[i]);
+		}
+};
+
+/*! FloatAttributeAccessorf ---|> FloatAttributeAccessor */
 class FloatAttributeAccessorf : public FloatAttributeAccessor {
 	public:
 		FloatAttributeAccessorf(MeshVertexData & _vData, const VertexAttribute & _attribute) :
@@ -388,6 +481,8 @@ Util::Reference<FloatAttributeAccessor> FloatAttributeAccessor::create(MeshVerte
 		return new FloatAttributeAccessorb(_vData, attr);
 	} else if(attr.getDataType() == GL_UNSIGNED_BYTE) {
 		return new FloatAttributeAccessorub(_vData, attr);
+	} else if(attr.getDataType() == GL_HALF_FLOAT) {
+		return new FloatAttributeAccessorHF(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
 	}

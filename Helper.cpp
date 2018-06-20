@@ -96,6 +96,10 @@ const char * getGLTypeString(uint32_t type) {
 			return "double";
 		case GL_UNSIGNED_INT_24_8_EXT:
 			return "uint_24_8_EXT";
+		case GL_HALF_FLOAT:
+			return "half";
+		case GL_INT_2_10_10_10_REV:
+			return "int_2_10_10_10_REV";
 #endif
 		default:
 			return "";
@@ -125,6 +129,10 @@ unsigned int getGLTypeSize(uint32_t type) {
 			return sizeof(GLdouble);
 		case GL_UNSIGNED_INT_24_8_EXT:
 			return sizeof(GLuint);
+		case GL_HALF_FLOAT:
+			return sizeof(GLhalf);
+		case GL_INT_2_10_10_10_REV:
+			return sizeof(GLint);
 	#endif /* LIB_GL */
 		default:
 			return 0;

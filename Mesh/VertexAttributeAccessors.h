@@ -114,17 +114,8 @@ class PositionAttributeAccessor : public VertexAttributeAccessor{
 
 		virtual ~PositionAttributeAccessor(){}
 
-		const Geometry::Vec3 getPosition(uint32_t index)const {
-			assertRange(index);
-			const float * v=_ptr<const float>(index);
-			return Geometry::Vec3(v[0],v[1],v[2]);
-		}
-
-		void setPosition(uint32_t index,const Geometry::Vec3 & p){
-			assertRange(index);
-			float * v=_ptr<float>(index);
-			v[0] = p.x() , v[1] = p.y() , v[2] = p.z();
-		}
+		virtual const Geometry::Vec3 getPosition(uint32_t index) const = 0;
+		virtual void setPosition(uint32_t index, const Geometry::Vec3 & p) = 0;
 };
 
 // ---------------------------------

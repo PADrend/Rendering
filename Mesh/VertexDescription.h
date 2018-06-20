@@ -71,6 +71,9 @@ class VertexDescription {
 
 		//! Add a three-dimensional position attribute. It is stored as four float values.
 		const VertexAttribute & appendPosition4D();
+		
+		//! Add a three-dimensional position attribute. It is stored as four half float values.
+		const VertexAttribute & appendPosition4DHalf();
 
 		//! Add a texture coordinate attribute. It is stored as two float values.
 		const VertexAttribute & appendTexCoord(uint_fast8_t textureUnit = 0);

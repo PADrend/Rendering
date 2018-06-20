@@ -270,10 +270,12 @@ void setMaterial(Mesh * mesh, const Util::Color4f & ambient, const Util::Color4f
 /**
  * converts normals from 3 * GL_FLOAT to 4 * GL_BYTE if present
  * converts colors from (3 or 4) * GL_FLOAT to 4 * GL_UNSIGNED_BYTE if present
+ * optionally converts position from (3 or 4) * GL_FLOAT to 4 * GL_HALF_FLOAT
  * @param m the mesh to be shrinked
+ * @param
  * @author Ralf Petring
  */
-void shrinkMesh(Mesh * m);
+void shrinkMesh(Mesh * m, bool shrinkPosition=false);
 
 
 /**

@@ -549,13 +549,14 @@ void splitLargeTriangles(Mesh * m, float maxSideLength) {
 }
 
 //! (static)
-void shrinkMesh(Mesh * m) {
+void shrinkMesh(Mesh * m, bool shrinkPosition) {
 	// prepare vertex description
 	const VertexDescription & vdOld = m->getVertexDescription();
 	VertexDescription vdNew;
 
 	bool convertNormals = false;
 	bool convertColors = false;
+	bool convertPosition = false;
 	for(const auto & attr : vdOld.getAttributes()) {
 		// can shrink normals?
 		if (attr.getNameId() == VertexAttributeIds::NORMAL && attr.getDataType() == GL_FLOAT && attr.getNumValues() >= 3) {
@@ -565,12 +566,16 @@ void shrinkMesh(Mesh * m) {
 		else if (attr.getNameId() == VertexAttributeIds::COLOR && attr.getDataType() == GL_FLOAT && attr.getNumValues() >= 3) {
 			vdNew.appendColorRGBAByte();
 			convertColors = true;
+		} // can shrink position?
+		else if (shrinkPosition && attr.getNameId() == VertexAttributeIds::POSITION && attr.getDataType() == GL_FLOAT && attr.getNumValues() >= 3) {
+			vdNew.appendPosition4DHalf();
+			convertPosition = true;
 		} else { // just copy
 			vdNew.appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType(), attr.getNormalize());
 		}
 	}
 
-	if (!convertColors && !convertNormals)
+	if (!convertColors && !convertNormals && !convertPosition)
 		return;
 
 	// convert vertices
@@ -588,6 +593,12 @@ void shrinkMesh(Mesh * m) {
 		Util::Reference<NormalAttributeAccessor> target(NormalAttributeAccessor::create(*newVertices.get(),VertexAttributeIds::NORMAL));
 		for(uint32_t i=0;source->checkRange(i);++i)
 			target->setNormal(i,source->getNormal(i));
+	}
+	if (convertPosition) {
+		Util::Reference<PositionAttributeAccessor> source(PositionAttributeAccessor::create(oldVertices,VertexAttributeIds::POSITION));
+		Util::Reference<PositionAttributeAccessor> target(PositionAttributeAccessor::create(*newVertices.get(),VertexAttributeIds::POSITION));
+		for(uint32_t i=0;source->checkRange(i);++i)
+			target->setPosition(i,source->getPosition(i));
 	}
 	// set new vertices
 	oldVertices.swap(*newVertices.get());

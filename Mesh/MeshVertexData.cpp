@@ -11,6 +11,7 @@
 #include "MeshVertexData.h"
 #include "VertexAttributeIds.h"
 #include "VertexDescription.h"
+#include "VertexAttributeAccessors.h"
 #include "../Shader/Shader.h"
 #include "../RenderingContext/RenderingContext.h"
 #include "../GLHeader.h"
@@ -96,28 +97,22 @@ void MeshVertexData::updateBoundingBox() {
 		bb = Geometry::Box();
 		return;
 	}
-	const VertexDescription & vd=getVertexDescription();
+	const VertexDescription & vd=getVertexDescription();	
+	auto acc = FloatAttributeAccessor::create(*this, VertexAttributeIds::POSITION);
+	
 	const VertexAttribute & attr = vd.getAttribute(VertexAttributeIds::POSITION);
-	if (attr.getDataType() != GL_FLOAT ) {
-		WARN(std::string("Vertex type is not float: ") + attr.toString());
-		return;
-	}
 	const uint8_t vertexNum = attr.getNumValues();
 	if (vertexNum < 1) {
 		WARN(std::string("Vertex component count is zero."));
 		return;
 	}
-
-	const uint8_t * vertices = data()+attr.getOffset();
-	const int vertexSize = vd.getVertexSize();
-
-
+	
 	// The following implementation calculates minima and maxima for the coordinates.
 	// This is faster than calling Geometry::Box::include for each vertex.
 	std::vector<float> min(vertexNum, std::numeric_limits<float>::max());
 	std::vector<float> max(vertexNum, std::numeric_limits<float>::lowest());
 	for (uint_fast32_t i = 0; i < vertexCount; ++i) {
-		const float * p = reinterpret_cast<const float *> (vertices);
+		auto p = acc->getValues(i);
 		for (uint_fast8_t dim = 0; dim < vertexNum; ++dim) {
 			if (p[dim] < min[dim]) {
 				min[dim] = p[dim];
@@ -126,7 +121,6 @@ void MeshVertexData::updateBoundingBox() {
 				max[dim] = p[dim];
 			}
 		}
-		vertices += vertexSize;
 	}
 
 	if (vertexNum == 1) {

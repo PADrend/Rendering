@@ -157,6 +157,10 @@ const VertexAttribute & VertexDescription::appendPosition4D() {
 	return appendAttribute(VertexAttributeIds::POSITION, 4, GL_FLOAT, false);
 }
 
+const VertexAttribute & VertexDescription::appendPosition4DHalf() {
+	return appendAttribute(VertexAttributeIds::POSITION, 4, GL_HALF_FLOAT, false);
+}
+
 const VertexAttribute & VertexDescription::appendTexCoord(uint_fast8_t textureUnit /*= 0*/) {
 	return appendAttribute(VertexAttributeIds::getTextureCoordinateIdentifier(textureUnit), 2, GL_FLOAT, false);
 }
