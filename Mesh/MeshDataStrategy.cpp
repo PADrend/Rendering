@@ -42,12 +42,12 @@ void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m,uint32
 		MeshVertexData & vd=m->_getVertexData();
 		MeshIndexData & id=m->_getIndexData();
 
-		vd.bind(context, vd.isUploaded());
-		id.drawElements( id.isUploaded(),m->getGLDrawMode(),startIndex,indexCount );
-		vd.unbind(context, vd.isUploaded());
+		vd.bind(context);
+		id.drawElements(m->getGLDrawMode(),startIndex,indexCount );
+		vd.unbind(context);
 	}else{
 		MeshVertexData & vd=m->_getVertexData();
-		vd.drawArray(context,vd.isUploaded(),m->getGLDrawMode(),startIndex,indexCount);
+		vd.drawArray(context,m->getGLDrawMode(),startIndex,indexCount);
 	}
 }
 

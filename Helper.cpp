@@ -258,7 +258,7 @@ void enableDebugOutput() {
 		std::cerr << "GL_ARB_debug_output is not supported" << std::endl;
 		return;
 	}
-	glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
 	glDebugMessageCallbackARB(&debugCallback, nullptr);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
 	glDebugMessageInsertARB(GL_DEBUG_SOURCE_THIRD_PARTY_ARB, GL_DEBUG_TYPE_OTHER_ARB, 1, GL_DEBUG_SEVERITY_LOW_ARB, -1, "Rendering: Debugging enabled");

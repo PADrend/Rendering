@@ -92,9 +92,9 @@ class MeshVertexData {
 		inline bool isUploaded()const						{   return bufferObject.isValid();    }
 
 		/*! (internal) */
-		void bind(RenderingContext & context, bool useVBO);
+		void bind(RenderingContext & context);
 		/*! (internal) */
-		void unbind(RenderingContext & context, bool useVBO);
+		void unbind(RenderingContext & context);
 
 		//! Call @a upload() with default usage hint.
 		bool upload();
@@ -109,7 +109,7 @@ class MeshVertexData {
 		
 		/*! (internal) Draw the vertices using the VBO or a VertexArray.
 			Used by MeshDataStrategy::doDisplay(..) if the mesh does not use indices. */
-		void drawArray(RenderingContext & context,bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements);
+		void drawArray(RenderingContext & context,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements);
 
 		/*! Swap the internal BufferObject. 
 			\note The local data is not changed!

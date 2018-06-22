@@ -100,15 +100,6 @@ public:
 	static void initGLState();
 	void clearScreenRect(const Geometry::Rect_i & rect, const Util::Color4f & color, bool clearDepth=true);
 
-	/*! On AMD/ATI-cards, if a Shader accesses a non-existing vertex attribute (even in a branch that should not be
-		executed), it seems that it accesses the data of the default GL_VERTEX_ARRAY attribute. If this is not set, the
-		fragment's calculation fails and the object gets invisible. This workaround checks if an ATI/AMD card is used and
-		in the MeshVertexData::bind()-function, the GL_VERTEX_ARRAY client state is enabled even if it is not required by
-		the used Shader.
-		\note The workaround is enabled if the GL_RENDERER-string contains 'AMD' or 'ATI'
-	*/
-	static bool useAMDAttrBugWorkaround();
-
 	/**
 	 * Flush the GL commands buffer.
 	 * @see glFlush

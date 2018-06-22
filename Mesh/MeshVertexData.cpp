@@ -179,101 +179,41 @@ void MeshVertexData::removeGlBuffer(){
 	bufferObject.destroy();
 }
 
-void MeshVertexData::bind(RenderingContext & context, bool useVBO) {
+void MeshVertexData::bind(RenderingContext & context) {
 	const VertexDescription & vd = getVertexDescription();
+	if(!isUploaded())
+		upload();
 
-	const uint8_t * vertexPosition = nullptr;
-	if (useVBO && isUploaded()) { // use VBO
-		bufferObject.bind(GL_ARRAY_BUFFER);
-	} else { // use Vertex array
-		vertexPosition = data();
-	}
+	bufferObject.bind(GL_ARRAY_BUFFER);
 
 	Shader * shader = context.getActiveShader();
 	const GLsizei vSize=vd.getVertexSize();
-#ifdef LIB_GL
-	if (shader == nullptr || shader->usesClassicOpenGL()) {
-
-		for(const auto & attr : vd.getAttributes()) {
-			if(attr.empty())
-				continue;
-			const Util::StringIdentifier nameId=attr.getNameId();
-
-			if(nameId==VertexAttributeIds::POSITION) {
-				context.enableClientState(GL_VERTEX_ARRAY);
-				glVertexPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::NORMAL) {
-				context.enableClientState(GL_NORMAL_ARRAY);
-				glNormalPointer(attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::COLOR) {
-				context.enableClientState(GL_COLOR_ARRAY);
-				glColorPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD0) {
-				context.enableTextureClientState(GL_TEXTURE0);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD1) {
-				context.enableTextureClientState(GL_TEXTURE1);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD2) {
-				context.enableTextureClientState(GL_TEXTURE2);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD3) {
-				context.enableTextureClientState(GL_TEXTURE3);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD4) {
-				context.enableTextureClientState(GL_TEXTURE4);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD5) {
-				context.enableTextureClientState(GL_TEXTURE5);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD6) {
-				context.enableTextureClientState(GL_TEXTURE6);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD7) {
-				context.enableTextureClientState(GL_TEXTURE7);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-			} else if(shader != nullptr) { // ????????does this work?????
-				context.enableVertexAttribArray(attr, vertexPosition, vSize);
-			}
-		}
-	}else if( shader != nullptr && context.useAMDAttrBugWorkaround() ){
-		for(const auto & attr : vd.getAttributes()) {
-			if(attr.empty())
-				continue;
-			if(attr.getNameId()==VertexAttributeIds::POSITION) {
-				context.enableClientState(GL_VERTEX_ARRAY);
-				glVertexPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
-				break;
-			}
-		}
-	}
-#endif /* LIB_GL */
 	if (shader != nullptr && shader->usesSGUniforms()) {
 		for(const auto & attr : vd.getAttributes()) {
 			if(!attr.empty()) {
-				context.enableVertexAttribArray(attr, vertexPosition, vSize);
+				context.enableVertexAttribArray(attr, nullptr, vSize);
 			}
 		}
 	}
 }
 
 /*! (internal) */
-void MeshVertexData::drawArray(RenderingContext & context,bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements){
+void MeshVertexData::drawArray(RenderingContext & context,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements){
 	if(startIndex+numberOfElements>getVertexCount())
 		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
 	
-	bind(context,useVBO);
+	bind(context);
 	glDrawArrays(drawMode, startIndex, numberOfElements);
-	unbind(context,useVBO);
+	unbind(context);
+	GET_GL_ERROR();
 }
 
-void MeshVertexData::unbind(RenderingContext & context, bool useVBO) {
-	if (useVBO && isUploaded()) { // unbind vertex VBO
-		bufferObject.unbind(GL_ARRAY_BUFFER);
-	}
+void MeshVertexData::unbind(RenderingContext & context) {
+	bufferObject.unbind(GL_ARRAY_BUFFER);
 	context.disableAllClientStates();
 	context.disableAllTextureClientStates();
 	context.disableAllVertexAttribArrays();
+	GET_GL_ERROR();
 }
 
 }

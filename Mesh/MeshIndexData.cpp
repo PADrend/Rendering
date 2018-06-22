@@ -126,27 +126,18 @@ void MeshIndexData::removeGlBuffer(){
 }
 
 /*! (internal) */
-void MeshIndexData::drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices){
+void MeshIndexData::drawElements(uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices){
 	if(startIndex+numberOfIndices>getIndexCount())
 		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
+	if(!isUploaded())
+		upload();
 	
 #ifdef LIB_GL
-	if(useVBO && isUploaded()) { // VBO
-		bufferObject.bind(GL_ELEMENT_ARRAY_BUFFER);
-		glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*startIndex));
-		bufferObject.unbind(GL_ELEMENT_ARRAY_BUFFER);
-	} else if(hasLocalData()) { // VertexArray
-		glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(data()+startIndex));
-	}
-#else
-	if (useVBO && isUploaded()) { // VBO
-		bufferObject.bind(GL_ELEMENT_ARRAY_BUFFER);
-		glDrawElements(drawMode, numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*startIndex));
-		bufferObject.unbind(GL_ELEMENT_ARRAY_BUFFER);
-	} else if (hasLocalData()) { // VertexArray
-		glDrawElements(drawMode, numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(data()+startIndex));
-	}
+	bufferObject.bind(GL_ELEMENT_ARRAY_BUFFER);
+	glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*startIndex));
+	bufferObject.unbind(GL_ELEMENT_ARRAY_BUFFER);
 #endif
+	GET_GL_ERROR();
 }
 
 }

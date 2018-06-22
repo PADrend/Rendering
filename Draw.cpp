@@ -117,7 +117,9 @@ void drawBox(RenderingContext & rc, const Geometry::Box & box) {
 }
 
 void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
+	/* deprecated
 	#ifdef LIB_GL
+	
 	rc.pushAndSetShader(nullptr);
 
 //  Too slow:
@@ -156,7 +158,8 @@ void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
 	rc.popShader();
 	#else
 	drawAbsBox(rc,b);
-	#endif
+	#endif*/
+	drawAbsBox(rc,b);
 }
 
 void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
@@ -206,20 +209,27 @@ void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
 		indices[15] = 2;
 		id.updateIndexRange();
 		id.markAsChanged();
+		
+		MeshVertexData & vd = mesh->openVertexData();
+		const Geometry::Box unitBox(Geometry::Vec3(-0.5f, -0.5f, -0.5f), Geometry::Vec3(0.5f, 0.5f, 0.5f));
+		float * vertices = reinterpret_cast<float *>(vd.data());
+		for (uint_fast8_t c = 0; c < 8; ++c) {
+			const Geometry::Vec3 & corner = unitBox.getCorner(static_cast<Geometry::corner_t> (c));
+			*vertices++ = corner.getX();
+			*vertices++ = corner.getY();
+			*vertices++ = corner.getZ();
+		}
+		vd.updateBoundingBox();
+		vd.markAsChanged();
 	}
 
-	MeshVertexData & vd = mesh->openVertexData();
-	float * vertices = reinterpret_cast<float *>(vd.data());
-	for (uint_fast8_t c = 0; c < 8; ++c) {
-		const Geometry::Vec3 & corner = box.getCorner(static_cast<Geometry::corner_t> (c));
-		*vertices++ = corner.getX();
-		*vertices++ = corner.getY();
-		*vertices++ = corner.getZ();
-	}
-	vd._setBoundingBox(box);
-	vd.markAsChanged();
-
+	Geometry::Matrix4x4 matrix;
+	matrix.translate(box.getCenter());
+	matrix.scale(box.getExtentX(), box.getExtentY(), box.getExtentZ());
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(matrix);
 	rc.displayMesh(mesh.get());
+	rc.popMatrix_modelToCamera();		
 }
 
 void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
@@ -628,7 +638,7 @@ void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32
 		if(!vd.isUploaded())
 			vd.upload();			
 			
-		vd.bind(rc, vd.isUploaded());			
+		vd.bind(rc);			
 		
 		if(m->isUsingIndexData()) {			
 			MeshIndexData & id=m->_getIndexData();								
@@ -648,7 +658,7 @@ void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32
 			glDrawArraysInstanced(m->getGLDrawMode(), firstElement, elementCount, instanceCount);
 		}
 		
-		vd.unbind(rc, vd.isUploaded());
+		vd.unbind(rc);
 #else
 	WARN("Instancing is not supported.");
 #endif

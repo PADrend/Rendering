@@ -46,6 +46,7 @@ static GLenum convertStencilAction(StencilParameters::action_t action) {
 }
 
 void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, bool forced) {
+	GET_GL_ERROR();
 	// Blending
 	if(forced || target.blendingParametersChanged(actual)) {
 		const BlendingParameters & targetParams = target.getBlendingParameters();
@@ -81,6 +82,7 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 		}
 		target.updateBlendingParameters(actual);
 	}
+	GET_GL_ERROR();
 
 	// ColorBuffer
 	if(forced || target.colorBufferParametersChanged(actual)) {
@@ -117,6 +119,7 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 		}
 		target.setCullFaceParameters(actual.getCullFaceParameters());
 	}
+	GET_GL_ERROR();
 
 	// DepthBuffer
 	if(forced || target.depthBufferParametersChanged(actual)) {
@@ -137,9 +140,10 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 
 	// Line
 	if(forced || target.lineParametersChanged(actual)) {
-		glLineWidth(actual.getLineParameters().getWidth());
+		glLineWidth(std::min(actual.getLineParameters().getWidth(), 1.0f)); // deprecated for line width > 1
 		target.setLineParameters(actual.getLineParameters());
 	}
+	GET_GL_ERROR();
 
 	// stencil
 	if (forced || target.stencilParametersChanged(actual)) {
@@ -166,7 +170,8 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 	GET_GL_ERROR();
 
 #ifdef LIB_GL
-// 	if(glewIsSupported("GL_ARB_compatibility")) {
+	/* deprecated
+ 	if(glewIsSupported("GL_ARB_compatibility")) {
 		// AlphaTest
 		if(forced || target.alphaTestParametersChanged(actual)) {
 			if(actual.getAlphaTestParameters().isEnabled()) {
@@ -178,19 +183,21 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 			target.setAlphaTestParameters(actual.getAlphaTestParameters());
 		}
 		GET_GL_ERROR();
-// 	}
+ 	}
+	*/
 #endif /* LIB_GL */
 
 	// Lighting
 	if(forced || target.lightingParametersChanged(actual)) {
 #ifdef LIB_GL
-// 		if(glewIsSupported("GL_ARB_compatibility")) {
+	/* deprecated
+ 		if(glewIsSupported("GL_ARB_compatibility")) {
 			if(actual.getLightingParameters().isEnabled()) {
 				glEnable(GL_LIGHTING);
 			} else {
 				glDisable(GL_LIGHTING);
 			}
-// 		}
+ 		}*/
 #endif /* LIB_GL */
 		target.setLightingParameters(actual.getLightingParameters());
 	}

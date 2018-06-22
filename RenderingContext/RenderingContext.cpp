@@ -13,7 +13,6 @@
 
 #include "internal/CoreRenderingStatus.h"
 #include "internal/RenderingStatus.h"
-#include "internal/StatusHandler_glCompatibility.h"
 #include "internal/StatusHandler_glCore.h"
 #include "internal/StatusHandler_sgUniforms.h"
 #include "RenderingParameters.h"
@@ -46,7 +45,6 @@ namespace Rendering {
 class RenderingContext::InternalData {
 	public:
 		RenderingStatus targetRenderingStatus;
-		RenderingStatus openGLRenderingStatus;
 		RenderingStatus * activeRenderingStatus;
 		std::stack<RenderingStatus *> renderingDataStack;
 
@@ -106,18 +104,18 @@ class RenderingContext::InternalData {
 
 		Geometry::Rect_i windowClientArea;
 
-		InternalData() : targetRenderingStatus(), openGLRenderingStatus(), activeRenderingStatus(nullptr),
+		InternalData() : targetRenderingStatus(), activeRenderingStatus(nullptr),
 			actualCoreRenderingStatus(), appliedCoreRenderingStatus(), globalUniforms(), textureStacks(),
 			currentViewport(0, 0, 0, 0) {
 		}
 };
 
 RenderingContext::RenderingContext() :
-	internalData(new InternalData), immediate(true), displayMeshFn() {
+	internalData(new InternalData), immediate(false), displayMeshFn() {
 
 	resetDisplayMeshFn();
 
-	internalData->setActiveRenderingStatus(&(internalData->openGLRenderingStatus));
+	internalData->setActiveRenderingStatus(&(internalData->targetRenderingStatus));
 
 	setBlending(BlendingParameters());
 	setColorBuffer(ColorBufferParameters());
@@ -175,6 +173,10 @@ void RenderingContext::initGLState() {
 	if(GLEW_OK != err) {
 		WARN(std::string("GLEW Error: ") + reinterpret_cast<const char *>(glewGetErrorString(err)));
 	}
+	
+	if(!glewIsSupported("GL_VERSION_4_5")) {
+		throw std::runtime_error("RenderingContext::initGLState: Required OpenGL version 4.5 is not supported.");
+	}
 
 #ifdef LIB_GL
 	glPixelStorei( GL_PACK_ALIGNMENT,1); // allow glReadPixel for all possible resolutions
@@ -183,63 +185,27 @@ void RenderingContext::initGLState() {
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 
 	glBlendEquation(GL_FUNC_ADD);
-
-	glActiveTexture(GL_TEXTURE0);
-
-	// Do not use deprecated functions in a OpenGL core profile.
-//	if(glewIsSupported("GL_ARB_compatibility")) {
-		glEnable(GL_COLOR_MATERIAL);
-
-		glShadeModel(GL_SMOOTH);
-
-		// disable global ambient light
-		GLfloat lmodel_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
-		glLightModelf(GL_LIGHT_MODEL_LOCAL_VIEWER, 1.0f);
-
-		glEnable(GL_NORMALIZE);
-
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-//	} else if(glewIsSupported("GL_VERSION_3_0") || glewIsSupported("GL_ARB_vertex_array_object")) {
-//		// Workaround: Create a single vertex array object here.
-//		// For the core profile of OpenGL 3.2 or higher this is required,
-//		// because glVertexAttribPointer generates an GL_INVALID_OPERATION without it.
-//		// In the future, vertex array objects should be integrated into the rendering system.
-//		GLuint vertexArrayObject;
-//		glGenVertexArrays(1, &vertexArrayObject);
-//		glBindVertexArray(vertexArrayObject);
-//	}
-
+	
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	
 	// Enable the possibility to write gl_PointSize from the vertex shader.
 	glEnable(GL_PROGRAM_POINT_SIZE);
-	glEnable(GL_POINT_SPRITE);
+	//glEnable(GL_POINT_SPRITE);
 	
+	// Workaround: Create a single vertex array object here.
+	// For the core profile of OpenGL 3.2 or higher this is required,
+	// because glVertexAttribPointer generates an GL_INVALID_OPERATION without it.
+	// In the future, vertex array objects should be integrated into the rendering system.
+	GLuint vertexArrayObject;
+	glGenVertexArrays(1, &vertexArrayObject);
+	glBindVertexArray(vertexArrayObject);
 	
-	if( glewIsSupported("GL_ARB_seamless_cube_map") ) //! \see http://www.opengl.org/wiki/Cubemap_Texture#Seamless_cubemap
-		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 #endif /* LIB_GL */
 #endif /* LIB_GLEW */
 
 #ifdef WIN32
 	wglSwapIntervalEXT(false);
 #endif /* WIN32 */
-}
-
-static bool detectAMDGPU(){
-	const GLubyte * rendererStr = glGetString(GL_RENDERER);
-	if(rendererStr!=nullptr){
-		const std::string s(reinterpret_cast<const char*>(rendererStr));
-		if(s.find("ATI")!=std::string::npos || s.find("AMD")!=std::string::npos){
-			return true;
-		}
-	}
-	return false;
-}
-
-//! (static)
-bool RenderingContext::useAMDAttrBugWorkaround(){
-	static bool useWorkaround = detectAMDGPU();
-	return useWorkaround;
 }
 
 //! (static)
@@ -263,9 +229,6 @@ void RenderingContext::applyChanges(bool forced) {
 		StatusHandler_glCore::apply(internalData->appliedCoreRenderingStatus, internalData->actualCoreRenderingStatus, forced);
 		Shader * shader = internalData->getActiveRenderingStatus()->getShader();
 		if(shader) {
-			if(shader->usesClassicOpenGL())
-				StatusHandler_glCompatibility::apply(internalData->openGLRenderingStatus, internalData->targetRenderingStatus, forced);
-
 			if(shader->usesSGUniforms()) {
 				StatusHandler_sgUniforms::apply(*shader->getRenderingStatus(), internalData->targetRenderingStatus, forced);
 				if(immediate && getActiveShader() == shader) {
@@ -280,7 +243,7 @@ void RenderingContext::applyChanges(bool forced) {
 			shader->applyUniforms(forced);
 			GET_GL_ERROR();
 		} else {
-			StatusHandler_glCompatibility::apply(internalData->openGLRenderingStatus, internalData->targetRenderingStatus, forced);
+			//WARN("No active shader.");
 		}
 	} catch(const std::exception & e) {
 		WARN(std::string("Problem detected while setting rendering internalData: ") + e.what());
@@ -978,16 +941,17 @@ void RenderingContext::setShader(Shader * shader) {
 			if (!internalData->getActiveRenderingStatus()->isInitialized()) { // this shader has not yet been initialized.
 				applyChanges(true); // make sure that all uniforms are initially set (e.g. even for disabled lights)
 				internalData->getActiveRenderingStatus()->markInitialized();
-				//				std::cout << " !!!! FORCED !!! \n";
 			}
 		} else {
-			WARN("RenderingContext::pushShader: can't enable shader, using OpenGL instead");
-			internalData->setActiveRenderingStatus(&(internalData->openGLRenderingStatus));
-			glUseProgram(0);
+			WARN("RenderingContext::pushShader: can't enable shader.");
+			if(!internalData->renderingDataStack.empty() && internalData->renderingDataStack.top()->getShader() != shader) {
+				// try to activate last shader
+				setShader(internalData->renderingDataStack.top()->getShader());
+			} else {
+				glUseProgram(0);
+			}
 		}
 	} else {
-		internalData->setActiveRenderingStatus(&(internalData->openGLRenderingStatus));
-
 		glUseProgram(0);
 	}
 	if(immediate)
