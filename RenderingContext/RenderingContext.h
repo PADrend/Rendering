@@ -53,6 +53,7 @@ class Texture;
 class Uniform;
 class UniformRegistry;
 class VertexAttribute;
+class VertexDescription;
 enum class TexUnitUsageParameter : uint8_t;
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
@@ -96,7 +97,7 @@ public:
 
 	/*!	@name GL Helper */
 	//	@{
-	static void clearScreen(const Util::Color4f & color);
+	void clearScreen(const Util::Color4f & color);
 	static void initGLState();
 	void clearScreenRect(const Geometry::Rect_i & rect, const Util::Color4f & color, bool clearDepth=true);
 
@@ -104,13 +105,13 @@ public:
 	 * Flush the GL commands buffer.
 	 * @see glFlush
 	 */
-	static void flush();
+	void flush();
 
 	/**
 	 * Block until all GL commands are complete.
 	 * @see glFinish
 	 */
-	static void finish();
+	void finish();
 	
 	/**
 	 * Defines a barrier ordering memory transactions.
@@ -126,11 +127,11 @@ public:
 
 	//! @name AlphaTest
 	//	@{
-	const AlphaTestParameters & getAlphaTestParameters() const;
-	void popAlphaTest();
-	void pushAlphaTest();
-	void pushAndSetAlphaTest(const AlphaTestParameters & alphaTestParameter);
-	void setAlphaTest(const AlphaTestParameters & alphaTestParameter);
+	const AlphaTestParameters & getAlphaTestParameters() const __attribute((deprecated));
+	void popAlphaTest() __attribute((deprecated)) {}
+	void pushAlphaTest() __attribute((deprecated)) {}
+	void pushAndSetAlphaTest(const AlphaTestParameters & alphaTestParameter) __attribute((deprecated)) {}
+	void setAlphaTest(const AlphaTestParameters & alphaTestParameter) __attribute((deprecated)) {}
 	// @}
 	
 	// ------
@@ -163,11 +164,11 @@ public:
 
 	//! @name Scissor
 	//	@{
-	const ClipPlaneParameters & getClipPlane(uint8_t index) const;
-	void popClipPlane(uint8_t index);
-	void pushClipPlane(uint8_t index);
-	void pushAndSetClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters);
-	void setClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters);
+	const ClipPlaneParameters & getClipPlane(uint8_t index) const __attribute((deprecated));
+	void popClipPlane(uint8_t index) __attribute((deprecated)) {}
+	void pushClipPlane(uint8_t index) __attribute((deprecated)) {}
+	void pushAndSetClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters) __attribute((deprecated)) {}
+	void setClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters) __attribute((deprecated)) {}
 	// @}
 	
 	// ------
@@ -259,11 +260,11 @@ public:
 
 	//! @name Lighting
 	//	@{
-	const LightingParameters & getLightingParameters() const;
-	void popLighting();
-	void pushLighting();
-	void pushAndSetLighting(const LightingParameters & lightingParameter);
-	void setLighting(const LightingParameters & lightingParameter);
+	const LightingParameters & getLightingParameters() const __attribute((deprecated));
+	void popLighting() __attribute((deprecated)) {}
+	void pushLighting() __attribute((deprecated)) {}
+	void pushAndSetLighting(const LightingParameters & lightingParameter) __attribute((deprecated)) {}
+	void setLighting(const LightingParameters & lightingParameter) __attribute((deprecated)) {}
 
 	// ------
 
@@ -473,33 +474,20 @@ public:
 
 	// ------
 
-	//! @name VBO Client States
+	//! @name Vertex Format
 	// @{
-	//! Activate the given client state.
-	void enableClientState(uint32_t clientState);
-
-	//! Deactivate all client states that were activated before.
-	void disableAllClientStates();
-
-	//! Activate the texture coordinate client state for the given texture unit.
-	void enableTextureClientState(uint32_t textureUnit);
-
-	//! Deactivate the texture coordinate client states for all texture units that were activated before.
-	void disableAllTextureClientStates();
 
 	/**
-	 * Bind a vertex attribute to a variable inside a shader program.
+	 * Sets the active vertex format for a specific binding point
 	 *
-	 * @param attr Attribute description (including variable name)
-	 * @param data Pointer to the vertex data (or @c nullptr if a buffer object is active)
-	 * @param stride Size of a vertex in bytes
+	 * @param binding The index of the vertex buffer binding
+	 * @param vd The vertex format description
+	 * @param divisor The value for the instance step rate to apply
 	 */
-	void enableVertexAttribArray(const VertexAttribute & attr, const uint8_t * data, int32_t stride);
-
-	//! Disable all vertex attribute array.
-	void disableAllVertexAttribArrays();
-	// @}
-
+	void setVertexFormat(uint32_t binding, const VertexDescription& vd);
+ 	void bindVertexBuffer(uint32_t binding, uint32_t bufferId, uint32_t offset, uint32_t stride, uint32_t divisor=0);
+	void bindIndexBuffer(uint32_t bufferId);
+	
 	// ------
 
 	//! @name Viewport and window's size

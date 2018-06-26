@@ -9,7 +9,9 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "StatusHandler_glCore.h"
-#include "CoreRenderingStatus.h"
+#include "StatusHandler_UBO.h"
+#include "PipelineState.h"
+#include "RenderingStatus.h"
 #include "../../BufferObject.h"
 #include "../../GLHeader.h"
 #include "../../Helper.h"
@@ -45,8 +47,26 @@ static GLenum convertStencilAction(StencilParameters::action_t action) {
 	throw std::invalid_argument("Invalid StencilParameters::action_t enumerator");
 }
 
-void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, bool forced) {
+void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 	GET_GL_ERROR();
+			
+	// Shader
+	bool shaderChanged = false;
+	if(forced || target.shaderChanged(actual)) {
+		const auto& shader = actual.getShader();
+		if(shader.isNull()) {
+			glUseProgram(0);
+		} else if(shader->_enable()) {
+			shader->applyUniforms(forced);
+			shaderChanged = true;
+		} else {
+			WARN("Can't enable shader.");
+			glUseProgram(0);
+		}
+		target.setShader(shader);
+	}
+	GET_GL_ERROR();
+	
 	// Blending
 	if(forced || target.blendingParametersChanged(actual)) {
 		const BlendingParameters & targetParams = target.getBlendingParameters();
@@ -166,41 +186,6 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 		}
 		target.updateStencilParameters(actual);
 	}
-
-	GET_GL_ERROR();
-
-#ifdef LIB_GL
-	/* deprecated
- 	if(glewIsSupported("GL_ARB_compatibility")) {
-		// AlphaTest
-		if(forced || target.alphaTestParametersChanged(actual)) {
-			if(actual.getAlphaTestParameters().isEnabled()) {
-				glDisable(GL_ALPHA_TEST);
-			} else {
-				glEnable(GL_ALPHA_TEST);
-			}
-			glAlphaFunc(Comparison::functionToGL(actual.getAlphaTestParameters().getMode()), actual.getAlphaTestParameters().getReferenceValue());
-			target.setAlphaTestParameters(actual.getAlphaTestParameters());
-		}
-		GET_GL_ERROR();
- 	}
-	*/
-#endif /* LIB_GL */
-
-	// Lighting
-	if(forced || target.lightingParametersChanged(actual)) {
-#ifdef LIB_GL
-	/* deprecated
- 		if(glewIsSupported("GL_ARB_compatibility")) {
-			if(actual.getLightingParameters().isEnabled()) {
-				glEnable(GL_LIGHTING);
-			} else {
-				glDisable(GL_LIGHTING);
-			}
- 		}*/
-#endif /* LIB_GL */
-		target.setLightingParameters(actual.getLightingParameters());
-	}
 	GET_GL_ERROR();
 
 #ifdef LIB_GL
@@ -254,6 +239,77 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 			}
 		}
 		target.updateTextures(actual);
+	}
+	GET_GL_ERROR();
+	
+	// Viewport
+	if(forced || target.viewportChanged(actual)) {
+		glViewport(actual.getViewport().getX(), actual.getViewport().getY(), actual.getViewport().getWidth(), actual.getViewport().getHeight());
+		target.setViewport(actual.getViewport());
+	}
+	GET_GL_ERROR();	
+	
+	// Scissor
+	if(forced || target.scissorParametersChanged(actual)) {
+		const auto& sp = actual.getScissorParameters();
+		if(sp.isEnabled()) {
+			const Geometry::Rect_i & scissorRect = sp.getRect();
+			glScissor(scissorRect.getX(), scissorRect.getY(), scissorRect.getWidth(), scissorRect.getHeight());
+			glEnable(GL_SCISSOR_TEST);
+		} else {
+			glDisable(GL_SCISSOR_TEST);
+		}
+		target.setScissorParameters(sp);
+	}
+	GET_GL_ERROR();	
+		
+	// FBO
+	if(forced || target.fboChanged(actual)) {
+		const auto& fbo = actual.getFBO();
+		if(fbo.isNull()) {
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		} else {
+			fbo->_enable();
+		}
+		target.setFBO(fbo);
+	}
+	GET_GL_ERROR();
+		
+	// Vertex Format
+	if(forced || target.vertexFormatChanged(actual)) {
+		for(uint_fast8_t location=0; location<PipelineState::MAX_VERTEXATTRIBS; ++location) {
+			const auto& format = actual.getVertexFormat(location);
+			const auto& oldFormat = target.getVertexFormat(location);
+			if(forced || format != oldFormat) {
+				const auto& attr = format.first;
+				if(attr.empty()) {
+					glDisableVertexAttribArray(location);
+				} else {
+					glEnableVertexAttribArray(location);				
+					glVertexAttribBinding(location, format.second);		
+					if(attr.getConvertToFloat()) 
+						glVertexAttribFormat(location, attr.getNumValues(), attr.getDataType(), attr.getNormalize() ? GL_TRUE : GL_FALSE, attr.getOffset());
+					else
+						glVertexAttribIFormat(location, attr.getNumValues(), attr.getDataType(), attr.getOffset());
+				}
+			}
+		}
+		target.updateVertexFormat(actual);
+	}
+	
+	if(forced || target.vertexBindingChanged(actual)) {
+		for(uint_fast8_t i = 0; i<PipelineState::MAX_VERTEXBINDINGS; ++i) {
+			const auto& binding = actual.getVertexBinding(i);
+			const auto& oldBinding = target.getVertexBinding(i);
+			if(forced || binding != oldBinding) {
+				uint32_t buffer, offset, stride, divisor;
+				std::tie(buffer, offset, stride, divisor) = binding;
+				
+			  glVertexBindingDivisor(i, divisor);
+				glBindVertexBuffer(i, buffer, offset, stride);
+			}
+		}
+		target.updateVertexBinding(actual);
 	}
 	GET_GL_ERROR();
 }

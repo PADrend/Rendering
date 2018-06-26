@@ -112,7 +112,7 @@ bool Shader::init() {
 				status = LINKED;
 
 				// recreate renderingData
-				renderingData.reset(new RenderingStatus(this));
+				renderingData.reset(new RenderingStatus);
 
 				// make sure all set uniforms are re-applied.
 				uniforms->resetCounters();

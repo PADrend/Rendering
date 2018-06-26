@@ -11,11 +11,13 @@
 #include "MeshIndexData.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
+#include "../RenderingContext/RenderingContext.h"
 #include <Util/Macros.h>
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
 #include <utility>
+#include <iostream>
 
 namespace Rendering {
 
@@ -126,16 +128,15 @@ void MeshIndexData::removeGlBuffer(){
 }
 
 /*! (internal) */
-void MeshIndexData::drawElements(uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices){
+void MeshIndexData::drawElements(RenderingContext & context,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices){
 	if(startIndex+numberOfIndices>getIndexCount())
 		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
 	if(!isUploaded())
 		upload();
 	
 #ifdef LIB_GL
-	bufferObject.bind(GL_ELEMENT_ARRAY_BUFFER);
+	context.bindIndexBuffer(bufferObject.getGLId());
 	glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*startIndex));
-	bufferObject.unbind(GL_ELEMENT_ARRAY_BUFFER);
 #endif
 	GET_GL_ERROR();
 }

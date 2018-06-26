@@ -13,10 +13,11 @@
 namespace Rendering {
 
 class RenderingStatus;
+class Shader;
 
-namespace StatusHandler_sgUniforms{
+namespace StatusHandler_UBO{
 
-void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced);
+void apply(Shader* shader, RenderingStatus & target, const RenderingStatus & actual, bool forced);
 
 }
 }

@@ -21,12 +21,7 @@ namespace Rendering {
 
 //! (static)
 void FBO::_disable(){
-#if defined(LIB_GL)
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-#elif defined(LIB_GLESv2)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-#endif
-
 }
 
 FBO::FBO() : glId(0){
@@ -35,11 +30,7 @@ FBO::FBO() : glId(0){
 
 FBO::~FBO(){
 	if(glId!=0){
-#if defined(LIB_GL)
-		glDeleteFramebuffersEXT(1,&glId);
-#elif defined(LIB_GLESv2)
 		glDeleteFramebuffers(1,&glId);
-#endif
 		glId=0;
 	}
 	//dtor
@@ -47,17 +38,9 @@ FBO::~FBO(){
 
 void FBO::_enable(){
 	if(glId==0){
-#if defined(LIB_GL)
-		glGenFramebuffersEXT(1, &glId);
-#elif defined(LIB_GLESv2)
 		glGenFramebuffers(1, &glId);
-#endif
 	}
-#if defined(LIB_GL)
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,glId);
-#elif defined(LIB_GLESv2)
 	glBindFramebuffer(GL_FRAMEBUFFER,glId);
-#endif
 }
 
 void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Texture * texture,uint32_t level,int32_t layer){

@@ -183,18 +183,9 @@ void MeshVertexData::bind(RenderingContext & context) {
 	const VertexDescription & vd = getVertexDescription();
 	if(!isUploaded())
 		upload();
-
-	bufferObject.bind(GL_ARRAY_BUFFER);
-
-	Shader * shader = context.getActiveShader();
-	const GLsizei vSize=vd.getVertexSize();
-	if (shader != nullptr && shader->usesSGUniforms()) {
-		for(const auto & attr : vd.getAttributes()) {
-			if(!attr.empty()) {
-				context.enableVertexAttribArray(attr, nullptr, vSize);
-			}
-		}
-	}
+		
+	context.setVertexFormat(0, vd);
+	context.bindVertexBuffer(0, bufferObject.getGLId(), 0, vd.getVertexSize());
 }
 
 /*! (internal) */
@@ -203,16 +194,14 @@ void MeshVertexData::drawArray(RenderingContext & context,uint32_t drawMode,uint
 		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
 	
 	bind(context);
+	context.applyChanges();
 	glDrawArrays(drawMode, startIndex, numberOfElements);
 	unbind(context);
 	GET_GL_ERROR();
 }
 
 void MeshVertexData::unbind(RenderingContext & context) {
-	bufferObject.unbind(GL_ARRAY_BUFFER);
-	context.disableAllClientStates();
-	context.disableAllTextureClientStates();
-	context.disableAllVertexAttribArrays();
+	//context.bindVertexBuffer(0, 0, 0, 1);
 	GET_GL_ERROR();
 }
 

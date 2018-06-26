@@ -12,11 +12,11 @@
 #define RENDERING_STATHANDLER_GLCORE_H_
 namespace Rendering {
 
-class CoreRenderingStatus;
+class PipelineState;
 
 namespace StatusHandler_glCore{
 
-void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, bool forced);
+void apply(PipelineState & target, const PipelineState & actual, bool forced);
 
 }
 }

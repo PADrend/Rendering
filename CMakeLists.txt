@@ -53,7 +53,7 @@ add_library(Rendering
 	MeshUtils/TriangleAccessor.cpp
 	MeshUtils/ConnectivityAccessor.cpp
 	RenderingContext/internal/StatusHandler_glCore.cpp
-	RenderingContext/internal/StatusHandler_sgUniforms.cpp
+	RenderingContext/internal/StatusHandler_UBO.cpp
 	RenderingContext/RenderingContext.cpp
 	RenderingContext/RenderingParameters.cpp
 	Serialization/GenericAttributeSerialization.cpp
@@ -84,6 +84,7 @@ add_library(Rendering
 	QueryObject.cpp
 	StatisticsQuery.cpp
 	TextRenderer.cpp
+	VAO.cpp
 )
 
 # Dependency to Geometry

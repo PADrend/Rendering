@@ -11,20 +11,22 @@
 */
 #include "RenderingContext.h"
 
-#include "internal/CoreRenderingStatus.h"
+#include "internal/PipelineState.h"
 #include "internal/RenderingStatus.h"
 #include "internal/StatusHandler_glCore.h"
-#include "internal/StatusHandler_sgUniforms.h"
+#include "internal/StatusHandler_UBO.h"
 #include "RenderingParameters.h"
 #include "../BufferObject.h"
 #include "../Mesh/Mesh.h"
 #include "../Mesh/VertexAttribute.h"
+#include "../Mesh/VertexDescription.h"
 #include "../Shader/Shader.h"
 #include "../Shader/UniformRegistry.h"
 #include "../Texture/Texture.h"
 #include "../FBO.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
+#include "../VAO.h"
 #include <Geometry/Matrix4x4.h>
 #include <Geometry/Rect.h>
 #include <Util/Graphics/ColorLibrary.h>
@@ -41,24 +43,18 @@
 
 namespace Rendering {
 
-
+static const Uniform::UniformName UNIFORM_SG_VIEWPORT("sg_viewport");
+static const Uniform::UniformName UNIFORM_SG_SCISSOR_RECT("sg_scissorRect");
+static const Uniform::UniformName UNIFORM_SG_SCISSOR_ENABLED("sg_scissorEnabled");
+	
 class RenderingContext::InternalData {
 	public:
 		RenderingStatus targetRenderingStatus;
-		RenderingStatus * activeRenderingStatus;
-		std::stack<RenderingStatus *> renderingDataStack;
+		RenderingStatus activeRenderingStatus;
 
-		CoreRenderingStatus actualCoreRenderingStatus;
-		CoreRenderingStatus appliedCoreRenderingStatus;
+		PipelineState targetPipelineState;
+		PipelineState activePipelineState;
 
-		void setActiveRenderingStatus(RenderingStatus * rd) {
-			activeRenderingStatus = rd;
-		}
-		RenderingStatus * getActiveRenderingStatus() const {
-			return activeRenderingStatus;
-		}
-
-		std::stack<AlphaTestParameters> alphaTestParameterStack;
 		std::unordered_map<uint32_t,std::stack<Util::Reference<Texture>>> atomicCounterStacks; 
 
 		std::stack<BlendingParameters> blendingParameterStack;
@@ -67,21 +63,16 @@ class RenderingContext::InternalData {
 		std::stack<DepthBufferParameters> depthBufferParameterStack;
 		std::array<std::stack<ImageBindParameters>, MAX_BOUND_IMAGES> imageStacks; 
 		std::array<ImageBindParameters, MAX_BOUND_IMAGES> boundImages;
-		std::stack<LightingParameters> lightingParameterStack;
 		std::stack<LineParameters> lineParameterStack;
 		std::stack<MaterialParameters> materialStack;
 		std::stack<PointParameters> pointParameterStack;
 		std::stack<PolygonModeParameters> polygonModeParameterStack;
 		std::stack<PolygonOffsetParameters> polygonOffsetParameterStack;
 		std::stack<ScissorParameters> scissorParametersStack;
-		ScissorParameters currentScissorParameters;
 		std::stack<StencilParameters> stencilParameterStack;
-		
-		std::array<std::stack<ClipPlaneParameters>, MAX_CLIP_PLANES> clipPlaneStacks;
-		std::array<ClipPlaneParameters, MAX_CLIP_PLANES> activeClipPlanes;
-				
-		std::stack<Util::Reference<FBO> > fboStack;
-		Util::Reference<FBO> activeFBO;
+						
+		std::stack<Util::Reference<FBO>> fboStack;
+		std::stack<Util::Reference<Shader>> shaderStack;
 
 		UniformRegistry globalUniforms;
 
@@ -99,15 +90,11 @@ class RenderingContext::InternalData {
 		std::stack<uint32_t> activeTextureClientStates;
 		std::stack<uint32_t> activeVertexAttributeBindings;
 		
-		Geometry::Rect_i currentViewport;
 		std::stack<Geometry::Rect_i> viewportStack;
 
 		Geometry::Rect_i windowClientArea;
-
-		InternalData() : targetRenderingStatus(), activeRenderingStatus(nullptr),
-			actualCoreRenderingStatus(), appliedCoreRenderingStatus(), globalUniforms(), textureStacks(),
-			currentViewport(0, 0, 0, 0) {
-		}
+		
+		Util::Reference<VAO> defaultVAO;
 };
 
 RenderingContext::RenderingContext() :
@@ -115,20 +102,20 @@ RenderingContext::RenderingContext() :
 
 	resetDisplayMeshFn();
 
-	internalData->setActiveRenderingStatus(&(internalData->targetRenderingStatus));
-
 	setBlending(BlendingParameters());
 	setColorBuffer(ColorBufferParameters());
 	// Initially enable the back-face culling
 	setCullFace(CullFaceParameters::CULL_BACK);
 	// Initially enable the depth test.
 	setDepthBuffer(DepthBufferParameters(true, true, Comparison::LESS));
-	// Initially enable the lighting.
-	setLighting(LightingParameters(true));
+	
 	setLine(LineParameters());
 	setPointParameters(PointParameters());
 	setPolygonOffset(PolygonOffsetParameters());
 	setStencil(StencilParameters());
+	
+	internalData->defaultVAO = new VAO;
+	internalData->defaultVAO->bind();
 }
 
 RenderingContext::~RenderingContext() = default;
@@ -196,9 +183,9 @@ void RenderingContext::initGLState() {
 	// For the core profile of OpenGL 3.2 or higher this is required,
 	// because glVertexAttribPointer generates an GL_INVALID_OPERATION without it.
 	// In the future, vertex array objects should be integrated into the rendering system.
-	GLuint vertexArrayObject;
-	glGenVertexArrays(1, &vertexArrayObject);
-	glBindVertexArray(vertexArrayObject);
+	//GLuint vertexArrayObject;
+	//glGenVertexArrays(1, &vertexArrayObject);
+	//glBindVertexArray(vertexArrayObject);
 	
 #endif /* LIB_GL */
 #endif /* LIB_GLEW */
@@ -226,15 +213,19 @@ void RenderingContext::barrier(uint32_t flags) {
 
 void RenderingContext::applyChanges(bool forced) {
 	try {
-		StatusHandler_glCore::apply(internalData->appliedCoreRenderingStatus, internalData->actualCoreRenderingStatus, forced);
-		Shader * shader = internalData->getActiveRenderingStatus()->getShader();
+		StatusHandler_glCore::apply(internalData->activePipelineState, internalData->targetPipelineState, forced);		
+		
+		const auto& vp = getViewport();
+		const auto& sp = getScissor();
+		const auto& sr = sp.getRect();
+		
+		internalData->globalUniforms.setUniform({UNIFORM_SG_VIEWPORT, Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight())}, false, false);
+		internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_RECT, Geometry::Vec4(sr.getX(), sr.getY(), sr.getWidth(), sr.getHeight())}, false, false);
+		internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_ENABLED, sp.isEnabled()}, false, false);
+		
+		Shader * shader = getActiveShader();
 		if(shader) {
-			if(shader->usesSGUniforms()) {
-				StatusHandler_sgUniforms::apply(*shader->getRenderingStatus(), internalData->targetRenderingStatus, forced);
-				if(immediate && getActiveShader() == shader) {
-					shader->applyUniforms(false); // forced is false here, as this forced means to re-apply all uniforms
-				}
-			}
+			StatusHandler_UBO::apply(shader, *shader->getRenderingStatus(), internalData->targetRenderingStatus, forced);
 
 			// transfer updated global uniforms to the shader
 			shader->_getUniformRegistry()->performGlobalSync(internalData->globalUniforms, false);
@@ -242,8 +233,6 @@ void RenderingContext::applyChanges(bool forced) {
 			// apply uniforms
 			shader->applyUniforms(forced);
 			GET_GL_ERROR();
-		} else {
-			//WARN("No active shader.");
 		}
 	} catch(const std::exception & e) {
 		WARN(std::string("Problem detected while setting rendering internalData: ") + e.what());
@@ -373,7 +362,7 @@ void RenderingContext::setAtomicCounterTextureBuffer(uint32_t index, Texture * t
 
 // Blending ************************************************************************************
 const BlendingParameters & RenderingContext::getBlendingParameters() const {
-	return internalData->actualCoreRenderingStatus.getBlendingParameters();
+	return internalData->targetPipelineState.getBlendingParameters();
 }
 
 void RenderingContext::pushAndSetBlending(const BlendingParameters & p) {
@@ -390,11 +379,11 @@ void RenderingContext::popBlending() {
 }
 
 void RenderingContext::pushBlending() {
-	internalData->blendingParameterStack.emplace(internalData->actualCoreRenderingStatus.getBlendingParameters());
+	internalData->blendingParameterStack.emplace(internalData->targetPipelineState.getBlendingParameters());
 }
 
 void RenderingContext::setBlending(const BlendingParameters & p) {
-	internalData->actualCoreRenderingStatus.setBlendingParameters(p);
+	internalData->targetPipelineState.setBlendingParameters(p);
 	if(immediate)
 		applyChanges();
 }
@@ -403,56 +392,13 @@ void RenderingContext::setBlending(const BlendingParameters & p) {
 // ClipPlane ************************************************************************************
 
 const ClipPlaneParameters & RenderingContext::getClipPlane(uint8_t index) const {
-	static ClipPlaneParameters emptyClipPlane;
-	if(index >= MAX_CLIP_PLANES) {
-		WARN("getClipPlane: invalid plane index");
-		return emptyClipPlane;
-	}
-	return internalData->activeClipPlanes.at(index);
-}
-
-void RenderingContext::popClipPlane(uint8_t index) {
-	if(internalData->clipPlaneStacks.at(index).empty()) {
-		WARN("popClipPlane: Empty ClipPlane-Stack");
-		return;
-	}
-	setClipPlane(index, internalData->clipPlaneStacks.at(index).top());
-	internalData->clipPlaneStacks.at(index).pop();
-}
-
-void RenderingContext::pushClipPlane(uint8_t index) {
-	internalData->clipPlaneStacks.at(index).emplace(getClipPlane(index));
-}
-
-void RenderingContext::pushAndSetClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters) {
-	pushClipPlane(index);
-	setClipPlane(index, planeParameters);
-}
-
-void RenderingContext::setClipPlane(uint8_t index, const ClipPlaneParameters & planeParameters) {	
-	if(index >= MAX_CLIP_PLANES) {
-		WARN("setClipPlane: invalid plane index");
-		return;
-	}
-	if(internalData->activeClipPlanes.at(index) != planeParameters) {
-		internalData->activeClipPlanes[index] = planeParameters;
-		#if defined(LIB_GL)
-			applyChanges();
-			if(planeParameters.isEnabled()) {
-				glEnable(GL_CLIP_PLANE0 + index);
-				auto plane = planeParameters.getPlane();
-				std::vector<double> planeEq = {plane.getNormal().x(), plane.getNormal().y(), plane.getNormal().z(), plane.getOffset()};
-				glClipPlane(GL_CLIP_PLANE0 + index, planeEq.data());
-			} else {
-				glDisable(GL_CLIP_PLANE0 + index);
-			}
-		#endif
-	}
+	static ClipPlaneParameters p;
+	return p;
 }
 
 // ColorBuffer ************************************************************************************
 const ColorBufferParameters & RenderingContext::getColorBufferParameters() const {
-	return internalData->actualCoreRenderingStatus.getColorBufferParameters();
+	return internalData->targetPipelineState.getColorBufferParameters();
 }
 void RenderingContext::popColorBuffer() {
 	if(internalData->colorBufferParameterStack.empty()) {
@@ -464,7 +410,7 @@ void RenderingContext::popColorBuffer() {
 }
 
 void RenderingContext::pushColorBuffer() {
-	internalData->colorBufferParameterStack.emplace(internalData->actualCoreRenderingStatus.getColorBufferParameters());
+	internalData->colorBufferParameterStack.emplace(internalData->targetPipelineState.getColorBufferParameters());
 }
 
 void RenderingContext::pushAndSetColorBuffer(const ColorBufferParameters & p) {
@@ -473,7 +419,7 @@ void RenderingContext::pushAndSetColorBuffer(const ColorBufferParameters & p) {
 }
 
 void RenderingContext::setColorBuffer(const ColorBufferParameters & p) {
-	internalData->actualCoreRenderingStatus.setColorBufferParameters(p);
+	internalData->targetPipelineState.setColorBufferParameters(p);
 	if(immediate)
 		applyChanges();
 }
@@ -485,7 +431,7 @@ void RenderingContext::clearColor(const Util::Color4f & clearValue) {
 
 // Cull Face ************************************************************************************
 const CullFaceParameters & RenderingContext::getCullFaceParameters() const {
-	return internalData->actualCoreRenderingStatus.getCullFaceParameters();
+	return internalData->targetPipelineState.getCullFaceParameters();
 }
 void RenderingContext::popCullFace() {
 	if(internalData->cullFaceParameterStack.empty()) {
@@ -497,7 +443,7 @@ void RenderingContext::popCullFace() {
 }
 
 void RenderingContext::pushCullFace() {
-	internalData->cullFaceParameterStack.emplace(internalData->actualCoreRenderingStatus.getCullFaceParameters());
+	internalData->cullFaceParameterStack.emplace(internalData->targetPipelineState.getCullFaceParameters());
 }
 
 void RenderingContext::pushAndSetCullFace(const CullFaceParameters & p) {
@@ -506,14 +452,14 @@ void RenderingContext::pushAndSetCullFace(const CullFaceParameters & p) {
 }
 
 void RenderingContext::setCullFace(const CullFaceParameters & p) {
-	internalData->actualCoreRenderingStatus.setCullFaceParameters(p);
+	internalData->targetPipelineState.setCullFaceParameters(p);
 	if(immediate)
 		applyChanges();
 }
 
 // DepthBuffer ************************************************************************************
 const DepthBufferParameters & RenderingContext::getDepthBufferParameters() const {
-	return internalData->actualCoreRenderingStatus.getDepthBufferParameters();
+	return internalData->targetPipelineState.getDepthBufferParameters();
 }
 void RenderingContext::popDepthBuffer() {
 	if(internalData->depthBufferParameterStack.empty()) {
@@ -525,7 +471,7 @@ void RenderingContext::popDepthBuffer() {
 }
 
 void RenderingContext::pushDepthBuffer() {
-	internalData->depthBufferParameterStack.emplace(internalData->actualCoreRenderingStatus.getDepthBufferParameters());
+	internalData->depthBufferParameterStack.emplace(internalData->targetPipelineState.getDepthBufferParameters());
 }
 
 void RenderingContext::pushAndSetDepthBuffer(const DepthBufferParameters & p) {
@@ -534,7 +480,7 @@ void RenderingContext::pushAndSetDepthBuffer(const DepthBufferParameters & p) {
 }
 
 void RenderingContext::setDepthBuffer(const DepthBufferParameters & p) {
-	internalData->actualCoreRenderingStatus.setDepthBufferParameters(p);
+	internalData->targetPipelineState.setDepthBufferParameters(p);
 	if(immediate)
 		applyChanges();
 }
@@ -550,30 +496,8 @@ void RenderingContext::clearDepth(float clearValue) {
 
 // AlphaTest ************************************************************************************
 const AlphaTestParameters & RenderingContext::getAlphaTestParameters() const {
-	return internalData->actualCoreRenderingStatus.getAlphaTestParameters();
-}
-void RenderingContext::popAlphaTest() {
-	if(internalData->alphaTestParameterStack.empty()) {
-		WARN("popAlphaTest: Empty AlphaTest-Stack");
-		return;
-	}
-	setAlphaTest(internalData->alphaTestParameterStack.top());
-	internalData->alphaTestParameterStack.pop();
-}
-
-void RenderingContext::pushAlphaTest() {
-	internalData->alphaTestParameterStack.emplace(internalData->actualCoreRenderingStatus.getAlphaTestParameters());
-}
-
-void RenderingContext::pushAndSetAlphaTest(const AlphaTestParameters & p) {
-	pushAlphaTest();
-	setAlphaTest(p);
-}
-
-void RenderingContext::setAlphaTest(const AlphaTestParameters & p) {
-	internalData->actualCoreRenderingStatus.setAlphaTestParameters(p);
-	if(immediate)
-		applyChanges();
+	static AlphaTestParameters p;
+	return p;
 }
 
 // ImageBinding ************************************************************************************
@@ -667,35 +591,13 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 	
 // Lighting ************************************************************************************
 const LightingParameters & RenderingContext::getLightingParameters() const {
-	return internalData->actualCoreRenderingStatus.getLightingParameters();
-}
-void RenderingContext::popLighting() {
-	if(internalData->lightingParameterStack.empty()) {
-		WARN("popLighting: Empty lighting stack");
-		return;
-	}
-	setLighting(internalData->lightingParameterStack.top());
-	internalData->lightingParameterStack.pop();
-}
-
-void RenderingContext::pushLighting() {
-	internalData->lightingParameterStack.emplace(internalData->actualCoreRenderingStatus.getLightingParameters());
-}
-
-void RenderingContext::pushAndSetLighting(const LightingParameters & p) {
-	pushLighting();
-	setLighting(p);
-}
-
-void RenderingContext::setLighting(const LightingParameters & p) {
-	internalData->actualCoreRenderingStatus.setLightingParameters(p);
-	if(immediate)
-		applyChanges();
+	static LightingParameters p;
+	return p;
 }
 
 // Line ************************************************************************************
 const LineParameters& RenderingContext::getLineParameters() const {
-	return internalData->actualCoreRenderingStatus.getLineParameters();
+	return internalData->targetPipelineState.getLineParameters();
 }
 
 void RenderingContext::popLine() {
@@ -708,7 +610,7 @@ void RenderingContext::popLine() {
 }
 
 void RenderingContext::pushLine() {
-	internalData->lineParameterStack.emplace(internalData->actualCoreRenderingStatus.getLineParameters());
+	internalData->lineParameterStack.emplace(internalData->targetPipelineState.getLineParameters());
 }
 
 void RenderingContext::pushAndSetLine(const LineParameters & p) {
@@ -717,7 +619,7 @@ void RenderingContext::pushAndSetLine(const LineParameters & p) {
 }
 
 void RenderingContext::setLine(const LineParameters & p) {
-	internalData->actualCoreRenderingStatus.setLineParameters(p);
+	internalData->targetPipelineState.setLineParameters(p);
 	if(immediate)
 		applyChanges();
 }
@@ -752,7 +654,7 @@ void RenderingContext::setPointParameters(const PointParameters & p) {
 }
 // PolygonMode ************************************************************************************
 const PolygonModeParameters & RenderingContext::getPolygonModeParameters() const {
-	return internalData->actualCoreRenderingStatus.getPolygonModeParameters();
+	return internalData->targetPipelineState.getPolygonModeParameters();
 }
 void RenderingContext::popPolygonMode() {
 	if(internalData->polygonModeParameterStack.empty()) {
@@ -764,7 +666,7 @@ void RenderingContext::popPolygonMode() {
 }
 
 void RenderingContext::pushPolygonMode() {
-	internalData->polygonModeParameterStack.emplace(internalData->actualCoreRenderingStatus.getPolygonModeParameters());
+	internalData->polygonModeParameterStack.emplace(internalData->targetPipelineState.getPolygonModeParameters());
 }
 
 void RenderingContext::pushAndSetPolygonMode(const PolygonModeParameters & p) {
@@ -773,14 +675,14 @@ void RenderingContext::pushAndSetPolygonMode(const PolygonModeParameters & p) {
 }
 
 void RenderingContext::setPolygonMode(const PolygonModeParameters & p) {
-	internalData->actualCoreRenderingStatus.setPolygonModeParameters(p);
+	internalData->targetPipelineState.setPolygonModeParameters(p);
 	if(immediate)
 		applyChanges();
 }
 
 // PolygonOffset ************************************************************************************
 const PolygonOffsetParameters & RenderingContext::getPolygonOffsetParameters() const {
-	return internalData->actualCoreRenderingStatus.getPolygonOffsetParameters();
+	return internalData->targetPipelineState.getPolygonOffsetParameters();
 }
 void RenderingContext::popPolygonOffset() {
 	if(internalData->polygonOffsetParameterStack.empty()) {
@@ -792,7 +694,7 @@ void RenderingContext::popPolygonOffset() {
 }
 
 void RenderingContext::pushPolygonOffset() {
-	internalData->polygonOffsetParameterStack.emplace(internalData->actualCoreRenderingStatus.getPolygonOffsetParameters());
+	internalData->polygonOffsetParameterStack.emplace(internalData->targetPipelineState.getPolygonOffsetParameters());
 }
 
 void RenderingContext::pushAndSetPolygonOffset(const PolygonOffsetParameters & p) {
@@ -801,7 +703,7 @@ void RenderingContext::pushAndSetPolygonOffset(const PolygonOffsetParameters & p
 }
 
 void RenderingContext::setPolygonOffset(const PolygonOffsetParameters & p) {
-	internalData->actualCoreRenderingStatus.setPolygonOffsetParameters(p);
+	internalData->targetPipelineState.setPolygonOffsetParameters(p);
 	if(immediate)
 		applyChanges();
 }
@@ -809,7 +711,7 @@ void RenderingContext::setPolygonOffset(const PolygonOffsetParameters & p) {
 // Scissor ************************************************************************************
 
 const ScissorParameters & RenderingContext::getScissor() const {
-	return internalData->currentScissorParameters;
+	return internalData->targetPipelineState.getScissorParameters();
 }
 void RenderingContext::popScissor() {
 	if(internalData->scissorParametersStack.empty()) {
@@ -829,33 +731,16 @@ void RenderingContext::pushAndSetScissor(const ScissorParameters & scissorParame
 	setScissor(scissorParameters);
 }
 
-static const Uniform::UniformName UNIFORM_SG_SCISSOR_RECT("sg_scissorRect");
-static const Uniform::UniformName UNIFORM_SG_SCISSOR_ENABLED("sg_scissorEnabled");
-
 void RenderingContext::setScissor(const ScissorParameters & scissorParameters) {
-	internalData->currentScissorParameters = scissorParameters;
-
-	if(internalData->currentScissorParameters.isEnabled()) {
-		const Geometry::Rect_i & scissorRect = internalData->currentScissorParameters.getRect();
-		glScissor(scissorRect.getX(), scissorRect.getY(), scissorRect.getWidth(), scissorRect.getHeight());
-		glEnable(GL_SCISSOR_TEST);
-		std::vector<int> sr;
-		sr.push_back(scissorRect.getX());
-		sr.push_back(scissorRect.getY());
-		sr.push_back(scissorRect.getWidth());
-		sr.push_back(scissorRect.getHeight());
-		setGlobalUniform(Uniform(UNIFORM_SG_SCISSOR_RECT, sr));
-		setGlobalUniform(Uniform(UNIFORM_SG_SCISSOR_ENABLED, true));
-	} else {
-		glDisable(GL_SCISSOR_TEST);
-		setGlobalUniform(Uniform(UNIFORM_SG_SCISSOR_ENABLED, false));
-	}
+	internalData->targetPipelineState.setScissorParameters(scissorParameters);
+	if(immediate)
+		applyChanges();
 }
 
 
 // Stencil ************************************************************************************
 const StencilParameters & RenderingContext::getStencilParamters() const {
-	return internalData->actualCoreRenderingStatus.getStencilParameters();
+	return internalData->targetPipelineState.getStencilParameters();
 }
 
 void RenderingContext::pushAndSetStencil(const StencilParameters & stencilParameter) {
@@ -873,11 +758,11 @@ void RenderingContext::popStencil() {
 }
 
 void RenderingContext::pushStencil() {
-	internalData->stencilParameterStack.emplace(internalData->actualCoreRenderingStatus.getStencilParameters());
+	internalData->stencilParameterStack.emplace(internalData->targetPipelineState.getStencilParameters());
 }
 
 void RenderingContext::setStencil(const StencilParameters & stencilParameter) {
-	internalData->actualCoreRenderingStatus.setStencilParameters(stencilParameter);
+	internalData->targetPipelineState.setStencilParameters(stencilParameter);
 	if(immediate)
 		applyChanges();
 }
@@ -890,7 +775,7 @@ void RenderingContext::clearStencil(int32_t clearValue) {
 // FBO ************************************************************************************
 
 FBO * RenderingContext::getActiveFBO() const {
-	return internalData->activeFBO.get();
+	return internalData->targetPipelineState.getFBO().get();
 }
 
 void RenderingContext::popFBO() {
@@ -912,15 +797,7 @@ void RenderingContext::pushAndSetFBO(FBO * fbo) {
 }
 
 void RenderingContext::setFBO(FBO * fbo) {
-	FBO * lastActiveFBO = getActiveFBO();
-	if(fbo == lastActiveFBO)
-		return;
-	if(fbo == nullptr) {
-		FBO::_disable();
-	} else {
-		fbo->_enable();
-	}
-	internalData->activeFBO = fbo;
+	internalData->targetPipelineState.setFBO(fbo);
 }
 
 // GLOBAL UNIFORMS ***************************************************************************
@@ -935,31 +812,13 @@ const Uniform & RenderingContext::getGlobalUniform(const Util::StringIdentifier 
 
 // SHADER ************************************************************************************
 void RenderingContext::setShader(Shader * shader) {
-	if(shader) {
-		if(shader->_enable()) {
-			internalData->setActiveRenderingStatus(shader->getRenderingStatus());
-			if (!internalData->getActiveRenderingStatus()->isInitialized()) { // this shader has not yet been initialized.
-				applyChanges(true); // make sure that all uniforms are initially set (e.g. even for disabled lights)
-				internalData->getActiveRenderingStatus()->markInitialized();
-			}
-		} else {
-			WARN("RenderingContext::pushShader: can't enable shader.");
-			if(!internalData->renderingDataStack.empty() && internalData->renderingDataStack.top()->getShader() != shader) {
-				// try to activate last shader
-				setShader(internalData->renderingDataStack.top()->getShader());
-			} else {
-				glUseProgram(0);
-			}
-		}
-	} else {
-		glUseProgram(0);
-	}
+	internalData->targetPipelineState.setShader(shader);
 	if(immediate)
 		applyChanges();
 }
 
 void RenderingContext::pushShader() {
-	internalData->renderingDataStack.emplace(internalData->getActiveRenderingStatus());
+	internalData->shaderStack.emplace(getActiveShader());
 }
 
 void RenderingContext::pushAndSetShader(Shader * shader) {
@@ -968,28 +827,23 @@ void RenderingContext::pushAndSetShader(Shader * shader) {
 }
 
 void RenderingContext::popShader() {
-	if(internalData->renderingDataStack.empty()) {
+	if(internalData->shaderStack.empty()) {
 		WARN("popShader: Empty Shader-Stack");
 		return;
 	}
-	setShader(internalData->renderingDataStack.top()->getShader());
-	internalData->setActiveRenderingStatus(internalData->renderingDataStack.top());
-	internalData->renderingDataStack.pop();
-
-	if(immediate)
-		applyChanges();
+	setShader(internalData->shaderStack.top().get());
 }
 
 bool RenderingContext::isShaderEnabled(Shader * shader) {
-	return shader == internalData->getActiveRenderingStatus()->getShader();
+	return shader == getActiveShader();
 }
 
 Shader * RenderingContext::getActiveShader() {
-	return internalData->getActiveRenderingStatus()->getShader();
+	return internalData->targetPipelineState.getShader().get();
 }
 
 const Shader * RenderingContext::getActiveShader() const {
-	return internalData->getActiveRenderingStatus()->getShader();
+	return internalData->targetPipelineState.getShader().get();
 }
 
 void RenderingContext::dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) {	
@@ -1055,7 +909,7 @@ void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & unif
 // TEXTURES **********************************************************************************
 
 Texture * RenderingContext::getTexture(uint8_t unit)const {
-	return unit < MAX_TEXTURES ? internalData->actualCoreRenderingStatus.getTexture(unit).get() : nullptr;
+	return unit < MAX_TEXTURES ? internalData->targetPipelineState.getTexture(unit).get() : nullptr;
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit)const{
@@ -1094,7 +948,7 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageP
 	if(texture != oldTexture) {
 		if(texture) 
 			texture->_prepareForBinding(*this);
-		internalData->actualCoreRenderingStatus.setTexture(unit, texture);
+		internalData->targetPipelineState.setTexture(unit, texture);
 	}
 	const auto oldUsage = internalData->targetRenderingStatus.getTextureUnitParams(unit).first;
 	if(!texture){
@@ -1335,16 +1189,15 @@ void RenderingContext::setMaterial(const MaterialParameters & material) {
 		applyChanges();
 }
 
-// VIEWPORT **********************************************************************************
+//  **********************************************************************************
 
-static const Uniform::UniformName UNIFORM_SG_VIEWPORT("sg_viewport");
 
 const Geometry::Rect_i & RenderingContext::getWindowClientArea() const {
 	return internalData->windowClientArea;
 }
 
 const Geometry::Rect_i & RenderingContext::getViewport() const {
-	return internalData->currentViewport;
+	return internalData->targetPipelineState.getViewport();
 }
 void RenderingContext::popViewport() {
 	if(internalData->viewportStack.empty()) {
@@ -1355,18 +1208,12 @@ void RenderingContext::popViewport() {
 	internalData->viewportStack.pop();
 }
 void RenderingContext::pushViewport() {
-	internalData->viewportStack.emplace(internalData->currentViewport);
+	internalData->viewportStack.emplace(getViewport());
 }
 void RenderingContext::setViewport(const Geometry::Rect_i & viewport) {
-	internalData->currentViewport = viewport;
-	glViewport(internalData->currentViewport.getX(), internalData->currentViewport.getY(), internalData->currentViewport.getWidth(), internalData->currentViewport.getHeight());
-
-	std::vector<int> vp;
-	vp.push_back(internalData->currentViewport.getX());
-	vp.push_back(internalData->currentViewport.getY());
-	vp.push_back(internalData->currentViewport.getWidth());
-	vp.push_back(internalData->currentViewport.getHeight());
-	setGlobalUniform(Uniform(UNIFORM_SG_VIEWPORT, vp));
+	internalData->targetPipelineState.setViewport(viewport);
+	if(immediate)
+		applyChanges();
 }
 
 void RenderingContext::pushAndSetViewport(const Geometry::Rect_i & viewport) {
@@ -1378,62 +1225,35 @@ void RenderingContext::setWindowClientArea(const Geometry::Rect_i & clientArea) 
 	internalData->windowClientArea = clientArea;
 }
 
-// VBO Client States **********************************************************************************
+// Vertex Format **********************************************************************************
 
-void RenderingContext::enableClientState(uint32_t clientState) {
-	internalData->activeClientStates.emplace(clientState);
-#ifdef LIB_GL
-	glEnableClientState(clientState);
-#endif /* LIB_GL */
-}
-
-void RenderingContext::disableAllClientStates() {
-	while(!internalData->activeClientStates.empty()) {
-#ifdef LIB_GL
-		glDisableClientState(internalData->activeClientStates.top());
-#endif /* LIB_GL */
-		internalData->activeClientStates.pop();
-	}
-}
-
-void RenderingContext::enableTextureClientState(uint32_t textureUnit) {
-	internalData->activeTextureClientStates.emplace(textureUnit);
-#ifdef LIB_GL
-	glClientActiveTexture(textureUnit);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-#endif /* LIB_GL */
-}
-
-void RenderingContext::disableAllTextureClientStates() {
-	while(!internalData->activeTextureClientStates.empty()) {
-#ifdef LIB_GL
-		glClientActiveTexture(internalData->activeTextureClientStates.top());
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-#endif /* LIB_GL */
-		internalData->activeTextureClientStates.pop();
-	}
-}
-
-void RenderingContext::enableVertexAttribArray(const VertexAttribute & attr, const uint8_t * data, int32_t stride) {
-	Shader * shader = getActiveShader();
-	GLint location = shader->getVertexAttributeLocation(attr.getNameId());
-	if(location != -1) {
-		GLuint attribLocation = static_cast<GLuint> (location);
-		internalData->activeVertexAttributeBindings.emplace(attribLocation);
-		if( attr.getConvertToFloat() ){
-			glVertexAttribPointer(attribLocation, attr.getNumValues(), attr.getDataType(), attr.getNormalize() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
-		} else {
-			glVertexAttribIPointer(attribLocation, attr.getNumValues(), attr.getDataType(), stride, data + attr.getOffset());
+void RenderingContext::setVertexFormat(uint32_t binding, const VertexDescription& vd) {
+	const auto& shader = getActiveShader();
+	internalData->targetPipelineState.resetVertexFormats(binding);
+	if(shader) {
+		for(const auto& attr : vd.getAttributes()) {
+			int32_t location = shader->getVertexAttributeLocation(attr.getNameId());
+			if(location >= 0 && location < PipelineState::MAX_VERTEXATTRIBS)
+				internalData->targetPipelineState.setVertexFormat(location, attr, binding);
 		}
-		glEnableVertexAttribArray(attribLocation);
+	} else {
+		uint32_t location = 0;
+		for(const auto& attr : vd.getAttributes())
+			internalData->targetPipelineState.setVertexFormat(location++, attr, binding);
 	}
+	if(immediate)
+		applyChanges();
 }
 
-void RenderingContext::disableAllVertexAttribArrays() {
-	while(!internalData->activeVertexAttributeBindings.empty()) {
-		glDisableVertexAttribArray(internalData->activeVertexAttributeBindings.top());
-		internalData->activeVertexAttributeBindings.pop();
-	}
+void RenderingContext::bindVertexBuffer(uint32_t binding, uint32_t bufferId, uint32_t offset, uint32_t stride, uint32_t divisor) {
+	internalData->targetPipelineState.setVertexBinding(binding, bufferId, offset, stride, divisor);
+	if(immediate)
+		applyChanges();
+}
+
+void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
+	applyChanges();
+	internalData->defaultVAO->bindElementBuffer(bufferId);
 }
 
 }

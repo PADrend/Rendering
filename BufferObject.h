@@ -26,7 +26,7 @@ namespace Rendering {
  * @date 2012-04-19
  */
 class BufferObject {
-	public:		
+	public:
 		static const uint32_t TARGET_ARRAY_BUFFER;
 		static const uint32_t TARGET_ATOMIC_COUNTER_BUFFER;
 		static const uint32_t TARGET_COPY_READ_BUFFER;

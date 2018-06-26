@@ -26,45 +26,13 @@ class Shader;
 
 //! (internal) Used by shaders and the renderingContext to track the state of shader (and openGL) dependent properties.
 class RenderingStatus {
-
-	//!	@name General
-	//	@{
-	private:
-		Util::Reference<Shader> shader;
-		bool initialized;
-
-	public:
-		explicit RenderingStatus(Shader * _shader = nullptr) : 
-			shader(_shader), 
-			initialized(false),
-			checkNumber_matrixCameraWorld(0),
-			matrix_worldToCamera(),
-			matrix_cameraToWorld(),
-			lightsCheckNumber(0),
-			lights(),
-			lightsEnabled(0),
-			materialCheckNumber(0),
-			materialEnabled(false),
-			material(),
-			matrix_modelToCameraCheckNumber(0),
-			matrix_modelToCamera(),
-			pointParameters(),
-			matrix_cameraToClippingCheckNumber(0),
-			matrix_cameraToClipping(),
-			textureUnitUsagesCheckNumber(0),
-			textureUnitParams(MAX_TEXTURES, std::make_pair(TexUnitUsageParameter::DISABLED,TextureType::TEXTURE_2D)) {
-		}
-		Shader * getShader() 						{	return shader.get();	}
-		bool isInitialized()const					{	return initialized;	}
-		void markInitialized()						{	initialized=true;	}
-	//	@}
-
+	
 	// -------------------------------
 
 	//!	@name Camera Matrix
 	//	@{
 	private:
-		uint32_t checkNumber_matrixCameraWorld;
+		uint32_t checkNumber_matrixCameraWorld = false;
 		Geometry::Matrix4x4f matrix_worldToCamera;
 		Geometry::Matrix4x4f matrix_cameraToWorld;
 	public:
@@ -91,9 +59,9 @@ class RenderingStatus {
 	//!	@name Lights
 	//	@{
 	public:
-		static const uint8_t MAX_LIGHTS = 8;
+		static const uint8_t MAX_LIGHTS = 16;
 	private:
-		uint32_t lightsCheckNumber;
+		uint32_t lightsCheckNumber = 0;
 		//! Storage of light parameters.
 		LightParameters lights[MAX_LIGHTS];
 
@@ -171,12 +139,12 @@ class RenderingStatus {
 	//!	@name Materials
 	//	@{
 	private:
-		uint32_t materialCheckNumber;
-		bool materialEnabled;
+		uint32_t materialCheckNumber = 0;
+		bool materialEnabled = false;
 		MaterialParameters material;
 
 	public:
-		bool isMaterialEnabled()const								{	return materialEnabled;	}
+		bool isMaterialEnabled() const {return materialEnabled;	}
 		const MaterialParameters & getMaterialParameters()const	{	return material;	}
 		bool materialChanged(const RenderingStatus & actual) const {
 			return (materialCheckNumber == actual.materialCheckNumber) ? false :
@@ -203,7 +171,7 @@ class RenderingStatus {
 	//!	@name Modelview Matrix
 	//	@{
 	private:
-		uint32_t matrix_modelToCameraCheckNumber;
+		uint32_t matrix_modelToCameraCheckNumber = 0;
 		Geometry::Matrix4x4f matrix_modelToCamera;
 
 	public:
@@ -249,7 +217,7 @@ class RenderingStatus {
 	//!	@name Projection Matrix
 	//	@{
 	private:
-		uint32_t matrix_cameraToClippingCheckNumber;
+		uint32_t matrix_cameraToClippingCheckNumber = 0;
 		Geometry::Matrix4x4f matrix_cameraToClipping;
 
 	public:
@@ -273,8 +241,9 @@ class RenderingStatus {
 	//!	@name Texture Units
 	//	@{
 	private:
-		uint32_t textureUnitUsagesCheckNumber;
-		std::vector<std::pair<TexUnitUsageParameter,TextureType>> textureUnitParams;
+		uint32_t textureUnitUsagesCheckNumber = 0;
+		typedef std::vector<std::pair<TexUnitUsageParameter,TextureType>> TexUnitTypeVec_t;
+		TexUnitTypeVec_t textureUnitParams = TexUnitTypeVec_t(MAX_TEXTURES,{TexUnitUsageParameter::DISABLED,TextureType::TEXTURE_2D});
 
 	public:
 		void setTextureUnitParams(uint8_t unit, TexUnitUsageParameter use, TextureType t ) {

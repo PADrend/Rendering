@@ -100,7 +100,7 @@ class AlphaTestParameters {
 		void setMode(Comparison::function_t _mode) {
 			mode = _mode;
 		}
-};
+} __attribute__((deprecated));
 
 // -------------------------------------------
 
@@ -299,7 +299,7 @@ class ClipPlaneParameters {
 		void disable() {
 			enabled = false;
 		}
-};
+} __attribute__((deprecated));
 static const uint8_t MAX_CLIP_PLANES = 6;
 
 // -------------------------------------------
@@ -558,7 +558,7 @@ class LightingParameters {
 		void disable() {
 			enabled = false;
 		}
-};
+} __attribute__((deprecated));
 
 // -------------------------------------------
 
@@ -716,24 +716,21 @@ class PointParameters {
 	private:
 		//! Point width in pixels
 		float size;
-		bool smooth;
 	public:
-		PointParameters() : size(1.0f), smooth(false) {}
-		PointParameters(float _size,bool _smooth=false) : size(_size),smooth(_smooth){}
+		PointParameters() : size(1.0f) {}
+		PointParameters(float _size,bool _smooth=false) : size(_size) {}
 		bool operator!=(const PointParameters & other) const {
-			return size != other.size || smooth!=other.smooth;
+			return size != other.size;
 		}
 		bool operator==(const PointParameters & other) const {
-			return size == other.size && smooth == other.smooth;
+			return size == other.size;
 		}
-		void enablePointSmoothing(){
-			smooth = true;
+		void enablePointSmoothing() __attribute__((deprecated)) {
 		}
-		void disablePointSmoothing(){
-			smooth = false;
+		void disablePointSmoothing() __attribute__((deprecated)) {
 		}
-		bool isPointSmoothingEnabled() const {
-			return smooth;
+		bool isPointSmoothingEnabled() const __attribute__((deprecated)) {
+			return false;
 		}
 		float getSize() const {
 			return size;
@@ -1039,7 +1036,7 @@ enum class TexUnitUsageParameter : uint8_t {
 	DISABLED
 };
 
-static const uint8_t MAX_TEXTURES = 8;
+static const uint8_t MAX_TEXTURES = 16;
 
 }
 

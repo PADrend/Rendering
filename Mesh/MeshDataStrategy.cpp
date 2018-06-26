@@ -43,7 +43,7 @@ void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m,uint32
 		MeshIndexData & id=m->_getIndexData();
 
 		vd.bind(context);
-		id.drawElements(m->getGLDrawMode(),startIndex,indexCount );
+		id.drawElements(context,m->getGLDrawMode(),startIndex,indexCount );
 		vd.unbind(context);
 	}else{
 		MeshVertexData & vd=m->_getVertexData();

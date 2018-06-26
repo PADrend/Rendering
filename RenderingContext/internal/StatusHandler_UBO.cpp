@@ -8,13 +8,13 @@
 	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#include "StatusHandler_sgUniforms.h"
+#include "StatusHandler_UBO.h"
 #include "RenderingStatus.h"
 #include "../../Shader/Shader.h"
 #include "../../Shader/UniformRegistry.h"
 
 namespace Rendering {
-namespace StatusHandler_sgUniforms{
+namespace StatusHandler_UBO{
 
 typedef std::vector<Uniform::UniformName> UniformNameArray_t;
 //! (internal)
@@ -63,9 +63,7 @@ static const Uniform::UniformName UNIFORM_SG_MATERIAL_SPECULAR("sg_Material.spec
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_EMISSION("sg_Material.emission");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_SHININESS("sg_Material.shininess");
 
-void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced){
-
-	Shader * shader = target.getShader();
+void apply(Shader* shader, RenderingStatus & target, const RenderingStatus & actual, bool forced){
 	std::deque<Uniform> uniforms;
 
 	// camera  & inverse
