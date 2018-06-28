@@ -83,14 +83,17 @@ bool MeshIndexData::upload() {
 
 //!	(internal)
 bool MeshIndexData::upload(uint32_t usageHint){
-	if( isUploaded() )
-		removeGlBuffer();
-
 	if(indexCount == 0 || indexArray.empty() )
 		return false;
 
 	try {
-		bufferObject.uploadData(GL_ELEMENT_ARRAY_BUFFER, indexArray, usageHint);
+	
+		if(!isUploaded() || bufferObject.getSize() < dataSize()) {
+			removeGlBuffer();
+			bufferObject.uploadData(GL_ELEMENT_ARRAY_BUFFER, indexArray, usageHint);
+		} else {
+			bufferObject.uploadSubData(GL_ELEMENT_ARRAY_BUFFER, indexArray);
+		}
 		GET_GL_ERROR()
 	}
 	catch (...) {
@@ -128,17 +131,10 @@ void MeshIndexData::removeGlBuffer(){
 }
 
 /*! (internal) */
-void MeshIndexData::drawElements(RenderingContext & context,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices){
-	if(startIndex+numberOfIndices>getIndexCount())
-		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
+void MeshIndexData::bind(RenderingContext & context) {
 	if(!isUploaded())
 		upload();
-	
-#ifdef LIB_GL
 	context.bindIndexBuffer(bufferObject.getGLId());
-	glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*startIndex));
-#endif
-	GET_GL_ERROR();
 }
 
 }

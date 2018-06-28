@@ -70,10 +70,9 @@ class MeshIndexData {
 		void downloadTo(std::vector<uint32_t> & destination) const;
 		/*! (internal) */
 		void removeGlBuffer();
-		/*! (internal) Draw the vertices referenced by the indices using the VBO or a VertexArray.
-			Used by MeshDataStrategy::doDisplay(..) */
-		void drawElements(RenderingContext & context,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices);
-
+		
+		void bind(RenderingContext & context);
+		
 		/*! Swap the internal BufferObject.
 			\note The local data is not changed!
 			\note the size of the new buffer must be equal to that of the old one.

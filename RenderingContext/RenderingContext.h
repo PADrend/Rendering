@@ -58,6 +58,23 @@ enum class TexUnitUsageParameter : uint8_t;
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
 
+struct DrawArraysCommand {
+	DrawArraysCommand(uint32_t first, uint32_t count) : count(count), first(first) {}
+	uint32_t count;
+	uint32_t primCount=1;
+	uint32_t first=0;
+	uint32_t baseInstance=0;
+};
+
+struct DrawElementsCommand {
+	DrawElementsCommand(uint32_t first, uint32_t count) : count(count), first(first) {}
+	uint32_t count;
+	uint32_t primCount=1;
+	uint32_t first=0;
+	uint32_t baseVertex=0;
+	uint32_t baseInstance=0;
+};
+
 class RenderingContext {
 
 	//! @name General
@@ -68,6 +85,7 @@ private:
 	std::unique_ptr<InternalData> internalData;
 
 	bool immediate;
+	bool debugMode = false;
 
 public:
 
@@ -89,6 +107,7 @@ public:
 	bool getImmediateMode() const {
 		return immediate;
 	}
+	void setDebugMode(bool enabled) { debugMode = enabled; }
 
 	void applyChanges(bool forced = false);
 	//	@}
@@ -488,6 +507,13 @@ public:
  	void bindVertexBuffer(uint32_t binding, uint32_t bufferId, uint32_t offset, uint32_t stride, uint32_t divisor=0);
 	void bindIndexBuffer(uint32_t bufferId);
 	
+	// ------
+
+	//! @name Draw commands
+	// @{
+	
+	void submitDraw(uint32_t mode, const DrawArraysCommand& cmd);
+	void submitDraw(uint32_t mode, uint32_t type, const DrawElementsCommand& cmd);
 	// ------
 
 	//! @name Viewport and window's size

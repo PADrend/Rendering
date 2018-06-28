@@ -95,7 +95,7 @@ Shader * Shader::createShader(const std::string & vsa, const std::string & gsa, 
 
 /*!	[ctor]	*/
 Shader::Shader(flag_t _usage) :
-		usageFlags(_usage), renderingData(), prog(0), status(UNKNOWN), uniforms(new UniformRegistry),glFeedbackVaryingType(0){
+	renderingData(), prog(0), status(UNKNOWN), uniforms(new UniformRegistry),glFeedbackVaryingType(0){
 }
 
 /*!	[dtor]	*/

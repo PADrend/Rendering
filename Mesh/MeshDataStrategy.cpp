@@ -13,6 +13,7 @@
 #include "MeshIndexData.h"
 #include "MeshVertexData.h"
 #include "../GLHeader.h"
+#include "../RenderingContext/RenderingContext.h"
 #include <Util/Macros.h>
 #include <iostream>
 
@@ -38,17 +39,16 @@ void MeshDataStrategy::setDefaultStrategy(MeshDataStrategy * newDefault){
 
 //! (static,internal)
 void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m,uint32_t startIndex,uint32_t indexCount){
-	if(m->isUsingIndexData()){
-		MeshVertexData & vd=m->_getVertexData();
+	MeshVertexData & vd=m->_getVertexData();
+	vd.bind(context);
+	if(m->isUsingIndexData()) {
 		MeshIndexData & id=m->_getIndexData();
-
-		vd.bind(context);
-		id.drawElements(context,m->getGLDrawMode(),startIndex,indexCount );
-		vd.unbind(context);
-	}else{
-		MeshVertexData & vd=m->_getVertexData();
-		vd.drawArray(context,m->getGLDrawMode(),startIndex,indexCount);
+		id.bind(context);
+		context.submitDraw(m->getGLDrawMode(), GL_UNSIGNED_INT, DrawElementsCommand(startIndex, indexCount));
+	} else {
+		context.submitDraw(m->getGLDrawMode(), DrawArraysCommand(startIndex, indexCount));
 	}
+	vd.unbind(context);
 }
 
 // ------------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ SimpleMeshDataStrategy * SimpleMeshDataStrategy::getDynamicVertexStrategy(){
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getPureLocalStrategy(){
-	static SimpleMeshDataStrategy strategy( 0 );
+	static SimpleMeshDataStrategy strategy( USE_VBOS );
 	return &strategy;
 }
 

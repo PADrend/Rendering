@@ -3,13 +3,12 @@
 	Copyright (C) 2007-2013 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2013 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2013 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#include "StatusHandler_glCore.h"
-#include "StatusHandler_UBO.h"
 #include "PipelineState.h"
 #include "RenderingStatus.h"
 #include "../../BufferObject.h"
@@ -21,7 +20,6 @@
 #endif
 
 namespace Rendering {
-namespace StatusHandler_glCore{
 
 static GLenum convertStencilAction(StencilParameters::action_t action) {
 	switch(action) {
@@ -46,31 +44,24 @@ static GLenum convertStencilAction(StencilParameters::action_t action) {
 	}
 	throw std::invalid_argument("Invalid StencilParameters::action_t enumerator");
 }
-
-void apply(PipelineState & target, const PipelineState & actual, bool forced) {
+  
+void PipelineState::apply(const PipelineState& target) {
 	GET_GL_ERROR();
-			
+	bool forced = !isValid();
+	valid = true;
+	
 	// Shader
-	bool shaderChanged = false;
-	if(forced || target.shaderChanged(actual)) {
-		const auto& shader = actual.getShader();
-		if(shader.isNull()) {
-			glUseProgram(0);
-		} else if(shader->_enable()) {
-			shader->applyUniforms(forced);
-			shaderChanged = true;
-		} else {
-			WARN("Can't enable shader.");
-			glUseProgram(0);
-		}
-		target.setShader(shader);
+	if(forced || shaderChanged(target)) {
+		if(debug) std::cout << "update shader " << target.program << std::endl;
+		glUseProgram(target.program);
+		updateShader(target.shader, target.program);
 	}
 	GET_GL_ERROR();
 	
 	// Blending
-	if(forced || target.blendingParametersChanged(actual)) {
-		const BlendingParameters & targetParams = target.getBlendingParameters();
-		const BlendingParameters & actualParams = actual.getBlendingParameters();
+	if(forced || blendingParametersChanged(target)) {
+		const BlendingParameters & targetParams = getBlendingParameters();
+		const BlendingParameters & actualParams = target.getBlendingParameters();
 		if(forced || targetParams.isEnabled() != actualParams.isEnabled()) {
 			if(actualParams.isEnabled()) {
 				glEnable(GL_BLEND);
@@ -100,31 +91,32 @@ void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 			glBlendEquationSeparate(BlendingParameters::equationToGL(actualParams.getBlendEquationRGB()),
 									BlendingParameters::equationToGL(actualParams.getBlendEquationAlpha()));
 		}
-		target.updateBlendingParameters(actual);
+		updateBlendingParameters(target);
 	}
 	GET_GL_ERROR();
 
 	// ColorBuffer
-	if(forced || target.colorBufferParametersChanged(actual)) {
+	if(forced || colorBufferParametersChanged(target)) {
+		if(debug) std::cout << "update colorbuffer" << std::endl;
 		glColorMask(
-			actual.getColorBufferParameters().isRedWritingEnabled() ? GL_TRUE : GL_FALSE,
-			actual.getColorBufferParameters().isGreenWritingEnabled() ? GL_TRUE : GL_FALSE,
-			actual.getColorBufferParameters().isBlueWritingEnabled() ? GL_TRUE : GL_FALSE,
-			actual.getColorBufferParameters().isAlphaWritingEnabled() ? GL_TRUE : GL_FALSE
+			target.getColorBufferParameters().isRedWritingEnabled() ? GL_TRUE : GL_FALSE,
+			target.getColorBufferParameters().isGreenWritingEnabled() ? GL_TRUE : GL_FALSE,
+			target.getColorBufferParameters().isBlueWritingEnabled() ? GL_TRUE : GL_FALSE,
+			target.getColorBufferParameters().isAlphaWritingEnabled() ? GL_TRUE : GL_FALSE
 		);
-		target.setColorBufferParameters(actual.getColorBufferParameters());
+		setColorBufferParameters(target.getColorBufferParameters());
 	}
 	GET_GL_ERROR();
 
 	// CullFace
-	if(forced || target.cullFaceParametersChanged(actual)) {
-		if(actual.getCullFaceParameters().isEnabled()) {
+	if(forced || cullFaceParametersChanged(target)) {
+		if(target.getCullFaceParameters().isEnabled()) {
 			glEnable(GL_CULL_FACE);
 
 		} else {
 			glDisable(GL_CULL_FACE);
 		}
-		switch(actual.getCullFaceParameters().getMode()) {
+		switch(target.getCullFaceParameters().getMode()) {
 			case CullFaceParameters::CULL_BACK:
 				glCullFace(GL_BACK);
 				break;
@@ -137,38 +129,39 @@ void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 			default:
 				throw std::invalid_argument("Invalid CullFaceParameters::cullFaceMode_t enumerator");
 		}
-		target.setCullFaceParameters(actual.getCullFaceParameters());
+		setCullFaceParameters(target.getCullFaceParameters());
 	}
 	GET_GL_ERROR();
 
 	// DepthBuffer
-	if(forced || target.depthBufferParametersChanged(actual)) {
-		if(actual.getDepthBufferParameters().isTestEnabled()) {
+	if(forced || depthBufferParametersChanged(target)) {
+		if(debug) std::cout << "update depth" << std::endl;
+		if(target.getDepthBufferParameters().isTestEnabled()) {
 			glEnable(GL_DEPTH_TEST);
 		} else {
 			glDisable(GL_DEPTH_TEST);
 		}
-		if(actual.getDepthBufferParameters().isWritingEnabled()) {
+		if(target.getDepthBufferParameters().isWritingEnabled()) {
 			glDepthMask(GL_TRUE);
 		} else {
 			glDepthMask(GL_FALSE);
 		}
-		glDepthFunc(Comparison::functionToGL(actual.getDepthBufferParameters().getFunction()));
-		target.setDepthBufferParameters(actual.getDepthBufferParameters());
+		glDepthFunc(Comparison::functionToGL(target.getDepthBufferParameters().getFunction()));
+		setDepthBufferParameters(target.getDepthBufferParameters());
 	}
 	GET_GL_ERROR();
 
 	// Line
-	if(forced || target.lineParametersChanged(actual)) {
-		glLineWidth(std::min(actual.getLineParameters().getWidth(), 1.0f)); // deprecated for line width > 1
-		target.setLineParameters(actual.getLineParameters());
+	if(forced || lineParametersChanged(target)) {
+		glLineWidth(std::min(target.getLineParameters().getWidth(), 1.0f)); // deprecated for line width > 1
+		setLineParameters(target.getLineParameters());
 	}
 	GET_GL_ERROR();
 
 	// stencil
-	if (forced || target.stencilParametersChanged(actual)) {
-		const StencilParameters & targetParams = target.getStencilParameters();
-		const StencilParameters & actualParams = actual.getStencilParameters();
+	if (forced || stencilParametersChanged(target)) {
+		const StencilParameters & targetParams = getStencilParameters();
+		const StencilParameters & actualParams = target.getStencilParameters();
 		if(forced || targetParams.isEnabled() != actualParams.isEnabled()) {
 			if(actualParams.isEnabled()) {
 				glEnable(GL_STENCIL_TEST);
@@ -184,28 +177,28 @@ void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 						convertStencilAction(actualParams.getDepthTestFailAction()),
 						convertStencilAction(actualParams.getDepthTestPassAction()));
 		}
-		target.updateStencilParameters(actual);
+		updateStencilParameters(target);
 	}
 	GET_GL_ERROR();
 
 #ifdef LIB_GL
 	// polygonMode
-	if(forced || target.polygonModeParametersChanged(actual) ) {
-		glPolygonMode(GL_FRONT_AND_BACK, PolygonModeParameters::modeToGL(actual.getPolygonModeParameters().getMode()));
-		target.setPolygonModeParameters(actual.getPolygonModeParameters());
+	if(forced || polygonModeParametersChanged(target) ) {
+		glPolygonMode(GL_FRONT_AND_BACK, PolygonModeParameters::modeToGL(target.getPolygonModeParameters().getMode()));
+		setPolygonModeParameters(target.getPolygonModeParameters());
 	}
 	GET_GL_ERROR();
 #endif /* LIB_GL */
 
 	// PolygonOffset
-	if(forced || target.polygonOffsetParametersChanged(actual)) {
-		if(actual.getPolygonOffsetParameters().isEnabled()) {
+	if(forced || polygonOffsetParametersChanged(target)) {
+		if(target.getPolygonOffsetParameters().isEnabled()) {
 			glEnable(GL_POLYGON_OFFSET_FILL);
 #ifdef LIB_GL
 			glEnable(GL_POLYGON_OFFSET_LINE);
 			glEnable(GL_POLYGON_OFFSET_POINT);
 #endif /* LIB_GL */
-			glPolygonOffset(actual.getPolygonOffsetParameters().getFactor(), actual.getPolygonOffsetParameters().getUnits());
+			glPolygonOffset(target.getPolygonOffsetParameters().getFactor(), target.getPolygonOffsetParameters().getUnits());
 		} else {
 			glDisable(GL_POLYGON_OFFSET_FILL);
 #ifdef LIB_GL
@@ -213,15 +206,16 @@ void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 			glDisable(GL_POLYGON_OFFSET_POINT);
 #endif /* LIB_GL */
 		}
-		target.setPolygonOffsetParameters(actual.getPolygonOffsetParameters());
+		setPolygonOffsetParameters(target.getPolygonOffsetParameters());
 	}
 	GET_GL_ERROR();
 
 	// Textures
-	if(forced || target.texturesChanged(actual)) {
+	if(forced || texturesChanged(target)) {
+		if(debug) std::cout << "update textures" << std::endl;
 		for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {
-			const auto & texture = actual.getTexture(unit);
-			const auto & oldTexture = target.getTexture(unit);
+			const auto & texture = target.getTexture(unit);
+			const auto & oldTexture = getTexture(unit);
 			if(forced || texture != oldTexture) {
 				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
 				if( texture ) {
@@ -238,20 +232,22 @@ void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 				}
 			}
 		}
-		target.updateTextures(actual);
+		updateTextures(target);
 	}
 	GET_GL_ERROR();
 	
 	// Viewport
-	if(forced || target.viewportChanged(actual)) {
-		glViewport(actual.getViewport().getX(), actual.getViewport().getY(), actual.getViewport().getWidth(), actual.getViewport().getHeight());
-		target.setViewport(actual.getViewport());
+	if(forced || viewportChanged(target)) {
+		if(debug) std::cout << "update viewport" << std::endl;
+		glViewport(target.getViewport().getX(), target.getViewport().getY(), target.getViewport().getWidth(), target.getViewport().getHeight());
+		setViewport(target.getViewport());
 	}
 	GET_GL_ERROR();	
 	
 	// Scissor
-	if(forced || target.scissorParametersChanged(actual)) {
-		const auto& sp = actual.getScissorParameters();
+	if(forced || scissorParametersChanged(target)) {
+		if(debug) std::cout << "update scissor" << std::endl;
+		const auto& sp = target.getScissorParameters();
 		if(sp.isEnabled()) {
 			const Geometry::Rect_i & scissorRect = sp.getRect();
 			glScissor(scissorRect.getX(), scissorRect.getY(), scissorRect.getWidth(), scissorRect.getHeight());
@@ -259,27 +255,30 @@ void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 		} else {
 			glDisable(GL_SCISSOR_TEST);
 		}
-		target.setScissorParameters(sp);
+		setScissorParameters(sp);
 	}
 	GET_GL_ERROR();	
 		
 	// FBO
-	if(forced || target.fboChanged(actual)) {
-		const auto& fbo = actual.getFBO();
+	if(forced || fboChanged(target)) {
+		const auto& fbo = target.getFBO();
 		if(fbo.isNull()) {
+			if(debug) std::cout << "disable fbo" << std::endl;
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		} else {
-			fbo->_enable();
+			fbo->bind();
+			if(debug) std::cout << "enable fbo " << fbo->getHandle() << std::endl;
 		}
-		target.setFBO(fbo);
+		setFBO(fbo);
 	}
 	GET_GL_ERROR();
 		
 	// Vertex Format
-	if(forced || target.vertexFormatChanged(actual)) {
+	if(forced || vertexFormatChanged(target)) {
+		if(debug) std::cout << "update format" << std::endl;
 		for(uint_fast8_t location=0; location<PipelineState::MAX_VERTEXATTRIBS; ++location) {
-			const auto& format = actual.getVertexFormat(location);
-			const auto& oldFormat = target.getVertexFormat(location);
+			const auto& format = target.getVertexFormat(location);
+			const auto& oldFormat = getVertexFormat(location);
 			if(forced || format != oldFormat) {
 				const auto& attr = format.first;
 				if(attr.empty()) {
@@ -294,13 +293,15 @@ void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 				}
 			}
 		}
-		target.updateVertexFormat(actual);
+		updateVertexFormat(target);
 	}
+	GET_GL_ERROR();
 	
-	if(forced || target.vertexBindingChanged(actual)) {
+	if(forced || vertexBindingChanged(target)) {
+		if(debug) std::cout << "update binding" << std::endl;
 		for(uint_fast8_t i = 0; i<PipelineState::MAX_VERTEXBINDINGS; ++i) {
-			const auto& binding = actual.getVertexBinding(i);
-			const auto& oldBinding = target.getVertexBinding(i);
+			const auto& binding = target.getVertexBinding(i);
+			const auto& oldBinding = getVertexBinding(i);
 			if(forced || binding != oldBinding) {
 				uint32_t buffer, offset, stride, divisor;
 				std::tie(buffer, offset, stride, divisor) = binding;
@@ -309,10 +310,9 @@ void apply(PipelineState & target, const PipelineState & actual, bool forced) {
 				glBindVertexBuffer(i, buffer, offset, stride);
 			}
 		}
-		target.updateVertexBinding(actual);
+		updateVertexBinding(target);
 	}
 	GET_GL_ERROR();
 }
 
-}
 }

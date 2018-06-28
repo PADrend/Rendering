@@ -17,7 +17,6 @@
 namespace Rendering {
 
 void OcclusionQuery::enableTestMode(RenderingContext & renderingContext) {
-	renderingContext.pushAndSetLighting(LightingParameters(false));
 	renderingContext.pushAndSetColorBuffer(ColorBufferParameters(false, false, false, false));
 	renderingContext.pushAndSetDepthBuffer(
 		DepthBufferParameters(
@@ -32,16 +31,11 @@ void OcclusionQuery::enableTestMode(RenderingContext & renderingContext) {
 void OcclusionQuery::disableTestMode(RenderingContext & renderingContext) {
 	renderingContext.popDepthBuffer();
 	renderingContext.popColorBuffer();
-	renderingContext.popLighting();
 }
 
 
 OcclusionQuery::OcclusionQuery() :
-#if defined(LIB_GL)
-	QueryObject(static_cast<uint32_t>(GL_SAMPLES_PASSED)) {
-#elif defined(LIB_GLESv2)
-	QueryObject(0) {
-#endif
+	QueryObject(static_cast<uint32_t>(GL_ANY_SAMPLES_PASSED)) {
 }
 
 }

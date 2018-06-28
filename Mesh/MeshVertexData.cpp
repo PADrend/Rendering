@@ -139,12 +139,14 @@ bool MeshVertexData::upload() {
 bool MeshVertexData::upload(uint32_t usageHint){
 	if(vertexCount == 0 || binaryData.empty() )
 		return false;
-		
-	if( isUploaded() )
-		removeGlBuffer();
 
 	try {
-		bufferObject.uploadData(GL_ARRAY_BUFFER, binaryData, usageHint);
+		if(!isUploaded() || bufferObject.getSize() < binaryData.size()) {
+			removeGlBuffer();
+			bufferObject.uploadData(GL_ARRAY_BUFFER, binaryData, usageHint);
+		} else {
+			bufferObject.uploadSubData(GL_ARRAY_BUFFER, binaryData);
+		}
 		GET_GL_ERROR()
 	}
 	catch (...) {
@@ -188,20 +190,8 @@ void MeshVertexData::bind(RenderingContext & context) {
 	context.bindVertexBuffer(0, bufferObject.getGLId(), 0, vd.getVertexSize());
 }
 
-/*! (internal) */
-void MeshVertexData::drawArray(RenderingContext & context,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements){
-	if(startIndex+numberOfElements>getVertexCount())
-		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
-	
-	bind(context);
-	context.applyChanges();
-	glDrawArrays(drawMode, startIndex, numberOfElements);
-	unbind(context);
-	GET_GL_ERROR();
-}
-
 void MeshVertexData::unbind(RenderingContext & context) {
-	//context.bindVertexBuffer(0, 0, 0, 1);
+	context.bindVertexBuffer(0, 0, 0, 1);
 	GET_GL_ERROR();
 }
 

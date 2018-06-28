@@ -13,7 +13,6 @@
 
 #include "internal/PipelineState.h"
 #include "internal/RenderingStatus.h"
-#include "internal/StatusHandler_glCore.h"
 #include "internal/StatusHandler_UBO.h"
 #include "RenderingParameters.h"
 #include "../BufferObject.h"
@@ -147,6 +146,7 @@ void RenderingContext::clearScreenRect(const Geometry::Rect_i & rect, const Util
 
 //!	(static) 
 void RenderingContext::clearScreen(const Util::Color4f & color) {
+	applyChanges();
 	glClearColor(color.getR(), color.getG(), color.getB(), color.getA());
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -197,11 +197,13 @@ void RenderingContext::initGLState() {
 
 //! (static)
 void RenderingContext::flush() {
+	applyChanges();
 	glFlush();
 }
 
 //! (static)
 void RenderingContext::finish() {
+	applyChanges();
 	glFinish();
 }
 
@@ -213,7 +215,10 @@ void RenderingContext::barrier(uint32_t flags) {
 
 void RenderingContext::applyChanges(bool forced) {
 	try {
-		StatusHandler_glCore::apply(internalData->activePipelineState, internalData->targetPipelineState, forced);		
+		if(forced)
+			internalData->activePipelineState.invalidate();
+		internalData->activePipelineState.setDebug(debugMode);
+		internalData->activePipelineState.apply(internalData->targetPipelineState);
 		
 		const auto& vp = getViewport();
 		const auto& sp = getScissor();
@@ -223,9 +228,9 @@ void RenderingContext::applyChanges(bool forced) {
 		internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_RECT, Geometry::Vec4(sr.getX(), sr.getY(), sr.getWidth(), sr.getHeight())}, false, false);
 		internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_ENABLED, sp.isEnabled()}, false, false);
 		
-		Shader * shader = getActiveShader();
-		if(shader) {
-			StatusHandler_UBO::apply(shader, *shader->getRenderingStatus(), internalData->targetRenderingStatus, forced);
+		if(internalData->activePipelineState.isShaderValid()) {
+			auto shader = internalData->activePipelineState.getShader();
+			StatusHandler_UBO::apply(shader.get(), *shader->getRenderingStatus(), internalData->targetRenderingStatus, forced);
 
 			// transfer updated global uniforms to the shader
 			shader->_getUniformRegistry()->performGlobalSync(internalData->globalUniforms, false);
@@ -425,6 +430,7 @@ void RenderingContext::setColorBuffer(const ColorBufferParameters & p) {
 }
 
 void RenderingContext::clearColor(const Util::Color4f & clearValue) {
+	applyChanges();
 	glClearColor(clearValue.getR(), clearValue.getG(), clearValue.getB(), clearValue.getA());
 	glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -486,6 +492,7 @@ void RenderingContext::setDepthBuffer(const DepthBufferParameters & p) {
 }
 
 void RenderingContext::clearDepth(float clearValue) {
+	applyChanges();
 #ifdef LIB_GLESv2
 	glClearDepthf(clearValue);
 #else
@@ -768,6 +775,7 @@ void RenderingContext::setStencil(const StencilParameters & stencilParameter) {
 }
 
 void RenderingContext::clearStencil(int32_t clearValue) {
+	applyChanges();
 	glClearStencil(clearValue);
 	glClear(GL_STENCIL_BUFFER_BIT);
 }
@@ -798,6 +806,8 @@ void RenderingContext::pushAndSetFBO(FBO * fbo) {
 
 void RenderingContext::setFBO(FBO * fbo) {
 	internalData->targetPipelineState.setFBO(fbo);
+	if(immediate)
+		applyChanges();
 }
 
 // GLOBAL UNIFORMS ***************************************************************************
@@ -1002,6 +1012,7 @@ void RenderingContext::pushTransformFeedbackBufferStatus(){
 	internalData->feedbackStack.emplace(internalData->activeFeedbackStatus);
 }
 void RenderingContext::setTransformFeedbackBuffer(CountedBufferObject * buffer){
+	applyChanges();
 	if(requestTransformFeedbackSupport()){
 		#if defined(LIB_GL) and defined(GL_EXT_transform_feedback)
 		if(buffer!=nullptr){
@@ -1015,6 +1026,7 @@ void RenderingContext::setTransformFeedbackBuffer(CountedBufferObject * buffer){
 	_startTransformFeedback(internalData->activeFeedbackStatus.second); // restart
 }
 void RenderingContext::_startTransformFeedback(uint32_t primitiveMode){
+	applyChanges();
 	if(requestTransformFeedbackSupport()){
 		#if defined(LIB_GL) and defined(GL_EXT_transform_feedback)
 		if(primitiveMode==0){
@@ -1254,6 +1266,23 @@ void RenderingContext::bindVertexBuffer(uint32_t binding, uint32_t bufferId, uin
 void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
 	applyChanges();
 	internalData->defaultVAO->bindElementBuffer(bufferId);
+}
+
+// Draw Commands **********************************************************************************
+
+void RenderingContext::submitDraw(uint32_t mode, const DrawArraysCommand& cmd) {
+	applyChanges();
+	//glDrawArraysIndirect(mode, &cmd);
+	if(debugMode) std::cout << "draw arrays " << cmd.first << " - " << cmd.count << std::endl;
+  glDrawArraysInstancedBaseInstance(mode, cmd.first, cmd.count, cmd.primCount, cmd.baseInstance);
+}
+
+void RenderingContext::submitDraw(uint32_t mode, uint32_t type, const DrawElementsCommand& cmd) {
+	applyChanges();
+	//glDrawElementsIndirect(mode, type, &cmd);
+	if(debugMode) std::cout << "draw elements " << cmd.first << " - " << cmd.count << std::endl;
+	uint8_t* first = reinterpret_cast<uint8_t*>(cmd.first * getGLTypeSize(type));
+	glDrawElementsInstancedBaseVertexBaseInstance(mode, cmd.count, type, first, cmd.primCount, cmd.baseVertex, cmd.baseInstance);
 }
 
 }

@@ -52,7 +52,7 @@ add_library(Rendering
 	MeshUtils/StreamMeshDataStrategy.cpp
 	MeshUtils/TriangleAccessor.cpp
 	MeshUtils/ConnectivityAccessor.cpp
-	RenderingContext/internal/StatusHandler_glCore.cpp
+	RenderingContext/internal/PipelineState.cpp
 	RenderingContext/internal/StatusHandler_UBO.cpp
 	RenderingContext/RenderingContext.cpp
 	RenderingContext/RenderingParameters.cpp

@@ -27,6 +27,14 @@ namespace Rendering {
 //! (internal) Used by the renderingContext to track changes made to the shader independent core-state of OpenGL.
 class PipelineState {
 	// -------------------------------
+	private:
+		bool valid = false;
+		bool debug = false;
+	public:
+		void invalidate() { valid = false; }
+		bool isValid() const { return valid; }
+		void setDebug(bool v) { debug = v; }
+		void apply(const PipelineState& other);
 
 	//!	@name Viewport
 	//	@{
@@ -44,6 +52,7 @@ class PipelineState {
 		}
 	//	@}
 	
+	// ------
 
 	//!	@name Scissor
 	//	@{
@@ -67,12 +76,18 @@ class PipelineState {
 	//	@{
 	private:
 		Util::Reference<FBO> fbo;
+		uint32_t activeFBO = 0;
 	public:
 		bool fboChanged(const PipelineState & actual) const {
-			return fbo != actual.fbo;
+			return activeFBO != actual.activeFBO;
 		}
 		void setFBO(Util::Reference<FBO> p) {
-			fbo = std::move(p);
+			fbo = p;
+			activeFBO = 0;
+			if(fbo.isNotNull()) {
+				fbo->prepare();
+				activeFBO = fbo->getHandle();
+			}
 		}
 		const Util::Reference<FBO>& getFBO() const {
 			return fbo;
@@ -83,15 +98,29 @@ class PipelineState {
 	//	@{
 	private:
 		Util::Reference<Shader> shader;
+		uint32_t program = 0;
 	public:
 		bool shaderChanged(const PipelineState & actual) const {
-			return shader != actual.shader;
+			return program != actual.program;
 		}
 		void setShader(Util::Reference<Shader> s) {
-			shader = std::move(s);
+			if(s.isNull()) {
+				shader = s;
+				program = 0;
+			} else if(s->init()) {
+				shader = s;
+				program = shader->getShaderProg();
+			}
+		}
+		void updateShader(Util::Reference<Shader> s, uint32_t prog) {
+			program = prog;
+			shader = s;
 		}
 		const Util::Reference<Shader>& getShader() const {
 			return shader;
+		}
+		bool isShaderValid() const {
+			return program > 0 && shader.isNotNull() && shader->getShaderProg() == program;
 		}
 	//	@}
 	

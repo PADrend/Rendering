@@ -55,17 +55,16 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		bool enable(RenderingContext & rc);
 		bool isActive(RenderingContext & rc); // (???) !=enabled
 
-		bool usesClassicOpenGL()const		{	return usageFlags & USE_GL;	}
-		bool usesSGUniforms()const			{	return usageFlags & USE_UNIFORMS;	}
-		void setUsage(flag_t newUsage)		{	usageFlags=newUsage;	}
+		bool usesClassicOpenGL() const __attribute((deprecated)) { return false; }
+		bool usesSGUniforms() const __attribute((deprecated)) { return true; }
+		void setUsage(flag_t newUsage) __attribute((deprecated)) { }
 
 		RenderingStatus * getRenderingStatus()	{	return renderingData.get();	}
 
 	private:
-		flag_t usageFlags;
 		std::unique_ptr<RenderingStatus> renderingData; // created when the shader is successfully initialized
 
-		Shader(flag_t usage = USE_GL|USE_UNIFORMS);
+		Shader(flag_t usage = 0);
 		static void printProgramInfoLog(uint32_t obj);
 	// @}
 
@@ -74,11 +73,11 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name (static) Factories */
 	// @{
 	public:
-		static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & fsFile, flag_t usage = USE_GL|USE_UNIFORMS);
-		static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile, flag_t usage = USE_GL|USE_UNIFORMS);
-		static Shader * createShader(flag_t usage = USE_GL|USE_UNIFORMS);
-		static Shader * createShader(const std::string & vsa, const std::string & fsa, flag_t usage = USE_GL|USE_UNIFORMS);
-		static Shader * createShader(const std::string & vsa, const std::string & gsa, const std::string & fsa, flag_t usage = USE_GL|USE_UNIFORMS);
+		static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & fsFile, flag_t usage = 0);
+		static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile, flag_t usage = 0);
+		static Shader * createShader(flag_t usage = 0);
+		static Shader * createShader(const std::string & vsa, const std::string & fsa, flag_t usage = 0);
+		static Shader * createShader(const std::string & vsa, const std::string & gsa, const std::string & fsa, flag_t usage = 0);
 	// @}
 
 	// ------------------------
@@ -92,8 +91,8 @@ class Shader : public Util::ReferenceCounter<Shader> {
 			LINKED = 2,
 			INVALID = 3
 		};
-		status_t getStatus()const				{	return status;	}
-		uint32_t getShaderProg()const			{	return prog;	}
+		status_t getStatus() const { return status; }
+		uint32_t getShaderProg() const { return prog; }
 
 		//! Try to transfer the shader into LINKED-state. Returns true on success.
 		bool init();
@@ -144,7 +143,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 
 	public:
 		//! (internal) should only be used by renderingContext
-		UniformRegistry * _getUniformRegistry()const			{	return uniforms.get();	}
+		UniformRegistry * _getUniformRegistry() const { return uniforms.get(); }
 
 		/*! Apply those uniforms stored in the internal uniformRegistry to the shader, that have been changed since
 			the last call to this function (or all, if forced is true).

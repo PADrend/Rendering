@@ -107,10 +107,6 @@ class MeshVertexData {
 		/*! (internal) */
 		void removeGlBuffer();
 		
-		/*! (internal) Draw the vertices using the VBO or a VertexArray.
-			Used by MeshDataStrategy::doDisplay(..) if the mesh does not use indices. */
-		void drawArray(RenderingContext & context,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements);
-
 		/*! Swap the internal BufferObject. 
 			\note The local data is not changed!
 			\note the size of the new buffer must be equal to that of the old one.
