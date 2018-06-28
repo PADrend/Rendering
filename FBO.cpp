@@ -19,32 +19,36 @@
 
 namespace Rendering {
 
-//! (static)
-void FBO::_disable(){
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
 
 FBO::FBO() : glId(0){
 	//ctor
 }
 
-FBO::~FBO(){
+FBO::~FBO() {
 	if(glId!=0){
-		glDeleteFramebuffers(1,&glId);
+		glDeleteFramebuffers(1, &glId);
 		glId=0;
 	}
 	//dtor
 }
 
-void FBO::_enable(){
-	if(glId==0){
-		glGenFramebuffers(1, &glId);
+void FBO::prepare(){
+	if(glId==0) {
+		glCreateFramebuffers(1, &glId);
 	}
+}
+
+void FBO::bind(){
+	prepare();
 	glBindFramebuffer(GL_FRAMEBUFFER,glId);
 }
 
-void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Texture * texture,uint32_t level,int32_t layer){
-	context.pushAndSetFBO(this);
+void FBO::unbind(){
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void FBO::attachTexture(RenderingContext & context, GLenum attachmentPoint, Texture * texture, uint32_t level, int32_t layer) {
+	prepare();
 	if( texture ){
 		GLuint textureId = texture->getGLId();
 		if(textureId==0){
@@ -53,85 +57,51 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 		}
 		if(layer+1 > texture->getNumLayers())
 			throw std::invalid_argument("FBO::attachTexture: invalid texture layer.");
-#if defined(LIB_GL)
-
-		switch( texture->getTextureType() ){
+			
+			
+		if(layer >= 0)
+			glNamedFramebufferTextureLayer(glId, attachmentPoint, textureId, level, layer);
+		else
+			glNamedFramebufferTexture(glId, attachmentPoint, textureId, level);
+		
+		/*switch( texture->getTextureType() ){
 			case TextureType::TEXTURE_1D:
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_EXT_framebuffer_object
+				glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_framebuffer_object
 				break;
 			case TextureType::TEXTURE_2D:
 			case TextureType::TEXTURE_2D_MULTISAMPLE:
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_EXT_framebuffer_object
+				glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_framebuffer_object
 				break;
 			case TextureType::TEXTURE_CUBE_MAP:
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint, GL_TEXTURE_CUBE_MAP_POSITIVE_X+std::max(0,layer), 	textureId, level);	// GL_EXT_framebuffer_object
+				glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, GL_TEXTURE_CUBE_MAP_POSITIVE_X+std::max(0,layer), 	textureId, level);	// GL_framebuffer_object
 				break;
 			case TextureType::TEXTURE_1D_ARRAY:
 			case TextureType::TEXTURE_2D_ARRAY:
 			case TextureType::TEXTURE_3D:
 			case TextureType::TEXTURE_CUBE_MAP_ARRAY:{
-				static const bool featureAvailable = isExtensionSupported("GL_ARB_framebuffer_object");	
-				if(!featureAvailable)
-					throw std::invalid_argument("FBO::attachTexture: texture type is not supported by your OpenGL version.");				
 				if(layer >= 0)
-					glFramebufferTextureLayer(GL_FRAMEBUFFER_EXT, attachmentPoint, textureId, level, layer);				// GL_ARB_framebuffer_object
+					glFramebufferTextureLayer(GL_FRAMEBUFFER, attachmentPoint, textureId, level, layer);				// GL_ARB_framebuffer_object
 				else 
-					glFramebufferTexture(GL_FRAMEBUFFER_EXT, attachmentPoint, textureId, level);	
+					glFramebufferTexture(GL_FRAMEBUFFER, attachmentPoint, textureId, level);	
 				break;
 			}
 			case TextureType::TEXTURE_BUFFER:
 				throw std::logic_error("FBO::attachTexture: TextureBuffers are no valid targets.");
 			default:
 				throw std::logic_error("FBO::attachTexture: ???");
-		}
-#elif defined(LIB_GLESv2)
-		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, texture->getGLTextureType(), textureId, level);
-#endif
+		}*/
 	}else{
-#if defined(LIB_GL)
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, attachmentPoint,GL_TEXTURE_2D,0,0);
-#elif defined(LIB_GLESv2)
-		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, GL_TEXTURE_2D, 0, 0);
-#endif
+		glNamedFramebufferTexture(glId, attachmentPoint, 0, 0);
+		//glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint,GL_TEXTURE_2D,0,0);
 	}
-	context.popFBO();
 	GET_GL_ERROR();
 }
 
-
-#if defined(LIB_GL)
 void FBO::attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId,uint32_t level,int32_t layer) {
-	attachTexture(context, GL_COLOR_ATTACHMENT0_EXT + colorBufferId, t,level,layer);
+	attachTexture(context, GL_COLOR_ATTACHMENT0 + colorBufferId, t,level,layer);
 }
 void FBO::detachColorTexture(RenderingContext & context, uint32_t colorBufferId) {
-	detachTexture(context, GL_COLOR_ATTACHMENT0_EXT + colorBufferId);
-}
-void FBO::attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t level,int32_t layer) {
-	attachTexture(context, GL_DEPTH_ATTACHMENT_EXT, t,level,layer);
-	attachTexture(context, GL_STENCIL_ATTACHMENT_EXT, t,level,layer);
-}
-void FBO::detachDepthStencilTexture(RenderingContext & context) {
-	detachTexture(context, GL_DEPTH_ATTACHMENT_EXT);
-	detachTexture(context, GL_STENCIL_ATTACHMENT_EXT);
-}
-void FBO::attachDepthTexture(RenderingContext & context, Texture * t,uint32_t level,int32_t layer) {
-	attachTexture(context, GL_DEPTH_ATTACHMENT_EXT, t,level,layer);
-}
-void FBO::detachDepthTexture(RenderingContext & context) {
-	detachTexture(context, GL_DEPTH_ATTACHMENT_EXT);
-}
-#elif defined(LIB_GLESv2)
-void FBO::attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId, uint32_t level, int32_t layer) {
-	if(colorBufferId != 0) {
-		throw std::invalid_argument("Only one color attachment is supported in OpenGL ES 2.0.");
-	}
-	attachTexture(context, GL_COLOR_ATTACHMENT0, t, level, layer);
-}
-void FBO::detachColorTexture(RenderingContext & context, uint32_t colorBufferId) {
-	if(colorBufferId != 0) {
-		throw std::invalid_argument("Only one color attachment is supported in OpenGL ES 2.0.");
-	}
-	detachTexture(context, GL_COLOR_ATTACHMENT0);
+	detachTexture(context, GL_COLOR_ATTACHMENT0 + colorBufferId);
 }
 void FBO::attachDepthStencilTexture(RenderingContext & context, Texture * t,uint32_t level,int32_t layer) {
 	attachTexture(context, GL_DEPTH_ATTACHMENT, t,level,layer);
@@ -147,70 +117,41 @@ void FBO::attachDepthTexture(RenderingContext & context, Texture * t,uint32_t le
 void FBO::detachDepthTexture(RenderingContext & context) {
 	detachTexture(context, GL_DEPTH_ATTACHMENT);
 }
-#endif
 
-bool FBO::isComplete(RenderingContext & context){
-	context.pushAndSetFBO(this);
-	bool b = false;
-#if defined(LIB_GL)
-	b = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) == GL_FRAMEBUFFER_COMPLETE_EXT;
-#elif defined(LIB_GLESv2)
-	b = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
-#endif
-	context.popFBO();
+bool FBO::isComplete() {
+	prepare();
+	bool b = glCheckNamedFramebufferStatus(glId, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+	GET_GL_ERROR();
 	return b;
 }
 
 const char * FBO::getStatusMessage(RenderingContext & context) {
-	context.pushAndSetFBO(this);
-#if defined(LIB_GL)
-	const GLenum result = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-#elif defined(LIB_GLESv2)
-	const GLenum result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-#endif
-	context.popFBO();
-#if defined(LIB_GL)
-	switch(result) {
-		case GL_FRAMEBUFFER_COMPLETE_EXT:
-			return "Framebuffer complete.";
-		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
-			return "[ERROR] Framebuffer incomplete: Attachment is NOT complete.";
-		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
-			return "[ERROR] Framebuffer incomplete: No image is attached to FBO.";
-		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-			return "[ERROR] Framebuffer incomplete: Attached images have different dimensions.";
-		case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-			return "[ERROR] Framebuffer incomplete: Color attached images have different internal formats.";
-		case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
-			return "[ERROR] Framebuffer incomplete: Draw buffer.";
-		case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
-			return "[ERROR] Framebuffer incomplete: Read buffer.";
-		case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
-			return "[ERROR] Unsupported by FBO implementation.";
-		default:
-			break;
-	}
-#elif defined(LIB_GLESv2)
+	const GLenum result = glCheckNamedFramebufferStatus(glId, GL_FRAMEBUFFER);
+	GET_GL_ERROR();
 	switch(result) {
 		case GL_FRAMEBUFFER_COMPLETE:
 			return "Framebuffer complete.";
 		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
 			return "[ERROR] Framebuffer incomplete: Attachment is NOT complete.";
-		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-			return "[ERROR] Framebuffer incomplete: Attached images have different dimensions.";
 		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
 			return "[ERROR] Framebuffer incomplete: No image is attached to FBO.";
+		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+			return "[ERROR] Framebuffer incomplete: Attached images have different dimensions.";
+		case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
+			return "[ERROR] Framebuffer incomplete: Color attached images have different internal formats.";
+		case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+			return "[ERROR] Framebuffer incomplete: Draw buffer.";
+		case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+			return "[ERROR] Framebuffer incomplete: Read buffer.";
 		case GL_FRAMEBUFFER_UNSUPPORTED:
 			return "[ERROR] Unsupported by FBO implementation.";
 		default:
 			break;
 	}
-#endif
 	return "[ERROR] Unknown error.";
 }
 
 void FBO::setDrawBuffers(uint32_t number) {
-#ifdef LIB_GL
 	static const GLenum buffers[] = {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT1,
@@ -224,23 +165,17 @@ void FBO::setDrawBuffers(uint32_t number) {
 	if(number > 8) {
 		throw std::invalid_argument("Unsupported number of draw buffers requested");
 	}
-	glDrawBuffers(static_cast<GLsizei>(number), buffers);
-#endif /* LIB_GL */
+	glNamedFramebufferDrawBuffers(glId, static_cast<GLsizei>(number), buffers);
+	GET_GL_ERROR();
 }
 
 void FBO::blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect) {
-#ifdef LIB_GL
-	context.pushFBO();
-	context.applyChanges(true);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, glId);
-	glDrawBuffer(GL_BACK);
-	glBlitFramebuffer(	srcRect.getX(), srcRect.getY(), srcRect.getWidth(), srcRect.getHeight(), 
+	context.applyChanges();
+	glNamedFramebufferDrawBuffer(0, GL_BACK);
+	glBlitNamedFramebuffer(glId, 0, srcRect.getX(), srcRect.getY(), srcRect.getWidth(), srcRect.getHeight(), 
 											tgtRect.getX(), tgtRect.getY(), tgtRect.getWidth(), tgtRect.getHeight(), 
 											GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	GET_GL_ERROR();
-	context.popFBO();
-#endif /* LIB_GL */
 }
 
 }
