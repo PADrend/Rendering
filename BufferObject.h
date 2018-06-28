@@ -55,6 +55,7 @@ class BufferObject {
 	private:
 		//! OpenGL handle for this buffer object.
 		uint32_t bufferId;
+		size_t size;
 
 	public:
 		//! Create an invalid buffer object for the given target.
@@ -138,10 +139,12 @@ class BufferObject {
 		bool isValid() const {
 			return bufferId != 0;
 		}
-		uint32_t getGLId()const{	return bufferId;	}
+		uint32_t getGLId()const{ return bufferId; }
 		
 		void clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
 		void clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
+		
+		size_t getSize() const { return size; }
 };
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;

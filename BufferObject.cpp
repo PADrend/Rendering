@@ -10,6 +10,7 @@
 */
 #include "BufferObject.h"
 #include "GLHeader.h"
+#include <Util/Macros.h>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -42,10 +43,10 @@ const uint32_t BufferObject::USAGE_DYNAMIC_DRAW = GL_DYNAMIC_DRAW;
 const uint32_t BufferObject::USAGE_DYNAMIC_READ = GL_DYNAMIC_READ;
 const uint32_t BufferObject::USAGE_DYNAMIC_COPY = GL_DYNAMIC_COPY;
 
-BufferObject::BufferObject() : bufferId(0) {
+BufferObject::BufferObject() : bufferId(0), size(0) {
 }
 
-BufferObject::BufferObject(BufferObject && other) : bufferId(other.bufferId) {
+BufferObject::BufferObject(BufferObject && other) : bufferId(other.bufferId), size(other.size) {
 	// Make sure the other buffer object does not free the handle.
 	other.bufferId = 0;
 }
@@ -61,11 +62,13 @@ BufferObject & BufferObject::operator=(BufferObject && other) {
 	}
 	// Make sure the other buffer object frees the handle.
 	std::swap(other.bufferId, bufferId);
+	std::swap(other.size, size);
 	return *this;
 }
 
 void BufferObject::swap(BufferObject & other){
 	std::swap(other.bufferId,bufferId);
+	std::swap(other.size, size);
 }
 
 void BufferObject::prepare() {
@@ -78,6 +81,7 @@ void BufferObject::destroy() {
 	if(bufferId != 0) {
 		glDeleteBuffers(1, &bufferId);
 		bufferId = 0;
+		size = 0;
 	}
 }
 
@@ -105,10 +109,15 @@ void BufferObject::uploadData(uint32_t bufferTarget, const uint8_t* data, size_t
 	prepare();
 	bind(bufferTarget);
 	glBufferData(bufferTarget, static_cast<GLsizeiptr>(numBytes), data, usageHint);
-	unbind(bufferTarget);
+	unbind(bufferTarget);	
+	size = numBytes;
 }
 
 void BufferObject::uploadSubData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, size_t offset) {
+	if(size < offset+numBytes) {
+		WARN("BufferObject::uploadSubData buffer overflow!");
+		return;
+	}
 	prepare();
 	bind(bufferTarget);
 	glBufferSubData(bufferTarget, offset, static_cast<GLsizeiptr>(numBytes), data);
