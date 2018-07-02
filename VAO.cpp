@@ -62,11 +62,10 @@ void VAO::bindVertexBuffer(uint32_t binding, uint32_t bufferId, uint32_t stride,
   prepare();
   glVertexArrayVertexBuffer(glHandle, binding, bufferId, offset, stride);
   glVertexArrayBindingDivisor(glHandle, binding, divisor);
-  glVertexAttrib4f(2, 1, 1, 1, 1);
 }
 
 void VAO::bindElementBuffer(uint32_t bufferId) {
-  prepare();  
+  prepare();
   glVertexArrayElementBuffer(glHandle, bufferId);
 }
 

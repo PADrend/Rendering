@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -78,21 +79,20 @@ void MeshIndexData::updateIndexRange() {
 }
 
 bool MeshIndexData::upload() {
-	return upload(GL_STATIC_DRAW);
+	return upload(0);
 }
 
 //!	(internal)
-bool MeshIndexData::upload(uint32_t usageHint){
+bool MeshIndexData::upload(uint32_t flags){
 	if(indexCount == 0 || indexArray.empty() )
 		return false;
 
 	try {
-	
 		if(!isUploaded() || bufferObject.getSize() < dataSize()) {
 			removeGlBuffer();
-			bufferObject.uploadData(GL_ELEMENT_ARRAY_BUFFER, indexArray, usageHint);
+			bufferObject.allocate(indexArray, flags);
 		} else {
-			bufferObject.uploadSubData(GL_ELEMENT_ARRAY_BUFFER, indexArray);
+			bufferObject.upload(indexArray);
 		}
 		GET_GL_ERROR()
 	}
@@ -115,15 +115,9 @@ bool MeshIndexData::download(){
 }
 
 //!	(internal)
-#ifdef LIB_GL
 void MeshIndexData::downloadTo(std::vector<uint32_t> & destination) const {
-	destination = bufferObject.downloadData<uint32_t>(GL_ELEMENT_ARRAY_BUFFER, getIndexCount());
+	destination = bufferObject.download<uint32_t>(getIndexCount());
 }
-#else
-void MeshIndexData::downloadTo(std::vector<uint32_t> & /*destination*/) const {
-	WARN("downloadTo not supported.");
-}
-#endif
 
 //!	(internal)
 void MeshIndexData::removeGlBuffer(){

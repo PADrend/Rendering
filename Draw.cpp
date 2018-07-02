@@ -174,8 +174,8 @@ void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
 		VertexDescription vertexDescription;
 		vertexDescription.appendPosition3D();
 		mesh = new Mesh(vertexDescription, 8, 16);
-		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 		mesh->setDrawMode(Mesh::DRAW_LINE_STRIP);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 
 		MeshIndexData & id = mesh->openIndexData();
 		uint32_t * indices = id.data();
@@ -247,7 +247,7 @@ void drawQuad(RenderingContext & rc, const Geometry::Vec3 & lowerLeft, const Geo
 		vertexDescription.appendNormalFloat();
 		vertexDescription.appendTexCoord();
 		mesh = new Mesh(vertexDescription, 4, 6);
-
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 		MeshIndexData & id = mesh->openIndexData();
 		uint32_t * indices = id.data();
 		indices[0] = 0;
@@ -455,6 +455,7 @@ void drawTriangle(RenderingContext & rc, const Geometry::Vec3f & vertexA, const 
 		VertexDescription vertexDescription;
 		vertexDescription.appendPosition3D();
 		mesh = new Mesh(vertexDescription, 3, 3);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 
 		MeshIndexData & id = mesh->openIndexData();
 		uint32_t * indices = id.data();

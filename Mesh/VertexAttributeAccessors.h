@@ -12,6 +12,7 @@
 #define VERTEXACCESSOR_H
 
 #include "VertexAttribute.h"
+#include "VertexAttributeIds.h"
 #include "MeshVertexData.h"
 #include "VertexDescription.h"
 
@@ -65,7 +66,7 @@ class ColorAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a ColorAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<ColorAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name);
+		static Util::Reference<ColorAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::COLOR);
 
 		virtual ~ColorAttributeAccessor(){}
 
@@ -88,7 +89,7 @@ class NormalAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a NormalAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<NormalAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name);
+		static Util::Reference<NormalAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::NORMAL);
 
 		virtual ~NormalAttributeAccessor(){}
 
@@ -110,7 +111,7 @@ class PositionAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a PositionAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<PositionAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name);
+		static Util::Reference<PositionAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::POSITION);
 
 		virtual ~PositionAttributeAccessor(){}
 
@@ -133,7 +134,7 @@ class TexCoordAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a TexCoordAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<TexCoordAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name);
+		static Util::Reference<TexCoordAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::TEXCOORD0);
 
 		virtual ~TexCoordAttributeAccessor(){}
 

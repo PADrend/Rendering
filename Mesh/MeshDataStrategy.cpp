@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -79,7 +80,7 @@ SimpleMeshDataStrategy * SimpleMeshDataStrategy::getDynamicVertexStrategy(){
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getPureLocalStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS );
+	static SimpleMeshDataStrategy strategy( USE_VBOS|PRESERVE_LOCAL_DATA|DYNAMIC_VERTICES);
 	return &strategy;
 }
 

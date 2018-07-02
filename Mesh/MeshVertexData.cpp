@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -133,19 +134,19 @@ void MeshVertexData::updateBoundingBox() {
 }
 
 bool MeshVertexData::upload() {
-	return upload(GL_STATIC_DRAW);
+	return upload(0);
 }
 
-bool MeshVertexData::upload(uint32_t usageHint){
-	if(vertexCount == 0 || binaryData.empty() )
+bool MeshVertexData::upload(uint32_t flags) {
+	if(vertexCount == 0 || binaryData.empty())
 		return false;
 
 	try {
 		if(!isUploaded() || bufferObject.getSize() < binaryData.size()) {
 			removeGlBuffer();
-			bufferObject.uploadData(GL_ARRAY_BUFFER, binaryData, usageHint);
+			bufferObject.allocate(binaryData, flags);
 		} else {
-			bufferObject.uploadSubData(GL_ARRAY_BUFFER, binaryData);
+			bufferObject.upload(binaryData);
 		}
 		GET_GL_ERROR()
 	}
@@ -158,7 +159,7 @@ bool MeshVertexData::upload(uint32_t usageHint){
 	return true;
 }
 
-bool MeshVertexData::download(){
+bool MeshVertexData::download() {
 	if(!isUploaded() || vertexCount==0)
 		return false;
 	downloadTo(binaryData);
@@ -166,16 +167,10 @@ bool MeshVertexData::download(){
 	return true;
 }
 
-#ifdef LIB_GL
 void MeshVertexData::downloadTo(std::vector<uint8_t> & destination) const {
 	const std::size_t numBytes = getVertexDescription().getVertexSize() * getVertexCount();
-	destination = bufferObject.downloadData<uint8_t>(GL_ARRAY_BUFFER, numBytes);
+	destination = bufferObject.download<uint8_t>(numBytes);
 }
-#else
-void MeshVertexData::downloadTo(std::vector<uint8_t> & /*destination*/) const {
-	WARN("downloadTo not supported.");
-}
-#endif
 
 void MeshVertexData::removeGlBuffer(){
 	bufferObject.destroy();
