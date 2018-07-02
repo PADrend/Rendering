@@ -1,6 +1,7 @@
 /*
 	This file is part of the Rendering library.
 	Copyright (C) 2013 Benjamin Eikel <benjamin@eikel.org>
+	Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -9,7 +10,8 @@
 #include "TextRenderer.h"
 #include "Mesh/Mesh.h"
 #include "Mesh/VertexDescription.h"
-#include "MeshUtils/MeshBuilder.h"
+#include "Mesh/VertexAttributeAccessors.h"
+#include "Mesh/MeshDataStrategy.h"
 #include "RenderingContext/RenderingParameters.h"
 #include "RenderingContext/RenderingContext.h"
 #include "Shader/Shader.h"
@@ -27,21 +29,68 @@
 
 namespace Rendering {
 
-static const std::string vertexProgram(R"***(#version 130
+static const std::string vertexProgram(R"***(#version 330
+layout(location = 0) in vec2 sg_Position;
+layout(location = 1) in vec2 sg_TexCoord0;
+layout(location = 2) in vec2 glyphDim;
 
-uniform mat4 sg_matrix_modelToClipping;
-
-in vec2 sg_Position;
-in vec2 sg_TexCoord0;
-out vec2 glyphPos;
+out Glyph {
+	vec2 pos;
+	vec2 tex;
+	vec2 dim;
+} vOut;
 
 void main(void) {
-	glyphPos = sg_TexCoord0;
-	gl_Position = (sg_matrix_modelToClipping * vec4(sg_Position, 0.0, 1.0));
+	vOut.pos = sg_Position;
+	vOut.tex = sg_TexCoord0;
+	vOut.dim = glyphDim;
 }
 )***");
 
-static const std::string fragmentProgram(R"***(#version 130
+static const std::string geometryProgram(R"***(#version 330	
+layout(points) in;
+layout(triangle_strip, max_vertices = 4) out;
+	
+uniform mat4 sg_matrix_modelToClipping;
+
+in Glyph {
+	vec2 pos;
+	vec2 tex;
+	vec2 dim;
+} vIn[];
+
+out vec2 glyphPos;
+
+void main(void) {
+	vec2 pos = vIn[0].pos;
+	vec2 tex = vIn[0].tex;
+	vec2 dim = vIn[0].dim;
+	
+	// Top left
+	glyphPos = tex;
+	gl_Position = (sg_matrix_modelToClipping * vec4(pos, 0.0, 1.0));
+  EmitVertex();	
+	
+	// Bottom left
+	glyphPos = tex + vec2(0, -dim.y);
+	gl_Position = (sg_matrix_modelToClipping * vec4(pos + vec2(0, dim.y), 0.0, 1.0));
+  EmitVertex();
+	
+	// Top right
+	glyphPos = tex + vec2(dim.x, 0);
+	gl_Position = (sg_matrix_modelToClipping * vec4(pos + vec2(dim.x, 0), 0.0, 1.0));
+  EmitVertex();
+	
+	// Bottom right
+	glyphPos = tex + vec2(dim.x, -dim.y);
+	gl_Position = (sg_matrix_modelToClipping * vec4(pos + dim, 0.0, 1.0));
+  EmitVertex();
+	
+  EndPrimitive();
+}
+)***");
+
+static const std::string fragmentProgram(R"***(#version 330
 
 uniform sampler2D sg_texture0;
 uniform vec4 textColor;
@@ -58,11 +107,25 @@ struct TextRenderer::Implementation {
 	Util::Reference<Shader> shader;
 	Util::Reference<Texture> texture;
 	Util::FontInfo fontInfo;
+	uint32_t characterBufferSize = 128;
+	Util::Reference<Mesh> mesh;
+	uint32_t cursor=0;
 };
+static Util::StringIdentifier GLYPH_DIM_ATTR("glyphDim");
 
-TextRenderer::TextRenderer(const Util::Bitmap & glyphBitmap, 
-						   const Util::FontInfo & fontInfo) :
-		impl(new Implementation) {
+static Mesh* initializeMesh(uint32_t maxCharacters) {
+	VertexDescription vertexDescription;
+	vertexDescription.appendPosition2D();
+	vertexDescription.appendTexCoord();
+	vertexDescription.appendFloatAttribute(GLYPH_DIM_ATTR, 2);
+	auto mesh = new Mesh(vertexDescription, maxCharacters, 0);
+	mesh->setUseIndexData(false);
+	mesh->setDrawMode(Mesh::DRAW_POINTS);
+	mesh->setDataStrategy(SimpleMeshDataStrategy::getDynamicVertexStrategy());
+	return mesh;
+}
+
+TextRenderer::TextRenderer(const Util::Bitmap & glyphBitmap, const Util::FontInfo & fontInfo) : impl(new Implementation) {
 	impl->texture = TextureUtils::createTextureFromBitmap(glyphBitmap);
 	impl->fontInfo = fontInfo;
 }
@@ -80,7 +143,7 @@ void TextRenderer::draw(RenderingContext & context,
 						const Geometry::Vec2i & textPosition,
 						const Util::Color4f & textColor) const {
 	if(impl->shader.isNull()) {
-		impl->shader = Shader::createShader(vertexProgram, fragmentProgram, Shader::USE_UNIFORMS);
+		impl->shader = Shader::createShader(vertexProgram, geometryProgram, fragmentProgram, Shader::USE_UNIFORMS);
 	}
 	context.pushAndSetBlending(BlendingParameters(BlendingParameters::SRC_ALPHA, BlendingParameters::ONE_MINUS_SRC_ALPHA));
 	context.pushAndSetDepthBuffer(DepthBufferParameters(false, false, Comparison::LESS));
@@ -89,14 +152,19 @@ void TextRenderer::draw(RenderingContext & context,
 
 	impl->shader->setUniform(context, Uniform("textColor", textColor));
 
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition2D();
-	vertexDescription.appendTexCoord();
-	MeshUtils::MeshBuilder builder(vertexDescription);
-
+	if(impl->mesh.isNull()) {
+		impl->mesh = initializeMesh(impl->characterBufferSize);
+	}
+	
+	auto& data = impl->mesh->openVertexData();
+	auto posAcc = TexCoordAttributeAccessor::create(data, VertexAttributeIds::POSITION);
+	auto texAcc = TexCoordAttributeAccessor::create(data, VertexAttributeIds::TEXCOORD0);
+	auto glyphAcc = TexCoordAttributeAccessor::create(data, GLYPH_DIM_ATTR);
+	
 	const auto textureHeight = static_cast<int32_t>(impl->texture->getHeight());
 
 	int cursorX = textPosition.getX();
+	uint32_t start = impl->cursor;
 	for(const auto & character : text) {
 		const auto it = impl->fontInfo.glyphMap.find(character);
 		if(it == impl->fontInfo.glyphMap.cend()) {
@@ -105,38 +173,31 @@ void TextRenderer::draw(RenderingContext & context,
 		}
 		const auto & glyphInfo = it->second;
 
-		const auto glyphWidth = glyphInfo.size.first;
-		const auto glyphHeight = glyphInfo.size.second;
-
 		const Geometry::Vec2i topLeftPos(cursorX + glyphInfo.offset.first,
 										 textPosition.getY() + impl->fontInfo.ascender - glyphInfo.offset.second);
 		const Geometry::Vec2i topLeftTexCoord(glyphInfo.position.first,
 											  textureHeight - glyphInfo.position.second);
+		const Geometry::Vec2i glyphDim(glyphInfo.size.first, glyphInfo.size.second);
 
-		// Top left
-		builder.position(topLeftPos);
-		builder.texCoord0(topLeftTexCoord);
-		const auto indexA = builder.addVertex();
-		// Bottom left
-		builder.position(topLeftPos + Geometry::Vec2i(0, glyphHeight));
-		builder.texCoord0(topLeftTexCoord + Geometry::Vec2i(0, -glyphHeight));
-		const auto indexB = builder.addVertex();
-		// Bottom right
-		builder.position(topLeftPos + Geometry::Vec2i(glyphWidth, glyphHeight));
-		builder.texCoord0(topLeftTexCoord + Geometry::Vec2i(glyphWidth, -glyphHeight));
-		const auto indexC = builder.addVertex();
-		// Top right
-		builder.position(topLeftPos + Geometry::Vec2i(glyphWidth, 0));
-		builder.texCoord0(topLeftTexCoord + Geometry::Vec2i(glyphWidth, 0));
-		const auto indexD = builder.addVertex();
-
-		builder.addQuad(indexA, indexB, indexC, indexD);
-
+		posAcc->setCoordinate(impl->cursor, topLeftPos);
+		texAcc->setCoordinate(impl->cursor, topLeftTexCoord);
+		glyphAcc->setCoordinate(impl->cursor, glyphDim);
+		
 		cursorX += glyphInfo.xAdvance;
+		++impl->cursor;
+		
+		if(impl->cursor >= impl->characterBufferSize) {
+			data.markAsChanged();
+			context.displayMesh(impl->mesh.get(), start, impl->cursor);
+			start = 0;
+			impl->cursor = 0;
+		}
 	}
-	Util::Reference<Mesh> mesh = builder.buildMesh();
-
-	context.displayMesh(mesh.get());
+	
+	if(impl->cursor > start) {
+		data.markAsChanged();
+		context.displayMesh(impl->mesh.get(), start, impl->cursor);
+	}
 
 	context.popTexture(0);
 	context.popShader();
