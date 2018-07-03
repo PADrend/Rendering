@@ -15,7 +15,6 @@
 #include "GLHeader.h"
 #include "Helper.h"
 #include <stdexcept>
-#include <iostream>
 
 namespace Rendering {
 
@@ -57,14 +56,13 @@ void FBO::attachTexture(RenderingContext & context, GLenum attachmentPoint, Text
 		}
 		if(layer+1 > texture->getNumLayers())
 			throw std::invalid_argument("FBO::attachTexture: invalid texture layer.");
-			
-			
+		
 		if(layer >= 0)
 			glNamedFramebufferTextureLayer(glId, attachmentPoint, textureId, level, layer);
 		else
 			glNamedFramebufferTexture(glId, attachmentPoint, textureId, level);
-		
-		/*switch( texture->getTextureType() ){
+		/*bind();
+		switch( texture->getTextureType() ){
 			case TextureType::TEXTURE_1D:
 				glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, texture->getGLTextureType(),  textureId, level);	// GL_framebuffer_object
 				break;
@@ -89,7 +87,8 @@ void FBO::attachTexture(RenderingContext & context, GLenum attachmentPoint, Text
 				throw std::logic_error("FBO::attachTexture: TextureBuffers are no valid targets.");
 			default:
 				throw std::logic_error("FBO::attachTexture: ???");
-		}*/
+		}
+		unbind();*/
 	}else{
 		glNamedFramebufferTexture(glId, attachmentPoint, 0, 0);
 		//glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint,GL_TEXTURE_2D,0,0);
@@ -125,7 +124,7 @@ bool FBO::isComplete() {
 	return b;
 }
 
-const char * FBO::getStatusMessage(RenderingContext & context) {
+const char * FBO::getStatusMessage() {
 	const GLenum result = glCheckNamedFramebufferStatus(glId, GL_FRAMEBUFFER);
 	GET_GL_ERROR();
 	switch(result) {
@@ -169,12 +168,13 @@ void FBO::setDrawBuffers(uint32_t number) {
 	GET_GL_ERROR();
 }
 
-void FBO::blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect) {
+void FBO::blit(RenderingContext & context, FBO* other, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect, bool includeDepth) {
 	context.applyChanges();
-	glNamedFramebufferDrawBuffer(0, GL_BACK);
-	glBlitNamedFramebuffer(glId, 0, srcRect.getX(), srcRect.getY(), srcRect.getWidth(), srcRect.getHeight(), 
+	uint32_t flags = GL_COLOR_BUFFER_BIT | (includeDepth ? GL_DEPTH_BUFFER_BIT : 0);
+	if(!other) glNamedFramebufferDrawBuffer(0, GL_BACK);
+	glBlitNamedFramebuffer(glId, other ? other->getHandle() : 0, srcRect.getX(), srcRect.getY(), srcRect.getWidth(), srcRect.getHeight(), 
 											tgtRect.getX(), tgtRect.getY(), tgtRect.getWidth(), tgtRect.getHeight(), 
-											GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+											flags, GL_NEAREST);
 	GET_GL_ERROR();
 }
 

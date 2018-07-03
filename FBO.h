@@ -67,8 +67,9 @@ class FBO : public Util::ReferenceCounter<FBO> {
 
 		bool isComplete();
 		bool isComplete(RenderingContext & context) __attribute((deprecated)) { return isComplete(); }
-
-		const char * getStatusMessage(RenderingContext & context);
+		
+		const char * getStatusMessage();
+		const char * getStatusMessage(RenderingContext & context) __attribute((deprecated)) { return getStatusMessage(); }
 
 		void attachTexture(RenderingContext & context, uint32_t attachmentPoint, Texture * t, uint32_t level, int32_t layer=-1);
 		void detachTexture(RenderingContext & context, uint32_t attachmentPoint) { attachTexture(context,attachmentPoint,nullptr,0,-1); }
@@ -89,9 +90,14 @@ class FBO : public Util::ReferenceCounter<FBO> {
 		 * @see function @c glDrawBuffers
 		 */
 	 	void setDrawBuffers(uint32_t number);
-
+		
+		//! copy a block of pixels from this framebuffer to another framebuffer
+		void blit(RenderingContext & context, FBO* other, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect, bool includeDepth=false);
+				
 		//! copy a block of pixels from this framebuffer to the screen
-		void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect);
+		void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect, bool includeDepth=false) {
+			blit(context, nullptr, srcRect, tgtRect, includeDepth);
+		}
 		
 		uint32_t getHandle() const { return glId; }
 	private:

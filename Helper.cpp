@@ -40,18 +40,14 @@ static const char * getGLErrorString(GLenum errorFlag) {
 			return "GL_INVALID_OPERATION";
 		case GL_OUT_OF_MEMORY:
 			return "GL_OUT_OF_MEMORY";
-#ifdef LIB_GL
 		case GL_STACK_OVERFLOW:
 			return "GL_STACK_OVERFLOW";
 		case GL_STACK_UNDERFLOW:
 			return "GL_STACK_UNDERFLOW";
 		case GL_TABLE_TOO_LARGE:
 			return "GL_TABLE_TOO_LARGE";
-#endif /* LIB_GL */
-#ifdef LIB_GLESv2
 		case GL_INVALID_FRAMEBUFFER_OPERATION:
 			return "GL_INVALID_FRAMEBUFFER_OPERATION";
-#endif /* LIB_GLESv2 */
 		default:
 			return "Unknown error";
 	}
