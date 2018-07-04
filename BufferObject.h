@@ -66,6 +66,7 @@ class BufferObject {
 		
 		static const uint32_t FLAGS_STATIC;
 		static const uint32_t FLAGS_DYNAMIC;
+		static const uint32_t FLAGS_PERSISTENT;
 		static const uint32_t FLAGS_STREAM;
 	private:		
 		//! OpenGL handle for this buffer object.

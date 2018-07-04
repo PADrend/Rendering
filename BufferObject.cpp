@@ -58,7 +58,8 @@ const uint32_t BufferObject::FLAG_MAP_FLUSH_EXPLICIT = GL_MAP_FLUSH_EXPLICIT_BIT
 const uint32_t BufferObject::FLAG_MAP_UNSYNCHRONIZED = GL_MAP_UNSYNCHRONIZED_BIT;
 
 const uint32_t BufferObject::FLAGS_STATIC = 0;
-const uint32_t BufferObject::FLAGS_DYNAMIC = GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT;
+const uint32_t BufferObject::FLAGS_DYNAMIC = GL_DYNAMIC_STORAGE_BIT;
+const uint32_t BufferObject::FLAGS_PERSISTENT = GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_MAP_READ_BIT | GL_MAP_COHERENT_BIT;
 const uint32_t BufferObject::FLAGS_STREAM = GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT;
 
 static uint32_t translateLegacyHint(uint32_t hint) {
@@ -74,7 +75,7 @@ static uint32_t translateLegacyHint(uint32_t hint) {
 		case GL_STREAM_DRAW:
 		case GL_STREAM_READ:
 		case GL_STREAM_COPY:
-			return BufferObject::FLAGS_STREAM;
+			return BufferObject::FLAGS_PERSISTENT;
 		default: return hint;
 	}
 }
