@@ -29,7 +29,7 @@
 
 namespace Rendering {
 
-static const std::string vertexProgram(R"***(#version 330
+static const std::string vertexProgram(R"***(#version 420
 layout(location = 0) in vec2 sg_Position;
 layout(location = 1) in vec2 sg_TexCoord0;
 layout(location = 2) in vec2 glyphDim;
@@ -47,11 +47,17 @@ void main(void) {
 }
 )***");
 
-static const std::string geometryProgram(R"***(#version 330	
+static const std::string geometryProgram(R"***(#version 420	
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
 	
-uniform mat4 sg_matrix_modelToClipping;
+layout(std140, binding=0, row_major) uniform MatrixData {
+	uniform mat4 worldToCamera;
+	uniform mat4 cameraToWorld;
+	uniform mat4 cameraToClipping;
+	uniform mat4 clippingToCamera;
+	uniform mat4 modelToCamera;
+} sg_matrix;
 
 in Glyph {
 	vec2 pos;
@@ -62,6 +68,8 @@ in Glyph {
 out vec2 glyphPos;
 
 void main(void) {
+	mat4 sg_matrix_modelToClipping = sg_matrix.cameraToClipping * sg_matrix.modelToCamera;
+	
 	vec2 pos = vIn[0].pos;
 	vec2 tex = vIn[0].tex;
 	vec2 dim = vIn[0].dim;
@@ -90,7 +98,7 @@ void main(void) {
 }
 )***");
 
-static const std::string fragmentProgram(R"***(#version 330
+static const std::string fragmentProgram(R"***(#version 420
 
 uniform sampler2D sg_texture0;
 uniform vec4 textColor;

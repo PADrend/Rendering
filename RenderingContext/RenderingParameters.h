@@ -563,18 +563,22 @@ class LightingParameters {
 // -------------------------------------------
 
 class LightParameters {
-	public:
-		enum lightType_t {
-			DIRECTIONAL = 1, POINT = 2, SPOT = 3
-		}type;
-
-		Geometry::Vec3 direction,position;
+	public:		
+		Geometry::Vec3 position;
+		float _padding1 = 1;
+		Geometry::Vec3 direction;
+		float _padding2 = 0;
 		Util::Color4f ambient, diffuse, specular;
-		float constant, linear, quadratic;
-		float cutoff, cosCutoff, exponent;
+		float constant, linear, quadratic, cutoff;
+		float cosCutoff, exponent;
+		enum lightType_t : int {
+			DIRECTIONAL = 1, POINT = 2, SPOT = 3
+		} type;
+		float _padding3 = 0;
 
-		LightParameters() :	type(LightParameters::POINT), direction(), position(), ambient(0.2f, 0.2f, 0.2f, 1.0f), diffuse(0.8f, 0.8f, 0.8f, 1.0f), specular(1.0f, 1.0f, 1.0f,
-					1.0f), constant(1.0f), linear(0.0f), quadratic(0.0f), cutoff(20.0f), cosCutoff(std::cos(Geometry::Convert::degToRad(cutoff))), exponent(2.0f) {
+		LightParameters() :	position(), direction(), ambient(0.2f, 0.2f, 0.2f, 1.0f), diffuse(0.8f, 0.8f, 0.8f, 1.0f), specular(1.0f, 1.0f, 1.0f,
+					1.0f), constant(1.0f), linear(0.0f), quadratic(0.0f), cutoff(20.0f), cosCutoff(std::cos(Geometry::Convert::degToRad(cutoff))), exponent(2.0f),
+					type(LightParameters::POINT) {
 		}
 
 		bool operator!=(const LightParameters & other) const {
@@ -627,49 +631,42 @@ class LineParameters {
 
 class MaterialParameters {
 	private:
-		bool colorMaterial;
-
 		Util::Color4f ambient;
 		Util::Color4f diffuse;
 		Util::Color4f specular;
 		Util::Color4f emission;
 		float shininess;
+		uint32_t enabled;
+		__attribute__((unused)) uint64_t _padding = 0;
 	public:
-		MaterialParameters() :
-			colorMaterial(false),
+		MaterialParameters(bool enabled=true) :
 			ambient(Util::Color4f(0.2f, 0.2f, 0.2f, 1.0f)),
 			diffuse(Util::Color4f(0.8f, 0.8f, 0.8f, 1.0f)),
 			specular(Util::Color4f(0.0f, 0.0f, 0.0f, 1.0f)),
 			emission(Util::Color4f(0.0f, 0.0f, 0.0f, 0.0f)),
-			shininess(0.0f) {
+			shininess(0.0f), enabled(enabled) {
 		}
 
 		bool operator==(const MaterialParameters & other) const {
-			return colorMaterial == other.colorMaterial &&
-				   ambient == other.ambient &&
+			return ambient == other.ambient &&
 				   diffuse == other.diffuse &&
 				   specular == other.specular &&
 				   emission == other.emission &&
-				   shininess == other.shininess;
+				   shininess == other.shininess && 
+					 enabled == other.enabled;
 		}
 		bool operator!=(const MaterialParameters & other) const {
-			return colorMaterial != other.colorMaterial ||
-				   ambient != other.ambient ||
+			return ambient != other.ambient ||
 				   diffuse != other.diffuse ||
 				   specular != other.specular ||
 				   emission != other.emission ||
-				   shininess != other.shininess;
+				   shininess != other.shininess ||
+				   enabled != other.enabled;
 		}
 
-		bool getColorMaterial() const {
-			return colorMaterial;
-		}
-		void enableColorMaterial() {
-			colorMaterial = true;
-		}
-		void disableColorMaterial() {
-			colorMaterial = false;
-		}
+		bool getColorMaterial() const __attribute((deprecated)) { return false; }
+		void enableColorMaterial() __attribute((deprecated)) { }
+		void disableColorMaterial() __attribute((deprecated)) { }
 		const Util::Color4f & getAmbient() const {
 			return ambient;
 		}
@@ -703,6 +700,8 @@ class MaterialParameters {
 			}
 			shininess = std::min(std::max(newShininess, 0.0f), 128.0f);
 		}
+		bool isEnabled() const { return enabled; }
+		void setEnabled(bool v) { enabled = v; }
 };
 
 // -------------------------------------------
@@ -1036,7 +1035,7 @@ enum class TexUnitUsageParameter : uint8_t {
 	DISABLED
 };
 
-static const uint8_t MAX_TEXTURES = 16;
+static const uint8_t MAX_TEXTURES = 8;
 
 }
 

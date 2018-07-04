@@ -32,7 +32,7 @@ class FileName;
 namespace Rendering {
 class Uniform;
 class UniformRegistry;
-class RenderingStatus;
+class ProgramState;
 class RenderingContext;
 
 /*!	Shader */
@@ -46,9 +46,6 @@ class Shader : public Util::ReferenceCounter<Shader> {
 
 		~Shader();
 
-		//! (internal) called by RenderingContext
-		bool _enable();
-
 		/*! Sets the active shader at the renderingContext. If the shader
 			has not been linked, it is linked.
 			\return returns true if the status of the shader is LINKED	*/
@@ -58,12 +55,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		bool usesClassicOpenGL() const __attribute((deprecated)) { return false; }
 		bool usesSGUniforms() const __attribute((deprecated)) { return true; }
 		void setUsage(flag_t newUsage) __attribute((deprecated)) { }
-
-		RenderingStatus * getRenderingStatus()	{	return renderingData.get();	}
-
 	private:
-		std::unique_ptr<RenderingStatus> renderingData; // created when the shader is successfully initialized
-
 		Shader(flag_t usage = 0);
 		static void printProgramInfoLog(uint32_t obj);
 	// @}

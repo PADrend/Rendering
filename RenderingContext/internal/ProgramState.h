@@ -14,44 +14,99 @@
 
 #include "../RenderingParameters.h"
 #include "../../Texture/TextureType.h"
-#include "../../Shader/Shader.h"
+#include "../../BufferView.h"
 #include <Geometry/Matrix4x4.h>
 #include <bitset>
 #include <cassert>
 #include <deque>
 #include <vector>
 #include <cstdint>
+#include <cstring>
 
 namespace Rendering {
 class Shader;
 
 //! (internal) Used by shaders and the renderingContext to track the state of shader (and openGL) dependent properties.
-class RenderingStatus {
+class ProgramState {
+private:
+	Util::Reference<CountedBufferObject> buffer;
+public:
+	void initBuffers();
+	void apply(Shader* shader, const ProgramState & target, bool forced);
 	
 	// -------------------------------
 
 	//!	@name Camera Matrix
 	//	@{
 	private:
-		uint32_t checkNumber_matrixCameraWorld = false;
-		Geometry::Matrix4x4f matrix_worldToCamera;
-		Geometry::Matrix4x4f matrix_cameraToWorld;
+		uint32_t checkNumber_matrices = 0;
+		struct MatrixData {
+			Geometry::Matrix4x4f worldToCamera;
+			Geometry::Matrix4x4f cameraToWorld;
+			Geometry::Matrix4x4f cameraToClipping;
+			Geometry::Matrix4x4f clippingToCamera;
+			Geometry::Matrix4x4f modelToCamera;
+		} matrix;		
+		ValueBufferView<MatrixData> matrixBuffer;
 	public:
-		bool matrixCameraToWorldChanged(const RenderingStatus & actual) const {
-			return (checkNumber_matrixCameraWorld == actual.checkNumber_matrixCameraWorld) ? false :
-					matrix_cameraToWorld != actual.matrix_cameraToWorld;
+		bool matricesChanged(const ProgramState & actual) const {
+			return (checkNumber_matrices == actual.checkNumber_matrices) ? false :
+					std::memcmp(&matrix, &actual.matrix, sizeof(MatrixData)) != 0;
 		}
-		const Geometry::Matrix4x4f & getMatrix_cameraToWorld() const 	{	return matrix_cameraToWorld;	}
-		const Geometry::Matrix4x4f & getMatrix_worldToCamera() const	{	return matrix_worldToCamera;	}
+		void updateMatrices(const ProgramState & actual) {
+			matrix = actual.matrix;
+			checkNumber_matrices = actual.checkNumber_matrices;
+		}
+		const Geometry::Matrix4x4f & getMatrix_cameraToWorld() const { return matrix.cameraToWorld; }
+		const Geometry::Matrix4x4f & getMatrix_worldToCamera() const { return matrix.worldToCamera; }
 		void setMatrix_cameraToWorld(const Geometry::Matrix4x4f & eyeToWorld) {
-			matrix_cameraToWorld = eyeToWorld;
-			matrix_worldToCamera = eyeToWorld.inverse();
-			++checkNumber_matrixCameraWorld;
+			matrix.cameraToWorld = eyeToWorld;
+			matrix.worldToCamera = eyeToWorld.inverse();
+			++checkNumber_matrices;
 		}
-		void updateMatrix_cameraToWorld(const RenderingStatus & actual) {
-			matrix_cameraToWorld = actual.matrix_cameraToWorld;
-			matrix_worldToCamera = actual.matrix_worldToCamera;
-			checkNumber_matrixCameraWorld = actual.checkNumber_matrixCameraWorld;
+		const Geometry::Matrix4x4f & getMatrix_cameraToClipping() const { return matrix.cameraToClipping; }
+		void setMatrix_cameraToClipping(const Geometry::Matrix4x4f & mat) {
+			matrix.cameraToClipping = mat;
+			matrix.clippingToCamera = mat.inverse();
+			++checkNumber_matrices;
+		}
+		const Geometry::Matrix4x4f & getMatrix_modelToCamera() const { return matrix.modelToCamera; }
+		void setMatrix_modelToCamera(const Geometry::Matrix4x4f & mat) {
+			matrix.modelToCamera = mat;
+			++checkNumber_matrices;
+		}
+		void multModelViewMatrix(const Geometry::Matrix4x4f & mat) {
+			matrix.modelToCamera *= mat;
+			++checkNumber_matrices;
+		}
+	//	@}
+
+	// ------
+
+	//!	@name Materials
+	//	@{
+	private:
+		uint32_t materialCheckNumber = 0;
+		MaterialParameters material = false;
+		ValueBufferView<MaterialParameters> materialBuffer;
+	public:
+		bool isMaterialEnabled() const { return material.isEnabled(); }
+		const MaterialParameters & getMaterialParameters()const	{	return material;	}
+		bool materialChanged(const ProgramState & actual) const {
+			return (materialCheckNumber == actual.materialCheckNumber) ? false : material != actual.material;
+		}
+		void setMaterial(const MaterialParameters & mat) {
+			material = mat;
+			material.setEnabled(true);
+			++materialCheckNumber;
+		}
+		void updateMaterial(const ProgramState & actual) {
+			material=actual.material;
+			materialCheckNumber=actual.materialCheckNumber;
+		}
+		void disableMaterial() {
+			material.setEnabled(false);
+			++materialCheckNumber;
 		}
 	//	@}
 
@@ -60,11 +115,12 @@ class RenderingStatus {
 	//!	@name Lights
 	//	@{
 	public:
-		static const uint8_t MAX_LIGHTS = 16;
+		static const uint8_t MAX_LIGHTS = 8;
 	private:
 		uint32_t lightsCheckNumber = 0;
 		//! Storage of light parameters.
 		LightParameters lights[MAX_LIGHTS];
+		StructuredBufferView<LightParameters> lightBuffer;
 
 		//! Status of the lights (1 = enabled, 0 = disabled).
 		std::bitset<MAX_LIGHTS> lightsEnabled;
@@ -113,7 +169,7 @@ class RenderingStatus {
 		bool isLightEnabled(uint8_t lightNumber) const {
 			return lightsEnabled[lightNumber];
 		}
-		bool lightsChanged(const RenderingStatus & actual) const {
+		bool lightsChanged(const ProgramState & actual) const {
 			if (lightsCheckNumber == actual.lightsCheckNumber)
 				return false;
 			if (lightsEnabled != actual.lightsEnabled)
@@ -125,7 +181,7 @@ class RenderingStatus {
 			}
 			return false;
 		}
-		void updateLights(const RenderingStatus & actual) {
+		void updateLights(const ProgramState & actual) {
 			lightsEnabled = actual.lightsEnabled;
 			lightsCheckNumber = actual.lightsCheckNumber;
 		}
@@ -137,72 +193,12 @@ class RenderingStatus {
 
 	// ------
 
-	//!	@name Materials
-	//	@{
-	private:
-		uint32_t materialCheckNumber = 0;
-		bool materialEnabled = false;
-		MaterialParameters material;
-
-	public:
-		bool isMaterialEnabled() const {return materialEnabled;	}
-		const MaterialParameters & getMaterialParameters()const	{	return material;	}
-		bool materialChanged(const RenderingStatus & actual) const {
-			return (materialCheckNumber == actual.materialCheckNumber) ? false :
-						(materialEnabled != actual.materialEnabled || material != actual.material);
-		}
-		void setMaterial(const MaterialParameters & mat) {
-			material = mat;
-			materialEnabled = true;
-			++materialCheckNumber;
-		}
-		void updateMaterial(const RenderingStatus & actual) {
-			materialEnabled=actual.materialEnabled;
-			material=actual.material;
-			materialCheckNumber=actual.materialCheckNumber;
-		}
-		void disableMaterial() {
-			materialEnabled = false;
-			++materialCheckNumber;
-		}
-	//	@}
-
-	// ------
-
-	//!	@name Modelview Matrix
-	//	@{
-	private:
-		uint32_t matrix_modelToCameraCheckNumber = 0;
-		Geometry::Matrix4x4f matrix_modelToCamera;
-
-	public:
-		const Geometry::Matrix4x4f & getMatrix_modelToCamera() const 				{	return matrix_modelToCamera;	}
-		void setMatrix_modelToCamera(const Geometry::Matrix4x4f & matrix) {
-			matrix_modelToCamera = matrix;
-			++matrix_modelToCameraCheckNumber;
-		}
-		bool matrix_modelToCameraChanged(const RenderingStatus & actual) const {
-			return (matrix_modelToCameraCheckNumber == actual.matrix_modelToCameraCheckNumber) ? false :
-					matrix_modelToCamera != actual.matrix_modelToCamera;
-		}
-		void multModelViewMatrix(const Geometry::Matrix4x4f & matrix) {
-			matrix_modelToCamera *= matrix;
-			++matrix_modelToCameraCheckNumber;
-		}
-		void updateModelViewMatrix(const RenderingStatus & actual) {
-			matrix_modelToCamera = actual.matrix_modelToCamera;
-			matrix_modelToCameraCheckNumber = actual.matrix_modelToCameraCheckNumber;
-		}
-	//	@}
-
-	// ------
-
 	//!	@name Point
 	//	@{
 	private:
 		PointParameters pointParameters;
 	public:
-		bool pointParametersChanged(const RenderingStatus & actual) const {
+		bool pointParametersChanged(const ProgramState & actual) const {
 			return pointParameters != actual.pointParameters;
 		}
 		const PointParameters & getPointParameters() const {
@@ -210,30 +206,6 @@ class RenderingStatus {
 		}
 		void setPointParameters(const PointParameters & p) {
 			pointParameters = p;
-		}
-	//	@}
-
-	// ------
-
-	//!	@name Projection Matrix
-	//	@{
-	private:
-		uint32_t matrix_cameraToClippingCheckNumber = 0;
-		Geometry::Matrix4x4f matrix_cameraToClipping;
-
-	public:
-		void setMatrix_cameraToClipping(const Geometry::Matrix4x4f & matrix) {
-			matrix_cameraToClipping = matrix;
-			++matrix_cameraToClippingCheckNumber;
-		}
-		const Geometry::Matrix4x4f & getMatrix_cameraToClipping() const 				{	return matrix_cameraToClipping;	}
-		void updateMatrix_cameraToClipping(const RenderingStatus & actual) {
-			matrix_cameraToClipping = actual.matrix_cameraToClipping;
-			matrix_cameraToClippingCheckNumber = actual.matrix_cameraToClippingCheckNumber;
-		}
-		bool matrix_cameraToClipChanged(const RenderingStatus & actual) const {
-			return (matrix_cameraToClippingCheckNumber == actual.matrix_cameraToClippingCheckNumber) ? false :
-					matrix_cameraToClipping != actual.matrix_cameraToClipping;
 		}
 	//	@}
 
@@ -254,11 +226,11 @@ class RenderingStatus {
 		const std::pair<TexUnitUsageParameter,TextureType> & getTextureUnitParams(uint8_t unit) const {
 			return textureUnitParams.at(unit);
 		}
-		bool textureUnitsChanged(const RenderingStatus & actual) const {
+		bool textureUnitsChanged(const ProgramState & actual) const {
 			return (textureUnitUsagesCheckNumber == actual.textureUnitUsagesCheckNumber) ? false : 
 					textureUnitParams != actual.textureUnitParams;
 		}
-		void updateTextureUnits(const RenderingStatus & actual) {
+		void updateTextureUnits(const ProgramState & actual) {
 			textureUnitParams = actual.textureUnitParams;
 			textureUnitUsagesCheckNumber = actual.textureUnitUsagesCheckNumber;
 		}

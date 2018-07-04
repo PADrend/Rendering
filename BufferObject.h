@@ -59,6 +59,14 @@ class BufferObject {
 		static const uint32_t FLAG_MAP_COHERENT;
 		static const uint32_t FLAG_CLIENT_STORAGE;
 		
+		static const uint32_t FLAG_MAP_INVALIDATE_RANGE;
+		static const uint32_t FLAG_MAP_INVALIDATE_BUFFFER;
+		static const uint32_t FLAG_MAP_FLUSH_EXPLICIT;
+		static const uint32_t FLAG_MAP_UNSYNCHRONIZED;
+		
+		static const uint32_t FLAGS_STATIC;
+		static const uint32_t FLAGS_DYNAMIC;
+		static const uint32_t FLAGS_STREAM;
 	private:		
 		//! OpenGL handle for this buffer object.
 		uint32_t bufferId = 0;
@@ -177,6 +185,7 @@ class BufferObject {
 		uint8_t* map(size_t offset=0, size_t range=0, uint32_t mapFlags=0);
 		const uint8_t* map(size_t offset=0) const;
 		void unmap();
+		void flush(size_t offset=0, size_t range=0);
 		
 		void clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
 		void __attribute((deprecated)) clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr) {
@@ -184,11 +193,10 @@ class BufferObject {
 		}
 		
 		//! @c true if and only if prepare() was executed at least once without an execution of destroy() afterwards. 
-		bool isValid() const {
-			return bufferId != 0;
-		}
-		uint32_t getGLId()const{ return bufferId; }		
+		bool isValid() const { return bufferId != 0; }
+		uint32_t getGLId() const { return bufferId; }
 		size_t getSize() const { return size; }
+		uint32_t getFlags() const { return flags; }
 };
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;

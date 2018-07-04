@@ -52,26 +52,39 @@ const uint32_t BufferObject::FLAG_MAP_PERSISTENT = GL_MAP_PERSISTENT_BIT;
 const uint32_t BufferObject::FLAG_MAP_COHERENT = GL_MAP_COHERENT_BIT;
 const uint32_t BufferObject::FLAG_CLIENT_STORAGE = GL_CLIENT_STORAGE_BIT;
 
+const uint32_t BufferObject::FLAG_MAP_INVALIDATE_RANGE = GL_MAP_INVALIDATE_RANGE_BIT;
+const uint32_t BufferObject::FLAG_MAP_INVALIDATE_BUFFFER = GL_MAP_INVALIDATE_BUFFER_BIT;
+const uint32_t BufferObject::FLAG_MAP_FLUSH_EXPLICIT = GL_MAP_FLUSH_EXPLICIT_BIT;
+const uint32_t BufferObject::FLAG_MAP_UNSYNCHRONIZED = GL_MAP_UNSYNCHRONIZED_BIT;
+
+const uint32_t BufferObject::FLAGS_STATIC = 0;
+const uint32_t BufferObject::FLAGS_DYNAMIC = GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT;
+const uint32_t BufferObject::FLAGS_STREAM = GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT;
+
 static uint32_t translateLegacyHint(uint32_t hint) {
 	switch(hint) {
 		case GL_STATIC_DRAW:
 		case GL_STATIC_READ:
 		case GL_STATIC_COPY:
-			return 0;
+			return BufferObject::FLAGS_STATIC;
 		case GL_DYNAMIC_DRAW:
 		case GL_DYNAMIC_READ:
 		case GL_DYNAMIC_COPY:
-			return GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT;
+			return BufferObject::FLAGS_DYNAMIC;
 		case GL_STREAM_DRAW:
 		case GL_STREAM_READ:
 		case GL_STREAM_COPY:
-			return GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT;
+			return BufferObject::FLAGS_STREAM;
 		default: return hint;
 	}
 }
 
 inline bool isBitSet(uint32_t flags, uint32_t flag) {
 	return flags & flag;
+}
+
+inline uint32_t extractStorageFlags(uint32_t flags) {
+	return flags & ~(GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 }
 
 inline uint32_t extractMapFlags(uint32_t flags) {
@@ -157,7 +170,7 @@ void BufferObject::allocate(size_t numBytes, uint32_t hintOrFlags, const uint8_t
 	flags = newFlags;
 	size = numBytes;
 	
-	glNamedBufferStorage(bufferId, numBytes, data, flags);
+	glNamedBufferStorage(bufferId, numBytes, data, extractStorageFlags(flags));
 	
 	if(isBitSet(flags, FLAG_MAP_PERSISTENT)) {
 		// persistent mapped buffer
@@ -259,6 +272,12 @@ const uint8_t* BufferObject::map(size_t offset) const {
 void BufferObject::unmap() {
 	if(bufferId != 0 && ptr && !isBitSet(flags, FLAG_MAP_PERSISTENT))
 		glUnmapNamedBuffer(bufferId);
+}
+
+void BufferObject::flush(size_t offset, size_t range) {
+	if(isBitSet(flags, FLAG_MAP_WRITE)) {
+		glFlushMappedNamedBufferRange(bufferId, offset, range == 0 ? size : range);
+	}
 }
 
 void BufferObject::clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data) {

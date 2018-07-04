@@ -53,7 +53,7 @@ add_library(Rendering
 	MeshUtils/TriangleAccessor.cpp
 	MeshUtils/ConnectivityAccessor.cpp
 	RenderingContext/internal/PipelineState.cpp
-	RenderingContext/internal/StatusHandler_UBO.cpp
+	RenderingContext/internal/ProgramState.cpp
 	RenderingContext/RenderingContext.cpp
 	RenderingContext/RenderingParameters.cpp
 	Serialization/GenericAttributeSerialization.cpp
@@ -75,6 +75,7 @@ add_library(Rendering
 	Texture/Texture.cpp
 	Texture/TextureUtils.cpp
 	BufferObject.cpp
+	BufferView.cpp
 	Draw.cpp
 	DrawCompound.cpp
 	FBO.cpp

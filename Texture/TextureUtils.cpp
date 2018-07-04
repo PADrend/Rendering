@@ -634,7 +634,6 @@ void drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect
 //! (static)
 void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenRect, const std::vector<Texture *> & textures,
 		const std::vector<Geometry::Rect_f> & textureRects) {
-#ifdef LIB_GL
 	uint8_t numTextures = textures.size() < textureRects.size() ? textures.size() : textureRects.size();
 	if(numTextures == 0) {
 		return;
@@ -645,7 +644,6 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	}
 
 	rc.pushAndSetDepthBuffer(DepthBufferParameters(false, false, Comparison::LESS));
-	rc.pushAndSetLighting(LightingParameters(false));
 	rc.applyChanges();
 
 	{
@@ -655,11 +653,11 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 		rc.setMatrix_cameraToClipping(Geometry::Matrix4x4::orthographicProjection(0, viewport.getWidth(), 0, viewport.getHeight(), -1, 1));
 	}
 	{
-		Geometry::Matrix4x4 identityMatrix;
-		identityMatrix.setIdentity();
-
+		Geometry::Matrix4x4 matrix;
+		matrix.translate(screenRect.getX(), screenRect.getY(), 0.0f);
+		matrix.scale(screenRect.getWidth(), screenRect.getHeight(), 1.0f);
 		rc.pushMatrix_modelToCamera();
-		rc.setMatrix_modelToCamera(identityMatrix);
+		rc.setMatrix_modelToCamera(matrix);
 	}
 
 	for(uint_fast8_t i = 0; i < numTextures; ++i) {
@@ -672,34 +670,55 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	}
 
 	// create mesh
-	VertexDescription vertexDesc;
-	const VertexAttribute & posAttr = vertexDesc.appendPosition2D();
-	const VertexAttribute & colorAttr = vertexDesc.appendColorRGBAByte();
+	static Util::Reference<Mesh> mesh;
+	if(mesh.isNull()) {		
+		VertexDescription vertexDesc;
+		const VertexAttribute & posAttr = vertexDesc.appendPosition2D();
+		const VertexAttribute & colorAttr = vertexDesc.appendColorRGBAByte();
+		for(uint_fast8_t i = 0; i < MAX_TEXTURES; ++i)
+			vertexDesc.appendTexCoord(i);
+		
+		mesh = new Mesh(vertexDesc, 4, 6);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());		
+
+		{	// init index data
+			static const uint32_t indices[] = { 0,1,2,1,3,2 };
+			MeshIndexData & indexData = mesh->openIndexData();
+			std::copy(indices,indices+6,indexData.data());
+			indexData.updateIndexRange();
+		}		
+
+		// init vertex data
+		uint8_t * vertex = mesh->openVertexData().data();
+		Geometry::Rect_i unitRect(0,0,1,1);
+		for(uint_fast8_t cornerNr=0; cornerNr<4; ++cornerNr) {
+			const Geometry::rectCorner_t corner(static_cast<const Geometry::rectCorner_t>(cornerNr));
+
+			// position
+			const Geometry::Vec2 pos(unitRect.getCorner(corner));
+			float * positionPtr = reinterpret_cast<float *>(vertex + posAttr.getOffset());
+			positionPtr[0] = pos.getX();
+			positionPtr[1] = pos.getY();
+
+			// color
+			uint8_t * color = reinterpret_cast<uint8_t *>(vertex + colorAttr.getOffset());
+			std::fill_n(color, 4, 255);
+			vertex += vertexDesc.getVertexSize();
+		}
+	}
+	
+	auto& vd = mesh->openVertexData();
+	VertexDescription vertexDesc = vd.getVertexDescription();
 	std::vector<VertexAttribute> texCoordAttr;
 	texCoordAttr.reserve(numTextures);
 	for(uint_fast8_t i = 0; i < numTextures; ++i) {
-		texCoordAttr.push_back(vertexDesc.appendAttribute(VertexAttributeIds::getTextureCoordinateIdentifier(i), 2, GL_FLOAT,false));
+		texCoordAttr.push_back(vertexDesc.getAttribute(VertexAttributeIds::getTextureCoordinateIdentifier(i)));
 	}
-
-	Util::Reference<Mesh> mesh = new Mesh(vertexDesc, 4, 6);
-	mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
-
-	// init vertex data
-	uint8_t * vertex = mesh->openVertexData().data();
-	for(uint_fast8_t cornerNr=0;cornerNr<4;++cornerNr){
+	
+	auto* vertex = vd.data();	
+	for(uint_fast8_t cornerNr=0; cornerNr<4; ++cornerNr) {
 		const Geometry::rectCorner_t corner(static_cast<const Geometry::rectCorner_t>(cornerNr));
-
-		// position
-		const Geometry::Vec2 pos(screenRect.getCorner(corner));
-		float * positionPtr = reinterpret_cast<float *>(vertex + posAttr.getOffset());
-		positionPtr[0] = pos.getX();
-		positionPtr[1] = pos.getY();
-
-		// color
-		uint8_t * color = reinterpret_cast<uint8_t *>(vertex + colorAttr.getOffset());
-		std::fill_n(color, 4, 255);
-
-		// texture coordinates
+		// set texture coordinates
 		for(uint_fast8_t i = 0; i < numTextures; ++i) {
 			float * texCoordPtr = reinterpret_cast<float *>(vertex + texCoordAttr[i].getOffset());
 			const Geometry::Vec2 uv(textureRects[i].getCorner(corner));
@@ -708,14 +727,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 		}
 		vertex += vertexDesc.getVertexSize();
 	}
-
-	{	// init index data
-		static const uint32_t indices[] = { 0,1,2,1,3,2 };
-
-		MeshIndexData & indexData = mesh->openIndexData();
-		std::copy(indices,indices+6,indexData.data());
-		indexData.updateIndexRange();
-	}
+	vd.markAsChanged();
 
 	rc.displayMesh(mesh.get());
 
@@ -726,10 +738,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	rc.popMatrix_cameraToClipping();
 	rc.popMatrix_modelToCamera();
 
-	rc.popLighting();
-
 	rc.popDepthBuffer();
-#endif
 }
 
 Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context,Texture & texture) {
@@ -740,7 +749,7 @@ Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context
 		}
 		texture.downloadGLTexture(context);
 	}
-	return std::move(createBitmapFromLocalTexture(texture));
+	return createBitmapFromLocalTexture(texture);
 }
 
 Util::Reference<Util::Bitmap> createBitmapFromLocalTexture(const Texture & texture) {

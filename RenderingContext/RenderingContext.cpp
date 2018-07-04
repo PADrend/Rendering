@@ -12,8 +12,7 @@
 #include "RenderingContext.h"
 
 #include "internal/PipelineState.h"
-#include "internal/RenderingStatus.h"
-#include "internal/StatusHandler_UBO.h"
+#include "internal/ProgramState.h"
 #include "RenderingParameters.h"
 #include "../BufferObject.h"
 #include "../Mesh/Mesh.h"
@@ -48,8 +47,8 @@ static const Uniform::UniformName UNIFORM_SG_SCISSOR_ENABLED("sg_scissorEnabled"
 	
 class RenderingContext::InternalData {
 	public:
-		RenderingStatus targetRenderingStatus;
-		RenderingStatus activeRenderingStatus;
+		ProgramState targetProgramState;
+		ProgramState activeProgramState;
 
 		PipelineState targetPipelineState;
 		PipelineState activePipelineState;
@@ -84,10 +83,6 @@ class RenderingContext::InternalData {
 
 		std::stack<feedbackBufferStatus_t> feedbackStack;
 		feedbackBufferStatus_t activeFeedbackStatus;
-
-		std::stack<uint32_t> activeClientStates;
-		std::stack<uint32_t> activeTextureClientStates;
-		std::stack<uint32_t> activeVertexAttributeBindings;
 		
 		std::stack<Geometry::Rect_i> viewportStack;
 
@@ -100,6 +95,7 @@ RenderingContext::RenderingContext() :
 	internalData(new InternalData), immediate(false), displayMeshFn() {
 
 	resetDisplayMeshFn();
+	internalData->activeProgramState.initBuffers();
 
 	setBlending(BlendingParameters());
 	setColorBuffer(ColorBufferParameters());
@@ -220,17 +216,9 @@ void RenderingContext::applyChanges(bool forced) {
 		internalData->activePipelineState.setDebug(debugMode);
 		internalData->activePipelineState.apply(internalData->targetPipelineState);
 		
-		const auto& vp = getViewport();
-		const auto& sp = getScissor();
-		const auto& sr = sp.getRect();
-		
-		internalData->globalUniforms.setUniform({UNIFORM_SG_VIEWPORT, Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight())}, false, false);
-		internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_RECT, Geometry::Vec4(sr.getX(), sr.getY(), sr.getWidth(), sr.getHeight())}, false, false);
-		internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_ENABLED, sp.isEnabled()}, false, false);
-		
 		if(internalData->activePipelineState.isShaderValid()) {
 			auto shader = internalData->activePipelineState.getShader();
-			StatusHandler_UBO::apply(shader.get(), *shader->getRenderingStatus(), internalData->targetRenderingStatus, forced);
+			internalData->activeProgramState.apply(shader.get(), internalData->targetProgramState, forced);
 
 			// transfer updated global uniforms to the shader
 			shader->_getUniformRegistry()->performGlobalSync(internalData->globalUniforms, false);
@@ -633,7 +621,7 @@ void RenderingContext::setLine(const LineParameters & p) {
 
 // Point ************************************************************************************
 const PointParameters& RenderingContext::getPointParameters() const {
-	return internalData->targetRenderingStatus.getPointParameters();
+	return internalData->targetProgramState.getPointParameters();
 }
 
 void RenderingContext::popPointParameters() {
@@ -646,7 +634,7 @@ void RenderingContext::popPointParameters() {
 }
 
 void RenderingContext::pushPointParameters() {
-	internalData->pointParameterStack.emplace(internalData->targetRenderingStatus.getPointParameters());
+	internalData->pointParameterStack.emplace(internalData->targetProgramState.getPointParameters());
 }
 
 void RenderingContext::pushAndSetPointParameters(const PointParameters & p) {
@@ -655,7 +643,7 @@ void RenderingContext::pushAndSetPointParameters(const PointParameters & p) {
 }
 
 void RenderingContext::setPointParameters(const PointParameters & p) {
-	internalData->targetRenderingStatus.setPointParameters(p);
+	internalData->targetProgramState.setPointParameters(p);
 	if(immediate)
 		applyChanges();
 }
@@ -740,6 +728,9 @@ void RenderingContext::pushAndSetScissor(const ScissorParameters & scissorParame
 
 void RenderingContext::setScissor(const ScissorParameters & scissorParameters) {
 	internalData->targetPipelineState.setScissorParameters(scissorParameters);
+	const auto& sr = scissorParameters.getRect();
+	internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_RECT, Geometry::Vec4(sr.getX(), sr.getY(), sr.getWidth(), sr.getHeight())}, false, false);
+	internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_ENABLED, scissorParameters.isEnabled()}, false, false);
 	if(immediate)
 		applyChanges();
 }
@@ -923,7 +914,7 @@ Texture * RenderingContext::getTexture(uint8_t unit)const {
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit)const{
-	return internalData->targetRenderingStatus.getTextureUnitParams(unit).first;
+	return internalData->targetProgramState.getTextureUnitParams(unit).first;
 }
 
 void RenderingContext::pushTexture(uint8_t unit) {
@@ -960,12 +951,12 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageP
 			texture->_prepareForBinding(*this);
 		internalData->targetPipelineState.setTexture(unit, texture);
 	}
-	const auto oldUsage = internalData->targetRenderingStatus.getTextureUnitParams(unit).first;
+	const auto oldUsage = internalData->targetProgramState.getTextureUnitParams(unit).first;
 	if(!texture){
 		if( oldUsage!= TexUnitUsageParameter::DISABLED )
-			internalData->targetRenderingStatus.setTextureUnitParams(unit, TexUnitUsageParameter::DISABLED , oldTexture ? oldTexture->getTextureType() : TextureType::TEXTURE_2D);
+			internalData->targetProgramState.setTextureUnitParams(unit, TexUnitUsageParameter::DISABLED , oldTexture ? oldTexture->getTextureType() : TextureType::TEXTURE_2D);
 	}else if( oldUsage!= usage ){
-		internalData->targetRenderingStatus.setTextureUnitParams(unit, usage , texture->getTextureType());
+		internalData->targetProgramState.setTextureUnitParams(unit, usage , texture->getTextureType());
 	}
 	if(immediate)
 		applyChanges();
@@ -1046,22 +1037,22 @@ void RenderingContext::stopTransformFeedback()				{	_startTransformFeedback(0);	
 // LIGHTS ************************************************************************************
 
 uint8_t RenderingContext::enableLight(const LightParameters & light) {
-	if(internalData->targetRenderingStatus.getNumEnabledLights() >= RenderingStatus::MAX_LIGHTS) {
+	if(internalData->targetProgramState.getNumEnabledLights() >= ProgramState::MAX_LIGHTS) {
 		WARN("Cannot enable more lights; ignoring call.");
 		return 255;
 	}
-	const uint8_t lightNumber = internalData->targetRenderingStatus.enableLight(light);
+	const uint8_t lightNumber = internalData->targetProgramState.enableLight(light);
 	if(immediate)
 		applyChanges();
 	return lightNumber;
 }
 
 void RenderingContext::disableLight(uint8_t lightNumber) {
-	if (!internalData->targetRenderingStatus.isLightEnabled(lightNumber)) {
+	if (!internalData->targetProgramState.isLightEnabled(lightNumber)) {
 		WARN("Cannot disable an already disabled light; ignoring call.");
 		return;
 	}
-	internalData->targetRenderingStatus.disableLight(lightNumber);
+	internalData->targetProgramState.disableLight(lightNumber);
 	if(immediate)
 		applyChanges();
 }
@@ -1073,14 +1064,14 @@ void RenderingContext::popMatrix_cameraToClipping() {
 		WARN("Cannot pop projection matrix. The stack is empty.");
 		return;
 	}
-	internalData->targetRenderingStatus.setMatrix_cameraToClipping(internalData->projectionMatrixStack.top());
+	internalData->targetProgramState.setMatrix_cameraToClipping(internalData->projectionMatrixStack.top());
 	internalData->projectionMatrixStack.pop();
 	if(immediate)
 		applyChanges();
 }
 
 void RenderingContext::pushMatrix_cameraToClipping() {
-	internalData->projectionMatrixStack.emplace(internalData->targetRenderingStatus.getMatrix_cameraToClipping());
+	internalData->projectionMatrixStack.emplace(internalData->targetProgramState.getMatrix_cameraToClipping());
 }
 
 void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
@@ -1089,33 +1080,33 @@ void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4
 }
 	
 void RenderingContext::setMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetRenderingStatus.setMatrix_cameraToClipping(matrix);
+	internalData->targetProgramState.setMatrix_cameraToClipping(matrix);
 	if(immediate)
 		applyChanges();
 }
 
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToClipping() const {
-	return internalData->targetRenderingStatus.getMatrix_cameraToClipping();
+	return internalData->targetProgramState.getMatrix_cameraToClipping();
 }
 
 // CAMERA MATRIX *****************************************************************************
 
 void RenderingContext::setMatrix_cameraToWorld(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetRenderingStatus.setMatrix_cameraToWorld(matrix);
+	internalData->targetProgramState.setMatrix_cameraToWorld(matrix);
 	if(immediate)
 		applyChanges();
 }
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_worldToCamera() const {
-	return internalData->targetRenderingStatus.getMatrix_worldToCamera();
+	return internalData->targetProgramState.getMatrix_worldToCamera();
 }
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToWorld() const {
-	return internalData->targetRenderingStatus.getMatrix_cameraToWorld();
+	return internalData->targetProgramState.getMatrix_cameraToWorld();
 }
 
 // MODEL VIEW MATRIX *************************************************************************
 
 void RenderingContext::resetMatrix() {
-	internalData->targetRenderingStatus.setMatrix_modelToCamera(internalData->targetRenderingStatus.getMatrix_worldToCamera());
+	internalData->targetProgramState.setMatrix_modelToCamera(internalData->targetProgramState.getMatrix_worldToCamera());
 	if(immediate)
 		applyChanges();
 }
@@ -1127,21 +1118,21 @@ void RenderingContext::pushAndSetMatrix_modelToCamera(const Geometry::Matrix4x4 
 }
 
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_modelToCamera() const {
-	return internalData->targetRenderingStatus.getMatrix_modelToCamera();
+	return internalData->targetProgramState.getMatrix_modelToCamera();
 }
 
 void RenderingContext::pushMatrix_modelToCamera() {
-	internalData->matrixStack.emplace(internalData->targetRenderingStatus.getMatrix_modelToCamera());
+	internalData->matrixStack.emplace(internalData->targetProgramState.getMatrix_modelToCamera());
 }
 
 void RenderingContext::multMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetRenderingStatus.multModelViewMatrix(matrix);
+	internalData->targetProgramState.multModelViewMatrix(matrix);
 	if(immediate)
 		applyChanges();
 }
 
 void RenderingContext::setMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetRenderingStatus.setMatrix_modelToCamera(matrix);
+	internalData->targetProgramState.setMatrix_modelToCamera(matrix);
 	if(immediate)
 		applyChanges();
 }
@@ -1151,7 +1142,7 @@ void RenderingContext::popMatrix_modelToCamera() {
 		WARN("Cannot pop matrix. The stack is empty.");
 		return;
 	}
-	internalData->targetRenderingStatus.setMatrix_modelToCamera(internalData->matrixStack.top());
+	internalData->targetProgramState.setMatrix_modelToCamera(internalData->matrixStack.top());
 	internalData->matrixStack.pop();
 	if(immediate)
 		applyChanges();
@@ -1161,7 +1152,7 @@ void RenderingContext::popMatrix_modelToCamera() {
 
 
 const MaterialParameters & RenderingContext::getMaterial() const {
-	return internalData->targetRenderingStatus.getMaterialParameters();
+	return internalData->targetProgramState.getMaterialParameters();
 }
 
 void RenderingContext::popMaterial() {
@@ -1172,16 +1163,16 @@ void RenderingContext::popMaterial() {
 	}
 	internalData->materialStack.pop();
 	if(internalData->materialStack.empty()) {
-		internalData->targetRenderingStatus.disableMaterial();
+		internalData->targetProgramState.disableMaterial();
 	} else {
-		internalData->targetRenderingStatus.setMaterial(internalData->materialStack.top());
+		internalData->targetProgramState.setMaterial(internalData->materialStack.top());
 	}
 	if(immediate)
 		applyChanges();
 }
 
 void RenderingContext::pushMaterial() {
-	internalData->materialStack.emplace(internalData->targetRenderingStatus.getMaterialParameters());
+	internalData->materialStack.emplace(internalData->targetProgramState.getMaterialParameters());
 }
 void RenderingContext::pushAndSetMaterial(const MaterialParameters & material) {
 	pushMaterial();
@@ -1192,11 +1183,10 @@ void RenderingContext::pushAndSetColorMaterial(const Util::Color4f & color) {
 	material.setAmbient(color);
 	material.setDiffuse(color);
 	material.setSpecular(Util::ColorLibrary::BLACK);
-	material.enableColorMaterial();
 	pushAndSetMaterial(material);
 }
 void RenderingContext::setMaterial(const MaterialParameters & material) {
-	internalData->targetRenderingStatus.setMaterial(material);
+	internalData->targetProgramState.setMaterial(material);
 	if(immediate)
 		applyChanges();
 }
@@ -1222,8 +1212,10 @@ void RenderingContext::popViewport() {
 void RenderingContext::pushViewport() {
 	internalData->viewportStack.emplace(getViewport());
 }
-void RenderingContext::setViewport(const Geometry::Rect_i & viewport) {
-	internalData->targetPipelineState.setViewport(viewport);
+void RenderingContext::setViewport(const Geometry::Rect_i & vp) {
+	internalData->targetPipelineState.setViewport(vp);
+	internalData->globalUniforms.setUniform({UNIFORM_SG_VIEWPORT, Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight())}, false, false);
+	
 	if(immediate)
 		applyChanges();
 }

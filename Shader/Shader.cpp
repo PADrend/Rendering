@@ -11,7 +11,7 @@
 #include "Shader.h"
 #include "Uniform.h"
 #include "UniformRegistry.h"
-#include "../RenderingContext/internal/RenderingStatus.h"
+#include "../RenderingContext/internal/ProgramState.h"
 #include "../RenderingContext/RenderingContext.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
@@ -95,7 +95,7 @@ Shader * Shader::createShader(const std::string & vsa, const std::string & gsa, 
 
 /*!	[ctor]	*/
 Shader::Shader(flag_t _usage) :
-	renderingData(), prog(0), status(UNKNOWN), uniforms(new UniformRegistry),glFeedbackVaryingType(0){
+	prog(0), status(UNKNOWN), uniforms(new UniformRegistry),glFeedbackVaryingType(0){
 }
 
 /*!	[dtor]	*/
@@ -110,9 +110,6 @@ bool Shader::init() {
 		}else if(status == COMPILED){
 			if( linkProgram() ){
 				status = LINKED;
-
-				// recreate renderingData
-				renderingData.reset(new RenderingStatus);
 
 				// make sure all set uniforms are re-applied.
 				uniforms->resetCounters();
@@ -184,15 +181,6 @@ bool Shader::linkProgram() {
 void Shader::attachShaderObject(ShaderObjectInfo && obj) {
 	shaderObjects.emplace_back(obj);
 	status = UNKNOWN;
-}
-
-bool Shader::_enable() {
-	if( status==LINKED || init() ){
-		glUseProgram(prog);
-		return true;
-	}
-	else
-		return false;
 }
 
 bool Shader::enable(RenderingContext & rc){

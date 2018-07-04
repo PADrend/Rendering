@@ -458,7 +458,7 @@ public:
 	// ------
 
 	/*! @name Textures
-	 \todo Move array of activeTextures to RenderingStatus to allow delayed binding
+	 \todo Move array of activeTextures to ProgramState to allow delayed binding
 	 */
 	//	@{
 	Texture * getTexture(uint8_t unit)const;
