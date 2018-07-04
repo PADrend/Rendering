@@ -65,6 +65,7 @@ uint32_t ShaderObjectInfo::compile() const {
 		header = "#define SG_VERTEX_SHADER\n";
 	}
 	header += defines;
+	header += "#define USE_UNIFORM_BUFFERS 1\n";
 	static const std::string versionPrefix = "#version";
 	if(strCode.compare(0, versionPrefix.length(), versionPrefix) == 0) {
 		header += "#line 2\n";
