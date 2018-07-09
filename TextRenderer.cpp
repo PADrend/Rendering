@@ -117,7 +117,6 @@ struct TextRenderer::Implementation {
 	Util::FontInfo fontInfo;
 	uint32_t characterBufferSize = 128;
 	Util::Reference<Mesh> mesh;
-	uint32_t cursor=0;
 };
 static Util::StringIdentifier GLYPH_DIM_ATTR("glyphDim");
 
@@ -172,7 +171,8 @@ void TextRenderer::draw(RenderingContext & context,
 	const auto textureHeight = static_cast<int32_t>(impl->texture->getHeight());
 
 	int cursorX = textPosition.getX();
-	uint32_t start = impl->cursor;
+	uint32_t start = 0;
+	uint32_t cursor = 0;
 	for(const auto & character : text) {
 		const auto it = impl->fontInfo.glyphMap.find(character);
 		if(it == impl->fontInfo.glyphMap.cend()) {
@@ -187,24 +187,24 @@ void TextRenderer::draw(RenderingContext & context,
 											  textureHeight - glyphInfo.position.second);
 		const Geometry::Vec2i glyphDim(glyphInfo.size.first, glyphInfo.size.second);
 
-		posAcc->setCoordinate(impl->cursor, topLeftPos);
-		texAcc->setCoordinate(impl->cursor, topLeftTexCoord);
-		glyphAcc->setCoordinate(impl->cursor, glyphDim);
+		posAcc->setCoordinate(cursor, topLeftPos);
+		texAcc->setCoordinate(cursor, topLeftTexCoord);
+		glyphAcc->setCoordinate(cursor, glyphDim);
 		
 		cursorX += glyphInfo.xAdvance;
-		++impl->cursor;
+		++cursor;
 		
-		if(impl->cursor >= impl->characterBufferSize) {
+		if(cursor >= impl->characterBufferSize) {
 			data.markAsChanged();
-			context.displayMesh(impl->mesh.get(), start, impl->cursor);
+			context.displayMesh(impl->mesh.get(), start, cursor);
 			start = 0;
-			impl->cursor = 0;
+			cursor = 0;
 		}
 	}
 	
-	if(impl->cursor > start) {
+	if(cursor > start) {
 		data.markAsChanged();
-		context.displayMesh(impl->mesh.get(), start, impl->cursor);
+		context.displayMesh(impl->mesh.get(), start, cursor);
 	}
 
 	context.popTexture(0);
