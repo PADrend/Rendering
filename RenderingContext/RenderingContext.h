@@ -83,10 +83,6 @@ private:
 	// Use Pimpl idiom
 	class InternalData;
 	std::unique_ptr<InternalData> internalData;
-
-	bool immediate;
-	bool debugMode = false;
-
 public:
 
 	RenderingContext();
@@ -103,12 +99,10 @@ public:
 	void displayMesh(Mesh * mesh,uint32_t firstElement,uint32_t elementCount){ displayMeshFn(*this, mesh,firstElement,elementCount); }
 	void displayMesh(Mesh * mesh);
 
-	void setImmediateMode(const bool enabled);
-	bool getImmediateMode() const {
-		return immediate;
+	void setImmediateMode(const bool enabled) __attribute((deprecated)) {}
+	bool getImmediateMode() const  __attribute((deprecated)) {
+		return false;
 	}
-	void setDebugMode(bool enabled) { debugMode = enabled; }
-
 	void applyChanges(bool forced = false);
 	//	@}
 
@@ -116,8 +110,8 @@ public:
 
 	/*!	@name GL Helper */
 	//	@{
-	void clearScreen(const Util::Color4f & color);
 	static void initGLState();
+	void clearScreen(const Util::Color4f & color);
 	void clearScreenRect(const Geometry::Rect_i & rect, const Util::Color4f & color, bool clearDepth=true);
 
 	/**

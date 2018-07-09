@@ -10,9 +10,9 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "ProgramState.h"
-#include "../../Shader/Shader.h"
-#include "../../Shader/UniformRegistry.h"
-#include "../../GLHeader.h"
+#include "../Shader/Shader.h"
+#include "../Shader/UniformRegistry.h"
+#include "../GLHeader.h"
 
 namespace Rendering {
 
@@ -31,7 +31,6 @@ static const Uniform::UniformName UNIFORM_SG_LIGHT_COUNT("sg_lightCount");
 static const Uniform::UniformName UNIFORM_SG_POINT_SIZE("sg_pointSize");
 static const Uniform::UniformName UNIFORM_SG_TEXTURE_ENABLED("sg_textureEnabled");
 static const UniformNameArray_t UNIFORM_SG_TEXTURES(createNames("sg_texture", MAX_TEXTURES, ""));
-
 
 inline uint32_t align(uint32_t offset, uint32_t alignment) {
   return alignment > 1 ? (offset + (alignment - offset % alignment) % alignment) : offset;
@@ -62,8 +61,6 @@ void ProgramState::initBuffers() {
 	lightBuffer.allocate(MAX_LIGHTS);
 	lightBuffer.upload(&lights[0]);
 	lightBuffer.bind(GL_UNIFORM_BUFFER, 2);
-	
-	std::cout << "Lights: " << sizeof(LightParameters) << std::endl;
 }
 
 void ProgramState::apply(Shader* shader, const ProgramState & target, bool forced) {

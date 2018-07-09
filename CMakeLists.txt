@@ -35,11 +35,10 @@ add_library(Rendering
 	MeshUtils/QuadtreeMeshBuilder.cpp
 	MeshUtils/QuadtreeMeshBuilderDebug.cpp
 	MeshUtils/Simplification.cpp
-	MeshUtils/StreamMeshDataStrategy.cpp
 	MeshUtils/TriangleAccessor.cpp
 	MeshUtils/ConnectivityAccessor.cpp
-	RenderingContext/internal/PipelineState.cpp
-	RenderingContext/internal/ProgramState.cpp
+	RenderingContext/PipelineState.cpp
+	RenderingContext/ProgramState.cpp
 	RenderingContext/RenderingContext.cpp
 	RenderingContext/RenderingParameters.cpp
 	Serialization/GenericAttributeSerialization.cpp

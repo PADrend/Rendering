@@ -13,7 +13,6 @@
 
 #include "PBO.h"
 #include "Texture/Texture.h"
-#include "BufferObject.h"
 #include "GLHeader.h"
 #include "Helper.h"
 #include <Util/Graphics/Bitmap.h>

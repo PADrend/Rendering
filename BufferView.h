@@ -23,7 +23,6 @@ private:
   uint32_t elementCount = 0;
   uint32_t elementSize = 0;
   uint8_t* dataPtr = nullptr;
-  bool isMappedPtr = false;
 public:
   BufferView(uint32_t eltSize=0) : elementSize(eltSize) {}
   BufferView(CountedBufferObject* buffer, size_t offset, uint32_t eltSize) : 
@@ -31,16 +30,16 @@ public:
   BufferView(CountedBufferObject* buffer, size_t offset, uint32_t eltSize, uint32_t count) : 
                 buffer(buffer), offset(offset), elementSize(eltSize) { allocate(count); }
                 
-  BufferView(const BufferView & other) = delete;
+  BufferView(const BufferView & other) = default;
   BufferView(BufferView &&) = default;
 
   ~BufferView() { release(); };
 
-  BufferView & operator=(const BufferView &) = delete;
+  BufferView & operator=(const BufferView &) = default;
   BufferView & operator=(BufferView &&) = default;
   
   void relocate(CountedBufferObject* buffer, size_t offset);
-  void allocate(uint32_t count, bool createLocalCopy=false);
+  void allocate(uint32_t count);
   void release();
   bool hasLocalData() const { return dataPtr; }
   void flush();
@@ -90,7 +89,7 @@ public:
   ValueBufferView(CountedBufferObject* buffer, size_t offset) : BufferView(buffer, offset, sizeof(Type_t)) {}
   ValueBufferView(CountedBufferObject* buffer, size_t offset, uint32_t count) : BufferView(buffer, offset, sizeof(Type_t), count) {}
   
-  void allocate(bool createLocalCopy=false) { BufferView::allocate(1, createLocalCopy); }
+  void allocate() { BufferView::allocate(1); }
   
   const Type_t& getValue() const { return *reinterpret_cast<const Type_t*>(data()); }
   void setValue(const Type_t& value) { return *reinterpret_cast<Type_t*>(data()) = value; }

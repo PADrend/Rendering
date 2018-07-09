@@ -12,9 +12,9 @@
 #ifndef RENDERING_DATA_H_
 #define RENDERING_DATA_H_
 
-#include "../RenderingParameters.h"
-#include "../../Texture/TextureType.h"
-#include "../../BufferView.h"
+#include "RenderingParameters.h"
+#include "../Texture/TextureType.h"
+#include "../BufferView.h"
 #include <Geometry/Matrix4x4.h>
 #include <bitset>
 #include <cassert>

@@ -12,43 +12,33 @@
 #include <cstdlib>
 
 namespace Rendering {
-  
+
 void BufferView::relocate(CountedBufferObject* buffer_, size_t offset_) {
   release();
   buffer = buffer_;
   offset = offset_;
 }
 
-void BufferView::allocate(uint32_t count, bool createLocalCopy) {
+void BufferView::allocate(uint32_t count) {
   release();
   if(buffer.isNull() || !buffer->get().isValid())
     throw std::runtime_error("BufferView::allocate: invalid buffer");
   
   elementCount = count;
-  isMappedPtr = false;
   auto flags = buffer->get().getFlags();
   if(flags & BufferObject::FLAG_MAP_PERSISTENT) {
     dataPtr = buffer->get().map(offset, dataSize());
-    isMappedPtr = true;
-  } else if(createLocalCopy) {
-    dataPtr = reinterpret_cast<uint8_t*>(std::malloc(dataSize()));
   }
 }
 
 void BufferView::release() {
-  if(!isMappedPtr && dataPtr)
-    std::free(dataPtr);
   elementCount = 0;
   dataPtr = nullptr;
 }
 
 void BufferView::flush() {
   if(!dataPtr) return;
-  if(isMappedPtr) {
-    buffer->get().flush(offset, dataSize());
-  } else {
-    buffer->get().upload(dataPtr, dataSize(), offset);
-  }
+  buffer->get().flush(offset, dataSize());
 }
 
 void BufferView::upload(const uint8_t* ptr, size_t size) {

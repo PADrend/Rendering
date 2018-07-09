@@ -11,8 +11,8 @@
 */
 #include "RenderingContext.h"
 
-#include "internal/PipelineState.h"
-#include "internal/ProgramState.h"
+#include "PipelineState.h"
+#include "ProgramState.h"
 #include "RenderingParameters.h"
 #include "../BufferObject.h"
 #include "../Mesh/Mesh.h"
@@ -92,7 +92,7 @@ class RenderingContext::InternalData {
 };
 
 RenderingContext::RenderingContext() :
-	internalData(new InternalData), immediate(false), displayMeshFn() {
+	internalData(new InternalData), displayMeshFn() {
 
 	resetDisplayMeshFn();
 	internalData->activeProgramState.initBuffers();
@@ -122,12 +122,6 @@ void RenderingContext::resetDisplayMeshFn() {
 
 void RenderingContext::displayMesh(Mesh * mesh){
 	displayMeshFn(*this, mesh,0,mesh->isUsingIndexData()? mesh->getIndexCount() : mesh->getVertexCount());
-}
-
-void RenderingContext::setImmediateMode(const bool enabled) {
-	immediate = enabled;
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::clearScreenRect(const Geometry::Rect_i & rect, const Util::Color4f & color, bool _clearDepth) {
@@ -211,10 +205,9 @@ void RenderingContext::barrier(uint32_t flags) {
 
 void RenderingContext::applyChanges(bool forced) {
 	try {
-		if(forced)
-			internalData->activePipelineState.invalidate();
-		internalData->activePipelineState.setDebug(debugMode);
-		internalData->activePipelineState.apply(internalData->targetPipelineState);
+		const auto diff = internalData->activePipelineState.makeDiff(internalData->targetPipelineState, forced);
+		internalData->activePipelineState = internalData->targetPipelineState;
+		internalData->activePipelineState.apply(diff);
 		
 		if(internalData->activePipelineState.isShaderValid()) {
 			auto shader = internalData->activePipelineState.getShader();
@@ -377,10 +370,7 @@ void RenderingContext::pushBlending() {
 
 void RenderingContext::setBlending(const BlendingParameters & p) {
 	internalData->targetPipelineState.setBlendingParameters(p);
-	if(immediate)
-		applyChanges();
 }
-
 
 // ClipPlane ************************************************************************************
 
@@ -413,8 +403,6 @@ void RenderingContext::pushAndSetColorBuffer(const ColorBufferParameters & p) {
 
 void RenderingContext::setColorBuffer(const ColorBufferParameters & p) {
 	internalData->targetPipelineState.setColorBufferParameters(p);
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::clearColor(const Util::Color4f & clearValue) {
@@ -447,8 +435,6 @@ void RenderingContext::pushAndSetCullFace(const CullFaceParameters & p) {
 
 void RenderingContext::setCullFace(const CullFaceParameters & p) {
 	internalData->targetPipelineState.setCullFaceParameters(p);
-	if(immediate)
-		applyChanges();
 }
 
 // DepthBuffer ************************************************************************************
@@ -475,8 +461,6 @@ void RenderingContext::pushAndSetDepthBuffer(const DepthBufferParameters & p) {
 
 void RenderingContext::setDepthBuffer(const DepthBufferParameters & p) {
 	internalData->targetPipelineState.setDepthBufferParameters(p);
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::clearDepth(float clearValue) {
@@ -615,8 +599,6 @@ void RenderingContext::pushAndSetLine(const LineParameters & p) {
 
 void RenderingContext::setLine(const LineParameters & p) {
 	internalData->targetPipelineState.setLineParameters(p);
-	if(immediate)
-		applyChanges();
 }
 
 // Point ************************************************************************************
@@ -644,8 +626,6 @@ void RenderingContext::pushAndSetPointParameters(const PointParameters & p) {
 
 void RenderingContext::setPointParameters(const PointParameters & p) {
 	internalData->targetProgramState.setPointParameters(p);
-	if(immediate)
-		applyChanges();
 }
 // PolygonMode ************************************************************************************
 const PolygonModeParameters & RenderingContext::getPolygonModeParameters() const {
@@ -671,8 +651,6 @@ void RenderingContext::pushAndSetPolygonMode(const PolygonModeParameters & p) {
 
 void RenderingContext::setPolygonMode(const PolygonModeParameters & p) {
 	internalData->targetPipelineState.setPolygonModeParameters(p);
-	if(immediate)
-		applyChanges();
 }
 
 // PolygonOffset ************************************************************************************
@@ -699,8 +677,6 @@ void RenderingContext::pushAndSetPolygonOffset(const PolygonOffsetParameters & p
 
 void RenderingContext::setPolygonOffset(const PolygonOffsetParameters & p) {
 	internalData->targetPipelineState.setPolygonOffsetParameters(p);
-	if(immediate)
-		applyChanges();
 }
 
 // Scissor ************************************************************************************
@@ -731,8 +707,6 @@ void RenderingContext::setScissor(const ScissorParameters & scissorParameters) {
 	const auto& sr = scissorParameters.getRect();
 	internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_RECT, Geometry::Vec4(sr.getX(), sr.getY(), sr.getWidth(), sr.getHeight())}, false, false);
 	internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_ENABLED, scissorParameters.isEnabled()}, false, false);
-	if(immediate)
-		applyChanges();
 }
 
 
@@ -761,8 +735,6 @@ void RenderingContext::pushStencil() {
 
 void RenderingContext::setStencil(const StencilParameters & stencilParameter) {
 	internalData->targetPipelineState.setStencilParameters(stencilParameter);
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::clearStencil(int32_t clearValue) {
@@ -797,15 +769,11 @@ void RenderingContext::pushAndSetFBO(FBO * fbo) {
 
 void RenderingContext::setFBO(FBO * fbo) {
 	internalData->targetPipelineState.setFBO(fbo);
-	if(immediate)
-		applyChanges();
 }
 
 // GLOBAL UNIFORMS ***************************************************************************
 void RenderingContext::setGlobalUniform(const Uniform & u) {
 	internalData->globalUniforms.setUniform(u, false, false);
-	if(immediate)
-		applyChanges();	
 }
 const Uniform & RenderingContext::getGlobalUniform(const Util::StringIdentifier & uniformName) {
 	return internalData->globalUniforms.getUniform(uniformName);
@@ -814,8 +782,6 @@ const Uniform & RenderingContext::getGlobalUniform(const Util::StringIdentifier 
 // SHADER ************************************************************************************
 void RenderingContext::setShader(Shader * shader) {
 	internalData->targetPipelineState.setShader(shader);
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::pushShader() {
@@ -903,17 +869,15 @@ void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::v
 
 void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced) {
 	shader->_getUniformRegistry()->setUniform(uniform, warnIfUnused, forced);
-	if(immediate && getActiveShader() == shader)
-		shader->applyUniforms(false); // forced is false here, as this forced means to re-apply all uniforms
 }
 
 // TEXTURES **********************************************************************************
 
-Texture * RenderingContext::getTexture(uint8_t unit)const {
+Texture * RenderingContext::getTexture(uint8_t unit) const {
 	return unit < MAX_TEXTURES ? internalData->targetPipelineState.getTexture(unit).get() : nullptr;
 }
 
-TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit)const{
+TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit) const {
 	return internalData->targetProgramState.getTextureUnitParams(unit).first;
 }
 
@@ -958,8 +922,6 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageP
 	}else if( oldUsage!= usage ){
 		internalData->targetProgramState.setTextureUnitParams(unit, usage , texture->getTextureType());
 	}
-	if(immediate)
-		applyChanges();
 }
 
 // TRANSFORM FEEDBACK ************************************************************************
@@ -1041,10 +1003,7 @@ uint8_t RenderingContext::enableLight(const LightParameters & light) {
 		WARN("Cannot enable more lights; ignoring call.");
 		return 255;
 	}
-	const uint8_t lightNumber = internalData->targetProgramState.enableLight(light);
-	if(immediate)
-		applyChanges();
-	return lightNumber;
+	return internalData->targetProgramState.enableLight(light);
 }
 
 void RenderingContext::disableLight(uint8_t lightNumber) {
@@ -1053,8 +1012,6 @@ void RenderingContext::disableLight(uint8_t lightNumber) {
 		return;
 	}
 	internalData->targetProgramState.disableLight(lightNumber);
-	if(immediate)
-		applyChanges();
 }
 
 // PROJECTION MATRIX *************************************************************************
@@ -1066,8 +1023,6 @@ void RenderingContext::popMatrix_cameraToClipping() {
 	}
 	internalData->targetProgramState.setMatrix_cameraToClipping(internalData->projectionMatrixStack.top());
 	internalData->projectionMatrixStack.pop();
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::pushMatrix_cameraToClipping() {
@@ -1081,8 +1036,6 @@ void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4
 	
 void RenderingContext::setMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
 	internalData->targetProgramState.setMatrix_cameraToClipping(matrix);
-	if(immediate)
-		applyChanges();
 }
 
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToClipping() const {
@@ -1093,8 +1046,6 @@ const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToClipping() const
 
 void RenderingContext::setMatrix_cameraToWorld(const Geometry::Matrix4x4 & matrix) {
 	internalData->targetProgramState.setMatrix_cameraToWorld(matrix);
-	if(immediate)
-		applyChanges();
 }
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_worldToCamera() const {
 	return internalData->targetProgramState.getMatrix_worldToCamera();
@@ -1107,8 +1058,6 @@ const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToWorld() const {
 
 void RenderingContext::resetMatrix() {
 	internalData->targetProgramState.setMatrix_modelToCamera(internalData->targetProgramState.getMatrix_worldToCamera());
-	if(immediate)
-		applyChanges();
 }
 
 
@@ -1127,14 +1076,10 @@ void RenderingContext::pushMatrix_modelToCamera() {
 
 void RenderingContext::multMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
 	internalData->targetProgramState.multModelViewMatrix(matrix);
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::setMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
 	internalData->targetProgramState.setMatrix_modelToCamera(matrix);
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::popMatrix_modelToCamera() {
@@ -1144,8 +1089,6 @@ void RenderingContext::popMatrix_modelToCamera() {
 	}
 	internalData->targetProgramState.setMatrix_modelToCamera(internalData->matrixStack.top());
 	internalData->matrixStack.pop();
-	if(immediate)
-		applyChanges();
 }
 
 // MATERIAL **********************************************************************************
@@ -1167,8 +1110,6 @@ void RenderingContext::popMaterial() {
 	} else {
 		internalData->targetProgramState.setMaterial(internalData->materialStack.top());
 	}
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::pushMaterial() {
@@ -1187,8 +1128,6 @@ void RenderingContext::pushAndSetColorMaterial(const Util::Color4f & color) {
 }
 void RenderingContext::setMaterial(const MaterialParameters & material) {
 	internalData->targetProgramState.setMaterial(material);
-	if(immediate)
-		applyChanges();
 }
 
 //  **********************************************************************************
@@ -1215,9 +1154,6 @@ void RenderingContext::pushViewport() {
 void RenderingContext::setViewport(const Geometry::Rect_i & vp) {
 	internalData->targetPipelineState.setViewport(vp);
 	internalData->globalUniforms.setUniform({UNIFORM_SG_VIEWPORT, Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight())}, false, false);
-	
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::pushAndSetViewport(const Geometry::Rect_i & viewport) {
@@ -1245,14 +1181,10 @@ void RenderingContext::setVertexFormat(uint32_t binding, const VertexDescription
 		for(const auto& attr : vd.getAttributes())
 			internalData->targetPipelineState.setVertexFormat(location++, attr, binding);
 	}
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::bindVertexBuffer(uint32_t binding, uint32_t bufferId, uint32_t offset, uint32_t stride, uint32_t divisor) {
 	internalData->targetPipelineState.setVertexBinding(binding, bufferId, offset, stride, divisor);
-	if(immediate)
-		applyChanges();
 }
 
 void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
@@ -1265,14 +1197,12 @@ void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
 void RenderingContext::submitDraw(uint32_t mode, const DrawArraysCommand& cmd) {
 	applyChanges();
 	//glDrawArraysIndirect(mode, &cmd);
-	if(debugMode) std::cout << "draw arrays " << cmd.first << " - " << cmd.count << std::endl;
   glDrawArraysInstancedBaseInstance(mode, cmd.first, cmd.count, cmd.primCount, cmd.baseInstance);
 }
 
 void RenderingContext::submitDraw(uint32_t mode, uint32_t type, const DrawElementsCommand& cmd) {
 	applyChanges();
 	//glDrawElementsIndirect(mode, type, &cmd);
-	if(debugMode) std::cout << "draw elements " << cmd.first << " - " << cmd.count << std::endl;
 	uint8_t* first = reinterpret_cast<uint8_t*>(cmd.first * getGLTypeSize(type));
 	glDrawElementsInstancedBaseVertexBaseInstance(mode, cmd.count, type, first, cmd.primCount, cmd.baseVertex, cmd.baseInstance);
 }

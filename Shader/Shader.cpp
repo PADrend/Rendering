@@ -11,7 +11,6 @@
 #include "Shader.h"
 #include "Uniform.h"
 #include "UniformRegistry.h"
-#include "../RenderingContext/internal/ProgramState.h"
 #include "../RenderingContext/RenderingContext.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
@@ -21,6 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <iostream>
 
 using namespace std;
 namespace Rendering {
