@@ -187,6 +187,15 @@ static void debugCallback(GLenum source,
 						  GLsizei /*length*/,
 						  const char * message,
                           const void * /*userParam*/) {
+	
+	// ignore some messages						
+	if (id == 0x00020071) return; // memory usage
+  if (id == 0x00020084) return; // Texture state usage warning: Texture 0 is base level inconsistent. Check texture size.
+  if (id == 0x00020061) return; // Framebuffer detailed info: The driver allocated storage for renderbuffer 1.
+  if (id == 0x00020004) return; // Usage warning: Generic vertex attribute array ... uses a pointer with a small value (...). Is this intended to be used as an offset into a buffer object?
+  if (id == 0x00020072) return; // Buffer performance warning: Buffer object ... (bound to ..., usage hint is GL_STATIC_DRAW) is being copied/moved from VIDEO memory to HOST memory.
+  if (id == 0x00020074) return; // Buffer usage warning: Analysis of buffer object ... (bound to ...) usage indicates that the GPU is the primary producer and consumer of data for this buffer object.  The usage hint s upplied with this buffer object, GL_STATIC_DRAW, is inconsistent with this usage pattern.  Try using GL_STREAM_COPY_ARB, GL_STATIC_COPY_ARB, or GL_DYNAMIC_COPY_ARB instead.
+
 	std::cerr << "GL DEBUG source=";
 	switch(source) {
 		case GL_DEBUG_SOURCE_API_ARB:
@@ -240,8 +249,10 @@ static void debugCallback(GLenum source,
 			std::cerr << "Medium";
 			break;
 		case GL_DEBUG_SEVERITY_LOW_ARB:
-		default:
 			std::cerr << "Low";
+			break;
+		default:
+			std::cerr << "Notification";
 			break;
 	}
 	std::cerr << " message=" << message << std::endl;
@@ -254,7 +265,7 @@ void enableDebugOutput() {
 		std::cerr << "GL_ARB_debug_output is not supported" << std::endl;
 		return;
 	}
-	glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+	glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	glDebugMessageCallbackARB(&debugCallback, nullptr);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
 	glDebugMessageInsertARB(GL_DEBUG_SOURCE_THIRD_PARTY_ARB, GL_DEBUG_TYPE_OTHER_ARB, 1, GL_DEBUG_SEVERITY_LOW_ARB, -1, "Rendering: Debugging enabled");

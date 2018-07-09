@@ -15,6 +15,7 @@
 #include "RenderingParameters.h"
 #include "../Texture/Texture.h"
 #include "../FBO.h"
+#include "../VAO.h"
 #include "../Shader/Shader.h"
 #include "../Mesh/VertexAttribute.h"
 #include <Util/References.h>
@@ -33,8 +34,10 @@ public:
 		SCISSOR_BIT,
 		FBO_BIT,
 		PROGRAM_BIT,
+		VAO_BIT,
 		VERTEX_FORMAT_BIT,
 		VERTEX_BINDING_BIT,
+		ELEMENT_BINDING_BIT,
 		BLEND_BIT,
 		BLEND_ENABLED_BIT,
 		BLEND_FUNC_BIT,
@@ -50,9 +53,9 @@ public:
 		STENCIL_ENABLED_BIT,
 		STENCIL_FUNC_BIT,
 		STENCIL_OP_BIT,
-		TEXTURE_BINDING_BIT
+		TEXTURE_BINDING_BIT,
 	};
-	typedef std::bitset<22> StateDiff_t;
+	typedef std::bitset<24> StateDiff_t;
 	StateDiff_t makeDiff(const PipelineState& other, bool forced=false);
 	void apply(const StateDiff_t& diff);
 
@@ -157,6 +160,9 @@ private:
 	
 	uint32_t vertexBindingCheckNumber = 0;
 	std::array<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>, MAX_VERTEXBINDINGS> vertexBindings;
+	uint32_t elementBinding = 0;
+	
+	Util::Reference<VAO> vao = nullptr;
 public:
 	bool vertexFormatChanged(const PipelineState & actual) const {
 		return (vertexFormatCheckNumber == actual.vertexFormatCheckNumber) ? false :
@@ -177,10 +183,6 @@ public:
 	const std::pair<VertexAttribute, uint32_t>& getVertexFormat(uint32_t location) const {
 		return vertexFormat.at(location);
 	}
-	void updateVertexFormat(const PipelineState & other) {
-		vertexFormat = other.vertexFormat;
-		vertexFormatCheckNumber = other.vertexFormatCheckNumber;
-	}
 	
 	// vbo binding
 	bool vertexBindingChanged(const PipelineState & actual) const {
@@ -194,9 +196,27 @@ public:
 	std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> getVertexBinding(uint32_t binding) const {
 		return vertexBindings.at(binding);
 	}
-	void updateVertexBinding(const PipelineState & other) {
-		vertexBindings = other.vertexBindings;
-		vertexBindingCheckNumber = other.vertexBindingCheckNumber;
+		
+	// element binding
+	bool elementBindingChanged(const PipelineState & actual) const {
+		return elementBinding != actual.elementBinding;
+	}
+	void setElementBinding(uint32_t bufferId) {
+		elementBinding = bufferId;
+	}
+	uint32_t getElementBinding() const {
+		return elementBinding;
+	}
+		
+	// vao binding
+	bool vertexArrayChanged(const PipelineState & actual) const {
+		return vao != actual.vao;
+	}
+	void setVertexArray(VAO* _vao) {
+		vao = _vao;
+	}
+	Util::Reference<VAO> getVertexArray() const {
+		return vao;
 	}
 	
 // ------

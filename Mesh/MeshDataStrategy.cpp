@@ -45,7 +45,8 @@ void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m,uint32
 	if(m->isUsingIndexData()) {
 		MeshIndexData & id=m->_getIndexData();
 		id.bind(context);
-		context.submitDraw(m->getGLDrawMode(), GL_UNSIGNED_INT, DrawElementsCommand(startIndex, indexCount));
+		context.submitDraw(m->getGLDrawMode(), GL_UNSIGNED_INT, DrawElementsCommand(startIndex, indexCount));		
+		context.bindIndexBuffer(0);
 	} else {
 		context.submitDraw(m->getGLDrawMode(), DrawArraysCommand(startIndex, indexCount));
 	}

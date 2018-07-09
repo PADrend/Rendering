@@ -87,8 +87,6 @@ class RenderingContext::InternalData {
 		std::stack<Geometry::Rect_i> viewportStack;
 
 		Geometry::Rect_i windowClientArea;
-		
-		Util::Reference<VAO> defaultVAO;
 };
 
 RenderingContext::RenderingContext() :
@@ -109,8 +107,7 @@ RenderingContext::RenderingContext() :
 	setPolygonOffset(PolygonOffsetParameters());
 	setStencil(StencilParameters());
 	
-	internalData->defaultVAO = new VAO;
-	internalData->defaultVAO->bind();
+	internalData->targetPipelineState.setVertexArray(new VAO);
 }
 
 RenderingContext::~RenderingContext() = default;
@@ -208,10 +205,10 @@ void RenderingContext::applyChanges(bool forced) {
 		const auto diff = internalData->activePipelineState.makeDiff(internalData->targetPipelineState, forced);
 		internalData->activePipelineState = internalData->targetPipelineState;
 		internalData->activePipelineState.apply(diff);
+		internalData->activeProgramState.apply(&internalData->globalUniforms, internalData->targetProgramState, forced);
 		
 		if(internalData->activePipelineState.isShaderValid()) {
 			auto shader = internalData->activePipelineState.getShader();
-			internalData->activeProgramState.apply(shader.get(), internalData->targetProgramState, forced);
 
 			// transfer updated global uniforms to the shader
 			shader->_getUniformRegistry()->performGlobalSync(internalData->globalUniforms, false);
@@ -1188,8 +1185,7 @@ void RenderingContext::bindVertexBuffer(uint32_t binding, uint32_t bufferId, uin
 }
 
 void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
-	applyChanges();
-	internalData->defaultVAO->bindElementBuffer(bufferId);
+	internalData->targetPipelineState.setElementBinding(bufferId);
 }
 
 // Draw Commands **********************************************************************************

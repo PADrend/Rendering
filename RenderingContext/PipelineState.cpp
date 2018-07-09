@@ -56,8 +56,10 @@ PipelineState::StateDiff_t PipelineState::makeDiff(const PipelineState& target, 
 	diff.set(SCISSOR_BIT, scissorParametersChanged(target));
 	diff.set(FBO_BIT, fboChanged(target));
 	diff.set(PROGRAM_BIT, shaderChanged(target));
+	diff.set(VAO_BIT, vertexArrayChanged(target));
 	diff.set(VERTEX_FORMAT_BIT, vertexFormatChanged(target));
 	diff.set(VERTEX_BINDING_BIT, vertexBindingChanged(target));
+	diff.set(ELEMENT_BINDING_BIT, elementBindingChanged(target));
 	
 	// Blending
 	diff.set(BLEND_BIT, blendingParametersChanged(target));
@@ -276,6 +278,15 @@ void PipelineState::apply(const StateDiff_t& diff) {
 		}
 		GET_GL_ERROR();
 	}
+	
+	// VAO
+	if(diff.test(VAO_BIT)) {
+		if(vao.isNotNull())
+			vao->bind();
+		else 
+			glBindVertexArray(0);
+		GET_GL_ERROR();
+	}
 		
 	// Vertex Format
 	if(diff.test(VERTEX_FORMAT_BIT)) {
@@ -305,6 +316,11 @@ void PipelineState::apply(const StateDiff_t& diff) {
 		  glVertexBindingDivisor(i, divisor);
 			glBindVertexBuffer(i, buffer, offset, stride);
 		}
+		GET_GL_ERROR();
+	}
+	
+	if(diff.test(ELEMENT_BINDING_BIT) && vao.isNotNull()) {
+		vao->bindElementBuffer(elementBinding);
 		GET_GL_ERROR();
 	}
 }

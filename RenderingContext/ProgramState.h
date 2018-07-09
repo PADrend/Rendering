@@ -24,7 +24,7 @@
 #include <cstring>
 
 namespace Rendering {
-class Shader;
+class UniformRegistry;
 
 //! (internal) Used by shaders and the renderingContext to track the state of shader (and openGL) dependent properties.
 class ProgramState {
@@ -32,7 +32,7 @@ private:
 	Util::Reference<CountedBufferObject> buffer;
 public:
 	void initBuffers();
-	void apply(Shader* shader, const ProgramState & target, bool forced);
+	void apply(UniformRegistry* uniformRegistry, const ProgramState & target, bool forced);
 	
 	// -------------------------------
 

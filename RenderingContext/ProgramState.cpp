@@ -63,7 +63,7 @@ void ProgramState::initBuffers() {
 	lightBuffer.bind(GL_UNIFORM_BUFFER, 2);
 }
 
-void ProgramState::apply(Shader* shader, const ProgramState & target, bool forced) {
+void ProgramState::apply(UniformRegistry* uniformRegistry, const ProgramState & target, bool forced) {
 	std::deque<Uniform> uniforms;
 
 	// matrices
@@ -110,7 +110,7 @@ void ProgramState::apply(Shader* shader, const ProgramState & target, bool force
 	}
 
 	for(const auto & uniform : uniforms) {
-		shader->_getUniformRegistry()->setUniform(uniform, false, forced);
+		uniformRegistry->setUniform(uniform, false, forced);
 	}
 }
 
