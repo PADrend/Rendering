@@ -109,12 +109,16 @@ BufferObject & BufferObject::operator=(BufferObject && other) {
 	// Make sure the other buffer object frees the handle.
 	std::swap(other.bufferId, bufferId);
 	std::swap(other.size, size);
+	std::swap(other.flags, flags);
+	std::swap(other.ptr, ptr);
 	return *this;
 }
 
 void BufferObject::swap(BufferObject & other){
 	std::swap(other.bufferId,bufferId);
 	std::swap(other.size, size);
+	std::swap(other.flags, flags);
+	std::swap(other.ptr, ptr);
 }
 
 void BufferObject::prepare() {
@@ -285,6 +289,23 @@ void BufferObject::clear(uint32_t internalFormat, uint32_t format, uint32_t type
 	if(bufferId == 0)
 		return;
 	glClearNamedBufferData(bufferId, internalFormat, format, type, data);
+	GET_GL_ERROR();
+}
+
+void BufferObject::copy(BufferObject& target, uint32_t dataSize, uint32_t srcOffset, uint32_t tgtOffset) {
+	if(!isValid()) {
+		WARN("BufferObject::copy: invalid source buffer.");
+		return;
+	}
+	if(!target.isValid()) {
+		WARN("BufferObject::copy: invalid target buffer.");
+		return;
+	}
+	if(dataSize == 0 || srcOffset+dataSize > size || tgtOffset+dataSize > target.size) {
+		WARN("BufferObject::copy: invalid offset+size.");
+		return;
+	}
+	glCopyNamedBufferSubData(bufferId, target.bufferId, srcOffset, tgtOffset, dataSize);	
 	GET_GL_ERROR();
 }
 

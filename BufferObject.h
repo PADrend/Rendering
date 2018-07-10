@@ -193,6 +193,8 @@ class BufferObject {
 			clear(internalFormat, format, type, data);
 		}
 		
+		void copy(BufferObject& target, uint32_t dataSize, uint32_t srcOffset=0, uint32_t tgtOffset=0);
+		
 		//! @c true if and only if prepare() was executed at least once without an execution of destroy() afterwards. 
 		bool isValid() const { return bufferId != 0; }
 		uint32_t getGLId() const { return bufferId; }

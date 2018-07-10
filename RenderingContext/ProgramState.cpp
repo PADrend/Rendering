@@ -27,8 +27,6 @@ static UniformNameArray_t createNames(const std::string & prefix, uint8_t number
 	return arr;
 }
 
-static const Uniform::UniformName UNIFORM_SG_LIGHT_COUNT("sg_lightCount");
-static const Uniform::UniformName UNIFORM_SG_POINT_SIZE("sg_pointSize");
 static const Uniform::UniformName UNIFORM_SG_TEXTURE_ENABLED("sg_textureEnabled");
 static const UniformNameArray_t UNIFORM_SG_TEXTURES(createNames("sg_texture", MAX_TEXTURES, ""));
 
@@ -36,64 +34,8 @@ inline uint32_t align(uint32_t offset, uint32_t alignment) {
   return alignment > 1 ? (offset + (alignment - offset % alignment) % alignment) : offset;
 }
 
-void ProgramState::initBuffers() {
-	buffer = new CountedBufferObject;
-	int32_t alignment;
-	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
-	
-	uint32_t matrixOffset = 0;
-	uint32_t materialOffset = align(matrixOffset + sizeof(MatrixData), alignment);
-	uint32_t lightOffset = align(materialOffset + sizeof(MaterialParameters), alignment);
-	uint32_t totalSize = align(lightOffset + sizeof(LightParameters) * MAX_LIGHTS, alignment);
-	buffer->get().allocate(totalSize, BufferObject::FLAG_DYNAMIC_STORAGE);
-	
-	matrixBuffer.relocate(buffer.get(), matrixOffset);
-	matrixBuffer.allocate();
-	matrixBuffer.upload(matrix);
-	matrixBuffer.bind(GL_UNIFORM_BUFFER, 0);
-	
-	materialBuffer.relocate(buffer.get(), materialOffset);
-	materialBuffer.allocate();
-	materialBuffer.upload(material);
-	materialBuffer.bind(GL_UNIFORM_BUFFER, 1);
-	
-	lightBuffer.relocate(buffer.get(), lightOffset);
-	lightBuffer.allocate(MAX_LIGHTS);
-	lightBuffer.upload(&lights[0]);
-	lightBuffer.bind(GL_UNIFORM_BUFFER, 2);
-}
-
 void ProgramState::apply(UniformRegistry* uniformRegistry, const ProgramState & target, bool forced) {
 	std::deque<Uniform> uniforms;
-
-	// matrices
-	bool cc = false;
-	if (forced || matricesChanged(target)) {
-		cc = true;
-		updateMatrices(target);
-		matrixBuffer.upload(matrix);
-	}
-
-	// materials
-	if (forced || materialChanged(target)) {
-		updateMaterial(target);
-		materialBuffer.upload(material);
-	}
-
-	// lights
-	if (forced || cc || lightsChanged(target)) {
-		updateLights(target);
-		for(uint_fast8_t i=0; i<MAX_LIGHTS; ++i)
-			updateLightParameter(i, target.lights[i]);
-		uniforms.emplace_back(UNIFORM_SG_LIGHT_COUNT, static_cast<int> (target.getNumEnabledLights()));
-		lightBuffer.upload(&lights[0]);
-	}
-
-	// Point
-	if(forced || pointParametersChanged(target)) {
-		setPointParameters(target.getPointParameters());
-		uniforms.emplace_back(UNIFORM_SG_POINT_SIZE, target.getPointParameters().getSize());
-	}
 
 	// TEXTURE UNITS
 	if (forced || textureUnitsChanged(target)) {

@@ -289,8 +289,13 @@ public:
 	 * @param light Parameters of a light source.
 	 * @return Light number that was used for this light. This number has to be used to deactivate the light.
 	 */
-	uint8_t enableLight(const LightParameters & light);
-
+	uint8_t enableLight(const LightParameters & light) __attribute((deprecated));
+	
+	uint8_t registerLight(const LightParameters & light);
+	void setLight(uint8_t lightNumber, const LightParameters & light);
+	
+	void unregisterLight(uint8_t lightNumber);
+	void enableLight(uint8_t lightNumber);
 	/**
 	 * Deactivate a previuosly activated light.
 	 *

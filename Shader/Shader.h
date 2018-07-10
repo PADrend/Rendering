@@ -189,6 +189,25 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	public:
 		int32_t getSubroutineIndex(uint32_t stage, const std::string & name);
 	// @}
+	
+
+	/*! @name buffer locations */
+	// @{
+	public:
+		struct InterfaceBlock {
+			Util::StringIdentifier name;
+			int32_t location = -1;
+			int32_t target = -1;
+			uint32_t blockSize = 0;
+		};
+		std::unordered_map<Util::StringIdentifier, InterfaceBlock> interfaceBlocks;
+		const InterfaceBlock& getInterfaceBlock(const Util::StringIdentifier& name);
+		const std::unordered_map<Util::StringIdentifier, InterfaceBlock>& getInterfaceBlocks() const {
+			return interfaceBlocks;
+		}
+	private:
+		void initInterfaceBlocks();
+	// @}
 };
 }
 

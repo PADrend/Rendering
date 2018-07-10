@@ -11,6 +11,7 @@
 */
 #include "RenderingContext.h"
 
+#include "ParameterCache.h"
 #include "PipelineState.h"
 #include "ProgramState.h"
 #include "RenderingParameters.h"
@@ -34,6 +35,9 @@
 #include <array>
 #include <stdexcept>
 #include <stack>
+#include <map>
+#include <set>
+#include <numeric>
 
 #ifdef WIN32
 #include <GL/wglew.h>
@@ -44,26 +48,63 @@ namespace Rendering {
 static const Uniform::UniformName UNIFORM_SG_VIEWPORT("sg_viewport");
 static const Uniform::UniformName UNIFORM_SG_SCISSOR_RECT("sg_scissorRect");
 static const Uniform::UniformName UNIFORM_SG_SCISSOR_ENABLED("sg_scissorEnabled");
-	
+
+static const Util::StringIdentifier PARAMETER_FRAMEDATA("FrameData");
+static const Util::StringIdentifier PARAMETER_OBJECTDATA("ObjectData");
+static const Util::StringIdentifier PARAMETER_MATERIALDATA("MaterialData");
+static const Util::StringIdentifier PARAMETER_LIGHTDATA("LightData");
+static const Util::StringIdentifier PARAMETER_LIGHTSETDATA("LightSetData");
+
+static const uint32_t MAX_FRAMEDATA = 1;
+static const uint32_t MAX_OBJECTDATA = 1;
+static const uint32_t MAX_MATERIALS = 1;
+static const uint32_t MAX_LIGHTS = 256;
+static const uint32_t MAX_LIGHTSETS = 1;
+static const uint32_t MAX_ENABLED_LIGHTS = 8;
+
+struct FrameData {
+	Geometry::Matrix4x4f matrix_worldToCamera;
+	Geometry::Matrix4x4f matrix_cameraToWorld;
+	Geometry::Matrix4x4f matrix_cameraToClipping;
+	Geometry::Matrix4x4f matrix_clippingToCamera;
+	Geometry::Vec4 viewport;
+};
+
+struct ObjectData {
+	Geometry::Matrix4x4f matrix_modelToCamera;
+	PointParameters pointSize = 1;
+	uint32_t materialId = 0;
+	uint32_t lightSetId = 0;
+	uint32_t _pad = 0;
+};
+
+struct LightSet {
+	uint32_t count = 0;
+	std::array<uint32_t, MAX_ENABLED_LIGHTS> lights;
+};
+
+struct LightCompare {	
+	bool operator()(const LightParameters& l1, const LightParameters& l2) const noexcept {
+		return std::memcmp(&l1, &l2, sizeof(LightParameters)) < 0;
+	}
+};
+
 class RenderingContext::InternalData {
 	public:
+		ParameterCache cache;		
 		ProgramState targetProgramState;
 		ProgramState activeProgramState;
-
 		PipelineState targetPipelineState;
 		PipelineState activePipelineState;
 
-		std::unordered_map<uint32_t,std::stack<Util::Reference<Texture>>> atomicCounterStacks; 
-
+		// pipeline state
 		std::stack<BlendingParameters> blendingParameterStack;
 		std::stack<ColorBufferParameters> colorBufferParameterStack;
 		std::stack<CullFaceParameters> cullFaceParameterStack;
 		std::stack<DepthBufferParameters> depthBufferParameterStack;
-		std::array<std::stack<ImageBindParameters>, MAX_BOUND_IMAGES> imageStacks; 
+		std::array<std::stack<ImageBindParameters>, MAX_BOUND_IMAGES> imageStacks;
 		std::array<ImageBindParameters, MAX_BOUND_IMAGES> boundImages;
 		std::stack<LineParameters> lineParameterStack;
-		std::stack<MaterialParameters> materialStack;
-		std::stack<PointParameters> pointParameterStack;
 		std::stack<PolygonModeParameters> polygonModeParameterStack;
 		std::stack<PolygonOffsetParameters> polygonOffsetParameterStack;
 		std::stack<ScissorParameters> scissorParametersStack;
@@ -73,19 +114,35 @@ class RenderingContext::InternalData {
 		std::stack<Util::Reference<Shader>> shaderStack;
 
 		UniformRegistry globalUniforms;
-
-		std::stack<Geometry::Matrix4x4> matrixStack;
+		
+		// per frame data
 		std::stack<Geometry::Matrix4x4> projectionMatrixStack;
-
-		std::array<std::stack<std::pair<Util::Reference<Texture>, TexUnitUsageParameter>>, MAX_TEXTURES> textureStacks;
-
+		std::stack<Geometry::Rect_i> viewportStack;
+		FrameData activeFrameData;
+		
+		// per object data
+		std::stack<Geometry::Matrix4x4> matrixStack;
+		std::stack<PointParameters> pointParameterStack;
+		ObjectData activeObjectData;
+		
+		// materials
+		std::stack<MaterialParameters> materialStack;
+		MaterialParameters activeMaterial;
+		
+		// lights
+		std::map<LightParameters, uint8_t, LightCompare> lightRegistry;
+		std::set<uint8_t> freeLightIds;
+		LightSet activeLightSet;
+				
+		// other
 		typedef std::pair<Util::Reference<CountedBufferObject>,uint32_t> feedbackBufferStatus_t; // buffer->mode
 
 		std::stack<feedbackBufferStatus_t> feedbackStack;
 		feedbackBufferStatus_t activeFeedbackStatus;
 		
-		std::stack<Geometry::Rect_i> viewportStack;
-
+		std::array<std::stack<std::pair<Util::Reference<Texture>, TexUnitUsageParameter>>, MAX_TEXTURES> textureStacks;
+		std::unordered_map<uint32_t,std::stack<Util::Reference<Texture>>> atomicCounterStacks; 
+		
 		Geometry::Rect_i windowClientArea;
 };
 
@@ -93,7 +150,6 @@ RenderingContext::RenderingContext() :
 	internalData(new InternalData), displayMeshFn() {
 
 	resetDisplayMeshFn();
-	internalData->activeProgramState.initBuffers();
 
 	setBlending(BlendingParameters());
 	setColorBuffer(ColorBufferParameters());
@@ -108,6 +164,19 @@ RenderingContext::RenderingContext() :
 	setStencil(StencilParameters());
 	
 	internalData->targetPipelineState.setVertexArray(new VAO);
+	
+	// initialize default caches
+	auto& cache = internalData->cache;
+	cache.createCache(PARAMETER_FRAMEDATA, sizeof(FrameData), MAX_FRAMEDATA, BufferObject::FLAGS_DYNAMIC);
+	cache.createCache(PARAMETER_OBJECTDATA, sizeof(ObjectData), MAX_OBJECTDATA, BufferObject::FLAGS_DYNAMIC);
+	cache.createCache(PARAMETER_MATERIALDATA, sizeof(MaterialParameters), MAX_MATERIALS, BufferObject::FLAGS_DYNAMIC);
+	cache.createCache(PARAMETER_LIGHTDATA, sizeof(LightParameters), MAX_LIGHTS, BufferObject::FLAGS_DYNAMIC);
+	cache.createCache(PARAMETER_LIGHTSETDATA, sizeof(LightSet), MAX_LIGHTSETS, BufferObject::FLAGS_DYNAMIC);
+	
+	// initialize lights
+	for(uint_fast8_t i=0; i<std::numeric_limits<uint8_t>::max(); ++i) {
+		internalData->freeLightIds.insert(internalData->freeLightIds.end(), i);
+	}
 }
 
 RenderingContext::~RenderingContext() = default;
@@ -207,8 +276,19 @@ void RenderingContext::applyChanges(bool forced) {
 		internalData->activePipelineState.apply(diff);
 		internalData->activeProgramState.apply(&internalData->globalUniforms, internalData->targetProgramState, forced);
 		
+		internalData->cache.setParameter(PARAMETER_FRAMEDATA, 0, internalData->activeFrameData);
+		internalData->cache.setParameter(PARAMETER_OBJECTDATA, 0, internalData->activeObjectData);
+		internalData->cache.setParameter(PARAMETER_MATERIALDATA, 0, internalData->activeMaterial);
+		internalData->cache.setParameter(PARAMETER_LIGHTSETDATA, 0, internalData->activeLightSet);
+		
 		if(internalData->activePipelineState.isShaderValid()) {
 			auto shader = internalData->activePipelineState.getShader();
+			for(const auto& e : shader->getInterfaceBlocks()) {
+				const auto& block = e.second;
+				if(block.location >= 0 && internalData->cache.isCache(block.name)) {
+					internalData->cache.bind(block.name, block.location, block.target);
+				}
+			}
 
 			// transfer updated global uniforms to the shader
 			shader->_getUniformRegistry()->performGlobalSync(internalData->globalUniforms, false);
@@ -600,7 +680,7 @@ void RenderingContext::setLine(const LineParameters & p) {
 
 // Point ************************************************************************************
 const PointParameters& RenderingContext::getPointParameters() const {
-	return internalData->targetProgramState.getPointParameters();
+	return internalData->activeObjectData.pointSize;
 }
 
 void RenderingContext::popPointParameters() {
@@ -613,7 +693,7 @@ void RenderingContext::popPointParameters() {
 }
 
 void RenderingContext::pushPointParameters() {
-	internalData->pointParameterStack.emplace(internalData->targetProgramState.getPointParameters());
+	internalData->pointParameterStack.emplace(internalData->activeObjectData.pointSize);
 }
 
 void RenderingContext::pushAndSetPointParameters(const PointParameters & p) {
@@ -622,7 +702,7 @@ void RenderingContext::pushAndSetPointParameters(const PointParameters & p) {
 }
 
 void RenderingContext::setPointParameters(const PointParameters & p) {
-	internalData->targetProgramState.setPointParameters(p);
+	internalData->activeObjectData.pointSize = p;
 }
 // PolygonMode ************************************************************************************
 const PolygonModeParameters & RenderingContext::getPolygonModeParameters() const {
@@ -996,19 +1076,61 @@ void RenderingContext::stopTransformFeedback()				{	_startTransformFeedback(0);	
 // LIGHTS ************************************************************************************
 
 uint8_t RenderingContext::enableLight(const LightParameters & light) {
-	if(internalData->targetProgramState.getNumEnabledLights() >= ProgramState::MAX_LIGHTS) {
-		WARN("Cannot enable more lights; ignoring call.");
-		return 255;
+	auto it = internalData->lightRegistry.find(light);	
+	uint8_t id;
+	if(it == internalData->lightRegistry.end()) {
+		id = registerLight(light);
+		internalData->lightRegistry.emplace(light, id);
+	} else {
+		id = it->second;
+	}	
+	enableLight(id);
+	return id;
+}
+
+uint8_t RenderingContext::registerLight(const LightParameters & light) {
+	if(internalData->freeLightIds.empty()) {
+		WARN("Cannot register more lights; ignoring call.");
+		return std::numeric_limits<uint8_t>::max();
 	}
-	return internalData->targetProgramState.enableLight(light);
+	uint8_t id = *internalData->freeLightIds.begin();
+	internalData->freeLightIds.erase(internalData->freeLightIds.begin());
+	internalData->cache.setParameter(PARAMETER_LIGHTDATA, id, light);
+	return id;
+}
+
+void RenderingContext::setLight(uint8_t lightNumber, const LightParameters & light) {
+	if(internalData->freeLightIds.count(lightNumber) > 0) {
+		internalData->freeLightIds.erase(lightNumber);
+	}
+	internalData->cache.setParameter(PARAMETER_LIGHTDATA, lightNumber, light);
+}
+
+void RenderingContext::unregisterLight(uint8_t lightNumber) {
+	internalData->freeLightIds.emplace(lightNumber);
+}
+
+void RenderingContext::enableLight(uint8_t lightNumber) {
+	for(uint_fast8_t i=0; i<internalData->activeLightSet.count; ++i) {
+		if(internalData->activeLightSet.lights[i] == lightNumber)
+			return; // aleady active
+	}
+	if(internalData->activeLightSet.count >= MAX_ENABLED_LIGHTS) {
+		WARN("Cannot enable more lights; ignoring call.");
+		return;
+	}
+	internalData->activeLightSet.lights[internalData->activeLightSet.count++] = lightNumber;
 }
 
 void RenderingContext::disableLight(uint8_t lightNumber) {
-	if (!internalData->targetProgramState.isLightEnabled(lightNumber)) {
-		WARN("Cannot disable an already disabled light; ignoring call.");
-		return;
+	uint_fast8_t pos;
+	for(pos=0; pos<internalData->activeLightSet.count; ++pos) {
+		if(internalData->activeLightSet.lights[pos] == lightNumber) {
+			internalData->activeLightSet.count--;
+			std::swap(internalData->activeLightSet.lights[pos], internalData->activeLightSet.lights[internalData->activeLightSet.count]);
+			return;
+		}
 	}
-	internalData->targetProgramState.disableLight(lightNumber);
 }
 
 // PROJECTION MATRIX *************************************************************************
@@ -1018,12 +1140,12 @@ void RenderingContext::popMatrix_cameraToClipping() {
 		WARN("Cannot pop projection matrix. The stack is empty.");
 		return;
 	}
-	internalData->targetProgramState.setMatrix_cameraToClipping(internalData->projectionMatrixStack.top());
+	internalData->activeFrameData.matrix_cameraToClipping = internalData->projectionMatrixStack.top();
 	internalData->projectionMatrixStack.pop();
 }
 
 void RenderingContext::pushMatrix_cameraToClipping() {
-	internalData->projectionMatrixStack.emplace(internalData->targetProgramState.getMatrix_cameraToClipping());
+	internalData->projectionMatrixStack.emplace(internalData->activeFrameData.matrix_cameraToClipping);
 }
 
 void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
@@ -1032,29 +1154,31 @@ void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4
 }
 	
 void RenderingContext::setMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetProgramState.setMatrix_cameraToClipping(matrix);
+	internalData->activeFrameData.matrix_cameraToClipping = matrix;
+	internalData->activeFrameData.matrix_clippingToCamera = matrix.inverse();
 }
 
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToClipping() const {
-	return internalData->targetProgramState.getMatrix_cameraToClipping();
+	return internalData->activeFrameData.matrix_cameraToClipping;
 }
 
 // CAMERA MATRIX *****************************************************************************
 
 void RenderingContext::setMatrix_cameraToWorld(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetProgramState.setMatrix_cameraToWorld(matrix);
+	internalData->activeFrameData.matrix_cameraToWorld = matrix;
+	internalData->activeFrameData.matrix_worldToCamera = matrix.inverse();
 }
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_worldToCamera() const {
-	return internalData->targetProgramState.getMatrix_worldToCamera();
+	return internalData->activeFrameData.matrix_worldToCamera;
 }
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToWorld() const {
-	return internalData->targetProgramState.getMatrix_cameraToWorld();
+	return internalData->activeFrameData.matrix_cameraToWorld;
 }
 
 // MODEL VIEW MATRIX *************************************************************************
 
 void RenderingContext::resetMatrix() {
-	internalData->targetProgramState.setMatrix_modelToCamera(internalData->targetProgramState.getMatrix_worldToCamera());
+	internalData->activeObjectData.matrix_modelToCamera.setIdentity();
 }
 
 
@@ -1064,19 +1188,19 @@ void RenderingContext::pushAndSetMatrix_modelToCamera(const Geometry::Matrix4x4 
 }
 
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_modelToCamera() const {
-	return internalData->targetProgramState.getMatrix_modelToCamera();
+	return internalData->activeObjectData.matrix_modelToCamera;
 }
 
 void RenderingContext::pushMatrix_modelToCamera() {
-	internalData->matrixStack.emplace(internalData->targetProgramState.getMatrix_modelToCamera());
+	internalData->matrixStack.emplace(internalData->activeObjectData.matrix_modelToCamera);
 }
 
 void RenderingContext::multMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetProgramState.multModelViewMatrix(matrix);
+	internalData->activeObjectData.matrix_modelToCamera *= matrix;
 }
 
 void RenderingContext::setMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
-	internalData->targetProgramState.setMatrix_modelToCamera(matrix);
+	internalData->activeObjectData.matrix_modelToCamera = matrix;
 }
 
 void RenderingContext::popMatrix_modelToCamera() {
@@ -1084,15 +1208,14 @@ void RenderingContext::popMatrix_modelToCamera() {
 		WARN("Cannot pop matrix. The stack is empty.");
 		return;
 	}
-	internalData->targetProgramState.setMatrix_modelToCamera(internalData->matrixStack.top());
+	internalData->activeObjectData.matrix_modelToCamera = internalData->matrixStack.top();
 	internalData->matrixStack.pop();
 }
 
 // MATERIAL **********************************************************************************
 
-
 const MaterialParameters & RenderingContext::getMaterial() const {
-	return internalData->targetProgramState.getMaterialParameters();
+	return internalData->activeMaterial;
 }
 
 void RenderingContext::popMaterial() {
@@ -1103,14 +1226,14 @@ void RenderingContext::popMaterial() {
 	}
 	internalData->materialStack.pop();
 	if(internalData->materialStack.empty()) {
-		internalData->targetProgramState.disableMaterial();
+		internalData->activeMaterial.setEnabled(false);
 	} else {
-		internalData->targetProgramState.setMaterial(internalData->materialStack.top());
+		internalData->activeMaterial = internalData->materialStack.top();
 	}
 }
 
 void RenderingContext::pushMaterial() {
-	internalData->materialStack.emplace(internalData->targetProgramState.getMaterialParameters());
+	internalData->materialStack.emplace(internalData->activeMaterial);
 }
 void RenderingContext::pushAndSetMaterial(const MaterialParameters & material) {
 	pushMaterial();
@@ -1124,7 +1247,7 @@ void RenderingContext::pushAndSetColorMaterial(const Util::Color4f & color) {
 	pushAndSetMaterial(material);
 }
 void RenderingContext::setMaterial(const MaterialParameters & material) {
-	internalData->targetProgramState.setMaterial(material);
+	internalData->activeMaterial = material;
 }
 
 //  **********************************************************************************
@@ -1150,7 +1273,8 @@ void RenderingContext::pushViewport() {
 }
 void RenderingContext::setViewport(const Geometry::Rect_i & vp) {
 	internalData->targetPipelineState.setViewport(vp);
-	internalData->globalUniforms.setUniform({UNIFORM_SG_VIEWPORT, Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight())}, false, false);
+	internalData->activeFrameData.viewport = Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight());
+	internalData->globalUniforms.setUniform({UNIFORM_SG_VIEWPORT, internalData->activeFrameData.viewport}, false, false);
 }
 
 void RenderingContext::pushAndSetViewport(const Geometry::Rect_i & viewport) {

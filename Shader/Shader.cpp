@@ -116,6 +116,9 @@ bool Shader::init() {
 
 				// initialize uniforms with default
 				initUniformRegistry();
+				
+				// initialize interface blocks
+				initInterfaceBlocks();
 			}else{
 				status = INVALID;
 			}
@@ -378,6 +381,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			}
 			// int
 			case GL_INT:
+			case GL_UNSIGNED_INT:
 			case GL_SAMPLER_2D:
 			case GL_SAMPLER_CUBE:
 
@@ -538,6 +542,59 @@ int32_t Shader::getSubroutineIndex(uint32_t stage, const std::string & name) {
 	#else
 	return -1;
 	#endif
+}
+
+// ---------------------------------
+// interface blocks
+
+const Shader::InterfaceBlock& Shader::getInterfaceBlock(const Util::StringIdentifier& name) {
+	static InterfaceBlock invalidBlock;
+	const auto& it = interfaceBlocks.find(name);
+	return it == interfaceBlocks.end() ? invalidBlock : it->second;
+}
+
+void Shader::initInterfaceBlocks() {
+	if(getStatus()!=LINKED)
+		return;
+	interfaceBlocks.clear();
+		
+	// uniform blocks
+	int32_t uniformBlockCount;
+	const GLenum uniformProps[] = {GL_BUFFER_BINDING, GL_BUFFER_DATA_SIZE, GL_NAME_LENGTH};
+	glGetProgramInterfaceiv(prog, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniformBlockCount);
+	for(uint32_t i=0; i<uniformBlockCount; ++i) {
+		InterfaceBlock block;
+		block.target = GL_UNIFORM_BUFFER;
+		GLint params[3];
+		glGetProgramResourceiv(prog, GL_UNIFORM_BLOCK, i, 3, uniformProps, 3, nullptr, params);
+		block.location = params[0];
+		block.blockSize = params[1];
+		
+		std::vector<char> name(params[2]);
+		glGetProgramResourceName(prog, GL_UNIFORM_BLOCK, i, name.size(), nullptr, name.data());
+		block.name = std::string(name.begin(), name.end()-1);
+		
+		interfaceBlocks.emplace(block.name, std::move(block));
+	}
+	
+	// storage blocks
+	int32_t storageBlockCount;
+	const GLenum storageProps[] = {GL_BUFFER_BINDING, GL_BUFFER_DATA_SIZE, GL_NAME_LENGTH};
+	glGetProgramInterfaceiv(prog, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &storageBlockCount);
+	for(uint32_t i=0; i<storageBlockCount; ++i) {
+		InterfaceBlock block;
+		block.target = GL_SHADER_STORAGE_BUFFER;
+		GLint params[3];
+		glGetProgramResourceiv(prog, GL_SHADER_STORAGE_BLOCK, i, 3, storageProps, 3, nullptr, params);
+		block.location = params[0];
+		block.blockSize = params[1];
+		
+		std::vector<char> name(params[2]);
+		glGetProgramResourceName(prog, GL_SHADER_STORAGE_BLOCK, i, name.size(), nullptr, name.data());
+		block.name = std::string(name.begin(), name.end()-1);
+		
+		interfaceBlocks.emplace(block.name, std::move(block));
+	}
 }
 
 
