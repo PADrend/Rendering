@@ -13,7 +13,6 @@
 
 #include "ParameterCache.h"
 #include "PipelineState.h"
-#include "ProgramState.h"
 #include "RenderingParameters.h"
 #include "../BufferObject.h"
 #include "../Mesh/Mesh.h"
@@ -38,6 +37,7 @@
 #include <map>
 #include <set>
 #include <numeric>
+#include <cstring>
 
 #ifdef WIN32
 #include <GL/wglew.h>
@@ -48,18 +48,21 @@ namespace Rendering {
 static const Uniform::UniformName UNIFORM_SG_VIEWPORT("sg_viewport");
 static const Uniform::UniformName UNIFORM_SG_SCISSOR_RECT("sg_scissorRect");
 static const Uniform::UniformName UNIFORM_SG_SCISSOR_ENABLED("sg_scissorEnabled");
+static const Uniform::UniformName UNIFORM_SG_TEXTURE_ENABLED("sg_textureEnabled");
 
 static const Util::StringIdentifier PARAMETER_FRAMEDATA("FrameData");
 static const Util::StringIdentifier PARAMETER_OBJECTDATA("ObjectData");
 static const Util::StringIdentifier PARAMETER_MATERIALDATA("MaterialData");
 static const Util::StringIdentifier PARAMETER_LIGHTDATA("LightData");
 static const Util::StringIdentifier PARAMETER_LIGHTSETDATA("LightSetData");
+static const Util::StringIdentifier PARAMETER_TEXTURESETDATA("TextureSetData");
 
 static const uint32_t MAX_FRAMEDATA = 1;
 static const uint32_t MAX_OBJECTDATA = 1;
 static const uint32_t MAX_MATERIALS = 1;
 static const uint32_t MAX_LIGHTS = 256;
 static const uint32_t MAX_LIGHTSETS = 1;
+static const uint32_t MAX_TEXTURESETS = 1;
 static const uint32_t MAX_ENABLED_LIGHTS = 8;
 
 struct FrameData {
@@ -83,6 +86,16 @@ struct LightSet {
 	std::array<uint32_t, MAX_ENABLED_LIGHTS> lights;
 };
 
+struct MaterialData {
+	MaterialData() {}
+	MaterialData(const MaterialParameters& mat) : mat(mat) {}
+	MaterialParameters mat; // 4*vec4 + 1*float -> needs 3 word padding
+	uint32_t enabled = true;
+	uint64_t _pad = 0;
+};
+
+typedef std::array<uint32_t, MAX_TEXTURES> TextureSet;
+
 struct LightCompare {	
 	bool operator()(const LightParameters& l1, const LightParameters& l2) const noexcept {
 		return std::memcmp(&l1, &l2, sizeof(LightParameters)) < 0;
@@ -91,9 +104,7 @@ struct LightCompare {
 
 class RenderingContext::InternalData {
 	public:
-		ParameterCache cache;		
-		ProgramState targetProgramState;
-		ProgramState activeProgramState;
+		ParameterCache cache;
 		PipelineState targetPipelineState;
 		PipelineState activePipelineState;
 
@@ -126,21 +137,24 @@ class RenderingContext::InternalData {
 		ObjectData activeObjectData;
 		
 		// materials
-		std::stack<MaterialParameters> materialStack;
-		MaterialParameters activeMaterial;
+		std::stack<MaterialData> materialStack;
+		MaterialData activeMaterial;
 		
 		// lights
 		std::map<LightParameters, uint8_t, LightCompare> lightRegistry;
 		std::set<uint8_t> freeLightIds;
 		LightSet activeLightSet;
-				
+		
+		//textures
+		std::array<std::stack<std::pair<Util::Reference<Texture>, TexUnitUsageParameter>>, MAX_TEXTURES> textureStacks;
+		TextureSet enabledTextures;
+		
 		// other
 		typedef std::pair<Util::Reference<CountedBufferObject>,uint32_t> feedbackBufferStatus_t; // buffer->mode
 
 		std::stack<feedbackBufferStatus_t> feedbackStack;
 		feedbackBufferStatus_t activeFeedbackStatus;
 		
-		std::array<std::stack<std::pair<Util::Reference<Texture>, TexUnitUsageParameter>>, MAX_TEXTURES> textureStacks;
 		std::unordered_map<uint32_t,std::stack<Util::Reference<Texture>>> atomicCounterStacks; 
 		
 		Geometry::Rect_i windowClientArea;
@@ -169,9 +183,10 @@ RenderingContext::RenderingContext() :
 	auto& cache = internalData->cache;
 	cache.createCache(PARAMETER_FRAMEDATA, sizeof(FrameData), MAX_FRAMEDATA, BufferObject::FLAGS_DYNAMIC);
 	cache.createCache(PARAMETER_OBJECTDATA, sizeof(ObjectData), MAX_OBJECTDATA, BufferObject::FLAGS_DYNAMIC);
-	cache.createCache(PARAMETER_MATERIALDATA, sizeof(MaterialParameters), MAX_MATERIALS, BufferObject::FLAGS_DYNAMIC);
+	cache.createCache(PARAMETER_MATERIALDATA, sizeof(MaterialData), MAX_MATERIALS, BufferObject::FLAGS_DYNAMIC);
 	cache.createCache(PARAMETER_LIGHTDATA, sizeof(LightParameters), MAX_LIGHTS, BufferObject::FLAGS_DYNAMIC);
 	cache.createCache(PARAMETER_LIGHTSETDATA, sizeof(LightSet), MAX_LIGHTSETS, BufferObject::FLAGS_DYNAMIC);
+	cache.createCache(PARAMETER_TEXTURESETDATA, sizeof(TextureSet), MAX_TEXTURESETS, BufferObject::FLAGS_DYNAMIC);
 	
 	// initialize lights
 	for(uint_fast8_t i=0; i<std::numeric_limits<uint8_t>::max(); ++i) {
@@ -274,12 +289,13 @@ void RenderingContext::applyChanges(bool forced) {
 		const auto diff = internalData->activePipelineState.makeDiff(internalData->targetPipelineState, forced);
 		internalData->activePipelineState = internalData->targetPipelineState;
 		internalData->activePipelineState.apply(diff);
-		internalData->activeProgramState.apply(&internalData->globalUniforms, internalData->targetProgramState, forced);
+		//internalData->activeProgramState.apply(&internalData->globalUniforms, internalData->targetProgramState, forced);
 		
 		internalData->cache.setParameter(PARAMETER_FRAMEDATA, 0, internalData->activeFrameData);
 		internalData->cache.setParameter(PARAMETER_OBJECTDATA, 0, internalData->activeObjectData);
 		internalData->cache.setParameter(PARAMETER_MATERIALDATA, 0, internalData->activeMaterial);
 		internalData->cache.setParameter(PARAMETER_LIGHTSETDATA, 0, internalData->activeLightSet);
+		internalData->cache.setParameter(PARAMETER_TEXTURESETDATA, 0, internalData->enabledTextures);
 		
 		if(internalData->activePipelineState.isShaderValid()) {
 			auto shader = internalData->activePipelineState.getShader();
@@ -955,7 +971,7 @@ Texture * RenderingContext::getTexture(uint8_t unit) const {
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit) const {
-	return internalData->targetProgramState.getTextureUnitParams(unit).first;
+	return internalData->enabledTextures[unit] ? TexUnitUsageParameter::TEXTURE_MAPPING : TexUnitUsageParameter::DISABLED;
 }
 
 void RenderingContext::pushTexture(uint8_t unit) {
@@ -963,12 +979,12 @@ void RenderingContext::pushTexture(uint8_t unit) {
 }
 
 void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture) {
-	pushAndSetTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING);
+	pushTexture(unit);
+	setTexture(unit, texture);
 }
 
 void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
-	pushTexture(unit);
-	setTexture(unit, texture, usage);
+	pushAndSetTexture(unit, usage == TexUnitUsageParameter::DISABLED ? nullptr : texture);
 }
 
 void RenderingContext::popTexture(uint8_t unit) {
@@ -977,28 +993,22 @@ void RenderingContext::popTexture(uint8_t unit) {
 		return;
 	}
 	const auto& textureAndUsage = internalData->textureStacks[unit].top();
-	setTexture(unit, textureAndUsage.first.get(), textureAndUsage.second );
+	setTexture(unit, textureAndUsage.first.get());
 	internalData->textureStacks[unit].pop();
 }
 
 void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
-	setTexture(unit, texture, TexUnitUsageParameter::TEXTURE_MAPPING);
-}
-
-void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
 	Texture * oldTexture = getTexture(unit);
 	if(texture != oldTexture) {
 		if(texture) 
 			texture->_prepareForBinding(*this);
 		internalData->targetPipelineState.setTexture(unit, texture);
-	}
-	const auto oldUsage = internalData->targetProgramState.getTextureUnitParams(unit).first;
-	if(!texture){
-		if( oldUsage!= TexUnitUsageParameter::DISABLED )
-			internalData->targetProgramState.setTextureUnitParams(unit, TexUnitUsageParameter::DISABLED , oldTexture ? oldTexture->getTextureType() : TextureType::TEXTURE_2D);
-	}else if( oldUsage!= usage ){
-		internalData->targetProgramState.setTextureUnitParams(unit, usage , texture->getTextureType());
-	}
+	}	
+	internalData->enabledTextures.at(unit) = texture != nullptr;
+}
+
+void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
+	setTexture(unit, usage == TexUnitUsageParameter::DISABLED ? nullptr : texture);
 }
 
 // TRANSFORM FEEDBACK ************************************************************************
@@ -1215,7 +1225,7 @@ void RenderingContext::popMatrix_modelToCamera() {
 // MATERIAL **********************************************************************************
 
 const MaterialParameters & RenderingContext::getMaterial() const {
-	return internalData->activeMaterial;
+	return internalData->activeMaterial.mat;
 }
 
 void RenderingContext::popMaterial() {
@@ -1226,7 +1236,7 @@ void RenderingContext::popMaterial() {
 	}
 	internalData->materialStack.pop();
 	if(internalData->materialStack.empty()) {
-		internalData->activeMaterial.setEnabled(false);
+		internalData->activeMaterial.enabled = false;
 	} else {
 		internalData->activeMaterial = internalData->materialStack.top();
 	}

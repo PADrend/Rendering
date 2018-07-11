@@ -51,13 +51,20 @@ static const std::string geometryProgram(R"***(#version 420
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
 	
-layout(std140, binding=0, row_major) uniform MatrixData {
-	uniform mat4 worldToCamera;
-	uniform mat4 cameraToWorld;
-	uniform mat4 cameraToClipping;
-	uniform mat4 clippingToCamera;
-	uniform mat4 modelToCamera;
-} sg_matrix;
+layout(std140, binding=0, row_major) uniform FrameData {
+  mat4 sg_matrix_worldToCamera;
+  mat4 sg_matrix_cameraToWorld;
+  mat4 sg_matrix_cameraToClipping;
+  mat4 sg_matrix_clippingToCamera;
+  vec4 sg_viewport;
+};
+layout(std140, binding=2, row_major) uniform ObjectData {
+  mat4 sg_matrix_modelToCamera;
+  float sg_pointSize;
+  uint materialId;
+  uint lightSetId;
+  uint _pad;
+};
 
 in Glyph {
 	vec2 pos;
@@ -68,7 +75,7 @@ in Glyph {
 out vec2 glyphPos;
 
 void main(void) {
-	mat4 sg_matrix_modelToClipping = sg_matrix.cameraToClipping * sg_matrix.modelToCamera;
+	mat4 sg_matrix_modelToClipping = sg_matrix_cameraToClipping * sg_matrix_modelToCamera;
 	
 	vec2 pos = vIn[0].pos;
 	vec2 tex = vIn[0].tex;
@@ -100,14 +107,14 @@ void main(void) {
 
 static const std::string fragmentProgram(R"***(#version 420
 
-uniform sampler2D sg_texture0;
+layout(binding=0) uniform sampler2D glyphTexture;
 uniform vec4 textColor;
 
 in vec2 glyphPos;
 out vec4 fragColor;
 
 void main(void) {
-	fragColor = vec4(1.0, 1.0, 1.0, texelFetch(sg_texture0, ivec2(glyphPos), 0).r) * textColor;
+	fragColor = vec4(1.0, 1.0, 1.0, texelFetch(glyphTexture, ivec2(glyphPos), 0).r) * textColor;
 }
 )***");
 

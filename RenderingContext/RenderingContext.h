@@ -460,16 +460,16 @@ public:
 	 \todo Move array of activeTextures to ProgramState to allow delayed binding
 	 */
 	//	@{
-	Texture * getTexture(uint8_t unit)const;
-	TexUnitUsageParameter getTextureUsage(uint8_t unit)const;
+	Texture * getTexture(uint8_t unit) const;
+	TexUnitUsageParameter getTextureUsage(uint8_t unit) const  __attribute((deprecated));
 	void pushTexture(uint8_t unit);
 	void pushAndSetTexture(uint8_t unit, Texture * texture); // default usage = TexUnitUsageParameter::TEXTURE_MAPPING );
-	void pushAndSetTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage);
+	void pushAndSetTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) __attribute((deprecated));
 	void popTexture(uint8_t unit);
 
 	//! \note texture may be nullptr
 	void setTexture(uint8_t unit, Texture * texture); // default: usage = TexUnitUsageParameter::TEXTURE_MAPPING);
-	void setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage);
+	void setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) __attribute((deprecated));
 	// @}
 	
 	// ------

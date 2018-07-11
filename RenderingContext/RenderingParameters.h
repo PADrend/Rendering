@@ -636,15 +636,13 @@ class MaterialParameters {
 		Util::Color4f specular;
 		Util::Color4f emission;
 		float shininess;
-		uint32_t enabled;
-		__attribute__((unused)) uint64_t _padding = 0;
 	public:
-		MaterialParameters(bool enabled=true) :
+		MaterialParameters() :
 			ambient(Util::Color4f(0.2f, 0.2f, 0.2f, 1.0f)),
 			diffuse(Util::Color4f(0.8f, 0.8f, 0.8f, 1.0f)),
 			specular(Util::Color4f(0.0f, 0.0f, 0.0f, 1.0f)),
 			emission(Util::Color4f(0.0f, 0.0f, 0.0f, 0.0f)),
-			shininess(0.0f), enabled(enabled) {
+			shininess(0.0f) {
 		}
 
 		bool operator==(const MaterialParameters & other) const {
@@ -652,16 +650,14 @@ class MaterialParameters {
 				   diffuse == other.diffuse &&
 				   specular == other.specular &&
 				   emission == other.emission &&
-				   shininess == other.shininess && 
-					 enabled == other.enabled;
+				   shininess == other.shininess;
 		}
 		bool operator!=(const MaterialParameters & other) const {
 			return ambient != other.ambient ||
 				   diffuse != other.diffuse ||
 				   specular != other.specular ||
 				   emission != other.emission ||
-				   shininess != other.shininess ||
-				   enabled != other.enabled;
+				   shininess != other.shininess;
 		}
 
 		bool getColorMaterial() const __attribute((deprecated)) { return false; }
@@ -700,8 +696,6 @@ class MaterialParameters {
 			}
 			shininess = std::min(std::max(newShininess, 0.0f), 128.0f);
 		}
-		bool isEnabled() const { return enabled; }
-		void setEnabled(bool v) { enabled = v; }
 };
 
 // -------------------------------------------

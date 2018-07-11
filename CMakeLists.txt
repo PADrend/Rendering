@@ -39,7 +39,6 @@ add_library(Rendering
 	MeshUtils/ConnectivityAccessor.cpp
 	RenderingContext/ParameterCache.cpp
 	RenderingContext/PipelineState.cpp
-	RenderingContext/ProgramState.cpp
 	RenderingContext/RenderingContext.cpp
 	RenderingContext/RenderingParameters.cpp
 	Serialization/GenericAttributeSerialization.cpp
