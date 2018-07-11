@@ -58,23 +58,6 @@ enum class TexUnitUsageParameter : uint8_t;
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
 
-struct DrawArraysCommand {
-	DrawArraysCommand(uint32_t first, uint32_t count) : count(count), first(first) {}
-	uint32_t count;
-	uint32_t primCount=1;
-	uint32_t first=0;
-	uint32_t baseInstance=0;
-};
-
-struct DrawElementsCommand {
-	DrawElementsCommand(uint32_t first, uint32_t count) : count(count), first(first) {}
-	uint32_t count;
-	uint32_t primCount=1;
-	uint32_t first=0;
-	uint32_t baseVertex=0;
-	uint32_t baseInstance=0;
-};
-
 class RenderingContext {
 
 	//! @name General
@@ -511,8 +494,8 @@ public:
 	//! @name Draw commands
 	// @{
 	
-	void submitDraw(uint32_t mode, const DrawArraysCommand& cmd);
-	void submitDraw(uint32_t mode, uint32_t type, const DrawElementsCommand& cmd);
+	void drawArrays(uint32_t mode, uint32_t first, uint32_t count);
+	void drawElements(uint32_t mode, uint32_t type, uint32_t first, uint32_t count);
 	// ------
 
 	//! @name Viewport and window's size

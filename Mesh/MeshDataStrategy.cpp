@@ -39,16 +39,16 @@ void MeshDataStrategy::setDefaultStrategy(MeshDataStrategy * newDefault){
 // -------------
 
 //! (static,internal)
-void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m,uint32_t startIndex,uint32_t indexCount){
+void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m, uint32_t startIndex, uint32_t indexCount){
 	MeshVertexData & vd=m->_getVertexData();
 	vd.bind(context);
 	if(m->isUsingIndexData()) {
 		MeshIndexData & id=m->_getIndexData();
 		id.bind(context);
-		context.submitDraw(m->getGLDrawMode(), GL_UNSIGNED_INT, DrawElementsCommand(startIndex, indexCount));		
+		context.drawElements(m->getGLDrawMode(), GL_UNSIGNED_INT, startIndex, indexCount);		
 		context.bindIndexBuffer(0);
 	} else {
-		context.submitDraw(m->getGLDrawMode(), DrawArraysCommand(startIndex, indexCount));
+		context.drawArrays(m->getGLDrawMode(), startIndex, indexCount);
 	}
 	vd.unbind(context);
 }

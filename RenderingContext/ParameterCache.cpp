@@ -22,7 +22,7 @@ const uint32_t ParameterCache::INVALID_INDEX = std::numeric_limits<uint32_t>::ma
 void ParameterCache::createCache(const Util::StringIdentifier& id, uint32_t elementSize, uint32_t maxElementCount, uint32_t usageFlags) {
   auto it = caches.find(id);
   if(it == caches.end()) {
-    CacheEntry entry{id, BufferObject{}, elementSize, maxElementCount, 0};
+    CacheEntry entry{id, BufferObject{}, elementSize, maxElementCount};
     entry.buffer.allocate(elementSize * maxElementCount, usageFlags);
     caches.emplace(id.getValue(), std::move(entry));
   } else if(it->second.buffer.getSize() != elementSize*maxElementCount || it->second.buffer.getFlags() != usageFlags) {
@@ -51,22 +51,18 @@ void ParameterCache::resizeCache(const Util::StringIdentifier& id, uint32_t elem
 
 //-------
 
-void ParameterCache::resetCache(const Util::StringIdentifier& id) {
-  auto& cache = caches.at(id);
-  cache.head = 0;
-  // TODO: synchronize buffer
-}
-//-------
-
 bool ParameterCache::isCache(const Util::StringIdentifier& id) {
   return caches.count(id) > 0;
 }
 
 //-------
 
-void ParameterCache::bind(const Util::StringIdentifier& id, uint32_t location, uint32_t target) {
-  const auto& cache = caches.at(id);
-  cache.buffer.bind(target, location);
+void ParameterCache::bind(const Util::StringIdentifier& id, uint32_t location, uint32_t target, bool force) {
+  auto& cache = caches.at(id);
+  if(force || cache.lastBinding != std::make_pair(location, target)) {
+    cache.buffer.bind(target, location);
+    cache.lastBinding = std::make_pair(location, target);
+  }
 }
 
 //-------
@@ -82,22 +78,19 @@ void ParameterCache::setParameter(const Util::StringIdentifier& id, uint32_t ind
 
 //-------
 
-uint32_t ParameterCache::addParameter(const Util::StringIdentifier& id, const uint8_t* data, bool autoResize) {
-  auto& cache = caches.at(id);
-  uint32_t index = cache.head++;
-  if(index >= cache.maxElementCount) {
-    if(autoResize) {
-      resizeCache(id, cache.maxElementCount*2);
-    } else {
-      WARN("ParameterCache::setParameter: cache is full.");
-      return INVALID_INDEX;
-    }
-  }
-  cache.buffer.upload(data, cache.elementSize, index * cache.elementSize);
-  return index;
+void ParameterCache::wait() {
+  lock.waitForLockedRange(0, 1);
 }
 
-//-------
+void ParameterCache::sync() {
+  lock.lockRange(0, 1);
+}
+
+void ParameterCache::flush() {
+  for(auto& e : caches) {
+    e.second.buffer.flush();
+  }
+}
 
 } /* Rendering */
 

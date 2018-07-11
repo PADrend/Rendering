@@ -55,7 +55,11 @@ public:
 		STENCIL_OP_BIT,
 		TEXTURE_BINDING_BIT,
 	};
-	typedef std::bitset<TEXTURE_BINDING_BIT+1> StateDiff_t;
+	struct StateDiff_t {
+		std::bitset<TEXTURE_BINDING_BIT+1> state;
+		std::bitset<16> format;
+		std::bitset<16> vertexBinding;
+	};
 	StateDiff_t makeDiff(const PipelineState& other, bool forced=false);
 	void apply(const StateDiff_t& diff);
 

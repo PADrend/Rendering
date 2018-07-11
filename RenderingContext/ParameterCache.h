@@ -10,6 +10,7 @@
 #define RENDERING_PARAMETER_CACHE_H_
 
 #include "../BufferObject.h"
+#include "../BufferLock.h"
 
 #include <Util/StringIdentifier.h>
 
@@ -26,9 +27,10 @@ private:
     BufferObject buffer;
     uint32_t elementSize;
     uint32_t maxElementCount;
-    uint32_t head;
+    std::pair<uint32_t, uint32_t> lastBinding;
   };
   std::unordered_map<Util::StringIdentifier, CacheEntry> caches;
+  BufferLockManager lock;
 public:
   static const uint32_t INVALID_INDEX;
   
@@ -44,15 +46,12 @@ public:
     
   //! Resizes an existing cache.
   void resizeCache(const Util::StringIdentifier& id, uint32_t elementCount);
-    
-  //! Resets the current cursor position of a cache.
-  void resetCache(const Util::StringIdentifier& id);
-    
+  
   //! Returns true if a cache with the given name exists.
   bool isCache(const Util::StringIdentifier& id);
     
   //! Bind a cache to the specified location in a shader.
-  void bind(const Util::StringIdentifier& id, uint32_t location, uint32_t target = BufferObject::TARGET_UNIFORM_BUFFER);
+  void bind(const Util::StringIdentifier& id, uint32_t location, uint32_t target = BufferObject::TARGET_UNIFORM_BUFFER, bool force=false);
   
   //! Sets a parameter in the specified cache
   void setParameter(const Util::StringIdentifier& id, uint32_t index, const uint8_t* data);
@@ -61,12 +60,9 @@ public:
     setParameter(id, index, reinterpret_cast<const uint8_t*>(&parameter));
   }
   
-  //! Adds a parameter to the specified cache and returns its position
-  uint32_t addParameter(const Util::StringIdentifier& id, const uint8_t* data, bool autoResize=false);
-  template<typename T>
-  void addParameter(const Util::StringIdentifier& id, const T& parameter, bool autoResize=false) {
-    addParameter(id, reinterpret_cast<const uint8_t*>(&parameter), autoResize);
-  }
+  void wait();
+  void sync();
+  void flush();
 };
 
 } /* Rendering */

@@ -15,6 +15,7 @@
 #include "PipelineState.h"
 #include "RenderingParameters.h"
 #include "../BufferObject.h"
+#include "../BufferLock.h"
 #include "../Mesh/Mesh.h"
 #include "../Mesh/VertexAttribute.h"
 #include "../Mesh/VertexDescription.h"
@@ -53,7 +54,7 @@ static const Util::StringIdentifier PARAMETER_LIGHTSETDATA("LightSetData");
 static const Util::StringIdentifier PARAMETER_TEXTURESETDATA("TextureSetData");
 
 static const uint32_t MAX_FRAMEDATA = 1;
-static const uint32_t MAX_OBJECTDATA = 1;
+static const uint32_t MAX_OBJECTDATA = 512;
 static const uint32_t MAX_MATERIALS = 1;
 static const uint32_t MAX_LIGHTS = 256;
 static const uint32_t MAX_LIGHTSETS = 1;
@@ -73,7 +74,7 @@ struct ObjectData {
 	PointParameters pointSize = 1;
 	uint32_t materialId = 0;
 	uint32_t lightSetId = 0;
-	uint32_t _pad = 0;
+	uint32_t drawId = 0;
 };
 
 struct LightSet {
@@ -130,6 +131,7 @@ class RenderingContext::InternalData {
 		std::stack<Geometry::Matrix4x4> matrixStack;
 		std::stack<PointParameters> pointParameterStack;
 		ObjectData activeObjectData;
+		BufferLockManager objLock;
 		
 		// materials
 		std::stack<MaterialData> materialStack;
@@ -284,20 +286,20 @@ void RenderingContext::applyChanges(bool forced) {
 		const auto diff = internalData->activePipelineState.makeDiff(internalData->targetPipelineState, forced);
 		internalData->activePipelineState = internalData->targetPipelineState;
 		internalData->activePipelineState.apply(diff);
-		//internalData->activeProgramState.apply(&internalData->globalUniforms, internalData->targetProgramState, forced);
 		
+		//internalData->cache.wait();
 		internalData->cache.setParameter(PARAMETER_FRAMEDATA, 0, internalData->activeFrameData);
-		internalData->cache.setParameter(PARAMETER_OBJECTDATA, 0, internalData->activeObjectData);
 		internalData->cache.setParameter(PARAMETER_MATERIALDATA, 0, internalData->activeMaterial);
 		internalData->cache.setParameter(PARAMETER_LIGHTSETDATA, 0, internalData->activeLightSet);
 		internalData->cache.setParameter(PARAMETER_TEXTURESETDATA, 0, internalData->enabledTextures);
+		//internalData->cache.setParameter(PARAMETER_OBJECTDATA, 0, internalData->activeObjectData);
 		
 		if(internalData->activePipelineState.isShaderValid()) {
 			auto shader = internalData->activePipelineState.getShader();
 			for(const auto& e : shader->getInterfaceBlocks()) {
 				const auto& block = e.second;
 				if(block.location >= 0 && internalData->cache.isCache(block.name)) {
-					internalData->cache.bind(block.name, block.location, block.target);
+					internalData->cache.bind(block.name, block.location, block.target, forced);
 				}
 			}
 
@@ -1315,17 +1317,30 @@ void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
 
 // Draw Commands **********************************************************************************
 
-void RenderingContext::submitDraw(uint32_t mode, const DrawArraysCommand& cmd) {
+void RenderingContext::drawArrays(uint32_t mode, uint32_t first, uint32_t count) {
 	applyChanges();
+	//internalData->cache.flush();
 	//glDrawArraysIndirect(mode, &cmd);
-  glDrawArraysInstancedBaseInstance(mode, cmd.first, cmd.count, cmd.primCount, cmd.baseInstance);
+	uint32_t drawId = internalData->activeObjectData.drawId;
+	//if(drawId == 0) internalData->objLock.waitForLockedRange(0, 1);
+	internalData->cache.setParameter(PARAMETER_OBJECTDATA, drawId, internalData->activeObjectData);
+  glDrawArraysInstancedBaseInstance(mode, first, count, 1, drawId);
+	//if(drawId == MAX_OBJECTDATA-1) internalData->objLock.lockRange(0, 1);
+	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA)
+		internalData->activeObjectData.drawId = 0;
 }
 
-void RenderingContext::submitDraw(uint32_t mode, uint32_t type, const DrawElementsCommand& cmd) {
+void RenderingContext::drawElements(uint32_t mode, uint32_t type, uint32_t first, uint32_t count) {
 	applyChanges();
+	//internalData->cache.flush();
 	//glDrawElementsIndirect(mode, type, &cmd);
-	uint8_t* first = reinterpret_cast<uint8_t*>(cmd.first * getGLTypeSize(type));
-	glDrawElementsInstancedBaseVertexBaseInstance(mode, cmd.count, type, first, cmd.primCount, cmd.baseVertex, cmd.baseInstance);
+	uint32_t drawId = internalData->activeObjectData.drawId;
+	//if(drawId == 0) internalData->objLock.waitForLockedRange(0, 1);
+	internalData->cache.setParameter(PARAMETER_OBJECTDATA, drawId, internalData->activeObjectData);
+	glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, reinterpret_cast<uint8_t*>(first * getGLTypeSize(type)), 1, 0, drawId);
+	//if(drawId == MAX_OBJECTDATA-1) internalData->objLock.lockRange(0, 1);
+	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA)
+		internalData->activeObjectData.drawId = 0;
 }
 
 }

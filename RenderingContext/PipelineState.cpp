@@ -48,52 +48,68 @@ PipelineState::StateDiff_t PipelineState::makeDiff(const PipelineState& target, 
 	StateDiff_t diff;
 	
 	if(forced) {
-		diff.set();
+		diff.state.set();
+		diff.format.set();
+		diff.vertexBinding.set();
 		return diff;
 	}
 	
-	diff.set(VIEWPORT_BIT, viewportChanged(target));
-	diff.set(SCISSOR_BIT, scissorParametersChanged(target));
-	diff.set(FBO_BIT, fboChanged(target));
-	diff.set(PROGRAM_BIT, shaderChanged(target));
-	diff.set(VAO_BIT, vertexArrayChanged(target));
-	diff.set(VERTEX_FORMAT_BIT, vertexFormatChanged(target));
-	diff.set(VERTEX_BINDING_BIT, vertexBindingChanged(target));
-	diff.set(ELEMENT_BINDING_BIT, elementBindingChanged(target));
+	diff.state.set(VIEWPORT_BIT, viewportChanged(target));
+	diff.state.set(SCISSOR_BIT, scissorParametersChanged(target));
+	diff.state.set(FBO_BIT, fboChanged(target));
+	diff.state.set(PROGRAM_BIT, shaderChanged(target));
+	diff.state.set(VAO_BIT, vertexArrayChanged(target));
+	diff.state.set(ELEMENT_BINDING_BIT, elementBindingChanged(target));
 	
 	// Blending
-	diff.set(BLEND_BIT, blendingParametersChanged(target));
-	if(diff.test(BLEND_BIT)) {
+	diff.state.set(BLEND_BIT, blendingParametersChanged(target));
+	if(diff.state.test(BLEND_BIT)) {
 		const BlendingParameters & actualParams = getBlendingParameters();
 		const BlendingParameters & targetParams = target.getBlendingParameters();
-		diff.set(BLEND_ENABLED_BIT, actualParams.isEnabled() != targetParams.isEnabled());
-		diff.set(BLEND_FUNC_BIT, 	actualParams.getBlendFuncSrcRGB() != targetParams.getBlendFuncSrcRGB() ||
+		diff.state.set(BLEND_ENABLED_BIT, actualParams.isEnabled() != targetParams.isEnabled());
+		diff.state.set(BLEND_FUNC_BIT, 	actualParams.getBlendFuncSrcRGB() != targetParams.getBlendFuncSrcRGB() ||
 															actualParams.getBlendFuncDstRGB() != targetParams.getBlendFuncDstRGB() ||
 															actualParams.getBlendFuncSrcAlpha() != targetParams.getBlendFuncSrcAlpha() ||
 															actualParams.getBlendFuncDstAlpha() != targetParams.getBlendFuncDstAlpha());
-		diff.set(BLEND_COLOR_BIT, actualParams.getBlendColor() != targetParams.getBlendColor());
-		diff.set(BLEND_EQUATION_BIT, 	actualParams.getBlendEquationRGB() != targetParams.getBlendEquationRGB() ||
+		diff.state.set(BLEND_COLOR_BIT, actualParams.getBlendColor() != targetParams.getBlendColor());
+		diff.state.set(BLEND_EQUATION_BIT, 	actualParams.getBlendEquationRGB() != targetParams.getBlendEquationRGB() ||
 																	actualParams.getBlendEquationAlpha() != targetParams.getBlendEquationAlpha());
 	}
 	
-	diff.set(COLOR_BUFFER_BIT, colorBufferParametersChanged(target));
-	diff.set(CULL_FACE_BIT, cullFaceParametersChanged(target));
-	diff.set(DEPTH_BUFFER_BIT, depthBufferParametersChanged(target));
-	diff.set(LINE_PARAM_BIT, lineParametersChanged(target));
-	diff.set(POLYGON_MODE_BIT, polygonModeParametersChanged(target));
-	diff.set(POLYGON_OFFSET_BIT, polygonOffsetParametersChanged(target));
+	diff.state.set(COLOR_BUFFER_BIT, colorBufferParametersChanged(target));
+	diff.state.set(CULL_FACE_BIT, cullFaceParametersChanged(target));
+	diff.state.set(DEPTH_BUFFER_BIT, depthBufferParametersChanged(target));
+	diff.state.set(LINE_PARAM_BIT, lineParametersChanged(target));
+	diff.state.set(POLYGON_MODE_BIT, polygonModeParametersChanged(target));
+	diff.state.set(POLYGON_OFFSET_BIT, polygonOffsetParametersChanged(target));
 	
 	// stencil
-	diff.set(STENCIL_BIT, stencilParametersChanged(target));
-	if(diff.test(STENCIL_BIT)) {
+	diff.state.set(STENCIL_BIT, stencilParametersChanged(target));
+	if(diff.state.test(STENCIL_BIT)) {
 		const StencilParameters & actualParams = getStencilParameters();
 		const StencilParameters & targetParams = target.getStencilParameters();
-		diff.set(STENCIL_ENABLED_BIT, actualParams.isEnabled() != targetParams.isEnabled());
-		diff.set(STENCIL_FUNC_BIT, actualParams.differentFunctionParameters(targetParams));
-		diff.set(STENCIL_OP_BIT, actualParams.differentActionParameters(targetParams));
+		diff.state.set(STENCIL_ENABLED_BIT, actualParams.isEnabled() != targetParams.isEnabled());
+		diff.state.set(STENCIL_FUNC_BIT, actualParams.differentFunctionParameters(targetParams));
+		diff.state.set(STENCIL_OP_BIT, actualParams.differentActionParameters(targetParams));
 	}
-	diff.set(TEXTURE_BINDING_BIT, texturesChanged(target));
+	diff.state.set(TEXTURE_BINDING_BIT, texturesChanged(target));
 	
+	// vertex format
+	diff.state.set(VERTEX_FORMAT_BIT, vertexFormatChanged(target));
+	if(diff.state.test(VERTEX_FORMAT_BIT)) {
+		for(uint_fast8_t i=0; i<MAX_VERTEXATTRIBS; ++i) {
+			diff.format.set(i, vertexFormat[i] != target.vertexFormat[i]);
+		}
+	}
+	
+	// vertex binding
+	diff.state.set(VERTEX_BINDING_BIT, vertexBindingChanged(target));
+	if(diff.state.test(VERTEX_BINDING_BIT)) {
+		for(uint_fast8_t i=0; i<MAX_VERTEXBINDINGS; ++i) {
+			diff.vertexBinding.set(i, vertexBindings[i] != target.vertexBindings[i]);
+		}
+	}
+		
 	return diff;
 }
 
@@ -101,33 +117,33 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	GET_GL_ERROR();
 	
 	// Shader
-	if(diff.test(PROGRAM_BIT)) {
+	if(diff.state.test(PROGRAM_BIT)) {
 		glUseProgram(program);
 		GET_GL_ERROR();
 	}
 	
 	// Blending
-	if(diff.test(BLEND_BIT)) {
-		if(diff.test(BLEND_ENABLED_BIT)) {
+	if(diff.state.test(BLEND_BIT)) {
+		if(diff.state.test(BLEND_ENABLED_BIT)) {
 			if(blendingParameters.isEnabled()) {
 				glEnable(GL_BLEND);
 			} else {
 				glDisable(GL_BLEND);
 			}
 		}
-		if(diff.test(BLEND_FUNC_BIT)) {
+		if(diff.state.test(BLEND_FUNC_BIT)) {
 			glBlendFuncSeparate(BlendingParameters::functionToGL(blendingParameters.getBlendFuncSrcRGB()),
 								BlendingParameters::functionToGL(blendingParameters.getBlendFuncDstRGB()),
 								BlendingParameters::functionToGL(blendingParameters.getBlendFuncSrcAlpha()),
 								BlendingParameters::functionToGL(blendingParameters.getBlendFuncDstAlpha()));
 		}
-		if(diff.test(BLEND_COLOR_BIT)) {
+		if(diff.state.test(BLEND_COLOR_BIT)) {
 			glBlendColor(blendingParameters.getBlendColor().getR(),
 						 blendingParameters.getBlendColor().getG(),
 						 blendingParameters.getBlendColor().getB(),
 						 blendingParameters.getBlendColor().getA());
 		}
-		if(diff.test(BLEND_EQUATION_BIT)) {
+		if(diff.state.test(BLEND_EQUATION_BIT)) {
 			glBlendEquationSeparate(BlendingParameters::equationToGL(blendingParameters.getBlendEquationRGB()),
 									BlendingParameters::equationToGL(blendingParameters.getBlendEquationAlpha()));
 		}
@@ -135,7 +151,7 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 
 	// ColorBuffer
-	if(diff.test(COLOR_BUFFER_BIT)) {
+	if(diff.state.test(COLOR_BUFFER_BIT)) {
 		glColorMask(
 			colorBufferParameters.isRedWritingEnabled() ? GL_TRUE : GL_FALSE,
 			colorBufferParameters.isGreenWritingEnabled() ? GL_TRUE : GL_FALSE,
@@ -146,7 +162,7 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 
 	// CullFace
-	if(diff.test(CULL_FACE_BIT)) {
+	if(diff.state.test(CULL_FACE_BIT)) {
 		if(cullFaceParameters.isEnabled()) {
 			glEnable(GL_CULL_FACE);
 		} else {
@@ -169,7 +185,7 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 
 	// DepthBuffer
-	if(diff.test(DEPTH_BUFFER_BIT)) {
+	if(diff.state.test(DEPTH_BUFFER_BIT)) {
 		if(depthBufferParameters.isTestEnabled()) {
 			glEnable(GL_DEPTH_TEST);
 		} else {
@@ -185,24 +201,24 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 
 	// Line
-	if(diff.test(LINE_PARAM_BIT)) {
+	if(diff.state.test(LINE_PARAM_BIT)) {
 		glLineWidth(std::min(lineParameters.getWidth(), 1.0f)); // deprecated for line width > 1
 		GET_GL_ERROR();
 	}
 
 	// stencil
-	if(diff.test(STENCIL_BIT)) {
-		if(diff.test(STENCIL_ENABLED_BIT)) {
+	if(diff.state.test(STENCIL_BIT)) {
+		if(diff.state.test(STENCIL_ENABLED_BIT)) {
 			if(stencilParameters.isEnabled()) {
 				glEnable(GL_STENCIL_TEST);
 			} else {
 				glDisable(GL_STENCIL_TEST);
 			}
 		}
-		if(diff.test(STENCIL_FUNC_BIT)) {
+		if(diff.state.test(STENCIL_FUNC_BIT)) {
 			glStencilFunc(Comparison::functionToGL(stencilParameters.getFunction()), stencilParameters.getReferenceValue(), stencilParameters.getBitMask().to_ulong());
 		}
-		if(diff.test(STENCIL_OP_BIT)) {
+		if(diff.state.test(STENCIL_OP_BIT)) {
 			glStencilOp(convertStencilAction(stencilParameters.getFailAction()),
 						convertStencilAction(stencilParameters.getDepthTestFailAction()),
 						convertStencilAction(stencilParameters.getDepthTestPassAction()));
@@ -211,13 +227,13 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 
 	// polygonMode
-	if(diff.test(POLYGON_MODE_BIT)) {
+	if(diff.state.test(POLYGON_MODE_BIT)) {
 		glPolygonMode(GL_FRONT_AND_BACK, PolygonModeParameters::modeToGL(polygonModeParameters.getMode()));
 		GET_GL_ERROR();
 	}
 
 	// PolygonOffset
-	if(diff.test(POLYGON_OFFSET_BIT)) {
+	if(diff.state.test(POLYGON_OFFSET_BIT)) {
 		if(polygonOffsetParameters.isEnabled()) {
 			glEnable(GL_POLYGON_OFFSET_FILL);
 			glEnable(GL_POLYGON_OFFSET_LINE);
@@ -232,7 +248,7 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 
 	// Textures
-	if(diff.test(TEXTURE_BINDING_BIT)) {
+	if(diff.state.test(TEXTURE_BINDING_BIT)) {
 		glBindTextures(0, MAX_TEXTURES, boundGLTextures.data());
 		/*for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {
 			const auto & texture = getTexture(unit);			
@@ -252,13 +268,13 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 	
 	// Viewport
-	if(diff.test(VIEWPORT_BIT)) {
+	if(diff.state.test(VIEWPORT_BIT)) {
 		glViewport(viewport.getX(), viewport.getY(), viewport.getWidth(), viewport.getHeight());
 		GET_GL_ERROR();
 	}
 	
 	// Scissor
-	if(diff.test(SCISSOR_BIT)) {
+	if(diff.state.test(SCISSOR_BIT)) {
 		if(scissor.isEnabled()) {
 			const Geometry::Rect_i & scissorRect = scissor.getRect();
 			glScissor(scissorRect.getX(), scissorRect.getY(), scissorRect.getWidth(), scissorRect.getHeight());
@@ -270,7 +286,7 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 		
 	// FBO
-	if(diff.test(FBO_BIT)) {
+	if(diff.state.test(FBO_BIT)) {
 		if(fbo.isNull()) {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		} else {
@@ -280,7 +296,7 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 	
 	// VAO
-	if(diff.test(VAO_BIT)) {
+	if(diff.state.test(VAO_BIT)) {
 		if(vao.isNotNull())
 			vao->bind();
 		else 
@@ -289,37 +305,41 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 		
 	// Vertex Format
-	if(diff.test(VERTEX_FORMAT_BIT)) {
+	if(diff.state.test(VERTEX_FORMAT_BIT)) {
 		for(uint_fast8_t location=0; location<PipelineState::MAX_VERTEXATTRIBS; ++location) {
-			const auto& format = getVertexFormat(location);
-			const auto& attr = format.first;
-			if(attr.empty()) {
-				glDisableVertexAttribArray(location);
-			} else {
-				glEnableVertexAttribArray(location);				
-				glVertexAttribBinding(location, format.second);		
-				if(attr.getConvertToFloat()) 
-					glVertexAttribFormat(location, attr.getNumValues(), attr.getDataType(), attr.getNormalize() ? GL_TRUE : GL_FALSE, attr.getOffset());
-				else
-					glVertexAttribIFormat(location, attr.getNumValues(), attr.getDataType(), attr.getOffset());
-			}			
+			if(diff.format.test(location)) {
+				const auto& format = getVertexFormat(location);
+				const auto& attr = format.first;
+				if(attr.empty()) {
+					glDisableVertexAttribArray(location);
+				} else {
+					glEnableVertexAttribArray(location);				
+					glVertexAttribBinding(location, format.second);		
+					if(attr.getConvertToFloat()) 
+						glVertexAttribFormat(location, attr.getNumValues(), attr.getDataType(), attr.getNormalize() ? GL_TRUE : GL_FALSE, attr.getOffset());
+					else
+						glVertexAttribIFormat(location, attr.getNumValues(), attr.getDataType(), attr.getOffset());
+				}
+			}
 		}
 		GET_GL_ERROR();
 	}
 	
-	if(diff.test(VERTEX_BINDING_BIT)) {
+	if(diff.state.test(VERTEX_BINDING_BIT)) {
 		for(uint_fast8_t i = 0; i<PipelineState::MAX_VERTEXBINDINGS; ++i) {
-			const auto& binding = getVertexBinding(i);
-			uint32_t buffer, offset, stride, divisor;
-			std::tie(buffer, offset, stride, divisor) = binding;
-			
-		  glVertexBindingDivisor(i, divisor);
-			glBindVertexBuffer(i, buffer, offset, stride);
+			if(diff.vertexBinding.test(i)) {
+				const auto& binding = getVertexBinding(i);
+				uint32_t buffer, offset, stride, divisor;
+				std::tie(buffer, offset, stride, divisor) = binding;
+				
+			  glVertexBindingDivisor(i, divisor);
+				glBindVertexBuffer(i, buffer, offset, stride);
+			}
 		}
 		GET_GL_ERROR();
 	}
 	
-	if(diff.test(ELEMENT_BINDING_BIT) && vao.isNotNull()) {
+	if(diff.state.test(ELEMENT_BINDING_BIT) && vao.isNotNull()) {
 		vao->bindElementBuffer(elementBinding);
 		GET_GL_ERROR();
 	}

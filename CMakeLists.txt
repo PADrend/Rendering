@@ -59,6 +59,7 @@ add_library(Rendering
 	Shader/UniformRegistry.cpp
 	Texture/Texture.cpp
 	Texture/TextureUtils.cpp
+	BufferLock.cpp
 	BufferObject.cpp
 	BufferView.cpp
 	Draw.cpp

@@ -64,7 +64,7 @@ size_t Mesh::getGraphicsMemoryUsage() const {
 }
 
 void Mesh::_display(RenderingContext & context,uint32_t firstElement,uint32_t elementCount) {
-	context.applyChanges();
+	//context.applyChanges();
 	dataStrategy->prepare(this);
 	dataStrategy->displayMesh(context, this,firstElement,elementCount);
 }
