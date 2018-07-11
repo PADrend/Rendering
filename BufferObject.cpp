@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 
+#include <iostream>
+
 namespace Rendering {
 
 const uint32_t BufferObject::TARGET_ARRAY_BUFFER = GL_ARRAY_BUFFER;
@@ -57,7 +59,7 @@ const uint32_t BufferObject::FLAG_MAP_INVALIDATE_BUFFFER = GL_MAP_INVALIDATE_BUF
 const uint32_t BufferObject::FLAG_MAP_FLUSH_EXPLICIT = GL_MAP_FLUSH_EXPLICIT_BIT;
 const uint32_t BufferObject::FLAG_MAP_UNSYNCHRONIZED = GL_MAP_UNSYNCHRONIZED_BIT;
 
-const uint32_t BufferObject::FLAGS_STATIC = 0;
+const uint32_t BufferObject::FLAGS_STATIC = GL_DYNAMIC_STORAGE_BIT;
 const uint32_t BufferObject::FLAGS_DYNAMIC = GL_DYNAMIC_STORAGE_BIT;
 const uint32_t BufferObject::FLAGS_PERSISTENT = GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_MAP_READ_BIT | GL_MAP_COHERENT_BIT;
 const uint32_t BufferObject::FLAGS_STREAM = GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT;
@@ -92,9 +94,12 @@ inline uint32_t extractMapFlags(uint32_t flags) {
 	return flags & ~GL_DYNAMIC_STORAGE_BIT & ~GL_CLIENT_STORAGE_BIT;
 }
 
-BufferObject::BufferObject(BufferObject && other) : bufferId(other.bufferId), size(other.size) {
+BufferObject::BufferObject(BufferObject && other) : bufferId(other.bufferId), flags(other.flags), size(other.size), ptr(other.ptr) {
 	// Make sure the other buffer object does not free the handle.
 	other.bufferId = 0;
+	other.flags = 0;
+	other.size = 0;
+	other.ptr = nullptr;
 }
 
 BufferObject::~BufferObject() {
@@ -203,7 +208,7 @@ void BufferObject::upload(const uint8_t* data, size_t numBytes, size_t offset) {
 			WARN("BufferObject::uploadSubData: cannot upload data while buffer is mapped.");
 		}
 	} else {
-		// use staging buffer		
+		// use staging buffer
 	  uint32_t stagingBuffer;
 	  glCreateBuffers(1, &stagingBuffer);
   	glNamedBufferStorage(stagingBuffer, numBytes, data, 0);

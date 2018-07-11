@@ -45,11 +45,6 @@
 
 namespace Rendering {
 
-static const Uniform::UniformName UNIFORM_SG_VIEWPORT("sg_viewport");
-static const Uniform::UniformName UNIFORM_SG_SCISSOR_RECT("sg_scissorRect");
-static const Uniform::UniformName UNIFORM_SG_SCISSOR_ENABLED("sg_scissorEnabled");
-static const Uniform::UniformName UNIFORM_SG_TEXTURE_ENABLED("sg_textureEnabled");
-
 static const Util::StringIdentifier PARAMETER_FRAMEDATA("FrameData");
 static const Util::StringIdentifier PARAMETER_OBJECTDATA("ObjectData");
 static const Util::StringIdentifier PARAMETER_MATERIALDATA("MaterialData");
@@ -797,9 +792,6 @@ void RenderingContext::pushAndSetScissor(const ScissorParameters & scissorParame
 
 void RenderingContext::setScissor(const ScissorParameters & scissorParameters) {
 	internalData->targetPipelineState.setScissorParameters(scissorParameters);
-	const auto& sr = scissorParameters.getRect();
-	internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_RECT, Geometry::Vec4(sr.getX(), sr.getY(), sr.getWidth(), sr.getHeight())}, false, false);
-	internalData->globalUniforms.setUniform({UNIFORM_SG_SCISSOR_ENABLED, scissorParameters.isEnabled()}, false, false);
 }
 
 
@@ -1284,7 +1276,6 @@ void RenderingContext::pushViewport() {
 void RenderingContext::setViewport(const Geometry::Rect_i & vp) {
 	internalData->targetPipelineState.setViewport(vp);
 	internalData->activeFrameData.viewport = Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight());
-	internalData->globalUniforms.setUniform({UNIFORM_SG_VIEWPORT, internalData->activeFrameData.viewport}, false, false);
 }
 
 void RenderingContext::pushAndSetViewport(const Geometry::Rect_i & viewport) {
