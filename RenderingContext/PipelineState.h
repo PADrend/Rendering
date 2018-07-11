@@ -55,7 +55,7 @@ public:
 		STENCIL_OP_BIT,
 		TEXTURE_BINDING_BIT,
 	};
-	typedef std::bitset<24> StateDiff_t;
+	typedef std::bitset<TEXTURE_BINDING_BIT+1> StateDiff_t;
 	StateDiff_t makeDiff(const PipelineState& other, bool forced=false);
 	void apply(const StateDiff_t& diff);
 
@@ -134,10 +134,6 @@ public:
 			shader = s;
 			program = shader->getShaderProg();
 		}
-	}
-	void updateShader(Util::Reference<Shader> s, uint32_t prog) {
-		program = prog;
-		shader = s;
 	}
 	const Util::Reference<Shader>& getShader() const {
 		return shader;
@@ -238,14 +234,6 @@ public:
 	void setBlendingParameters(const BlendingParameters & p) {
 		++blendingCheckNumber;
 		blendingParameters = p;
-	}
-	void updateBlendingParameters(const BlendingParameters & p,uint32_t _checkNumber) {
-		blendingParameters = p;
-		blendingCheckNumber = _checkNumber;
-	}
-	void updateBlendingParameters(const PipelineState & other) {
-		blendingParameters = other.blendingParameters;
-		blendingCheckNumber = other.blendingCheckNumber;
 	}
 
 //	@}
@@ -380,14 +368,6 @@ public:
 			++stencilCheckNumber;
 		stencilParameters = p;
 	}
-	void updateStencilParameters(const StencilParameters & p, uint32_t _checkNumber) {
-		stencilParameters = p;
-		stencilCheckNumber = _checkNumber;
-	}
-	void updateStencilParameters(const PipelineState & other) {
-		stencilParameters = other.stencilParameters;
-		stencilCheckNumber = other.stencilCheckNumber;
-	}
 //	@}
 
 //!	@name Textures
@@ -408,10 +388,6 @@ public:
 	}
 	bool texturesChanged(const PipelineState & actual) const {
 		return (texturesCheckNumber == actual.texturesCheckNumber) ? false : (boundTextures != actual.boundTextures);
-	}
-	void updateTextures(const PipelineState & actual) {
-		boundTextures = actual.boundTextures;
-		texturesCheckNumber = actual.texturesCheckNumber;
 	}
 //	@}
 };

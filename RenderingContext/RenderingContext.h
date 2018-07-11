@@ -461,7 +461,7 @@ public:
 	 */
 	//	@{
 	Texture * getTexture(uint8_t unit) const;
-	TexUnitUsageParameter getTextureUsage(uint8_t unit) const  __attribute((deprecated));
+	TexUnitUsageParameter getTextureUsage(uint8_t unit) const __attribute((deprecated));
 	void pushTexture(uint8_t unit);
 	void pushAndSetTexture(uint8_t unit, Texture * texture); // default usage = TexUnitUsageParameter::TEXTURE_MAPPING );
 	void pushAndSetTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) __attribute((deprecated));

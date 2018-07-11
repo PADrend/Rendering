@@ -146,7 +146,7 @@ class RenderingContext::InternalData {
 		LightSet activeLightSet;
 		
 		//textures
-		std::array<std::stack<std::pair<Util::Reference<Texture>, TexUnitUsageParameter>>, MAX_TEXTURES> textureStacks;
+		std::array<std::stack<Util::Reference<Texture>>, MAX_TEXTURES> textureStacks;
 		TextureSet enabledTextures;
 		
 		// other
@@ -975,7 +975,7 @@ TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit) const {
 }
 
 void RenderingContext::pushTexture(uint8_t unit) {
-	internalData->textureStacks.at(unit).emplace(getTexture(unit),getTextureUsage(unit));
+	internalData->textureStacks.at(unit).emplace(getTexture(unit));
 }
 
 void RenderingContext::pushAndSetTexture(uint8_t unit, Texture * texture) {
@@ -992,8 +992,8 @@ void RenderingContext::popTexture(uint8_t unit) {
 		WARN("popTexture: Empty Texture-Stack");
 		return;
 	}
-	const auto& textureAndUsage = internalData->textureStacks[unit].top();
-	setTexture(unit, textureAndUsage.first.get());
+	const auto& texture = internalData->textureStacks[unit].top();
+	setTexture(unit, texture.get());
 	internalData->textureStacks[unit].pop();
 }
 
