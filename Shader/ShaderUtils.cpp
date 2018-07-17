@@ -18,26 +18,76 @@ namespace ShaderUtils {
 
 Util::Reference<Shader> createNormalToColorShader() {
 	const std::string vertexProgram(
-R"***(#version 110
-uniform mat4 sg_matrix_cameraToWorld;
-uniform mat4 sg_matrix_modelToCamera;
-varying vec3 normal;
-
+R"***(#version 420
+#extension GL_ARB_shader_draw_parameters : require
+layout(location=0) in vec3 sg_Position;
+layout(std140, binding=0, row_major) uniform FrameData {
+  mat4 sg_matrix_worldToCamera;
+  mat4 sg_matrix_cameraToWorld;
+  mat4 sg_matrix_cameraToClipping;
+  mat4 sg_matrix_clippingToCamera;
+  vec4 sg_viewport;
+};
+struct Object {
+  mat4 sg_matrix_modelToCamera;
+  float sg_pointSize;
+  uint materialId;
+  uint lightSetId;
+  uint drawId;
+};
+layout(std140, binding=4, row_major) uniform ObjectData {
+  Object objects[512];
+};
+out vec3 normal
 void main() {
-	normal = normalize((sg_matrix_cameraToWorld * sg_matrix_modelToCamera * vec4(gl_Normal, 0.0)).xyz);
-	gl_Position = ftransform();
+	gl_Position = sg_matrix_cameraToClipping * objects[gl_BaseInstanceARB].sg_matrix_modelToCamera * vec4(sg_Position, 1.0);
 }
 )***");
 	const std::string fragmentProgram(
-R"***(#version 110
-varying vec3 normal;
+R"***(#version 420
+in vec3 normal;
+out vec4 fragColor;
 
 void main() {
-	gl_FragColor = vec4(0.5 * normalize(normal) + 0.5, 1.0);
+	fragColor = vec4(0.5 * normalize(normal) + 0.5, 1.0);
 }
 )***");
-	return Shader::createShader(vertexProgram, fragmentProgram, Shader::USE_GL | Shader::USE_UNIFORMS);
+	return Shader::createShader(vertexProgram, fragmentProgram);
 }
+
+
+
+Util::Reference<Shader> createPassThroughShader() {
+	const std::string vertexProgram(
+R"***(#version 420
+#extension GL_ARB_shader_draw_parameters : require
+layout(location=0) in vec3 sg_Position;
+layout(std140, binding=0, row_major) uniform FrameData {
+  mat4 sg_matrix_worldToCamera;
+  mat4 sg_matrix_cameraToWorld;
+  mat4 sg_matrix_cameraToClipping;
+  mat4 sg_matrix_clippingToCamera;
+  vec4 sg_viewport;
+};
+struct Object {
+  mat4 sg_matrix_modelToCamera;
+  float sg_pointSize;
+  uint materialId;
+  uint lightSetId;
+  uint drawId;
+};
+layout(std140, binding=4, row_major) uniform ObjectData {
+  Object objects[512];
+};
+void main() {
+	gl_Position = sg_matrix_cameraToClipping * objects[gl_BaseInstanceARB].sg_matrix_modelToCamera * vec4(sg_Position, 1.0);
+}
+)***");
+	Util::Reference<Shader> shader = Shader::createShader();
+	shader->attachShaderObject(ShaderObjectInfo::createVertex(vertexProgram));
+	return shader;
+}
+
 
 }
 }

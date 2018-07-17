@@ -13,7 +13,7 @@
 
 namespace Rendering {
 
-void BufferView::relocate(CountedBufferObject* buffer_, size_t offset_) {
+void BufferView::relocate(BufferObject* buffer_, size_t offset_) {
   release();
   buffer = buffer_;
   offset = offset_;
@@ -21,13 +21,13 @@ void BufferView::relocate(CountedBufferObject* buffer_, size_t offset_) {
 
 void BufferView::allocate(uint32_t count) {
   release();
-  if(buffer.isNull() || !buffer->get().isValid())
+  if(buffer.isNull() || !buffer->isValid())
     throw std::runtime_error("BufferView::allocate: invalid buffer");
   
   elementCount = count;
-  auto flags = buffer->get().getFlags();
+  auto flags = buffer->getFlags();
   if(flags & BufferObject::FLAG_MAP_PERSISTENT) {
-    dataPtr = buffer->get().map(offset, dataSize());
+    dataPtr = buffer->map(offset, dataSize());
   }
 }
 
@@ -38,19 +38,19 @@ void BufferView::release() {
 
 void BufferView::flush() {
   if(!dataPtr) return;
-  buffer->get().flush(offset, dataSize());
+  buffer->flush(offset, dataSize());
 }
 
 void BufferView::upload(const uint8_t* ptr, size_t size) {
-  buffer->get().upload(ptr, size, offset);
+  buffer->upload(ptr, size, offset);
 }
 
 void BufferView::bind(uint32_t target, uint32_t location) {
-  buffer->get().bindRange(target, location, offset, dataSize());
+  buffer->bindRange(target, location, offset, dataSize());
 }
 
 void BufferView::unbind(uint32_t target, uint32_t location) {
-  buffer->get().unbind(target, location);
+  buffer->unbind(target, location);
 }
 
 } /* Rendering */

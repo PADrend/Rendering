@@ -30,6 +30,7 @@
 namespace Rendering {
 
 static const std::string vertexProgram(R"***(#version 420
+#extension GL_ARB_shader_draw_parameters : require
 layout(location = 0) in vec2 sg_Position;
 layout(location = 1) in vec2 sg_TexCoord0;
 layout(location = 2) in vec2 glyphDim;
@@ -38,16 +39,18 @@ out Glyph {
 	vec2 pos;
 	vec2 tex;
 	vec2 dim;
+	uint drawId;
 } vOut;
 
 void main(void) {
 	vOut.pos = sg_Position;
 	vOut.tex = sg_TexCoord0;
 	vOut.dim = glyphDim;
+	vOut.drawId = gl_BaseInstanceARB;
 }
 )***");
 
-static const std::string geometryProgram(R"***(#version 420	
+static const std::string geometryProgram(R"***(#version 420
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
 	
@@ -58,24 +61,28 @@ layout(std140, binding=0, row_major) uniform FrameData {
   mat4 sg_matrix_clippingToCamera;
   vec4 sg_viewport;
 };
-layout(std140, binding=2, row_major) uniform ObjectData {
+struct Object {
   mat4 sg_matrix_modelToCamera;
   float sg_pointSize;
   uint materialId;
   uint lightSetId;
-  uint _pad;
+  uint drawId;
+};
+layout(std140, binding=4, row_major) uniform ObjectData {
+  Object objects[512];
 };
 
 in Glyph {
 	vec2 pos;
 	vec2 tex;
 	vec2 dim;
+	uint drawId;
 } vIn[];
 
 out vec2 glyphPos;
 
 void main(void) {
-	mat4 sg_matrix_modelToClipping = sg_matrix_cameraToClipping * sg_matrix_modelToCamera;
+	mat4 sg_matrix_modelToClipping = sg_matrix_cameraToClipping * objects[vIn[0].drawId].sg_matrix_modelToCamera;
 	
 	vec2 pos = vIn[0].pos;
 	vec2 tex = vIn[0].tex;

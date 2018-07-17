@@ -13,6 +13,8 @@
 #include <Rendering/RenderingContext/RenderingContext.h>
 #include <Rendering/Draw.h>
 #include <Rendering/StatisticsQuery.h>
+#include <Rendering/Shader/Shader.h>
+#include <Rendering/Shader/ShaderUtils.h>
 CPPUNIT_TEST_SUITE_REGISTRATION(StatisticsQueryTest);
 
 static const Geometry::Box box(Geometry::Vec3f(2.0f, 2.0f, 2.0f), 3.0f);
@@ -30,6 +32,7 @@ static void testBoxStatisticsQuery(StatisticsQuery & query, const uint32_t expec
 	CPPUNIT_ASSERT(query.isValid());
 	query.begin();
 	RenderingContext context;
+	context.setShader(ShaderUtils::createPassThroughShader().detachAndDecrease());
 	drawBox(context, box);
 	query.end();
 	CPPUNIT_ASSERT_EQUAL(expectedResult, query.getResult());

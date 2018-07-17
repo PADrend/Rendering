@@ -56,8 +56,6 @@ class VertexAttribute;
 class VertexDescription;
 enum class TexUnitUsageParameter : uint8_t;
 
-typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
-
 class RenderingContext {
 
 	//! @name General
@@ -462,10 +460,10 @@ public:
 	static bool isTransformFeedbackSupported();
 	static bool requestTransformFeedbackSupport(); //! like isTransformFeedbackSupported(), but once issues a warning on failure.
 	
-	CountedBufferObject * getActiveTransformFeedbackBuffer() const;
+	BufferObject * getActiveTransformFeedbackBuffer() const;
 	void popTransformFeedbackBufferStatus();
 	void pushTransformFeedbackBufferStatus();
-	void setTransformFeedbackBuffer(CountedBufferObject * buffer);
+	void setTransformFeedbackBuffer(BufferObject * buffer);
 	void _startTransformFeedback(uint32_t);
 	void startTransformFeedback_lines();
 	void startTransformFeedback_points();

@@ -18,16 +18,16 @@ namespace Rendering {
 
 class BufferView {
 private:
-  Util::Reference<CountedBufferObject> buffer;
+  Util::Reference<BufferObject> buffer;
   size_t offset = 0;
   uint32_t elementCount = 0;
   uint32_t elementSize = 0;
   uint8_t* dataPtr = nullptr;
 public:
   BufferView(uint32_t eltSize=0) : elementSize(eltSize) {}
-  BufferView(CountedBufferObject* buffer, size_t offset, uint32_t eltSize) : 
+  BufferView(BufferObject* buffer, size_t offset, uint32_t eltSize) : 
                 buffer(buffer), offset(offset), elementSize(eltSize) {}
-  BufferView(CountedBufferObject* buffer, size_t offset, uint32_t eltSize, uint32_t count) : 
+  BufferView(BufferObject* buffer, size_t offset, uint32_t eltSize, uint32_t count) : 
                 buffer(buffer), offset(offset), elementSize(eltSize) { allocate(count); }
                 
   BufferView(const BufferView & other) = default;
@@ -38,7 +38,7 @@ public:
   BufferView & operator=(const BufferView &) = default;
   BufferView & operator=(BufferView &&) = default;
   
-  void relocate(CountedBufferObject* buffer, size_t offset);
+  void relocate(BufferObject* buffer, size_t offset);
   void allocate(uint32_t count);
   void release();
   bool hasLocalData() const { return dataPtr; }
@@ -67,8 +67,8 @@ class StructuredBufferView : public BufferView {
 public:
   using Type_t = T;
   StructuredBufferView() : BufferView(sizeof(Type_t)) {}
-  StructuredBufferView(CountedBufferObject* buffer, size_t offset) : BufferView(buffer, offset, sizeof(Type_t)) {}
-  StructuredBufferView(CountedBufferObject* buffer, size_t offset, uint32_t count) : BufferView(buffer, offset, sizeof(Type_t), count) {}
+  StructuredBufferView(BufferObject* buffer, size_t offset) : BufferView(buffer, offset, sizeof(Type_t)) {}
+  StructuredBufferView(BufferObject* buffer, size_t offset, uint32_t count) : BufferView(buffer, offset, sizeof(Type_t), count) {}
   
   const Type_t & operator[](uint32_t index) const { return *reinterpret_cast<const Type_t*>(BufferView::operator[](index)); }
   Type_t & operator[](uint32_t index) { return *reinterpret_cast<Type_t*>(BufferView::operator[](index)); }
@@ -86,8 +86,8 @@ class ValueBufferView : public BufferView {
 public:
   using Type_t = T;
   ValueBufferView() : BufferView(sizeof(Type_t)) {}
-  ValueBufferView(CountedBufferObject* buffer, size_t offset) : BufferView(buffer, offset, sizeof(Type_t)) {}
-  ValueBufferView(CountedBufferObject* buffer, size_t offset, uint32_t count) : BufferView(buffer, offset, sizeof(Type_t), count) {}
+  ValueBufferView(BufferObject* buffer, size_t offset) : BufferView(buffer, offset, sizeof(Type_t)) {}
+  ValueBufferView(BufferObject* buffer, size_t offset, uint32_t count) : BufferView(buffer, offset, sizeof(Type_t), count) {}
   
   void allocate() { BufferView::allocate(1); }
   

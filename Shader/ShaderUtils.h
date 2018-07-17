@@ -20,6 +20,9 @@ namespace ShaderUtils {
 //! Create a shader that writes the pixel normal into the color buffer.
 Util::Reference<Shader> createNormalToColorShader();
 
+//! Create a simple vertex pass through shader
+Util::Reference<Shader> createPassThroughShader();
+
 }
 }
 

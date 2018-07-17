@@ -147,7 +147,7 @@ class RenderingContext::InternalData {
 		TextureSet enabledTextures;
 		
 		// other
-		typedef std::pair<Util::Reference<CountedBufferObject>,uint32_t> feedbackBufferStatus_t; // buffer->mode
+		typedef std::pair<Util::Reference<BufferObject>,uint32_t> feedbackBufferStatus_t; // buffer->mode
 
 		std::stack<feedbackBufferStatus_t> feedbackStack;
 		feedbackBufferStatus_t activeFeedbackStatus;
@@ -880,7 +880,7 @@ bool RenderingContext::requestTransformFeedbackSupport(){
 	return b;
 }
 
-CountedBufferObject * RenderingContext::getActiveTransformFeedbackBuffer() const{
+BufferObject * RenderingContext::getActiveTransformFeedbackBuffer() const{
 	return internalData->activeFeedbackStatus.first.get();
 }
 
@@ -896,12 +896,12 @@ void RenderingContext::popTransformFeedbackBufferStatus(){
 void RenderingContext::pushTransformFeedbackBufferStatus(){
 	internalData->feedbackStack.emplace(internalData->activeFeedbackStatus);
 }
-void RenderingContext::setTransformFeedbackBuffer(CountedBufferObject * buffer){
+void RenderingContext::setTransformFeedbackBuffer(BufferObject * buffer){
 	applyChanges();
 	if(requestTransformFeedbackSupport()){
 		#if defined(LIB_GL) and defined(GL_EXT_transform_feedback)
 		if(buffer!=nullptr){
-			(*buffer)->bind(GL_TRANSFORM_FEEDBACK_BUFFER_EXT);
+			buffer->bind(GL_TRANSFORM_FEEDBACK_BUFFER_EXT);
 		}else{
 			glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER_EXT, 0);
 		}

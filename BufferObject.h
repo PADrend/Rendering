@@ -15,7 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include <Util/CountedObjectWrapper.h>
+#include <Util/ReferenceCounter.h>
 
 namespace Rendering {
 
@@ -25,7 +25,7 @@ namespace Rendering {
  * @author Benjamin Eikel
  * @date 2012-04-19
  */
-class BufferObject {
+class BufferObject : public Util::ReferenceCounter<BufferObject> {
 	public:
 		static const uint32_t TARGET_ARRAY_BUFFER;
 		static const uint32_t TARGET_ATOMIC_COUNTER_BUFFER;
@@ -201,8 +201,6 @@ class BufferObject {
 		size_t getSize() const { return size; }
 		uint32_t getFlags() const { return flags; }
 };
-
-typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
 
 }
 
