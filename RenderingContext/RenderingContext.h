@@ -134,17 +134,17 @@ public:
 
 	//! @name Atomic counters (extension ARB_shader_atomic_counters)
 	//	@{
-	static bool isAtomicCountersSupported();
-	static uint32_t getMaxAtomicCounterBuffers();
-	static uint32_t getMaxAtomicCounterBufferSize();
-	Texture* getAtomicCounterTextureBuffer(uint32_t index)const;
-	void pushAtomicCounterTextureBuffer(uint32_t index);
-	void pushAndSetAtomicCounterTextureBuffer(uint32_t index, Texture* bufferDataTexture); 
-	void popAtomicCounterTextureBuffer(uint32_t pushAtomicCounterTexture);
+	void setAtomicCounterTextureBuffer(uint32_t pushAtomicCounterTexture, Texture* bufferDataTexture) __attribute((deprecated));
+	static bool isAtomicCountersSupported() __attribute((deprecated)) { return true; }
+	static uint32_t getMaxAtomicCounterBuffers() __attribute((deprecated)) { return 1; }
+	static uint32_t getMaxAtomicCounterBufferSize() __attribute((deprecated)) { return 32; }
+	Texture* getAtomicCounterTextureBuffer(uint32_t index) const __attribute((deprecated)) { return nullptr; }
+	void pushAtomicCounterTextureBuffer(uint32_t index) __attribute((deprecated)) {}
+	void popAtomicCounterTextureBuffer(uint32_t pushAtomicCounterTexture) __attribute((deprecated)) {}
+	void pushAndSetAtomicCounterTextureBuffer(uint32_t index, Texture* bufferDataTexture) __attribute((deprecated)) {
+		setAtomicCounterTextureBuffer(index, bufferDataTexture);
+	} 
 
-	//! \note the texture may be null to unbind
-	void setAtomicCounterTextureBuffer(uint32_t pushAtomicCounterTexture, Texture* bufferDataTexture);
-	// @}
 	// ------
 
 	//! @name Blending

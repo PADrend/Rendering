@@ -233,8 +233,7 @@ void RenderingContext::initGLState() {
 		throw std::runtime_error("RenderingContext::initGLState: Required OpenGL version 4.5 is not supported.");
 	}
 
-#ifdef LIB_GL
-	glPixelStorei( GL_PACK_ALIGNMENT,1); // allow glReadPixel for all possible resolutions
+	glPixelStorei(GL_PACK_ALIGNMENT, 1); // allow glReadPixel for all possible resolutions
 
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
@@ -245,17 +244,6 @@ void RenderingContext::initGLState() {
 	
 	// Enable the possibility to write gl_PointSize from the vertex shader.
 	glEnable(GL_PROGRAM_POINT_SIZE);
-	//glEnable(GL_POINT_SPRITE);
-	
-	// Workaround: Create a single vertex array object here.
-	// For the core profile of OpenGL 3.2 or higher this is required,
-	// because glVertexAttribPointer generates an GL_INVALID_OPERATION without it.
-	// In the future, vertex array objects should be integrated into the rendering system.
-	//GLuint vertexArrayObject;
-	//glGenVertexArrays(1, &vertexArrayObject);
-	//glBindVertexArray(vertexArrayObject);
-	
-#endif /* LIB_GL */
 #endif /* LIB_GLEW */
 
 #ifdef WIN32
@@ -316,126 +304,6 @@ void RenderingContext::applyChanges(bool forced) {
 	GET_GL_ERROR();
 }
 
-// Atomic counters (extension ARB_shader_atomic_counters)  *****************************************************
-
-
-//! (static)
-bool RenderingContext::isAtomicCountersSupported(){
-#if defined(GL_ARB_shader_atomic_counters)
-	static const bool support = isExtensionSupported("GL_ARB_shader_atomic_counters");
-	return support;
-#else
-	return false;
-#endif
-}
-//! (static)
-uint32_t RenderingContext::getMaxAtomicCounterBuffers(){
-	static const uint32_t value = [](){
-#if defined(GL_ARB_shader_atomic_counters)
-		if(isAtomicCountersSupported()){
-			GLint max;
-			glGetIntegerv(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS, &max); 
-			return static_cast<uint32_t>(max);
-		}
-#endif
-		return static_cast<uint32_t>(0);
-	}();
-	return value;
-}
-//! (static)
-uint32_t RenderingContext::getMaxAtomicCounterBufferSize(){
-	static const uint32_t value = [](){
-#if defined(GL_ARB_shader_atomic_counters)
-		if(isAtomicCountersSupported()){
-			GLint max;
-			glGetIntegerv(GL_MAX_ATOMIC_COUNTER_BUFFER_SIZE, &max); 
-			return static_cast<uint32_t>(max);
-		}
-#endif
-		return static_cast<uint32_t>(0);
-	}();
-	return value;
-}
-
-static void assertCorrectAtomicBufferIndex(uint32_t index){
-	if(index>=RenderingContext::getMaxAtomicCounterBuffers()){ // GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS
-		std::cout << "Error:"<<index << ">=" << RenderingContext::getMaxAtomicCounterBuffers() <<"\n";
-		throw std::runtime_error("RenderingContext::assertCorrectAtomicBufferIndex: Invalid buffer index.");
-	}
-}
-
-Texture* RenderingContext::getAtomicCounterTextureBuffer(uint32_t index)const{
-	assertCorrectAtomicBufferIndex(index);
-	auto& stack = internalData->atomicCounterStacks[index];
-	return stack.empty() ? nullptr : stack.top().get();
-}
-
-void RenderingContext::pushAtomicCounterTextureBuffer(uint32_t index){
-	assertCorrectAtomicBufferIndex(index);
-	auto& stack = internalData->atomicCounterStacks[index];
-	if(stack.empty()) stack.push(nullptr); // init stack
-	stack.push( getAtomicCounterTextureBuffer(index) );
-}
-
-void RenderingContext::pushAndSetAtomicCounterTextureBuffer(uint32_t index, Texture* t){
-	pushAtomicCounterTextureBuffer(index);
-	setAtomicCounterTextureBuffer(index,t);
-}
-void RenderingContext::popAtomicCounterTextureBuffer(uint32_t index){
-	assertCorrectAtomicBufferIndex(index);
-	auto& stack = internalData->atomicCounterStacks[index];
-	if(stack.size()<=1){
-		WARN("popAtomicCounterTexture: Empty stack");
-	}else{
-		stack.pop();
-		setAtomicCounterTextureBuffer(index,stack.top().get());
-	}
-}
-
-//! \note the texture in iParam may be null to unbind
-void RenderingContext::setAtomicCounterTextureBuffer(uint32_t index, Texture * texture){
-	assertCorrectAtomicBufferIndex(index);
-#if defined(GL_ARB_shader_image_load_store)
-	if(isAtomicCountersSupported()){
-		GET_GL_ERROR();
-		if(texture){
-			if(texture->getTextureType()!=TextureType::TEXTURE_BUFFER )
-				throw std::invalid_argument("RenderingContext::setAtomicCounterTextureBuffer: texture is not of type TEXTURE_BUFFER.");
-
-			const auto& pixelFormat = texture->getFormat().pixelFormat;
-			if( pixelFormat.glInternalFormat!=GL_R32I && pixelFormat.glInternalFormat!=GL_R32UI )
-				throw std::invalid_argument("RenderingContext::setAtomicCounterTextureBuffer: texture is not red 32bit integer.");
-		
-			if(texture->getWidth()>getMaxAtomicCounterBufferSize()){
-				std::cout << texture->getWidth()<<">"<<getMaxAtomicCounterBufferSize()<<"\n";
-				throw std::invalid_argument("RenderingContext::setAtomicCounterTextureBuffer: textureBuffer is too large.");
-			}
-			if(!texture->getLocalData()) // (workaround) buffer seems to contain invalid values if the memory is only allocated and not uploaded.
-				texture->allocateLocalData();
-			texture->_prepareForBinding(*this);
-			BufferObject* bo = texture->getBufferObject();
-			if( bo&& bo->isValid() ){
-				glBindBufferBase( GL_ATOMIC_COUNTER_BUFFER,index,bo->getGLId());
-			}else{
-				WARN("RenderingContext::setAtomicCounterTexture: TextureBuffer is invalid.");
-			}
-			GET_GL_ERROR();
-		}else{
-			glBindBufferBase( GL_ATOMIC_COUNTER_BUFFER,index,0);
-			GET_GL_ERROR();
-		}
-	}else{
-		WARN("RenderingContext::setAtomicCounterTexture: GL_ARB_shader_image_load_store is not supported by your driver.");
-	}
-#endif 
-
-	auto& stack = internalData->atomicCounterStacks[index];
-	if(stack.empty())
-		stack.push(texture);
-	else
-		stack.top() = texture;
-}
-
 // Blending ************************************************************************************
 const BlendingParameters & RenderingContext::getBlendingParameters() const {
 	return internalData->targetPipelineState.getBlendingParameters();
@@ -462,17 +330,11 @@ void RenderingContext::setBlending(const BlendingParameters & p) {
 	internalData->targetPipelineState.setBlendingParameters(p);
 }
 
-// ClipPlane ************************************************************************************
-
-const ClipPlaneParameters & RenderingContext::getClipPlane(uint8_t index) const {
-	static ClipPlaneParameters p;
-	return p;
-}
-
 // ColorBuffer ************************************************************************************
 const ColorBufferParameters & RenderingContext::getColorBufferParameters() const {
 	return internalData->targetPipelineState.getColorBufferParameters();
 }
+
 void RenderingContext::popColorBuffer() {
 	if(internalData->colorBufferParameterStack.empty()) {
 		WARN("popColorBuffer: Empty ColorBuffer stack");
@@ -557,12 +419,6 @@ void RenderingContext::clearDepth(float clearValue) {
 	applyChanges();
 	glClearDepth(clearValue);
 	glClear(GL_DEPTH_BUFFER_BIT);
-}
-
-// AlphaTest ************************************************************************************
-const AlphaTestParameters & RenderingContext::getAlphaTestParameters() const {
-	static AlphaTestParameters p;
-	return p;
 }
 
 // ImageBinding ************************************************************************************
@@ -653,12 +509,6 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 	WARN("RenderingContext::setBoundImage: GL_ARB_shader_image_load_store is not available for this executable.");
 #endif 
 }
-	
-// Lighting ************************************************************************************
-const LightingParameters & RenderingContext::getLightingParameters() const {
-	static LightingParameters p;
-	return p;
-}
 
 // Line ************************************************************************************
 const LineParameters& RenderingContext::getLineParameters() const {
@@ -713,10 +563,12 @@ void RenderingContext::pushAndSetPointParameters(const PointParameters & p) {
 void RenderingContext::setPointParameters(const PointParameters & p) {
 	internalData->activeObjectData.pointSize = p;
 }
+
 // PolygonMode ************************************************************************************
 const PolygonModeParameters & RenderingContext::getPolygonModeParameters() const {
 	return internalData->targetPipelineState.getPolygonModeParameters();
 }
+
 void RenderingContext::popPolygonMode() {
 	if(internalData->polygonModeParameterStack.empty()) {
 		WARN("popPolygonMode: Empty PolygonMode-Stack");
@@ -743,6 +595,7 @@ void RenderingContext::setPolygonMode(const PolygonModeParameters & p) {
 const PolygonOffsetParameters & RenderingContext::getPolygonOffsetParameters() const {
 	return internalData->targetPipelineState.getPolygonOffsetParameters();
 }
+
 void RenderingContext::popPolygonOffset() {
 	if(internalData->polygonOffsetParameterStack.empty()) {
 		WARN("popPolygonOffset: Empty PolygonOffset stack");
@@ -770,6 +623,7 @@ void RenderingContext::setPolygonOffset(const PolygonOffsetParameters & p) {
 const ScissorParameters & RenderingContext::getScissor() const {
 	return internalData->targetPipelineState.getScissorParameters();
 }
+
 void RenderingContext::popScissor() {
 	if(internalData->scissorParametersStack.empty()) {
 		WARN("popScissor: Empty scissor parameters stack");
@@ -858,6 +712,7 @@ void RenderingContext::setFBO(FBO * fbo) {
 void RenderingContext::setGlobalUniform(const Uniform & u) {
 	internalData->globalUniforms.setUniform(u, false, false);
 }
+
 const Uniform & RenderingContext::getGlobalUniform(const Util::StringIdentifier & uniformName) {
 	return internalData->globalUniforms.getUniform(uniformName);
 }
@@ -1168,9 +1023,11 @@ void RenderingContext::setMatrix_cameraToWorld(const Geometry::Matrix4x4 & matri
 	internalData->activeFrameData.matrix_cameraToWorld = matrix;
 	internalData->activeFrameData.matrix_worldToCamera = matrix.inverse();
 }
+
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_worldToCamera() const {
 	return internalData->activeFrameData.matrix_worldToCamera;
 }
+
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToWorld() const {
 	return internalData->activeFrameData.matrix_cameraToWorld;
 }
@@ -1180,7 +1037,6 @@ const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToWorld() const {
 void RenderingContext::resetMatrix() {
 	internalData->activeObjectData.matrix_modelToCamera.setIdentity();
 }
-
 
 void RenderingContext::pushAndSetMatrix_modelToCamera(const Geometry::Matrix4x4 & matrix) {
 	pushMatrix_modelToCamera();
@@ -1221,7 +1077,6 @@ const MaterialParameters & RenderingContext::getMaterial() const {
 void RenderingContext::popMaterial() {
 	if(internalData->materialStack.empty()) {
 		WARN("RenderingContext.popMaterial: stack empty, ignoring call");
-		FAIL();
 		return;
 	}
 	internalData->materialStack.pop();
@@ -1235,10 +1090,12 @@ void RenderingContext::popMaterial() {
 void RenderingContext::pushMaterial() {
 	internalData->materialStack.emplace(internalData->activeMaterial);
 }
+
 void RenderingContext::pushAndSetMaterial(const MaterialParameters & material) {
 	pushMaterial();
 	setMaterial(material);
 }
+
 void RenderingContext::pushAndSetColorMaterial(const Util::Color4f & color) {
 	MaterialParameters material;
 	material.setAmbient(color);
@@ -1246,12 +1103,12 @@ void RenderingContext::pushAndSetColorMaterial(const Util::Color4f & color) {
 	material.setSpecular(Util::ColorLibrary::BLACK);
 	pushAndSetMaterial(material);
 }
+
 void RenderingContext::setMaterial(const MaterialParameters & material) {
 	internalData->activeMaterial = material;
 }
 
 //  **********************************************************************************
-
 
 const Geometry::Rect_i & RenderingContext::getWindowClientArea() const {
 	return internalData->windowClientArea;
@@ -1260,6 +1117,7 @@ const Geometry::Rect_i & RenderingContext::getWindowClientArea() const {
 const Geometry::Rect_i & RenderingContext::getViewport() const {
 	return internalData->targetPipelineState.getViewport();
 }
+
 void RenderingContext::popViewport() {
 	if(internalData->viewportStack.empty()) {
 		WARN("Cannot pop viewport stack because it is empty. Ignoring call.");
@@ -1315,8 +1173,7 @@ void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
 
 void RenderingContext::drawArrays(uint32_t mode, uint32_t first, uint32_t count) {
 	applyChanges();
-	//internalData->cache.flush();
-	//glDrawArraysIndirect(mode, &cmd);
+	
 	uint32_t drawId = internalData->cache.addParameter(PARAMETER_OBJECTDATA, internalData->activeObjectData);
   glDrawArraysInstancedBaseInstance(mode, first, count, 1, drawId);
 	if(drawId >= MAX_OBJECTDATA-1)
@@ -1325,12 +1182,33 @@ void RenderingContext::drawArrays(uint32_t mode, uint32_t first, uint32_t count)
 
 void RenderingContext::drawElements(uint32_t mode, uint32_t type, uint32_t first, uint32_t count) {
 	applyChanges();
-	//glDrawElementsIndirect(mode, type, &cmd);
 	
 	uint32_t drawId = internalData->cache.addParameter(PARAMETER_OBJECTDATA, internalData->activeObjectData);
 	glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, reinterpret_cast<uint8_t*>(first * getGLTypeSize(type)), 1, 0, drawId);
 	if(drawId >= MAX_OBJECTDATA-1)
 		internalData->cache.swap(PARAMETER_OBJECTDATA);
+}
+
+
+// Deprecated API **********************************************************************************
+
+void RenderingContext::setAtomicCounterTextureBuffer(uint32_t index, Texture * texture) {	
+	WARN("RenderingContext::setAtomicCounterTextureBuffer: setAtomicCounterTextureBuffer is deprecated. Use general buffer objects with bind/unbind.");
+}
+
+const LightingParameters & RenderingContext::getLightingParameters() const {
+	static LightingParameters p;
+	return p;
+}
+
+const ClipPlaneParameters & RenderingContext::getClipPlane(uint8_t index) const {
+	static ClipPlaneParameters p;
+	return p;
+}
+
+const AlphaTestParameters & RenderingContext::getAlphaTestParameters() const {
+	static AlphaTestParameters p;
+	return p;
 }
 
 }
