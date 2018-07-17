@@ -23,14 +23,19 @@ namespace Rendering {
 class ParameterCache {
 private:
   struct CacheEntry {
+    CacheEntry(const Util::StringIdentifier& id, uint32_t elementSize, uint32_t maxElementCount) :
+      id(id), elementSize(elementSize), maxElementCount(maxElementCount) {}
     Util::StringIdentifier id;
-    BufferObject buffer;
     uint32_t elementSize;
     uint32_t maxElementCount;
+    uint32_t head = 0;
+    uint32_t multiBufferCount = 1;
+    uint32_t multiBufferHead = 0;
+    BufferObject buffer;
+    BufferLockManager lock;
     std::pair<uint32_t, uint32_t> lastBinding;
   };
   std::unordered_map<Util::StringIdentifier, CacheEntry> caches;
-  BufferLockManager lock;
 public:
   static const uint32_t INVALID_INDEX;
   
@@ -39,7 +44,7 @@ public:
    * 
    * Allocates a new buffer containing @a maxElementCount elements of size @a elementSize.
    */
-  void createCache(const Util::StringIdentifier& id, uint32_t elementSize, uint32_t maxElementCount = 1, uint32_t usageFlags=0);
+  void createCache(const Util::StringIdentifier& id, uint32_t elementSize, uint32_t maxElementCount = 1, uint32_t usageFlags=0, uint32_t multiBufferCount=1);
   
   //! Delete a previously created cache.
   void deleteCache(const Util::StringIdentifier& id);
@@ -60,9 +65,15 @@ public:
     setParameter(id, index, reinterpret_cast<const uint8_t*>(&parameter));
   }
   
-  void wait();
-  void sync();
-  void flush();
+  //! Adds a parameter in the specified cache and increases the head counter
+  uint32_t addParameter(const Util::StringIdentifier& id, const uint8_t* data);
+  template<typename T>
+  uint32_t addParameter(const Util::StringIdentifier& id, const T& parameter) {
+    return addParameter(id, reinterpret_cast<const uint8_t*>(&parameter));
+  }
+  
+  //! Swaps a multi-buffered cache.
+  void swap(const Util::StringIdentifier& id);
 };
 
 } /* Rendering */

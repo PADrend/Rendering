@@ -179,7 +179,7 @@ RenderingContext::RenderingContext() :
 	// initialize default caches
 	auto& cache = internalData->cache;
 	cache.createCache(PARAMETER_FRAMEDATA, sizeof(FrameData), MAX_FRAMEDATA, BufferObject::FLAGS_DYNAMIC);
-	cache.createCache(PARAMETER_OBJECTDATA, sizeof(ObjectData), MAX_OBJECTDATA, BufferObject::FLAGS_DYNAMIC);
+	cache.createCache(PARAMETER_OBJECTDATA, sizeof(ObjectData), MAX_OBJECTDATA, BufferObject::FLAGS_STREAM, 2);
 	cache.createCache(PARAMETER_MATERIALDATA, sizeof(MaterialData), MAX_MATERIALS, BufferObject::FLAGS_DYNAMIC);
 	cache.createCache(PARAMETER_LIGHTDATA, sizeof(LightParameters), MAX_LIGHTS, BufferObject::FLAGS_DYNAMIC);
 	cache.createCache(PARAMETER_LIGHTSETDATA, sizeof(LightSet), MAX_LIGHTSETS, BufferObject::FLAGS_DYNAMIC);
@@ -555,11 +555,7 @@ void RenderingContext::setDepthBuffer(const DepthBufferParameters & p) {
 
 void RenderingContext::clearDepth(float clearValue) {
 	applyChanges();
-#ifdef LIB_GLESv2
-	glClearDepthf(clearValue);
-#else
 	glClearDepth(clearValue);
-#endif
 	glClear(GL_DEPTH_BUFFER_BIT);
 }
 
@@ -1321,26 +1317,20 @@ void RenderingContext::drawArrays(uint32_t mode, uint32_t first, uint32_t count)
 	applyChanges();
 	//internalData->cache.flush();
 	//glDrawArraysIndirect(mode, &cmd);
-	uint32_t drawId = internalData->activeObjectData.drawId;
-	//if(drawId == 0) internalData->objLock.waitForLockedRange(0, 1);
-	internalData->cache.setParameter(PARAMETER_OBJECTDATA, drawId, internalData->activeObjectData);
+	uint32_t drawId = internalData->cache.addParameter(PARAMETER_OBJECTDATA, internalData->activeObjectData);
   glDrawArraysInstancedBaseInstance(mode, first, count, 1, drawId);
-	//if(drawId == MAX_OBJECTDATA-1) internalData->objLock.lockRange(0, 1);
-	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA)
-		internalData->activeObjectData.drawId = 0;
+	if(drawId >= MAX_OBJECTDATA-1)
+		internalData->cache.swap(PARAMETER_OBJECTDATA);
 }
 
 void RenderingContext::drawElements(uint32_t mode, uint32_t type, uint32_t first, uint32_t count) {
 	applyChanges();
-	//internalData->cache.flush();
 	//glDrawElementsIndirect(mode, type, &cmd);
-	uint32_t drawId = internalData->activeObjectData.drawId;
-	//if(drawId == 0) internalData->objLock.waitForLockedRange(0, 1);
-	internalData->cache.setParameter(PARAMETER_OBJECTDATA, drawId, internalData->activeObjectData);
+	
+	uint32_t drawId = internalData->cache.addParameter(PARAMETER_OBJECTDATA, internalData->activeObjectData);
 	glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, reinterpret_cast<uint8_t*>(first * getGLTypeSize(type)), 1, 0, drawId);
-	//if(drawId == MAX_OBJECTDATA-1) internalData->objLock.lockRange(0, 1);
-	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA)
-		internalData->activeObjectData.drawId = 0;
+	if(drawId >= MAX_OBJECTDATA-1)
+		internalData->cache.swap(PARAMETER_OBJECTDATA);
 }
 
 }

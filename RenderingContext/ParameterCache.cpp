@@ -14,16 +14,18 @@
 #include <Util/Macros.h>
 
 #include <limits>
+#include <iostream>
 
 namespace Rendering {
   
 const uint32_t ParameterCache::INVALID_INDEX = std::numeric_limits<uint32_t>::max();
   
-void ParameterCache::createCache(const Util::StringIdentifier& id, uint32_t elementSize, uint32_t maxElementCount, uint32_t usageFlags) {
+void ParameterCache::createCache(const Util::StringIdentifier& id, uint32_t elementSize, uint32_t maxElementCount, uint32_t usageFlags, uint32_t multiBufferCount) {
   auto it = caches.find(id);
   if(it == caches.end()) {
-    CacheEntry entry{id, BufferObject{}, elementSize, maxElementCount};
-    entry.buffer.allocate(elementSize * maxElementCount, usageFlags);
+    CacheEntry entry(id, elementSize, maxElementCount);
+    entry.multiBufferCount = std::max(1U, multiBufferCount);
+    entry.buffer.allocate(elementSize * maxElementCount * multiBufferCount, usageFlags);
     caches.emplace(id.getValue(), std::move(entry));
   } else if(it->second.buffer.getSize() != elementSize*maxElementCount || it->second.buffer.getFlags() != usageFlags) {
     WARN("A cache named '" + id.toString() + "' already exists, but with different size or usage flags.");
@@ -59,10 +61,15 @@ bool ParameterCache::isCache(const Util::StringIdentifier& id) {
 
 void ParameterCache::bind(const Util::StringIdentifier& id, uint32_t location, uint32_t target, bool force) {
   auto& cache = caches.at(id);
-  if(force || cache.lastBinding != std::make_pair(location, target)) {
+  if(!force && cache.lastBinding == std::make_pair(location, target))
+    return;  
+  if(cache.multiBufferCount > 1) {
+    size_t size = cache.maxElementCount*cache.elementSize;
+    cache.buffer.bindRange(target, location, size * cache.multiBufferHead, size);
+  } else {
     cache.buffer.bind(target, location);
-    cache.lastBinding = std::make_pair(location, target);
   }
+  cache.lastBinding = std::make_pair(location, target);
 }
 
 //-------
@@ -73,23 +80,32 @@ void ParameterCache::setParameter(const Util::StringIdentifier& id, uint32_t ind
     WARN("ParameterCache::setParameter: index out of range.");
     return;
   }
+  uint32_t multiBufferOffset = cache.maxElementCount*cache.multiBufferHead;
+	cache.lock.waitForLockedRange(multiBufferOffset + index, 1);
   cache.buffer.upload(data, cache.elementSize, index * cache.elementSize);
 }
 
 //-------
 
-void ParameterCache::wait() {
-  lock.waitForLockedRange(0, 1);
+uint32_t ParameterCache::addParameter(const Util::StringIdentifier& id, const uint8_t* data) {
+  auto& cache = caches.at(id);
+  if(cache.head >= cache.maxElementCount)
+    return INVALID_INDEX;
+  uint32_t index = cache.head++;
+  uint32_t multiBufferOffset = cache.maxElementCount*cache.multiBufferHead;
+	cache.lock.waitForLockedRange(multiBufferOffset + index, 1);
+  cache.buffer.upload(data, cache.elementSize, (multiBufferOffset + index) * cache.elementSize);
+  return index;
 }
 
-void ParameterCache::sync() {
-  lock.lockRange(0, 1);
-}
+//-------
 
-void ParameterCache::flush() {
-  for(auto& e : caches) {
-    e.second.buffer.flush();
-  }
+void ParameterCache::swap(const Util::StringIdentifier& id) {
+  auto& cache = caches.at(id);
+  cache.lock.lockRange(cache.multiBufferHead*cache.maxElementCount, cache.maxElementCount);
+  cache.head = 0;
+  cache.multiBufferHead = (cache.multiBufferHead+1)%cache.multiBufferCount;
+  cache.lastBinding = {0, 0};
 }
 
 } /* Rendering */
