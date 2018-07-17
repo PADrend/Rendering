@@ -12,7 +12,7 @@
 #ifndef MeshVertexData_H
 #define MeshVertexData_H
 
-#include "../BufferObject.h"
+#include "../Memory/BufferObject.h"
 #include <Geometry/Box.h>
 #include <cstddef>
 #include <cstdint>

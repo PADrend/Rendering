@@ -9,7 +9,7 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "Draw.h"
-#include "BufferObject.h"
+#include "Memory/BufferObject.h"
 #include "Mesh/Mesh.h"
 #include "Mesh/MeshDataStrategy.h"
 #include "Mesh/VertexAttribute.h"

@@ -8,7 +8,7 @@
 */
 #include "BufferObjectTest.h"
 #include <cppunit/TestAssert.h>
-#include <Rendering/BufferObject.h>
+#include <Rendering/Memory/BufferObject.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

@@ -10,7 +10,7 @@
 */
 #include "Texture.h"
 #include "../GLHeader.h"
-#include "../BufferObject.h"
+#include "../Memory/BufferObject.h"
 #include "../Helper.h"
 #include "../RenderingContext/RenderingContext.h"
 #include "TextureUtils.h"

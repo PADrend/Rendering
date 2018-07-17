@@ -19,6 +19,9 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
 add_library(Rendering
+	Memory/BufferLock.cpp
+	Memory/BufferObject.cpp
+	Memory/BufferView.cpp
 	Mesh/Mesh.cpp
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp
@@ -59,9 +62,6 @@ add_library(Rendering
 	Shader/UniformRegistry.cpp
 	Texture/Texture.cpp
 	Texture/TextureUtils.cpp
-	BufferLock.cpp
-	BufferObject.cpp
-	BufferView.cpp
 	Draw.cpp
 	DrawCompound.cpp
 	FBO.cpp

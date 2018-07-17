@@ -11,7 +11,7 @@
 #ifndef RENDERING_PBO_H
 #define RENDERING_PBO_H
 
-#include "BufferObject.h"
+#include "Memory/BufferObject.h"
 #include <Util/ReferenceCounter.h>
 #include <cstdint>
 

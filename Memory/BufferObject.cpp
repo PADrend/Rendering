@@ -10,8 +10,8 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "BufferObject.h"
-#include "GLHeader.h"
-#include "Helper.h"
+#include "../GLHeader.h"
+#include "../Helper.h"
 #include <Util/Macros.h>
 #include <cstddef>
 #include <cstdint>

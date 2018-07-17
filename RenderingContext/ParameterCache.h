@@ -9,8 +9,8 @@
 #ifndef RENDERING_PARAMETER_CACHE_H_
 #define RENDERING_PARAMETER_CACHE_H_
 
-#include "../BufferObject.h"
-#include "../BufferLock.h"
+#include "../Memory/BufferObject.h"
+#include "../Memory/BufferLock.h"
 
 #include <Util/StringIdentifier.h>
 
