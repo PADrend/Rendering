@@ -55,11 +55,10 @@ public:
 		STENCIL_BIT,
 		STENCIL_ENABLED_BIT,
 		STENCIL_FUNC_BIT,
-		STENCIL_OP_BIT,
-		TEXTURE_BINDING_BIT,
+		STENCIL_OP_BIT
 	};
 	struct StateDiff_t {
-		std::bitset<TEXTURE_BINDING_BIT+1> state;
+		std::bitset<STENCIL_OP_BIT+1> state;
 		std::bitset<MAX_VERTEXATTRIBS> format;
 		std::bitset<MAX_VERTEXBINDINGS> vertexBinding;
 	};
@@ -371,27 +370,6 @@ public:
 		if(stencilParameters != p)
 			++stencilCheckNumber;
 		stencilParameters = p;
-	}
-//	@}
-
-//!	@name Textures
-//	@{
-private:
-	uint32_t texturesCheckNumber = 0;
-	std::array<Util::Reference<Texture>, MAX_TEXTURES> boundTextures;
-	std::array<uint32_t, MAX_TEXTURES> boundGLTextures;
-
-public:
-	void setTexture(uint8_t unit, Util::Reference<Texture> texture) {
-		++texturesCheckNumber;
-		boundGLTextures.at(unit) = texture.isNotNull() ? texture->getGLId() : 0;
-		boundTextures.at(unit) = std::move(texture);
-	}
-	const Util::Reference<Texture> & getTexture(uint8_t unit) const {
-		return boundTextures.at(unit);
-	}
-	bool texturesChanged(const PipelineState & actual) const {
-		return (texturesCheckNumber == actual.texturesCheckNumber) ? false : (boundTextures != actual.boundTextures);
 	}
 //	@}
 };

@@ -91,7 +91,6 @@ PipelineState::StateDiff_t PipelineState::makeDiff(const PipelineState& target, 
 		diff.state.set(STENCIL_FUNC_BIT, actualParams.differentFunctionParameters(targetParams));
 		diff.state.set(STENCIL_OP_BIT, actualParams.differentActionParameters(targetParams));
 	}
-	diff.state.set(TEXTURE_BINDING_BIT, texturesChanged(target));
 	
 	// vertex format
 	diff.state.set(VERTEX_FORMAT_BIT, vertexFormatChanged(target));
@@ -243,12 +242,6 @@ void PipelineState::apply(const StateDiff_t& diff) {
 			glDisable(GL_POLYGON_OFFSET_LINE);
 			glDisable(GL_POLYGON_OFFSET_POINT);
 		}
-		GET_GL_ERROR();
-	}
-
-	// Textures
-	if(diff.state.test(TEXTURE_BINDING_BIT)) {
-		glBindTextures(0, MAX_TEXTURES, boundGLTextures.data());
 		GET_GL_ERROR();
 	}
 	

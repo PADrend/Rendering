@@ -911,7 +911,7 @@ void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & unif
 // TEXTURES **********************************************************************************
 
 Texture * RenderingContext::getTexture(uint8_t unit) const {
-	return unit < MAX_TEXTURES ? internalData->targetPipelineState.getTexture(unit).get() : nullptr;
+	return unit < MAX_TEXTURES ? internalData->targetBindingState.getTexture(unit).get() : nullptr;
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit) const {
@@ -946,7 +946,8 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
 	if(texture != oldTexture) {
 		if(texture) 
 			texture->_prepareForBinding(*this);
-		internalData->targetPipelineState.setTexture(unit, texture);
+		internalData->targetBindingState.bindTexture(unit, texture);
+		//internalData->targetPipelineState.setTexture(unit, texture);
 	}	
 	internalData->targetTextureSet.at(unit) = texture != nullptr;
 }
