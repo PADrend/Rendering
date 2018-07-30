@@ -53,11 +53,6 @@ void VAO::disableVertexAttrib(uint32_t location) {
   glDisableVertexArrayAttrib(glHandle, location);
 }
 
-void VAO::setVertexAttribValue(uint32_t location, float x, float y, float z, float w) {
-  prepare();
-  glVertexAttrib4f(location, x, y, z, w);
-}
-
 void VAO::bindVertexBuffer(uint32_t binding, uint32_t bufferId, uint32_t stride, uint32_t offset, uint32_t divisor) {
   prepare();
   glVertexArrayVertexBuffer(glHandle, binding, bufferId, offset, stride);

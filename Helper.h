@@ -91,6 +91,21 @@ void enableDebugOutput();
  */
 void disableDebugOutput();
 
+/**
+ * Return the maximum allowed buffer binding locations for a specified buffer target.
+ * 
+ * @param target The buffer target
+ * @see @c glGetIntegerv
+ */
+int32_t getMaxBufferBindings(uint32_t target);
+
+/**
+ * Return the maximum allowed combined texture units.
+ * 
+ * @see @c glGetIntegerv
+ */
+int32_t getMaxTextureBindings();
+
 }
 
 #define GET_GL_ERROR() \

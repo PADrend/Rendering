@@ -29,6 +29,9 @@ namespace Rendering {
 class PipelineState {
 // -------------------------------
 public:
+	static const uint32_t MAX_VERTEXATTRIBS = 16;
+  static const uint32_t MAX_VERTEXBINDINGS = 16;
+	
 	enum ChangedBits : uint8_t {
 		VIEWPORT_BIT,
 		SCISSOR_BIT,
@@ -57,8 +60,8 @@ public:
 	};
 	struct StateDiff_t {
 		std::bitset<TEXTURE_BINDING_BIT+1> state;
-		std::bitset<16> format;
-		std::bitset<16> vertexBinding;
+		std::bitset<MAX_VERTEXATTRIBS> format;
+		std::bitset<MAX_VERTEXBINDINGS> vertexBinding;
 	};
 	StateDiff_t makeDiff(const PipelineState& other, bool forced=false);
 	void apply(const StateDiff_t& diff);
@@ -151,9 +154,6 @@ public:
 
 //!	@name Vertex format & binding
 //	@{
-public:
-  static const uint32_t MAX_VERTEXBINDINGS = 16;
-  static const uint32_t MAX_VERTEXATTRIBS = 16;
 private:
 	uint32_t vertexFormatCheckNumber = 0;
 	std::array<std::pair<VertexAttribute, uint32_t>, MAX_VERTEXATTRIBS> vertexFormat;

@@ -40,7 +40,7 @@ add_library(Rendering
 	MeshUtils/Simplification.cpp
 	MeshUtils/TriangleAccessor.cpp
 	MeshUtils/ConnectivityAccessor.cpp
-	RenderingContext/ParameterCache.cpp
+	RenderingContext/BindingState.cpp
 	RenderingContext/PipelineState.cpp
 	RenderingContext/RenderingContext.cpp
 	RenderingContext/RenderingParameters.cpp

@@ -10,93 +10,74 @@
 #define RENDERING_BUFFERVIEW_H_
 
 #include "BufferObject.h"
+#include "BufferLock.h"
 #include <Util/References.h>
 
 #include <vector>
 
 namespace Rendering {
 
-class BufferView {
+class BufferView : public Util::ReferenceCounter<BufferView>  {
 private:
   Util::Reference<BufferObject> buffer;
   size_t offset = 0;
-  uint32_t elementCount = 0;
   uint32_t elementSize = 0;
-  uint8_t* dataPtr = nullptr;
+  uint32_t elementCount = 0;
+  uint32_t multiBufferCount = 1;
+  uint32_t multiBufferHead = 0;
+  BufferLockManager lock;
 public:
-  BufferView(uint32_t eltSize=0) : elementSize(eltSize) {}
-  BufferView(BufferObject* buffer, size_t offset, uint32_t eltSize) : 
-                buffer(buffer), offset(offset), elementSize(eltSize) {}
-  BufferView(BufferObject* buffer, size_t offset, uint32_t eltSize, uint32_t count) : 
-                buffer(buffer), offset(offset), elementSize(eltSize) { allocate(count); }
-                
-  BufferView(const BufferView & other) = default;
-  BufferView(BufferView &&) = default;
+  BufferView(BufferObject* buffer=nullptr, size_t offset=0, uint32_t eltSize=0, uint32_t count=0);
 
-  ~BufferView() { release(); };
+  void setBuffer(BufferObject* bo) { buffer = bo; }
+  void setElementCount(uint32_t count) { elementCount = count; }
+  void setElementSize(uint32_t size) { elementSize = size; }
+  void setMultiBuffered(uint32_t count);
 
-  BufferView & operator=(const BufferView &) = default;
-  BufferView & operator=(BufferView &&) = default;
-  
-  void relocate(BufferObject* buffer, size_t offset);
-  void allocate(uint32_t count);
-  void release();
-  bool hasLocalData() const { return dataPtr; }
-  void flush();
-  void upload(const uint8_t* ptr, size_t size);
-  
-  uint32_t getElementCount() const { return elementCount; }
-  
-  const uint8_t * data() const { return dataPtr; }
-  uint8_t * data() { return dataPtr; }
-  size_t dataSize() const { return elementCount * elementSize; }
-  const uint8_t * operator[](uint32_t index) const { return dataPtr + index*elementSize; }
-  uint8_t * operator[](uint32_t index) { return dataPtr + index*elementSize; }
+  inline BufferObject* getBuffer() const { return buffer.get(); }
+  inline uint32_t getElementCount() const { return elementCount; }
+  inline uint32_t getElementSize() const { return elementSize; }
+  inline size_t getSize() const { return elementSize * elementCount; }
+  inline size_t getBaseOffset() const { return offset; }
+  inline size_t getOffset() const { return offset + getSize()*multiBufferHead; }
+  bool isValid() const;
   
   void bind(uint32_t target, uint32_t location);
-  void unbind(uint32_t target, uint32_t location);
-protected:
-  void setElementSize(uint32_t size) {
-    release();
-    elementSize = size;
+  void allocateBuffer(uint32_t flags);
+  
+  void setValues(uint32_t index, uint32_t count, const uint8_t* data);
+  template<typename T>
+  void setValues(uint32_t index, uint32_t count, const T& value) {
+    setValue(index, reinterpret_cast<const uint8_t*>(&value));
   }
-};
-
-template<typename T>
-class StructuredBufferView : public BufferView {
-public:
-  using Type_t = T;
-  StructuredBufferView() : BufferView(sizeof(Type_t)) {}
-  StructuredBufferView(BufferObject* buffer, size_t offset) : BufferView(buffer, offset, sizeof(Type_t)) {}
-  StructuredBufferView(BufferObject* buffer, size_t offset, uint32_t count) : BufferView(buffer, offset, sizeof(Type_t), count) {}
   
-  const Type_t & operator[](uint32_t index) const { return *reinterpret_cast<const Type_t*>(BufferView::operator[](index)); }
-  Type_t & operator[](uint32_t index) { return *reinterpret_cast<Type_t*>(BufferView::operator[](index)); }
-  
-  void upload(const std::vector<Type_t>& values) {
-    BufferView::upload(reinterpret_cast<const uint8_t*>(values.data()), values.size() * sizeof(Type_t));
+  void setValue(uint32_t index, const uint8_t* data) {
+    setValues(index, 1, data);
   };
-  void upload(const Type_t* values) {
-    BufferView::upload(reinterpret_cast<const uint8_t*>(values), dataSize());
-  };
-};
-
-template<typename T>
-class ValueBufferView : public BufferView {
-public:
-  using Type_t = T;
-  ValueBufferView() : BufferView(sizeof(Type_t)) {}
-  ValueBufferView(BufferObject* buffer, size_t offset) : BufferView(buffer, offset, sizeof(Type_t)) {}
-  ValueBufferView(BufferObject* buffer, size_t offset, uint32_t count) : BufferView(buffer, offset, sizeof(Type_t), count) {}
+  template<typename T>
+  void setValue(uint32_t index, const T& value) {
+    setValues(index, 1, reinterpret_cast<const uint8_t*>(&value));
+  }
   
-  void allocate() { BufferView::allocate(1); }
+  void getValues(uint32_t index, uint32_t count, uint8_t* targetPtr);
+  void getValue(uint32_t index, uint8_t* targetPtr) {
+    getValues(index, 1, targetPtr);
+  }
+  template<typename T>
+  T getValue(uint32_t index) {
+    T value;
+    getValue(index, reinterpret_cast<uint8_t*>(&value));
+    return value;
+  }
+  template<typename T>
+  std::vector<T> getValues(uint32_t index, uint32_t count) {
+    std::vector<T> values(count);
+    getValues(index, count, reinterpret_cast<uint8_t*>(values.data()));
+    return values;
+  }
   
-  const Type_t& getValue() const { return *reinterpret_cast<const Type_t*>(data()); }
-  void setValue(const Type_t& value) { return *reinterpret_cast<Type_t*>(data()) = value; }
-  
-  void upload(const Type_t& value) {
-    BufferView::upload(reinterpret_cast<const uint8_t*>(&value), sizeof(Type_t));
-  };
+  // swaps multi-buffered buffer range
+  void swap();
 };
 
 } /* Rendering */

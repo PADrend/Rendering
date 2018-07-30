@@ -11,7 +11,7 @@
 */
 #include "RenderingContext.h"
 
-#include "ParameterCache.h"
+#include "BindingState.h"
 #include "PipelineState.h"
 #include "RenderingParameters.h"
 #include "../Memory/BufferObject.h"
@@ -46,12 +46,12 @@
 
 namespace Rendering {
 
-static const Util::StringIdentifier PARAMETER_FRAMEDATA("FrameData");
-static const Util::StringIdentifier PARAMETER_OBJECTDATA("ObjectData");
-static const Util::StringIdentifier PARAMETER_MATERIALDATA("MaterialData");
-static const Util::StringIdentifier PARAMETER_LIGHTDATA("LightData");
-static const Util::StringIdentifier PARAMETER_LIGHTSETDATA("LightSetData");
-static const Util::StringIdentifier PARAMETER_TEXTURESETDATA("TextureSetData");
+static const Util::StringIdentifier BUFFER_FRAMEDATA("FrameData");
+static const Util::StringIdentifier BUFFER_OBJECTDATA("ObjectData");
+static const Util::StringIdentifier BUFFER_MATERIALDATA("MaterialData");
+static const Util::StringIdentifier BUFFER_LIGHTDATA("LightData");
+static const Util::StringIdentifier BUFFER_LIGHTSETDATA("LightSetData");
+static const Util::StringIdentifier BUFFER_TEXTURESETDATA("TextureSetData");
 
 static const uint32_t MAX_FRAMEDATA = 1;
 static const uint32_t MAX_OBJECTDATA = 512;
@@ -67,6 +67,13 @@ struct FrameData {
 	Geometry::Matrix4x4f matrix_cameraToClipping;
 	Geometry::Matrix4x4f matrix_clippingToCamera;
 	Geometry::Vec4 viewport;
+	bool operator!=(const FrameData& o) const {
+		return matrix_worldToCamera != o.matrix_worldToCamera ||
+					 matrix_cameraToWorld != o.matrix_cameraToWorld ||
+					 matrix_cameraToClipping != o.matrix_cameraToClipping ||
+					 matrix_clippingToCamera != o.matrix_clippingToCamera ||
+					 viewport != o.viewport;
+	}
 };
 
 struct ObjectData {
@@ -80,6 +87,10 @@ struct ObjectData {
 struct LightSet {
 	uint32_t count = 0;
 	std::array<uint32_t, MAX_ENABLED_LIGHTS> lights;
+	bool operator!=(const LightSet& o) const {
+		return count != o.count ||
+					 lights != o.lights;
+	}
 };
 
 struct MaterialData {
@@ -88,11 +99,15 @@ struct MaterialData {
 	MaterialParameters mat; // 4*vec4 + 1*float -> needs 3 word padding
 	uint32_t enabled = true;
 	uint64_t _pad = 0;
+	bool operator!=(const MaterialData& o) const {
+		return enabled != o.enabled ||
+					 mat != o.mat;
+	}
 };
 
 typedef std::array<uint32_t, MAX_TEXTURES> TextureSet;
 
-struct LightCompare {	
+struct LightCompare {
 	bool operator()(const LightParameters& l1, const LightParameters& l2) const noexcept {
 		return std::memcmp(&l1, &l2, sizeof(LightParameters)) < 0;
 	}
@@ -100,9 +115,11 @@ struct LightCompare {
 
 class RenderingContext::InternalData {
 	public:
-		ParameterCache cache;
 		PipelineState targetPipelineState;
 		PipelineState activePipelineState;
+		BindingState targetBindingState;
+		BindingState activeBindingState;
+		std::unordered_map<Util::StringIdentifier, Util::Reference<BufferView>> registeredBuffers;
 
 		// pipeline state
 		std::stack<BlendingParameters> blendingParameterStack;
@@ -126,25 +143,28 @@ class RenderingContext::InternalData {
 		std::stack<Geometry::Matrix4x4> projectionMatrixStack;
 		std::stack<Geometry::Rect_i> viewportStack;
 		FrameData activeFrameData;
+		FrameData targetFrameData;
 		
 		// per object data
 		std::stack<Geometry::Matrix4x4> matrixStack;
 		std::stack<PointParameters> pointParameterStack;
 		ObjectData activeObjectData;
-		BufferLockManager objLock;
 		
 		// materials
 		std::stack<MaterialData> materialStack;
 		MaterialData activeMaterial;
+		MaterialData targetMaterial;
 		
 		// lights
 		std::map<LightParameters, uint8_t, LightCompare> lightRegistry;
 		std::set<uint8_t> freeLightIds;
 		LightSet activeLightSet;
+		LightSet targetLightSet;
 		
 		//textures
 		std::array<std::stack<Util::Reference<Texture>>, MAX_TEXTURES> textureStacks;
-		TextureSet enabledTextures;
+		TextureSet activeTextureSet;
+		TextureSet targetTextureSet;
 		
 		// other
 		typedef std::pair<Util::Reference<BufferObject>,uint32_t> feedbackBufferStatus_t; // buffer->mode
@@ -176,14 +196,31 @@ RenderingContext::RenderingContext() :
 	
 	internalData->targetPipelineState.setVertexArray(new VAO);
 	
-	// initialize default caches
-	auto& cache = internalData->cache;
-	cache.createCache(PARAMETER_FRAMEDATA, sizeof(FrameData), MAX_FRAMEDATA, BufferObject::FLAGS_DYNAMIC);
-	cache.createCache(PARAMETER_OBJECTDATA, sizeof(ObjectData), MAX_OBJECTDATA, BufferObject::FLAGS_STREAM, 2);
-	cache.createCache(PARAMETER_MATERIALDATA, sizeof(MaterialData), MAX_MATERIALS, BufferObject::FLAGS_DYNAMIC);
-	cache.createCache(PARAMETER_LIGHTDATA, sizeof(LightParameters), MAX_LIGHTS, BufferObject::FLAGS_DYNAMIC);
-	cache.createCache(PARAMETER_LIGHTSETDATA, sizeof(LightSet), MAX_LIGHTSETS, BufferObject::FLAGS_DYNAMIC);
-	cache.createCache(PARAMETER_TEXTURESETDATA, sizeof(TextureSet), MAX_TEXTURESETS, BufferObject::FLAGS_DYNAMIC);
+	// initialize default buffers
+	auto buffer = new BufferView(new BufferObject, 0, sizeof(FrameData), MAX_FRAMEDATA);
+	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
+	registerBuffer(BUFFER_FRAMEDATA, buffer);
+	
+	buffer = new BufferView(new BufferObject, 0, sizeof(ObjectData), MAX_OBJECTDATA);
+	buffer->setMultiBuffered(2);
+	buffer->allocateBuffer(BufferObject::FLAGS_STREAM);
+	registerBuffer(BUFFER_OBJECTDATA, buffer);
+	
+	buffer = new BufferView(new BufferObject, 0, sizeof(MaterialData), MAX_MATERIALS);
+	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
+	registerBuffer(BUFFER_MATERIALDATA, buffer);
+	
+	buffer = new BufferView(new BufferObject, 0, sizeof(LightParameters), MAX_LIGHTS);
+	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
+	registerBuffer(BUFFER_LIGHTDATA, buffer);
+	
+	buffer = new BufferView(new BufferObject, 0, sizeof(LightSet), MAX_LIGHTSETS);
+	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
+	registerBuffer(BUFFER_LIGHTSETDATA, buffer);
+	
+	buffer = new BufferView(new BufferObject, 0, sizeof(TextureSet), MAX_TEXTURESETS);
+	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
+	registerBuffer(BUFFER_TEXTURESETDATA, buffer);
 	
 	// initialize lights
 	for(uint_fast8_t i=0; i<std::numeric_limits<uint8_t>::max(); ++i) {
@@ -275,21 +312,30 @@ void RenderingContext::applyChanges(bool forced) {
 		internalData->activePipelineState = internalData->targetPipelineState;
 		internalData->activePipelineState.apply(diff);
 		
-		//internalData->cache.wait();
-		internalData->cache.setParameter(PARAMETER_FRAMEDATA, 0, internalData->activeFrameData);
-		internalData->cache.setParameter(PARAMETER_MATERIALDATA, 0, internalData->activeMaterial);
-		internalData->cache.setParameter(PARAMETER_LIGHTSETDATA, 0, internalData->activeLightSet);
-		internalData->cache.setParameter(PARAMETER_TEXTURESETDATA, 0, internalData->enabledTextures);
-		//internalData->cache.setParameter(PARAMETER_OBJECTDATA, 0, internalData->activeObjectData);
+		if(internalData->activeFrameData != internalData->targetFrameData) {
+			getBuffer(BUFFER_FRAMEDATA)->setValue(0, internalData->targetFrameData);
+			internalData->activeFrameData = internalData->targetFrameData;
+		}
+		if(internalData->activeMaterial != internalData->targetMaterial) {
+			getBuffer(BUFFER_MATERIALDATA)->setValue(0, internalData->targetMaterial);
+			internalData->activeMaterial = internalData->targetMaterial;
+		}
+		if(internalData->activeLightSet != internalData->targetLightSet) {
+			getBuffer(BUFFER_LIGHTSETDATA)->setValue(0, internalData->targetLightSet);
+			internalData->activeLightSet = internalData->targetLightSet;
+		}
+		if(internalData->activeTextureSet != internalData->targetTextureSet) {
+			getBuffer(BUFFER_TEXTURESETDATA)->setValue(0, internalData->targetTextureSet);
+			internalData->activeTextureSet = internalData->targetTextureSet;
+		}
+		
+		
+		const auto bindingDiff = internalData->activeBindingState.makeDiff(internalData->targetBindingState, forced);
+		internalData->activeBindingState = internalData->targetBindingState;
+		internalData->activeBindingState.apply(bindingDiff);
 		
 		if(internalData->activePipelineState.isShaderValid()) {
 			auto shader = internalData->activePipelineState.getShader();
-			for(const auto& e : shader->getInterfaceBlocks()) {
-				const auto& block = e.second;
-				if(block.location >= 0 && internalData->cache.isCache(block.name)) {
-					internalData->cache.bind(block.name, block.location, block.target, forced);
-				}
-			}
 
 			// transfer updated global uniforms to the shader
 			shader->_getUniformRegistry()->performGlobalSync(internalData->globalUniforms, false);
@@ -329,6 +375,50 @@ void RenderingContext::pushBlending() {
 void RenderingContext::setBlending(const BlendingParameters & p) {
 	internalData->targetPipelineState.setBlendingParameters(p);
 }
+
+
+// Buffers ************************************************************************************
+
+void RenderingContext::registerBuffer(const Util::StringIdentifier& name, BufferView* bufferView) {
+	if(!internalData->registeredBuffers.emplace(name, bufferView).second) {
+		WARN("RenderingContext::registerBuffer: buffer with name '" + name.toString() + "' is aleady registered.");
+	}
+}
+
+void RenderingContext::registerBuffer(const Util::StringIdentifier& name, BufferObject* buffer) {
+	registerBuffer(name, buffer != nullptr ? new BufferView(buffer) : nullptr);
+}
+
+void RenderingContext::unregisterBuffer(const Util::StringIdentifier& name) {
+	internalData->registeredBuffers.erase(name);
+}
+
+BufferView* RenderingContext::getBuffer(const Util::StringIdentifier& name) {
+	auto it = internalData->registeredBuffers.find(name);
+	if(it == internalData->registeredBuffers.end()) {
+		WARN("RenderingContext::getBuffer: A buffer with name '" + name.toString() + "' is not registered.");
+		return nullptr;
+	} else {
+		return it->second.get();
+	}
+}
+
+void RenderingContext::bindBuffer(BufferView* bufferView, uint32_t target, uint32_t location) {
+	internalData->targetBindingState.bindBuffer(target, location, bufferView);
+}
+
+void RenderingContext::bindBuffer(BufferObject* buffer, uint32_t target, uint32_t location) {
+	internalData->targetBindingState.bindBuffer(target, location, buffer ? new BufferView(buffer) : nullptr);
+}
+
+void RenderingContext::bindBuffer(const Util::StringIdentifier& name, uint32_t target, uint32_t location) {
+	bindBuffer(getBuffer(name), target, location);
+}
+
+void RenderingContext::unbindBuffer(uint32_t target, uint32_t location) {
+	internalData->targetBindingState.bindBuffer(target, location, nullptr);
+}
+
 
 // ColorBuffer ************************************************************************************
 const ColorBufferParameters & RenderingContext::getColorBufferParameters() const {
@@ -720,6 +810,15 @@ const Uniform & RenderingContext::getGlobalUniform(const Util::StringIdentifier 
 // SHADER ************************************************************************************
 void RenderingContext::setShader(Shader * shader) {
 	internalData->targetPipelineState.setShader(shader);
+	if(shader) {
+		for(const auto& e : shader->getInterfaceBlocks()) {
+			const auto& block = e.second;
+			if(block.location >= 0) {			
+				auto buffer = getBuffer(block.name);
+				bindBuffer(buffer, block.target, block.location);
+			}
+		}
+	}
 }
 
 void RenderingContext::pushShader() {
@@ -816,7 +915,7 @@ Texture * RenderingContext::getTexture(uint8_t unit) const {
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit) const {
-	return internalData->enabledTextures[unit] ? TexUnitUsageParameter::TEXTURE_MAPPING : TexUnitUsageParameter::DISABLED;
+	return internalData->targetTextureSet[unit] ? TexUnitUsageParameter::TEXTURE_MAPPING : TexUnitUsageParameter::DISABLED;
 }
 
 void RenderingContext::pushTexture(uint8_t unit) {
@@ -849,7 +948,7 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
 			texture->_prepareForBinding(*this);
 		internalData->targetPipelineState.setTexture(unit, texture);
 	}	
-	internalData->enabledTextures.at(unit) = texture != nullptr;
+	internalData->targetTextureSet.at(unit) = texture != nullptr;
 }
 
 void RenderingContext::setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
@@ -950,7 +1049,8 @@ uint8_t RenderingContext::registerLight(const LightParameters & light) {
 	}
 	uint8_t id = *internalData->freeLightIds.begin();
 	internalData->freeLightIds.erase(internalData->freeLightIds.begin());
-	internalData->cache.setParameter(PARAMETER_LIGHTDATA, id, light);
+	auto buffer = getBuffer(BUFFER_LIGHTDATA);
+	if(buffer) buffer->setValue(id, light);
 	return id;
 }
 
@@ -958,7 +1058,8 @@ void RenderingContext::setLight(uint8_t lightNumber, const LightParameters & lig
 	if(internalData->freeLightIds.count(lightNumber) > 0) {
 		internalData->freeLightIds.erase(lightNumber);
 	}
-	internalData->cache.setParameter(PARAMETER_LIGHTDATA, lightNumber, light);
+	auto buffer = getBuffer(BUFFER_LIGHTDATA);
+	if(buffer) buffer->setValue(lightNumber, light);
 }
 
 void RenderingContext::unregisterLight(uint8_t lightNumber) {
@@ -966,23 +1067,23 @@ void RenderingContext::unregisterLight(uint8_t lightNumber) {
 }
 
 void RenderingContext::enableLight(uint8_t lightNumber) {
-	for(uint_fast8_t i=0; i<internalData->activeLightSet.count; ++i) {
-		if(internalData->activeLightSet.lights[i] == lightNumber)
+	for(uint_fast8_t i=0; i<internalData->targetLightSet.count; ++i) {
+		if(internalData->targetLightSet.lights[i] == lightNumber)
 			return; // aleady active
 	}
-	if(internalData->activeLightSet.count >= MAX_ENABLED_LIGHTS) {
+	if(internalData->targetLightSet.count >= MAX_ENABLED_LIGHTS) {
 		WARN("Cannot enable more lights; ignoring call.");
 		return;
 	}
-	internalData->activeLightSet.lights[internalData->activeLightSet.count++] = lightNumber;
+	internalData->targetLightSet.lights[internalData->targetLightSet.count++] = lightNumber;
 }
 
 void RenderingContext::disableLight(uint8_t lightNumber) {
 	uint_fast8_t pos;
-	for(pos=0; pos<internalData->activeLightSet.count; ++pos) {
-		if(internalData->activeLightSet.lights[pos] == lightNumber) {
-			internalData->activeLightSet.count--;
-			std::swap(internalData->activeLightSet.lights[pos], internalData->activeLightSet.lights[internalData->activeLightSet.count]);
+	for(pos=0; pos<internalData->targetLightSet.count; ++pos) {
+		if(internalData->targetLightSet.lights[pos] == lightNumber) {
+			internalData->targetLightSet.count--;
+			std::swap(internalData->targetLightSet.lights[pos], internalData->targetLightSet.lights[internalData->targetLightSet.count]);
 			return;
 		}
 	}
@@ -995,12 +1096,12 @@ void RenderingContext::popMatrix_cameraToClipping() {
 		WARN("Cannot pop projection matrix. The stack is empty.");
 		return;
 	}
-	internalData->activeFrameData.matrix_cameraToClipping = internalData->projectionMatrixStack.top();
+	internalData->targetFrameData.matrix_cameraToClipping = internalData->projectionMatrixStack.top();
 	internalData->projectionMatrixStack.pop();
 }
 
 void RenderingContext::pushMatrix_cameraToClipping() {
-	internalData->projectionMatrixStack.emplace(internalData->activeFrameData.matrix_cameraToClipping);
+	internalData->projectionMatrixStack.emplace(internalData->targetFrameData.matrix_cameraToClipping);
 }
 
 void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
@@ -1009,27 +1110,27 @@ void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4
 }
 	
 void RenderingContext::setMatrix_cameraToClipping(const Geometry::Matrix4x4 & matrix) {
-	internalData->activeFrameData.matrix_cameraToClipping = matrix;
-	internalData->activeFrameData.matrix_clippingToCamera = matrix.inverse();
+	internalData->targetFrameData.matrix_cameraToClipping = matrix;
+	internalData->targetFrameData.matrix_clippingToCamera = matrix.inverse();
 }
 
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToClipping() const {
-	return internalData->activeFrameData.matrix_cameraToClipping;
+	return internalData->targetFrameData.matrix_cameraToClipping;
 }
 
 // CAMERA MATRIX *****************************************************************************
 
 void RenderingContext::setMatrix_cameraToWorld(const Geometry::Matrix4x4 & matrix) {
-	internalData->activeFrameData.matrix_cameraToWorld = matrix;
-	internalData->activeFrameData.matrix_worldToCamera = matrix.inverse();
+	internalData->targetFrameData.matrix_cameraToWorld = matrix;
+	internalData->targetFrameData.matrix_worldToCamera = matrix.inverse();
 }
 
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_worldToCamera() const {
-	return internalData->activeFrameData.matrix_worldToCamera;
+	return internalData->targetFrameData.matrix_worldToCamera;
 }
 
 const Geometry::Matrix4x4 & RenderingContext::getMatrix_cameraToWorld() const {
-	return internalData->activeFrameData.matrix_cameraToWorld;
+	return internalData->targetFrameData.matrix_cameraToWorld;
 }
 
 // MODEL VIEW MATRIX *************************************************************************
@@ -1071,7 +1172,7 @@ void RenderingContext::popMatrix_modelToCamera() {
 // MATERIAL **********************************************************************************
 
 const MaterialParameters & RenderingContext::getMaterial() const {
-	return internalData->activeMaterial.mat;
+	return internalData->targetMaterial.mat;
 }
 
 void RenderingContext::popMaterial() {
@@ -1081,14 +1182,14 @@ void RenderingContext::popMaterial() {
 	}
 	internalData->materialStack.pop();
 	if(internalData->materialStack.empty()) {
-		internalData->activeMaterial.enabled = false;
+		internalData->targetMaterial.enabled = false;
 	} else {
-		internalData->activeMaterial = internalData->materialStack.top();
+		internalData->targetMaterial = internalData->materialStack.top();
 	}
 }
 
 void RenderingContext::pushMaterial() {
-	internalData->materialStack.emplace(internalData->activeMaterial);
+	internalData->materialStack.emplace(internalData->targetMaterial);
 }
 
 void RenderingContext::pushAndSetMaterial(const MaterialParameters & material) {
@@ -1105,7 +1206,7 @@ void RenderingContext::pushAndSetColorMaterial(const Util::Color4f & color) {
 }
 
 void RenderingContext::setMaterial(const MaterialParameters & material) {
-	internalData->activeMaterial = material;
+	internalData->targetMaterial = material;
 }
 
 //  **********************************************************************************
@@ -1131,7 +1232,7 @@ void RenderingContext::pushViewport() {
 }
 void RenderingContext::setViewport(const Geometry::Rect_i & vp) {
 	internalData->targetPipelineState.setViewport(vp);
-	internalData->activeFrameData.viewport = Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight());
+	internalData->targetFrameData.viewport = Geometry::Vec4(vp.getX(), vp.getY(), vp.getWidth(), vp.getHeight());
 }
 
 void RenderingContext::pushAndSetViewport(const Geometry::Rect_i & viewport) {
@@ -1173,20 +1274,26 @@ void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
 
 void RenderingContext::drawArrays(uint32_t mode, uint32_t first, uint32_t count) {
 	applyChanges();
-	
-	uint32_t drawId = internalData->cache.addParameter(PARAMETER_OBJECTDATA, internalData->activeObjectData);
+	/*
+	uint32_t drawId = internalData->cache.addParameter(BUFFER_OBJECTDATA, internalData->activeObjectData);
   glDrawArraysInstancedBaseInstance(mode, first, count, 1, drawId);
 	if(drawId >= MAX_OBJECTDATA-1)
-		internalData->cache.swap(PARAMETER_OBJECTDATA);
+		internalData->cache.swap(BUFFER_OBJECTDATA);*/
 }
 
 void RenderingContext::drawElements(uint32_t mode, uint32_t type, uint32_t first, uint32_t count) {
 	applyChanges();
 	
-	uint32_t drawId = internalData->cache.addParameter(PARAMETER_OBJECTDATA, internalData->activeObjectData);
+	auto buffer = getBuffer(BUFFER_OBJECTDATA);
+	uint32_t drawId = internalData->activeObjectData.drawId;
+	buffer->setValue(drawId, internalData->activeObjectData);
+	
 	glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, reinterpret_cast<uint8_t*>(first * getGLTypeSize(type)), 1, 0, drawId);
-	if(drawId >= MAX_OBJECTDATA-1)
-		internalData->cache.swap(PARAMETER_OBJECTDATA);
+	
+	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA) {
+		internalData->activeObjectData.drawId = 0;
+		buffer->swap();
+	}
 }
 
 

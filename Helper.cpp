@@ -18,6 +18,12 @@
 
 namespace Rendering {
 
+static inline int32_t getGLValue(GLenum name) {
+	int32_t value;
+	glGetIntegerv(name, &value);
+	return value;
+}
+
 static bool GLErrorChecking = false;
 
 void enableGLErrorChecking() {
@@ -287,6 +293,25 @@ void disableDebugOutput() {
 #else
 	std::cerr << "GL_ARB_debug_output is not supported" << std::endl;
 #endif
+}
+
+int32_t getMaxBufferBindings(uint32_t target) {
+	static const int32_t maxSSBO = std::min(getGLValue(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS), 128);
+	static const int32_t maxUBO = std::min(getGLValue(GL_MAX_UNIFORM_BUFFER_BINDINGS), 128);
+	static const int32_t maxAtomic = std::min(getGLValue(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS), 8);
+	static const int32_t maxTrafo = std::min(getGLValue(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS), 4);
+	switch(target) {
+		case GL_SHADER_STORAGE_BUFFER: return maxSSBO;
+		case GL_UNIFORM_BUFFER: return maxUBO;
+		case GL_ATOMIC_COUNTER_BUFFER: return maxAtomic;
+		case GL_TRANSFORM_FEEDBACK_BUFFER: return maxTrafo;
+		default: return 1;
+	}
+}
+
+int32_t getMaxTextureBindings() {
+	static const int32_t maxTex = std::min(getGLValue(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS), 256);
+	return maxTex;
 }
 
 }

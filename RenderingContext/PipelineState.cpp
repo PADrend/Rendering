@@ -249,20 +249,6 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	// Textures
 	if(diff.state.test(TEXTURE_BINDING_BIT)) {
 		glBindTextures(0, MAX_TEXTURES, boundGLTextures.data());
-		/*for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {
-			const auto & texture = getTexture(unit);			
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit));
-			if( texture ) {
-				glBindTexture(texture->getGLTextureType(), texture->getGLId());
-				BufferObject* buffer = texture->getBufferObject();
-				if(buffer)
-					glTexBuffer( GL_TEXTURE_BUFFER, texture->getFormat().pixelFormat.glInternalFormat, buffer->getGLId() );
-			} else if( oldTexture ) {
-				glBindTexture(oldTexture->getGLTextureType(), 0);
-			} else {
-				glBindTexture(GL_TEXTURE_2D, 0);
-			}
-		}*/
 		GET_GL_ERROR();
 	}
 	
@@ -295,51 +281,40 @@ void PipelineState::apply(const StateDiff_t& diff) {
 	}
 	
 	// VAO
-	if(diff.state.test(VAO_BIT)) {
-		if(vao.isNotNull())
+	if(vao.isNotNull()) {
+		if(diff.state.test(VAO_BIT)) {
 			vao->bind();
-		else 
-			glBindVertexArray(0);
-		GET_GL_ERROR();
-	}
+			GET_GL_ERROR();
+		}
 		
-	// Vertex Format
-	if(diff.state.test(VERTEX_FORMAT_BIT)) {
-		for(uint_fast8_t location=0; location<PipelineState::MAX_VERTEXATTRIBS; ++location) {
-			if(diff.format.test(location)) {
-				const auto& format = getVertexFormat(location);
-				const auto& attr = format.first;
-				if(attr.empty()) {
-					glDisableVertexAttribArray(location);
-				} else {
-					glEnableVertexAttribArray(location);				
-					glVertexAttribBinding(location, format.second);		
-					if(attr.getConvertToFloat()) 
-						glVertexAttribFormat(location, attr.getNumValues(), attr.getDataType(), attr.getNormalize() ? GL_TRUE : GL_FALSE, attr.getOffset());
-					else
-						glVertexAttribIFormat(location, attr.getNumValues(), attr.getDataType(), attr.getOffset());
+		// Vertex Format
+		if(diff.state.test(VERTEX_FORMAT_BIT)) {
+			for(uint_fast8_t location=0; location<PipelineState::MAX_VERTEXATTRIBS; ++location) {
+				if(diff.format.test(location)) {
+					const auto& format = getVertexFormat(location);
+					vao->enableVertexAttrib(location, format.first, format.second);
 				}
 			}
+			GET_GL_ERROR();
 		}
-		GET_GL_ERROR();
-	}
-	
-	if(diff.state.test(VERTEX_BINDING_BIT)) {
-		for(uint_fast8_t i = 0; i<PipelineState::MAX_VERTEXBINDINGS; ++i) {
-			if(diff.vertexBinding.test(i)) {
-				const auto& binding = getVertexBinding(i);
-				uint32_t buffer, offset, stride, divisor;
-				std::tie(buffer, offset, stride, divisor) = binding;
-				
-			  glVertexBindingDivisor(i, divisor);
-				glBindVertexBuffer(i, buffer, offset, stride);
+		
+		if(diff.state.test(VERTEX_BINDING_BIT)) {
+			for(uint_fast8_t i = 0; i<PipelineState::MAX_VERTEXBINDINGS; ++i) {
+				if(diff.vertexBinding.test(i)) {
+					uint32_t buffer, offset, stride, divisor;
+					std::tie(buffer, offset, stride, divisor) = getVertexBinding(i);
+					vao->bindVertexBuffer(i, buffer, stride, offset, divisor);
+				}
 			}
+			GET_GL_ERROR();
 		}
-		GET_GL_ERROR();
-	}
-	
-	if(diff.state.test(ELEMENT_BINDING_BIT) && vao.isNotNull()) {
-		vao->bindElementBuffer(elementBinding);
+		
+		if(diff.state.test(ELEMENT_BINDING_BIT) && vao.isNotNull()) {
+			vao->bindElementBuffer(elementBinding);
+			GET_GL_ERROR();
+		}
+	} else if(diff.state.test(VAO_BIT)) {
+		glBindVertexArray(0);
 		GET_GL_ERROR();
 	}
 }

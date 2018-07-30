@@ -32,6 +32,7 @@ namespace Rendering {
 class AlphaTestParameters;
 class BlendingParameters;
 class BufferObject;
+class BufferView;
 class ClipPlaneParameters;
 class ColorBufferParameters;
 class CullFaceParameters;
@@ -156,6 +157,19 @@ public:
 	
 	// ------
 
+	//! @name Buffers
+	//	@{
+	void registerBuffer(const Util::StringIdentifier& name, BufferView* bufferView);
+	void registerBuffer(const Util::StringIdentifier& name, BufferObject* buffer);
+	void unregisterBuffer(const Util::StringIdentifier& name);
+	BufferView* getBuffer(const Util::StringIdentifier& name);
+	void bindBuffer(BufferView* bufferView, uint32_t target, uint32_t location=0);
+	void bindBuffer(BufferObject* buffer, uint32_t target, uint32_t location=0);
+	void bindBuffer(const Util::StringIdentifier& name, uint32_t target, uint32_t location=0);
+	void unbindBuffer(uint32_t target, uint32_t location=0);
+	// @}
+	
+	// ------
 	//! @name Scissor
 	//	@{
 	const ClipPlaneParameters & getClipPlane(uint8_t index) const __attribute((deprecated));

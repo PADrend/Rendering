@@ -28,8 +28,6 @@ public:
   void enableVertexAttrib(uint32_t location, const VertexAttribute& attr, uint32_t binding=0);
   void disableVertexAttrib(uint32_t location);
   
-  void setVertexAttribValue(uint32_t location, float x, float y, float z, float w);
-  
   void bindVertexBuffer(uint32_t binding, uint32_t bufferId, uint32_t stride, uint32_t offset=0, uint32_t divisor=0);
   void bindElementBuffer(uint32_t bufferId);
   

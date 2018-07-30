@@ -13,6 +13,7 @@
 #include "../GLHeader.h"
 #include "../Helper.h"
 #include <Util/Macros.h>
+#include <Util/StringUtils.h>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -21,7 +22,6 @@
 #include <iostream>
 
 namespace Rendering {
-
 const uint32_t BufferObject::TARGET_ARRAY_BUFFER = GL_ARRAY_BUFFER;
 const uint32_t BufferObject::TARGET_ATOMIC_COUNTER_BUFFER = GL_ATOMIC_COUNTER_BUFFER;
 const uint32_t BufferObject::TARGET_COPY_READ_BUFFER = GL_COPY_READ_BUFFER;
@@ -79,6 +79,16 @@ static uint32_t translateLegacyHint(uint32_t hint) {
 		case GL_STREAM_COPY:
 			return BufferObject::FLAGS_PERSISTENT;
 		default: return hint;
+	}
+}
+
+static inline std::string bufferTargetName(uint32_t target) {
+	switch(target) {
+		case GL_SHADER_STORAGE_BUFFER: return "GL_SHADER_STORAGE_BUFFER";
+		case GL_UNIFORM_BUFFER: return "GL_UNIFORM_BUFFER";
+		case GL_ATOMIC_COUNTER_BUFFER: return "GL_ATOMIC_COUNTER_BUFFER";
+		case GL_TRANSFORM_FEEDBACK_BUFFER: return "GL_TRANSFORM_FEEDBACK_BUFFER";
+		default: return "UNKNOWN";
 	}
 }
 
@@ -144,24 +154,27 @@ void BufferObject::destroy() {
 	ptr = nullptr;
 }
 
-void BufferObject::bind(uint32_t bufferTarget) const {
-	glBindBuffer(bufferTarget, bufferId);
-}
-
-void BufferObject::bind(uint32_t bufferTarget, uint32_t location) const {
-	glBindBufferBase(bufferTarget, location, bufferId);
-}
-
-void BufferObject::bindRange(uint32_t bufferTarget, uint32_t location, size_t offset, size_t size) const {
-	glBindBufferRange(bufferTarget, location, bufferId, offset, size);
-}
-
-void BufferObject::unbind(uint32_t bufferTarget) const {
-	glBindBuffer(bufferTarget, 0);
+void BufferObject::bind(uint32_t bufferTarget, uint32_t location, size_t offset, size_t rangeSize) const {
+	const auto maxBindings = getMaxBufferBindings(bufferTarget);
+	if(maxBindings <= location) {
+		WARN("BufferObject::bind: Invalid binding location " + Util::StringUtils::toString(location) + 
+				 " for buffer target '" + bufferTargetName(bufferTarget) +
+				 "'. Maximum is " + Util::StringUtils::toString(maxBindings));
+		return;
+	} else if(maxBindings == 1) {
+		glBindBuffer(bufferTarget, bufferId);
+	} else if(offset > 0 || (rangeSize > 0 && rangeSize < size)) {
+		glBindBufferRange(bufferTarget, location, bufferId, offset, rangeSize > 0 ? rangeSize : (size-offset));
+	} else {
+		glBindBufferBase(bufferTarget, location, bufferId);
+	}
 }
 
 void BufferObject::unbind(uint32_t bufferTarget, uint32_t location) const {
-	glBindBufferBase(bufferTarget, location, 0);
+	if(getMaxBufferBindings(bufferTarget) == 1)
+		glBindBuffer(bufferTarget, 0);
+	else
+		glBindBufferBase(bufferTarget, location, 0);
 }
 
 void BufferObject::allocate(size_t numBytes, uint32_t hintOrFlags, const uint8_t* data) {
