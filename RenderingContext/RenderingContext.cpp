@@ -55,7 +55,7 @@ static const Util::StringIdentifier BUFFER_TEXTURESETDATA("TextureSetData");
 
 static const uint32_t MAX_FRAMEDATA = 1;
 static const uint32_t MAX_OBJECTDATA = 512;
-static const uint32_t MAX_MATERIALS = 1;
+static const uint32_t MAX_MATERIALS = 256;
 static const uint32_t MAX_LIGHTS = 256;
 static const uint32_t MAX_LIGHTSETS = 1;
 static const uint32_t MAX_TEXTURESETS = 1;
@@ -93,25 +93,30 @@ struct LightSet {
 	}
 };
 
-struct MaterialData {
-	MaterialData() {}
-	MaterialData(const MaterialParameters& mat) : mat(mat) {}
-	MaterialParameters mat; // 4*vec4 + 1*float -> needs 3 word padding
-	uint32_t enabled = true;
-	uint64_t _pad = 0;
-	bool operator!=(const MaterialData& o) const {
-		return enabled != o.enabled ||
-					 mat != o.mat;
-	}
-};
-
-typedef std::array<uint32_t, MAX_TEXTURES> TextureSet;
-
 struct LightCompare {
 	bool operator()(const LightParameters& l1, const LightParameters& l2) const noexcept {
 		return std::memcmp(&l1, &l2, sizeof(LightParameters)) < 0;
 	}
 };
+
+struct MaterialData {
+	MaterialData() {}
+	MaterialData(const MaterialParameters& mat, bool enabled=true) : mat(mat), enabled(enabled) {}
+	MaterialParameters mat; // 4*vec4 + 1*float -> needs 3 word padding
+	uint32_t enabled = true;
+	uint64_t _pad = 0;
+	bool operator!=(const MaterialData& o) const {
+		return enabled != o.enabled || mat != o.mat;
+	}
+};
+
+struct MaterialCompare {
+	bool operator()(const MaterialParameters& l1, const MaterialParameters& l2) const noexcept {
+		return std::memcmp(&l1, &l2, sizeof(MaterialParameters)) < 0;
+	}
+};
+
+typedef std::array<uint32_t, MAX_TEXTURES> TextureSet;
 
 class RenderingContext::InternalData {
 	public:
@@ -151,9 +156,10 @@ class RenderingContext::InternalData {
 		ObjectData activeObjectData;
 		
 		// materials
-		std::stack<MaterialData> materialStack;
-		MaterialData activeMaterial;
-		MaterialData targetMaterial;
+		std::map<MaterialParameters, uint8_t, MaterialCompare> materialToId;
+		std::unordered_map<uint8_t, MaterialData> materialRegistry;
+		std::set<uint8_t> freeMaterialIds;
+		std::stack<uint8_t> materialStack;
 		
 		// lights
 		std::map<LightParameters, uint8_t, LightCompare> lightRegistry;
@@ -223,9 +229,12 @@ RenderingContext::RenderingContext() :
 	registerBuffer(BUFFER_TEXTURESETDATA, buffer);
 	
 	// initialize lights
-	for(uint_fast8_t i=0; i<std::numeric_limits<uint8_t>::max(); ++i) {
+	internalData->freeLightIds.insert(internalData->freeLightIds.end(), 0);
+	for(uint_fast8_t i=1; i<std::numeric_limits<uint8_t>::max(); ++i) {
 		internalData->freeLightIds.insert(internalData->freeLightIds.end(), i);
+		internalData->freeMaterialIds.insert(internalData->freeMaterialIds.end(), i);
 	}
+	
 }
 
 RenderingContext::~RenderingContext() = default;
@@ -315,10 +324,6 @@ void RenderingContext::applyChanges(bool forced) {
 		if(internalData->activeFrameData != internalData->targetFrameData) {
 			getBuffer(BUFFER_FRAMEDATA)->setValue(0, internalData->targetFrameData);
 			internalData->activeFrameData = internalData->targetFrameData;
-		}
-		if(internalData->activeMaterial != internalData->targetMaterial) {
-			getBuffer(BUFFER_MATERIALDATA)->setValue(0, internalData->targetMaterial);
-			internalData->activeMaterial = internalData->targetMaterial;
 		}
 		if(internalData->activeLightSet != internalData->targetLightSet) {
 			getBuffer(BUFFER_LIGHTSETDATA)->setValue(0, internalData->targetLightSet);
@@ -947,7 +952,6 @@ void RenderingContext::setTexture(uint8_t unit, Texture * texture) {
 		if(texture) 
 			texture->_prepareForBinding(*this);
 		internalData->targetBindingState.bindTexture(unit, texture);
-		//internalData->targetPipelineState.setTexture(unit, texture);
 	}	
 	internalData->targetTextureSet.at(unit) = texture != nullptr;
 }
@@ -1172,29 +1176,8 @@ void RenderingContext::popMatrix_modelToCamera() {
 
 // MATERIAL **********************************************************************************
 
-const MaterialParameters & RenderingContext::getMaterial() const {
-	return internalData->targetMaterial.mat;
-}
-
-void RenderingContext::popMaterial() {
-	if(internalData->materialStack.empty()) {
-		WARN("RenderingContext.popMaterial: stack empty, ignoring call");
-		return;
-	}
-	internalData->materialStack.pop();
-	if(internalData->materialStack.empty()) {
-		internalData->targetMaterial.enabled = false;
-	} else {
-		internalData->targetMaterial = internalData->materialStack.top();
-	}
-}
-
-void RenderingContext::pushMaterial() {
-	internalData->materialStack.emplace(internalData->targetMaterial);
-}
-
 void RenderingContext::pushAndSetMaterial(const MaterialParameters & material) {
-	pushMaterial();
+	pushActiveMaterial();
 	setMaterial(material);
 }
 
@@ -1207,8 +1190,90 @@ void RenderingContext::pushAndSetColorMaterial(const Util::Color4f & color) {
 }
 
 void RenderingContext::setMaterial(const MaterialParameters & material) {
-	internalData->targetMaterial = material;
+	auto it = internalData->materialToId.find(material);
+	if(it != internalData->materialToId.end()) {
+		setActiveMaterial(it->second);
+	} else {
+		setActiveMaterial(registerMaterial(material));
+	}
 }
+
+void RenderingContext::setActiveMaterial(uint8_t materialId) {
+	internalData->activeObjectData.materialId = materialId;
+}
+
+void RenderingContext::popActiveMaterial() {
+	if(internalData->materialStack.empty()) {
+		WARN("RenderingContext::popActiveMaterial: stack empty, ignoring call");
+		return;
+	}
+	internalData->materialStack.pop();
+	if(internalData->materialStack.empty()) {
+		internalData->activeObjectData.materialId = 0;
+	} else {
+		internalData->activeObjectData.materialId = internalData->materialStack.top();
+	}
+}
+
+void RenderingContext::pushActiveMaterial() {
+	internalData->materialStack.emplace(internalData->activeObjectData.materialId);
+}
+
+void RenderingContext::pushAndSetActiveMaterial(uint8_t materialId) {
+	pushActiveMaterial();
+	setActiveMaterial(materialId);
+}
+
+const MaterialParameters& RenderingContext::getActiveMaterial() const {
+	return internalData->materialRegistry.at(internalData->activeObjectData.materialId).mat;
+}
+
+uint8_t RenderingContext::getActiveMaterialId() const {
+	return internalData->activeObjectData.materialId;
+}
+
+uint8_t RenderingContext::registerMaterial(const MaterialParameters& material) {
+	if(internalData->freeMaterialIds.empty()) {
+		WARN("Cannot register more materials; ignoring call.");
+		return 0;
+	}
+	uint8_t id = *internalData->freeMaterialIds.begin();
+	internalData->freeMaterialIds.erase(internalData->freeMaterialIds.begin());
+	auto mat = MaterialData(material);
+	internalData->materialRegistry[id] = mat;
+	internalData->materialToId[material] = id;
+	auto buffer = getBuffer(BUFFER_MATERIALDATA);
+	if(buffer) buffer->setValue(id, mat);
+	return id;
+}
+
+void RenderingContext::unregisterMaterial(uint8_t materialId) {
+	if(materialId == 0) {
+		WARN("Cannot unregister default material with id 0; ignoring call.");
+		return;
+	}
+	auto it = internalData->materialRegistry.find(materialId);
+	if(it != internalData->materialRegistry.end()) {
+		internalData->materialToId.erase(it->second.mat);
+		internalData->materialRegistry.erase(it);
+		internalData->freeMaterialIds.emplace(materialId);
+	}
+}
+
+void RenderingContext::setMaterial(uint8_t materialId, const MaterialParameters& material) {
+	auto it = internalData->materialRegistry.find(materialId);
+	auto mat = MaterialData(material);
+	if(it == internalData->materialRegistry.end()) {
+		internalData->freeMaterialIds.erase(materialId);
+	} else {
+		internalData->materialToId.erase(it->second.mat);
+	}
+	internalData->materialRegistry[materialId] = mat;
+	internalData->materialToId[material] = materialId;
+	auto buffer = getBuffer(BUFFER_MATERIALDATA);
+	if(buffer) buffer->setValue(materialId, mat);
+}
+
 
 //  **********************************************************************************
 
@@ -1275,11 +1340,17 @@ void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
 
 void RenderingContext::drawArrays(uint32_t mode, uint32_t first, uint32_t count) {
 	applyChanges();
-	/*
-	uint32_t drawId = internalData->cache.addParameter(BUFFER_OBJECTDATA, internalData->activeObjectData);
+	
+	auto buffer = getBuffer(BUFFER_OBJECTDATA);
+	uint32_t drawId = internalData->activeObjectData.drawId;
+	buffer->setValue(drawId, internalData->activeObjectData);
+	
   glDrawArraysInstancedBaseInstance(mode, first, count, 1, drawId);
-	if(drawId >= MAX_OBJECTDATA-1)
-		internalData->cache.swap(BUFFER_OBJECTDATA);*/
+	
+	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA) {
+		internalData->activeObjectData.drawId = 0;
+		buffer->swap();
+	}
 }
 
 void RenderingContext::drawElements(uint32_t mode, uint32_t type, uint32_t first, uint32_t count) {

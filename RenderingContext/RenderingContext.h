@@ -315,17 +315,29 @@ public:
 	//! @name Material
 	//	@{
 	//! Return the active material.
-	const MaterialParameters & getMaterial() const;
+	const MaterialParameters & getMaterial() const __attribute((deprecated)) { return getActiveMaterial(); }
 	//! Pop a material from the top of the stack and activate it. Deactivate material usage if stack is empty.
-	void popMaterial();
+	inline void popMaterial() __attribute((deprecated)) { popActiveMaterial(); }
 	//! Push the given material onto the material stack.
-	void pushMaterial();
+	inline void pushMaterial() __attribute((deprecated)) { pushActiveMaterial(); }
 	//! Push the given material onto the material stack and activate it.
-	void pushAndSetMaterial(const MaterialParameters & material);
+	void pushAndSetMaterial(const MaterialParameters& material) __attribute((deprecated));
 	//! Convert the given color to a material, and call @a pushAndSetMaterial
-	void pushAndSetColorMaterial(const Util::Color4f & color);
+	void pushAndSetColorMaterial(const Util::Color4f& color) __attribute((deprecated));
 	//! Activate the given material.
-	void setMaterial(const MaterialParameters & material);
+	void setMaterial(const MaterialParameters& material) __attribute((deprecated));
+	
+	
+	void setActiveMaterial(uint8_t materialId);
+	void popActiveMaterial();
+	void pushActiveMaterial();
+	void pushAndSetActiveMaterial(uint8_t materialId);
+	const MaterialParameters& getActiveMaterial() const;
+	uint8_t getActiveMaterialId() const;
+	
+	uint8_t registerMaterial(const MaterialParameters& material);
+	void unregisterMaterial(uint8_t materialId);
+	void setMaterial(uint8_t materialId, const MaterialParameters& material);
 
 
 	// @}
