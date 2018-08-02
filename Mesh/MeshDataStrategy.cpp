@@ -57,31 +57,31 @@ void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m, uint3
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getStaticDrawReleaseLocalStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS );
+	static SimpleMeshDataStrategy strategy( 0 );
 	return &strategy;
 }
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getDebugStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS|DEBUG_OUTPUT );
+	static SimpleMeshDataStrategy strategy( DEBUG_OUTPUT );
 	return &strategy;
 }
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getStaticDrawPreserveLocalStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS|PRESERVE_LOCAL_DATA );
+	static SimpleMeshDataStrategy strategy( PRESERVE_LOCAL_DATA );
 	return &strategy;
 }
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getDynamicVertexStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS|PRESERVE_LOCAL_DATA|DYNAMIC_VERTICES );
+	static SimpleMeshDataStrategy strategy( PRESERVE_LOCAL_DATA|DYNAMIC_VERTICES );
 	return &strategy;
 }
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getPureLocalStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS|PRESERVE_LOCAL_DATA|DYNAMIC_VERTICES);
+	static SimpleMeshDataStrategy strategy( CLIENT_STORAGE|PRESERVE_LOCAL_DATA|DYNAMIC_VERTICES);
 	return &strategy;
 }
 
@@ -118,9 +118,6 @@ void SimpleMeshDataStrategy::assureLocalIndexData(Mesh * m){
 
 //! ---|> MeshDataStrategy
 void SimpleMeshDataStrategy::prepare(Mesh * m){
-	if(!getFlag(USE_VBOS))
-		return;
-
 	MeshIndexData & id=m->_getIndexData();
 	if( id.empty() && id.isUploaded() ){ // "old" VBO present, although data has been removed
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " ~idxBO";
@@ -140,7 +137,7 @@ void SimpleMeshDataStrategy::prepare(Mesh * m){
 		vd.removeGlBuffer();
 	} else if( !vd.empty() && (vd.hasChanged() || !vd.isUploaded()) ){ // data has changed or is new
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " +vBO";
-		vd.upload( getFlag(DYNAMIC_VERTICES) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW );
+		vd.upload( (getFlag(DYNAMIC_VERTICES) ? BufferObject::FLAGS_DYNAMIC : BufferObject::FLAGS_STATIC) | (getFlag(CLIENT_STORAGE) ? BufferObject::FLAG_CLIENT_STORAGE : 0) );
 	}
 	if(!getFlag(PRESERVE_LOCAL_DATA) && vd.isUploaded() && vd.hasLocalData()){
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " ~vLD";

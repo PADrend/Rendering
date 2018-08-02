@@ -12,7 +12,7 @@
 #ifndef MeshVertexData_H
 #define MeshVertexData_H
 
-#include "../Memory/BufferObject.h"
+#include "../Memory/BufferView.h"
 #include <Geometry/Box.h>
 #include <cstddef>
 #include <cstdint>
@@ -112,7 +112,7 @@ class MeshVertexData {
 			\note The local data is not changed!
 			\note the size of the new buffer must be equal to that of the old one.
 			\note Use only if you know what you are doing!	*/		
-		void _swapBufferObject(BufferObject & other)	{	bufferObject.swap(other);	}
+		//void _swapBufferObject(BufferObject & other)	{	bufferObject.swap(other);	}
 };
 
 

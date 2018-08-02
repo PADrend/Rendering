@@ -12,7 +12,7 @@
 #ifndef RENDERING_MESHINDEXDATA_H
 #define RENDERING_MESHINDEXDATA_H
 
-#include "../Memory/BufferObject.h"
+#include "../Memory/BufferView.h"
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -78,7 +78,7 @@ class MeshIndexData {
 			\note The local data is not changed!
 			\note the size of the new buffer must be equal to that of the old one.
 			\note Use only if you know what you are doing!	*/
-		void _swapBufferObject(BufferObject & other)	{	bufferObject.swap(other);	}
+		//void _swapBufferObject(BufferObject & other)	{	bufferObject.swap(other);	}
 	private:
 		uint32_t indexCount;
 		std::vector<uint32_t> indexArray;

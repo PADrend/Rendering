@@ -820,7 +820,8 @@ void RenderingContext::setShader(Shader * shader) {
 			const auto& block = e.second;
 			if(block.location >= 0) {			
 				auto buffer = getBuffer(block.name);
-				bindBuffer(buffer, block.target, block.location);
+				if(buffer)
+					bindBuffer(buffer, block.target, block.location);
 			}
 		}
 	}
