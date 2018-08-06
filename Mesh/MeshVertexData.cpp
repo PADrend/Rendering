@@ -37,19 +37,20 @@ void MeshVertexData::setVertexDescription(const VertexDescription & vd){
 	static std::set<VertexDescription> descriptionCollections;
 	std::pair<std::set<VertexDescription>::iterator,bool> result = descriptionCollections.insert(vd);
 	vertexDescription = &*(result.first);
+	setElementSize(vertexDescription->getVertexSize());
 }
 
 // ---------------------------
 
 //! (ctor)
-MeshVertexData::MeshVertexData() :
-	binaryData(), vertexDescription(nullptr), vertexCount(0), bufferObject(), bb(), dataChanged(false) {
+MeshVertexData::MeshVertexData() : BufferView(),
+	binaryData(), vertexDescription(nullptr), bb(), dataChanged(false) {
 	setVertexDescription(VertexDescription());
 }
 
 //! (ctor)
-MeshVertexData::MeshVertexData(const MeshVertexData & other) :
-	binaryData(), vertexDescription(other.vertexDescription), vertexCount(other.getVertexCount()), bufferObject(), bb(other.getBoundingBox()), dataChanged(true) {
+MeshVertexData::MeshVertexData(const MeshVertexData & other) : BufferView(other),
+	binaryData(), vertexDescription(other.vertexDescription), bb(other.getBoundingBox()), dataChanged(true) {
 	if(other.hasLocalData()) {
 		binaryData = other.binaryData;
 	} else if(other.isUploaded()) {
@@ -68,18 +69,16 @@ void MeshVertexData::swap(MeshVertexData & other){
 	if(this == &other)
 		return;
 
-	using std::swap;
-	swap(vertexDescription, other.vertexDescription);
-	swap(vertexCount, other.vertexCount);
-	swap(bufferObject, other.bufferObject);
-	swap(bb, other.bb);
-	swap(dataChanged, other.dataChanged);
-	swap(binaryData, other.binaryData);
+	BufferView::swap(other);
+	std::swap(vertexDescription, other.vertexDescription);
+	std::swap(bb, other.bb);
+	std::swap(dataChanged, other.dataChanged);
+	std::swap(binaryData, other.binaryData);
 }
 
-void MeshVertexData::allocate(uint32_t count, const VertexDescription & vd){
+void MeshVertexData::allocate(uint32_t count, const VertexDescription & vd) {
 	setVertexDescription(vd);
-	vertexCount = count;
+	setElementCount(count);
 	binaryData.resize(vd.getVertexSize() * count);
 	markAsChanged();
 }
@@ -94,11 +93,11 @@ uint8_t * MeshVertexData::operator[](uint32_t index) {
 }
 
 void MeshVertexData::updateBoundingBox() {
-	if (vertexCount == 0) {
+	if(getElementCount() == 0) {
 		bb = Geometry::Box();
 		return;
 	}
-	const VertexDescription & vd=getVertexDescription();	
+	const VertexDescription & vd = getVertexDescription();	
 	auto acc = FloatAttributeAccessor::create(*this, VertexAttributeIds::POSITION);
 	
 	const VertexAttribute & attr = vd.getAttribute(VertexAttributeIds::POSITION);
@@ -112,7 +111,7 @@ void MeshVertexData::updateBoundingBox() {
 	// This is faster than calling Geometry::Box::include for each vertex.
 	std::vector<float> min(vertexNum, std::numeric_limits<float>::max());
 	std::vector<float> max(vertexNum, std::numeric_limits<float>::lowest());
-	for (uint_fast32_t i = 0; i < vertexCount; ++i) {
+	for (uint_fast32_t i = 0; i < getElementCount(); ++i) {
 		auto p = acc->getValues(i);
 		for (uint_fast8_t dim = 0; dim < vertexNum; ++dim) {
 			if (p[dim] < min[dim]) {
@@ -138,15 +137,15 @@ bool MeshVertexData::upload() {
 }
 
 bool MeshVertexData::upload(uint32_t flags) {
-	if(vertexCount == 0 || binaryData.empty())
+	if(getElementCount() == 0 || binaryData.empty())
 		return false;
 
 	try {
-		if(!isUploaded() || bufferObject.getSize() < binaryData.size()) {
+		if(!isValid() || (getOffset() + getBuffer()->getSize()) < binaryData.size()) {
 			removeGlBuffer();
-			bufferObject.allocate(binaryData, flags);
+			allocateBuffer(flags, binaryData.data());
 		} else {
-			bufferObject.upload(binaryData);
+			getBuffer()->upload(binaryData, getOffset());
 		}
 		GET_GL_ERROR()
 	}
@@ -160,7 +159,7 @@ bool MeshVertexData::upload(uint32_t flags) {
 }
 
 bool MeshVertexData::download() {
-	if(!isUploaded() || vertexCount==0)
+	if(!isValid() || getElementCount()==0)
 		return false;
 	downloadTo(binaryData);
 	dataChanged = false;
@@ -168,26 +167,12 @@ bool MeshVertexData::download() {
 }
 
 void MeshVertexData::downloadTo(std::vector<uint8_t> & destination) const {
-	const std::size_t numBytes = getVertexDescription().getVertexSize() * getVertexCount();
-	destination = bufferObject.download<uint8_t>(numBytes);
+	destination.resize(getSize());
+	getValues(0, getElementCount(), destination.data());
 }
 
 void MeshVertexData::removeGlBuffer(){
-	bufferObject.destroy();
-}
-
-void MeshVertexData::bind(RenderingContext & context) {
-	const VertexDescription & vd = getVertexDescription();
-	if(!isUploaded())
-		upload();
-		
-	context.setVertexFormat(0, vd);
-	context.bindVertexBuffer(0, bufferObject.getGLId(), 0, vd.getVertexSize());
-}
-
-void MeshVertexData::unbind(RenderingContext & context) {
-	context.bindVertexBuffer(0, 0, 0, 1);
-	GET_GL_ERROR();
+	setBuffer(nullptr);
 }
 
 }

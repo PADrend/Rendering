@@ -237,6 +237,7 @@ void BufferObject::download(uint8_t* targetPtr, size_t numBytes, size_t offset) 
 		return;
 	}
 	if(size < offset+numBytes) {
+		std::cout << size << " " << offset << " " << numBytes << std::endl;
 		WARN("BufferObject::downloadData: buffer overflow!");
 		return;
 	}

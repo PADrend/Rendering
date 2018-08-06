@@ -675,7 +675,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 		VertexDescription vertexDesc;
 		const VertexAttribute & posAttr = vertexDesc.appendPosition2D();
 		const VertexAttribute & colorAttr = vertexDesc.appendColorRGBAByte();
-		for(uint_fast8_t i = 0; i < MAX_TEXTURES; ++i)
+		for(uint_fast8_t i = 0; i < 8; ++i)
 			vertexDesc.appendTexCoord(i);
 		
 		mesh = new Mesh(vertexDesc, 4, 6);

@@ -26,15 +26,21 @@ static_assert(GL_TRIANGLES<256 && GL_LINES<256 && GL_POINTS<256 && GL_LINE_STRIP
 
 Mesh::Mesh() :
 		ReferenceCounter_t(), fileName(), dataStrategy(MeshDataStrategy::getDefaultStrategy()),drawMode(DRAW_TRIANGLES), useIndexData(true) {
+	MeshVertexData::addReference(&vertexData); // ensure that only this mesh deletes the data
+	MeshIndexData::addReference(&indexData); // ensure that only this mesh deletes the data
 }
 
 Mesh::Mesh(MeshIndexData meshIndexData, MeshVertexData meshVertexData) :
 		ReferenceCounter_t(), indexData(std::move(meshIndexData)), fileName(), vertexData(std::move(meshVertexData)), 
 		dataStrategy(MeshDataStrategy::getDefaultStrategy()), drawMode(DRAW_TRIANGLES), useIndexData(true) {
+	MeshVertexData::addReference(&vertexData); // ensure that only this mesh deletes the data
+	MeshIndexData::addReference(&indexData); // ensure that only this mesh deletes the data
 }
 
 Mesh::Mesh(const VertexDescription & desc, uint32_t vertexCount, uint32_t indexCount) :
 		ReferenceCounter_t(), fileName(), dataStrategy(MeshDataStrategy::getDefaultStrategy()), drawMode(DRAW_TRIANGLES), useIndexData(true) {
+	MeshVertexData::addReference(&vertexData); // ensure that only this mesh deletes the data
+	MeshIndexData::addReference(&indexData); // ensure that only this mesh deletes the data
 	indexData.allocate(indexCount);
 	vertexData.allocate(vertexCount, desc);
 }

@@ -93,7 +93,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		size_t getGraphicsMemoryUsage() const;
 
 		/*! Returns true if no data is set. */
-		bool empty()const										{	return useIndexData ? (vertexData.empty() || indexData.empty()) : vertexData.empty();	}
+		bool empty() const { return useIndexData ? (vertexData.empty() || indexData.empty()) : vertexData.empty(); }
 
 		/*! Display the mesh as VBO or VertexArray (determined by current data strategy).
 			- If the mesh uses indices (isUsingIndexData()==true), @p firstElement and @p elementCount are the first 

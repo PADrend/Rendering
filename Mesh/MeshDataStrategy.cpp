@@ -41,16 +41,20 @@ void MeshDataStrategy::setDefaultStrategy(MeshDataStrategy * newDefault){
 //! (static,internal)
 void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m, uint32_t startIndex, uint32_t indexCount){
 	MeshVertexData & vd=m->_getVertexData();
-	vd.bind(context);
+	if(!vd.isUploaded()) vd.upload();
+	
+	context.setVertexFormat(0, vd.getVertexDescription());
+	context.bindVertexBuffer(0, vd.getGLId(), vd.getOffset(), vd.getElementSize());
 	if(m->isUsingIndexData()) {
 		MeshIndexData & id=m->_getIndexData();
-		id.bind(context);
+		if(!id.isUploaded()) id.upload();
+		context.bindIndexBuffer(id.getGLId());
 		context.drawElements(m->getGLDrawMode(), GL_UNSIGNED_INT, startIndex, indexCount);		
 		context.bindIndexBuffer(0);
 	} else {
 		context.drawArrays(m->getGLDrawMode(), startIndex, indexCount);
 	}
-	vd.unbind(context);
+	context.bindVertexBuffer(0, 0, 0, 1);
 }
 
 // ------------------------------------------------------------------------------------

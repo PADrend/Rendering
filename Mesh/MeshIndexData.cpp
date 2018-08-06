@@ -23,16 +23,13 @@
 namespace Rendering {
 
 /*! (ctor)  */
-MeshIndexData::MeshIndexData() :
-			indexCount(0), minIndex(0), maxIndex(0),
-			bufferObject(), dataChanged(false) {
+MeshIndexData::MeshIndexData() : BufferView(nullptr, 0, sizeof(uint32_t)),
+			minIndex(0), maxIndex(0), dataChanged(false) {
 }
 
 /*! (ctor)  */
-MeshIndexData::MeshIndexData(const MeshIndexData & other) :
-			indexCount(other.getIndexCount()), 
-			minIndex(other.getMinIndex()), maxIndex(other.getMaxIndex()),
-			bufferObject(), dataChanged(true) {
+MeshIndexData::MeshIndexData(const MeshIndexData & other) : BufferView(other),
+			minIndex(other.getMinIndex()), maxIndex(other.getMaxIndex()), dataChanged(true) {
 	if(other.hasLocalData()) {
 		indexArray = other.indexArray;
 	} else if(other.isUploaded()) {
@@ -51,19 +48,17 @@ void MeshIndexData::releaseLocalData(){
 void MeshIndexData::swap(MeshIndexData & other){
 	if(this == &other)
 		return;
-
-	using std::swap;
-	swap(indexCount, other.indexCount);
-	swap(minIndex, other.minIndex);
-	swap(maxIndex, other.maxIndex);
-	swap(bufferObject, other.bufferObject);
-	swap(dataChanged, other.dataChanged);
-	swap(indexArray, other.indexArray);
+		
+	BufferView::swap(other);
+	std::swap(minIndex, other.minIndex);
+	std::swap(maxIndex, other.maxIndex);
+	std::swap(dataChanged, other.dataChanged);
+	std::swap(indexArray, other.indexArray);
 }
 
 void MeshIndexData::allocate(uint32_t count) {
-	indexCount = count;
-	indexArray.resize(indexCount, std::numeric_limits<uint32_t>::max());
+	setElementCount(count);
+	indexArray.resize(count, std::numeric_limits<uint32_t>::max());
 	markAsChanged();
 }
 
@@ -84,15 +79,15 @@ bool MeshIndexData::upload() {
 
 //!	(internal)
 bool MeshIndexData::upload(uint32_t flags){
-	if(indexCount == 0 || indexArray.empty() )
+	if(getElementCount() == 0 || indexArray.empty() )
 		return false;
 
 	try {
-		if(!isUploaded() || bufferObject.getSize() < dataSize()) {
+		if(!isValid() || (getOffset() + getBuffer()->getSize()) < dataSize()) {
 			removeGlBuffer();
-			bufferObject.allocate(indexArray, flags);
+			allocateBuffer(flags, reinterpret_cast<const uint8_t*>(indexArray.data()));
 		} else {
-			bufferObject.upload(indexArray);
+			getBuffer()->upload(reinterpret_cast<const uint8_t*>(indexArray.data()), getOffset());
 		}
 		GET_GL_ERROR()
 	}
@@ -107,7 +102,7 @@ bool MeshIndexData::upload(uint32_t flags){
 
 //!	(internal)
 bool MeshIndexData::download(){
-	if(!isUploaded() || indexCount==0)
+	if(!isValid() || getElementCount()==0)
 		return false;
 	downloadTo(indexArray);
 	dataChanged = false;
@@ -116,19 +111,12 @@ bool MeshIndexData::download(){
 
 //!	(internal)
 void MeshIndexData::downloadTo(std::vector<uint32_t> & destination) const {
-	destination = bufferObject.download<uint32_t>(getIndexCount());
+	destination = getValues<uint32_t>(0U, getElementCount());
 }
 
 //!	(internal)
 void MeshIndexData::removeGlBuffer(){
-	bufferObject.destroy();
-}
-
-/*! (internal) */
-void MeshIndexData::bind(RenderingContext & context) {
-	if(!isUploaded())
-		upload();
-	context.bindIndexBuffer(bufferObject.getGLId());
+	setBuffer(nullptr);
 }
 
 }

@@ -22,6 +22,7 @@ add_library(Rendering
 	Memory/BufferLock.cpp
 	Memory/BufferObject.cpp
 	Memory/BufferView.cpp
+	Memory/StreamBufferView.cpp
 	Mesh/Mesh.cpp
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp

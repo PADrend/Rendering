@@ -16,6 +16,7 @@
 #include "RenderingParameters.h"
 #include "../Memory/BufferObject.h"
 #include "../Memory/BufferLock.h"
+#include "../Memory/StreamBufferView.h"
 #include "../Mesh/Mesh.h"
 #include "../Mesh/VertexAttribute.h"
 #include "../Mesh/VertexDescription.h"
@@ -207,8 +208,7 @@ RenderingContext::RenderingContext() :
 	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
 	registerBuffer(BUFFER_FRAMEDATA, buffer);
 	
-	buffer = new BufferView(new BufferObject, 0, sizeof(ObjectData), MAX_OBJECTDATA);
-	buffer->setMultiBuffered(2);
+	buffer = new StreamBufferView(2, new BufferObject, 0, sizeof(ObjectData), MAX_OBJECTDATA);
 	buffer->allocateBuffer(BufferObject::FLAGS_STREAM);
 	registerBuffer(BUFFER_OBJECTDATA, buffer);
 	
@@ -401,7 +401,7 @@ void RenderingContext::unregisterBuffer(const Util::StringIdentifier& name) {
 BufferView* RenderingContext::getBuffer(const Util::StringIdentifier& name) {
 	auto it = internalData->registeredBuffers.find(name);
 	if(it == internalData->registeredBuffers.end()) {
-		WARN("RenderingContext::getBuffer: A buffer with name '" + name.toString() + "' is not registered.");
+		//WARN("RenderingContext::getBuffer: A buffer with name '" + name.toString() + "' is not registered.");
 		return nullptr;
 	} else {
 		return it->second.get();
@@ -1350,7 +1350,7 @@ void RenderingContext::drawArrays(uint32_t mode, uint32_t first, uint32_t count)
 	
 	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA) {
 		internalData->activeObjectData.drawId = 0;
-		buffer->swap();
+		reinterpret_cast<StreamBufferView*>(buffer)->swap();
 	}
 }
 
@@ -1365,7 +1365,7 @@ void RenderingContext::drawElements(uint32_t mode, uint32_t type, uint32_t first
 	
 	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA) {
 		internalData->activeObjectData.drawId = 0;
-		buffer->swap();
+		reinterpret_cast<StreamBufferView*>(buffer)->swap();
 	}
 }
 

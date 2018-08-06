@@ -30,12 +30,9 @@ class VertexDescription;
 		the graphics card, the local copy may be freed.)
 	- The vertex buffer id, if the data has been uploaded to graphics memory.
 	- A bounding box enclosing all vertices.	*/
-class MeshVertexData {
+class MeshVertexData : public BufferView {
 		std::vector<uint8_t> binaryData;
 		const VertexDescription * vertexDescription;
-		uint32_t vertexCount;
-		BufferObject bufferObject;
-
 		Geometry::Box bb;
 		bool dataChanged;
 
@@ -58,9 +55,9 @@ class MeshVertexData {
 		MeshVertexData & operator=(const MeshVertexData &) = delete;
 		MeshVertexData & operator=(MeshVertexData &&) = default;
 
-		const VertexDescription & getVertexDescription()const 	{	return *vertexDescription;	}
-		uint32_t getVertexCount()const							{	return vertexCount;	}
-		bool empty()const										{	return vertexCount==0;	}
+		const VertexDescription & getVertexDescription() const { return *vertexDescription; }
+		uint32_t getVertexCount() const { return getElementCount(); }
+		bool empty() const { return getElementCount()==0; }
 		void swap(MeshVertexData & other);
 
 		// data
@@ -68,34 +65,28 @@ class MeshVertexData {
 			\note Sets dataChanged. */
 		void allocate(uint32_t count, const VertexDescription & vd);
 		void releaseLocalData();
-		void markAsChanged()								{  	dataChanged=true;	}
-		bool hasChanged()const								{  	return dataChanged;	}
-		bool hasLocalData()const							{  	return !binaryData.empty();	}
-		const uint8_t * data()const							{	return binaryData.data();	}
-		uint8_t * data()									{	return binaryData.data();	}
-		size_t dataSize()const								{	return binaryData.size();	}
+		void markAsChanged() { dataChanged=true; }
+		bool hasChanged() const { return dataChanged; }
+		bool hasLocalData() const { return !binaryData.empty(); }
+		const uint8_t * data() const { return binaryData.data(); }
+		uint8_t * data() { return binaryData.data(); }
+		size_t dataSize() const { return binaryData.size(); }
 		const uint8_t * operator[](uint32_t index) const;
 		uint8_t * operator[](uint32_t index);
 
 		// bounding box
 		void updateBoundingBox();
-		const Geometry::Box & getBoundingBox() const		{	return bb;	}
+		const Geometry::Box & getBoundingBox() const { return bb; }
 		/**
 		 * Set a new bounding box.
 		 *
 		 * @note This function should not be used normally. It is needed in special situations when there is no vertex data but the bounding box is known.
 		 * @param box New bounding box.
 		 */
-		void _setBoundingBox(const Geometry::Box & box)		{ bb = box; }
-
+		void _setBoundingBox(const Geometry::Box & box) { bb = box; }
 
 		// vbo
-		inline bool isUploaded()const						{   return bufferObject.isValid();    }
-
-		/*! (internal) */
-		void bind(RenderingContext & context);
-		/*! (internal) */
-		void unbind(RenderingContext & context);
+		inline bool isUploaded() const { return isValid(); }
 
 		//! Call @a upload() with default usage hint.
 		bool upload();
@@ -104,7 +95,7 @@ class MeshVertexData {
 		bool upload(uint32_t flags);
 		/*! (internal) */
 		bool download();
-		void downloadTo(std::vector<uint8_t> & destination)const;
+		void downloadTo(std::vector<uint8_t> & destination) const;
 		/*! (internal) */
 		void removeGlBuffer();
 		

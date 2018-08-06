@@ -20,11 +20,15 @@ BufferView::BufferView(BufferObject* _buffer, size_t offset, uint32_t eltSize, u
   if(_buffer && count == 0) 
     elementCount = (buffer->getSize() - offset) / elementSize;
 }
-          
-void BufferView::setMultiBuffered(uint32_t count) {
-  lock = BufferLockManager(); // reset all locks
-  multiBufferCount = count;
-  multiBufferHead = 0;
+
+void BufferView::swap(BufferView& other) {
+	if(this == &other)
+		return;
+  
+  std::swap(buffer, other.buffer);
+  std::swap(offset, other.offset);
+  std::swap(elementSize, other.elementSize);
+  std::swap(elementCount, other.elementCount);
 }
 
 bool BufferView::isValid() const {
@@ -32,7 +36,7 @@ bool BufferView::isValid() const {
           && buffer->isValid()
           && elementCount > 0
           && elementSize > 0
-          && buffer->getSize() >= offset+elementCount*elementSize*multiBufferCount;
+          && buffer->getSize() >= offset+elementCount*elementSize;
 }
 
 void BufferView::bind(uint32_t target, uint32_t location) {
@@ -43,12 +47,12 @@ void BufferView::bind(uint32_t target, uint32_t location) {
   }
 }
 
-void BufferView::allocateBuffer(uint32_t flags) {
+void BufferView::allocateBuffer(uint32_t flags, const uint8_t* initialData) {
   if(buffer.isNull())
     buffer = new BufferObject;
   if(buffer->isValid())
     buffer->destroy();
-  buffer->allocate(elementCount*elementSize*multiBufferCount, flags);
+  buffer->allocate(elementCount*elementSize, flags, initialData);
 }
 
 void BufferView::setValues(uint32_t index, uint32_t count, const uint8_t* data) {
@@ -59,11 +63,10 @@ void BufferView::setValues(uint32_t index, uint32_t count, const uint8_t* data) 
     WARN("BufferView::setValues: index out of range.");
     return;
   }
-  lock.waitForLockedRange(multiBufferHead*elementCount + index, count);
   buffer->upload(data, elementSize*count, getOffset() + elementSize*index);
 }
 
-void BufferView::getValues(uint32_t index, uint32_t count, uint8_t* targetPtr) {
+void BufferView::getValues(uint32_t index, uint32_t count, uint8_t* targetPtr) const {
   if(!isValid()) {
     WARN("BufferView::getValues: invalid buffer or data size.");
     return;
@@ -71,13 +74,7 @@ void BufferView::getValues(uint32_t index, uint32_t count, uint8_t* targetPtr) {
     WARN("BufferView::getValues: index out of range.");
     return;
   }
-  lock.waitForLockedRange(multiBufferHead*elementCount + index, count);
   buffer->download(targetPtr, elementSize*count, getOffset() + elementSize*index);
-}
-
-void BufferView::swap() {
-  lock.lockRange(multiBufferHead*elementCount, elementCount);
-  multiBufferHead = (multiBufferHead+1) % multiBufferCount;
 }
 
 } /* Rendering */
