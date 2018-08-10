@@ -25,24 +25,20 @@ static_assert(GL_TRIANGLES<256 && GL_LINES<256 && GL_POINTS<256 && GL_LINE_STRIP
 			"Constants for Mesh's triangleMode are expected to fit into a single byte; This should be true on all platforms."); 
 
 Mesh::Mesh() :
-		ReferenceCounter_t(), fileName(), dataStrategy(MeshDataStrategy::getDefaultStrategy()),drawMode(DRAW_TRIANGLES), useIndexData(true) {
-	MeshVertexData::addReference(&vertexData); // ensure that only this mesh deletes the data
-	MeshIndexData::addReference(&indexData); // ensure that only this mesh deletes the data
+		ReferenceCounter_t(), indexData(new MeshIndexData), fileName(), vertexData(new MeshVertexData), dataStrategy(MeshDataStrategy::getDefaultStrategy()),drawMode(DRAW_TRIANGLES), useIndexData(true) {
 }
 
 Mesh::Mesh(MeshIndexData meshIndexData, MeshVertexData meshVertexData) :
-		ReferenceCounter_t(), indexData(std::move(meshIndexData)), fileName(), vertexData(std::move(meshVertexData)), 
+		ReferenceCounter_t(), indexData(new MeshIndexData), fileName(), vertexData(new MeshVertexData), 
 		dataStrategy(MeshDataStrategy::getDefaultStrategy()), drawMode(DRAW_TRIANGLES), useIndexData(true) {
-	MeshVertexData::addReference(&vertexData); // ensure that only this mesh deletes the data
-	MeshIndexData::addReference(&indexData); // ensure that only this mesh deletes the data
+	indexData->swap(meshIndexData);
+	vertexData->swap(meshVertexData);
 }
 
 Mesh::Mesh(const VertexDescription & desc, uint32_t vertexCount, uint32_t indexCount) :
-		ReferenceCounter_t(), fileName(), dataStrategy(MeshDataStrategy::getDefaultStrategy()), drawMode(DRAW_TRIANGLES), useIndexData(true) {
-	MeshVertexData::addReference(&vertexData); // ensure that only this mesh deletes the data
-	MeshIndexData::addReference(&indexData); // ensure that only this mesh deletes the data
-	indexData.allocate(indexCount);
-	vertexData.allocate(vertexCount, desc);
+		ReferenceCounter_t(), indexData(new MeshIndexData), fileName(), vertexData(new MeshVertexData), dataStrategy(MeshDataStrategy::getDefaultStrategy()), drawMode(DRAW_TRIANGLES), useIndexData(true) {
+	indexData->allocate(indexCount);
+	vertexData->allocate(vertexCount, desc);
 }
 
 Mesh * Mesh::clone()const{
@@ -61,12 +57,12 @@ void Mesh::swap(Mesh & m){
 }
 
 size_t Mesh::getMainMemoryUsage() const {
-	return sizeof(Mesh) + indexData.dataSize() + vertexData.dataSize();
+	return sizeof(Mesh) + indexData->dataSize() + vertexData->dataSize();
 }
 
 size_t Mesh::getGraphicsMemoryUsage() const {
-	return 	(indexData.isUploaded() ? indexData.getIndexCount() * sizeof(uint32_t) : 0)
-			+ (vertexData.isUploaded() ? vertexData.getVertexCount() * vertexData.getVertexDescription().getVertexSize() : 0);
+	return 	(indexData->isUploaded() ? indexData->getIndexCount() * sizeof(uint32_t) : 0)
+			+ (vertexData->isUploaded() ? vertexData->getVertexCount() * vertexData->getElementSize() : 0);
 }
 
 void Mesh::_display(RenderingContext & context,uint32_t firstElement,uint32_t elementCount) {
@@ -77,7 +73,7 @@ void Mesh::_display(RenderingContext & context,uint32_t firstElement,uint32_t el
 
 uint32_t Mesh::getPrimitiveCount(uint32_t numElements) const {
 	if(numElements == 0) {
-		numElements = (useIndexData ? indexData.getIndexCount() : getVertexCount());
+		numElements = (useIndexData ? indexData->getIndexCount() : getVertexCount());
 	}
 	switch(drawMode) {
 		case DRAW_LINE_STRIP:
@@ -96,12 +92,12 @@ uint32_t Mesh::getPrimitiveCount(uint32_t numElements) const {
 
 MeshIndexData & Mesh::openIndexData(){
 	dataStrategy->assureLocalIndexData(this);
-	return indexData;
+	return *indexData.get();
 }
 
 MeshVertexData & Mesh::openVertexData(){
 	dataStrategy->assureLocalVertexData(this);
-	return vertexData;
+	return *vertexData.get();
 }
 
 void Mesh::setDataStrategy(MeshDataStrategy * newStrategy) {

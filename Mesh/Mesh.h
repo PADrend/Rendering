@@ -93,7 +93,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		size_t getGraphicsMemoryUsage() const;
 
 		/*! Returns true if no data is set. */
-		bool empty() const { return useIndexData ? (vertexData.empty() || indexData.empty()) : vertexData.empty(); }
+		bool empty() const { return useIndexData ? (vertexData->empty() || indexData->empty()) : vertexData->empty(); }
 
 		/*! Display the mesh as VBO or VertexArray (determined by current data strategy).
 			- If the mesh uses indices (isUsingIndexData()==true), @p firstElement and @p elementCount are the first 
@@ -129,15 +129,15 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	public:
 		/*! Returns a reference to the indexData member.
 			\note In most cases: openIndexData() is what you want (that why the _ is in the name...)*/
-		MeshIndexData & _getIndexData()							{	return indexData;	}
-		const MeshIndexData & _getIndexData()const				{	return indexData;	}
+		MeshIndexData & _getIndexData()							{	return *indexData.get();	}
+		const MeshIndexData & _getIndexData()const				{	return *indexData.get();	}
 
 		/*! Returns a reference to the indexData member and assures that if the mesh contains
 			index data, this data can be accessed via MeshIndexData.data()	*/
 		MeshIndexData & openIndexData();
 
 		uint32_t getIndexCount() const {
-			return useIndexData ? indexData.getIndexCount() : 0;
+			return useIndexData ? indexData->getIndexCount() : 0;
 		}
 
 		//! If useIndexData is false, the mesh's indexData
@@ -145,7 +145,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		void setUseIndexData(const bool b)						{	useIndexData  = b;	}
 
 	private:
-		MeshIndexData indexData;
+		Util::Reference<MeshIndexData> indexData;
 	// @}
 
 	/*!	@name Filename */
@@ -163,19 +163,19 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	public:
 		/*! Returns a reference to the vertexData member.
 			\note In most cases: openVertexData() is what you want (that why the _ is in the name...)	*/
-		MeshVertexData & _getVertexData()							{	return vertexData;	}
-		const MeshVertexData & _getVertexData()const				{	return vertexData;	}
+		MeshVertexData & _getVertexData()							{	return *vertexData.get();	}
+		const MeshVertexData & _getVertexData()const				{	return *vertexData.get();	}
 
 		/*! Returns a reference to the vertexData member and assures that if the mesh contains
 			vertex data, this data can be accessed via MeshVertexData.data()	*/
 		MeshVertexData & openVertexData();
 
-		uint32_t getVertexCount()const   						{   return vertexData.getVertexCount(); }
-		const VertexDescription & getVertexDescription()const	{   return vertexData.getVertexDescription();	}
-		const Geometry::Box & getBoundingBox()const          	{   return vertexData.getBoundingBox();	}
+		uint32_t getVertexCount()const   						{   return vertexData->getVertexCount(); }
+		const VertexDescription & getVertexDescription()const	{   return vertexData->getVertexDescription();	}
+		const Geometry::Box & getBoundingBox()const          	{   return vertexData->getBoundingBox();	}
 
 	private:
-		MeshVertexData vertexData;
+		Util::Reference<MeshVertexData> vertexData;
 	// @}
 
 	/*!	@name DataStrategy */
