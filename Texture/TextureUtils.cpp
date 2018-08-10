@@ -372,9 +372,12 @@ Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t heig
 }
 
 //! [static] Factory
-Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height) {
+Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height, uint32_t layers) {
 #if defined(LIB_GL)
-	return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
+	if(layers > 0)
+		return create(TextureType::TEXTURE_2D_ARRAY, width, height, layers, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false, true);
+	else
+		return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
 #else
 	return nullptr;
 #endif

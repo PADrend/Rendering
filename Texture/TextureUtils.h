@@ -50,7 +50,7 @@ Util::Reference<Texture> createNoiseTexture(uint32_t width, uint32_t height, boo
 Util::Reference<Texture> createHDRTexture(uint32_t width, uint32_t height, bool alpha);
 Util::Reference<Texture> createRedTexture(uint32_t width, uint32_t height, bool useByte = false);
 Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t height);
-Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height);
+Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height, uint32_t layers=0);
 Util::Reference<Texture> createMultisampleDepthTexture(uint32_t width, uint32_t height, uint32_t samples=4);
 Util::Reference<Texture> createMultisampleTexture(uint32_t width, uint32_t height, bool alpha, uint32_t samples=4);
 
