@@ -254,8 +254,7 @@ public:
 
 	//! @name Image Binding (Image load and store)
 	//	@{
-	static bool isImageBindingSupported();
-	ImageBindParameters getBoundImage(uint8_t unit)const;
+	const ImageBindParameters& getBoundImage(uint8_t unit)const;
 	void pushBoundImage(uint8_t unit);
 	void pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam); 
 	void popBoundImage(uint8_t unit);

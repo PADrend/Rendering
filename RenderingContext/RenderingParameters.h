@@ -514,6 +514,11 @@ class ImageBindParameters {
 			return texture == other.texture&&layer==other.layer&&level==other.level&&multiLayer==other.multiLayer&&
 					readOperations==other.readOperations&&writeOperations==other.writeOperations;
 		}
+		
+		bool operator!=(const ImageBindParameters & other) const {
+			return texture != other.texture||layer!=other.layer||level!=other.level||multiLayer!=other.multiLayer||
+					readOperations!=other.readOperations||writeOperations!=other.writeOperations;
+		}
 };
 static const uint8_t MAX_BOUND_IMAGES = 8;
 

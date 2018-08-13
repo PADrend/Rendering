@@ -106,6 +106,13 @@ int32_t getMaxBufferBindings(uint32_t target);
  */
 int32_t getMaxTextureBindings();
 
+/**
+ * Return the maximum allowed image units.
+ * 
+ * @see @c glGetIntegerv
+ */
+int32_t getMaxImageBindings();
+
 }
 
 #define GET_GL_ERROR() \

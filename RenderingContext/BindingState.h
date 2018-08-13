@@ -32,6 +32,7 @@ public:
 		std::bitset<8> acbos;
 		std::bitset<4> tfbos;
 		std::bitset<256> textures;
+		std::bitset<128> images;
 	};
 	StateDiff_t makeDiff(const BindingState& other, bool forced=false) const;
 	void apply(const StateDiff_t& diff);
@@ -91,10 +92,29 @@ public:
 		++texturesCheckNumber;
 		textures[unit] = std::move(texture);
 	}
-	const Util::Reference<Texture> & getTexture(uint8_t unit) const {
+	const Util::Reference<Texture>& getTexture(uint8_t unit) const {
 		static const Util::Reference<Texture> nullTexture;
 		const auto it = textures.find(unit);
 		return it == textures.end() ? nullTexture : it->second;
+	}
+//	@}
+
+//!	@name Images
+//	@{
+private:
+	std::unordered_map<uint8_t, ImageBindParameters> images;
+	uint32_t imagesCheckNumber = 0;
+
+public:	
+	void bindImage(uint8_t unit, ImageBindParameters params) {
+		if(getMaxImageBindings() <= unit) return;
+		++imagesCheckNumber;
+		images[unit] = std::move(params);
+	}
+	const ImageBindParameters& getImage(uint8_t unit) const {
+		static const ImageBindParameters nullImage;
+		const auto it = images.find(unit);
+		return it == images.end() ? nullImage : it->second;
 	}
 //	@}
 };

@@ -132,8 +132,6 @@ class RenderingContext::InternalData {
 		std::stack<ColorBufferParameters> colorBufferParameterStack;
 		std::stack<CullFaceParameters> cullFaceParameterStack;
 		std::stack<DepthBufferParameters> depthBufferParameterStack;
-		std::array<std::stack<ImageBindParameters>, MAX_BOUND_IMAGES> imageStacks;
-		std::array<ImageBindParameters, MAX_BOUND_IMAGES> boundImages;
 		std::stack<LineParameters> lineParameterStack;
 		std::stack<PolygonModeParameters> polygonModeParameterStack;
 		std::stack<PolygonOffsetParameters> polygonOffsetParameterStack;
@@ -172,14 +170,13 @@ class RenderingContext::InternalData {
 		std::array<std::stack<Util::Reference<Texture>>, MAX_TEXTURES> textureStacks;
 		TextureSet activeTextureSet;
 		TextureSet targetTextureSet;
+		std::array<std::stack<ImageBindParameters>, MAX_BOUND_IMAGES> imageStacks;
 		
 		// other
 		typedef std::pair<Util::Reference<BufferObject>,uint32_t> feedbackBufferStatus_t; // buffer->mode
 
 		std::stack<feedbackBufferStatus_t> feedbackStack;
 		feedbackBufferStatus_t activeFeedbackStatus;
-		
-		std::unordered_map<uint32_t,std::stack<Util::Reference<Texture>>> atomicCounterStacks; 
 		
 		Geometry::Rect_i windowClientArea;
 };
@@ -518,91 +515,38 @@ void RenderingContext::clearDepth(float clearValue) {
 
 // ImageBinding ************************************************************************************
 //! (static)
-bool RenderingContext::isImageBindingSupported(){
-#if defined(GL_ARB_shader_image_load_store)
-	static const bool support = isExtensionSupported("GL_ARB_shader_image_load_store");
-	return support;
-#else
-	return false;
-#endif
+
+const ImageBindParameters& RenderingContext::getBoundImage(uint8_t unit) const {
+	return internalData->targetBindingState.getImage(unit);
 }
 
-static void assertCorrectImageUnit(uint8_t unit){
-	if(unit>=MAX_BOUND_IMAGES)
-		throw std::runtime_error("RenderingContext: Invalid image unit.");
+void RenderingContext::pushBoundImage(uint8_t unit) {
+	internalData->imageStacks.at(unit).push(getBoundImage(unit));
 }
 
-ImageBindParameters RenderingContext::getBoundImage(uint8_t unit)const{
-	assertCorrectImageUnit(unit);
-	return internalData->boundImages[unit];
-}
-
-void RenderingContext::pushBoundImage(uint8_t unit){
-	assertCorrectImageUnit(unit);
-	internalData->imageStacks[unit].push( internalData->boundImages[unit] );
-}
-
-void RenderingContext::pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam){
+void RenderingContext::pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam) {
 	pushBoundImage(unit);
 	setBoundImage(unit,iParam);
 }
-void RenderingContext::popBoundImage(uint8_t unit){
-	assertCorrectImageUnit(unit);
-	auto& iStack = internalData->imageStacks[unit];
-	if(iStack.empty()){
-		WARN("popBoundImage: Empty stack");
-	}else{
+
+void RenderingContext::popBoundImage(uint8_t unit) {
+	auto& iStack = internalData->imageStacks.at(unit);
+	if(iStack.empty()) {
+		WARN("RenderingContext::popBoundImage: Empty stack");
+	} else {
 		setBoundImage(unit,iStack.top());
 		iStack.pop();
 	}
 }
 
 //! \note the texture in iParam may be null to unbind
-void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iParam){
-	assertCorrectImageUnit(unit);
-	internalData->boundImages[unit] = iParam;
-#if defined(GL_ARB_shader_image_load_store)
-	if(isImageBindingSupported()){
-		GET_GL_ERROR();
-		Texture* texture = iParam.getTexture();
-		if(texture){
-			GLenum access;
-			if(!iParam.getReadOperations()){
-				access =  GL_WRITE_ONLY;
-			}else if(!iParam.getWriteOperations()){
-				access =  GL_READ_ONLY;
-			}else{
-				access =  GL_READ_WRITE;
-			}
-			const auto& pixelFormat = texture->getFormat().pixelFormat;
-			GLenum format = pixelFormat.glInternalFormat;
-			// special case:the used internalFormat in TextureUtils is not applicable here
-			if(pixelFormat.glLocalDataType==GL_BYTE || pixelFormat.glLocalDataType==GL_UNSIGNED_BYTE){
-				if(pixelFormat.glInternalFormat==GL_RED){
-					format = GL_R8;
-				}else if(pixelFormat.glInternalFormat==GL_RG){
-					format = GL_RG8;
-				}else if(pixelFormat.glInternalFormat==GL_RGB){
-					format = GL_RGB8; // not supported by opengl!
-				}else if(pixelFormat.glInternalFormat==GL_RGBA){
-					format = GL_RGBA8;
-				}
-			}
-			GET_GL_ERROR();
-			glBindImageTexture(unit,texture->_prepareForBinding(*this),
-								iParam.getLevel(),iParam.getMultiLayer()? GL_TRUE : GL_FALSE,iParam.getLayer(), access,
-								format);
-			GET_GL_ERROR();
-		}else{
-			glBindImageTexture(unit,0,0,GL_FALSE,0, GL_READ_WRITE, GL_RGBA32F);
-			GET_GL_ERROR();
-		}
-	}else{
-		WARN("RenderingContext::setBoundImage: GL_ARB_shader_image_load_store is not supported by your driver.");
+void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iParam) {	
+	const auto& oldImage = getBoundImage(unit);
+	if(iParam != oldImage) {
+		if(iParam.getTexture()) 
+			iParam.getTexture()->_prepareForBinding(*this);
+		internalData->targetBindingState.bindImage(unit, iParam);
 	}
-#else
-	WARN("RenderingContext::setBoundImage: GL_ARB_shader_image_load_store is not available for this executable.");
-#endif 
 }
 
 // Line ************************************************************************************
@@ -917,7 +861,7 @@ void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & unif
 // TEXTURES **********************************************************************************
 
 Texture * RenderingContext::getTexture(uint8_t unit) const {
-	return unit < MAX_TEXTURES ? internalData->targetBindingState.getTexture(unit).get() : nullptr;
+	return internalData->targetBindingState.getTexture(unit).get();
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit) const {

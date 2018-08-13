@@ -11,6 +11,27 @@
 
 namespace Rendering {
 
+static inline GLenum getImageAccess(const ImageBindParameters& param) {
+	return !param.getReadOperations() ? GL_WRITE_ONLY : (!param.getWriteOperations() ? GL_READ_ONLY : GL_READ_WRITE);
+}
+
+static inline GLenum convertImageFormat(const ImageBindParameters& param) {
+	const auto& pixelFormat = param.getTexture()->getFormat().pixelFormat;
+	GLenum format = pixelFormat.glInternalFormat;
+	// special case:the used internalFormat in TextureUtils is not applicable here
+	if(pixelFormat.glLocalDataType==GL_BYTE || pixelFormat.glLocalDataType==GL_UNSIGNED_BYTE) {
+		if(pixelFormat.glInternalFormat==GL_RED) {
+			format = GL_R8;
+		} else if(pixelFormat.glInternalFormat==GL_RG) {
+			format = GL_RG8;
+		} else if(pixelFormat.glInternalFormat==GL_RGB) {
+			format = GL_RGB8; // not supported by opengl!
+		} else if(pixelFormat.glInternalFormat==GL_RGBA) {
+			format = GL_RGBA8;
+		}
+	}
+	return format;
+}
 
 static inline void bindOrRemoveBuffer(std::unordered_map<uint64_t, BindingState::BufferBinding>& bindings, uint32_t target, uint32_t location) {
 	union {
@@ -80,6 +101,13 @@ BindingState::StateDiff_t BindingState::makeDiff(const BindingState& target, boo
 		diff.textures.set(e.first, forced || getTexture(e.first) != e.second);
 	}
 	
+	for(const auto& e : images) {
+		diff.images.set(e.first, forced || target.getImage(e.first) != e.second);
+	}
+	for(const auto& e : target.images) {
+		diff.images.set(e.first, forced || getImage(e.first) != e.second);
+	}
+	
 	return diff;
 }
 
@@ -133,6 +161,26 @@ void BindingState::apply(const StateDiff_t& diff) {
 					} else {
 						textures.erase(it);
 						glBindTextureUnit(i, 0);
+					}
+				}
+			}
+		}
+		GET_GL_ERROR();
+	}
+	
+	// Images
+	if(diff.images.any()) {
+		for(uint_fast8_t i=0; i<getMaxImageBindings(); ++i) {
+			if(diff.images.test(i)) {
+				auto it = images.find(i);
+				if(it != images.end()) {
+					if(it->second.getTexture()) {
+						glBindImageTexture(i, it->second.getTexture()->getGLId(), it->second.getLevel(), 
+								it->second.getMultiLayer() ? GL_TRUE : GL_FALSE, it->second.getLayer(), 
+								getImageAccess(it->second), convertImageFormat(it->second));
+					} else {
+						images.erase(it);
+						glBindImageTexture(i,0,0,GL_FALSE,0, GL_READ_WRITE, GL_RGBA32F);
 					}
 				}
 			}

@@ -314,4 +314,9 @@ int32_t getMaxTextureBindings() {
 	return maxTex;
 }
 
+int32_t getMaxImageBindings() {
+	static const int32_t maxTex = std::min(getGLValue(GL_MAX_IMAGE_UNITS), 128);
+	return maxTex;
+}
+
 }
