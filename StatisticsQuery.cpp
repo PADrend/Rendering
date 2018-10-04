@@ -108,4 +108,12 @@ StatisticsQuery StatisticsQuery::createClippingOutputPrimitivesQuery() {
 #endif
 }
 
+StatisticsQuery StatisticsQuery::createTimeElapsedQuery() {
+#if defined(LIB_GL)
+	return StatisticsQuery(GL_TIME_ELAPSED);
+#elif defined(LIB_GLESv2)
+	return StatisticsQuery(0);
+#endif
+}
+
 }
