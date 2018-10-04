@@ -384,8 +384,6 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_UNSIGNED_INT:
 			case GL_SAMPLER_2D:
 			case GL_SAMPLER_CUBE:
-
-#ifdef LIB_GL
 			case GL_SAMPLER_1D:
 			case GL_SAMPLER_1D_ARRAY:
 			case GL_SAMPLER_2D_ARRAY:
@@ -397,17 +395,22 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_IMAGE_1D:
 			case GL_IMAGE_2D:
 			case GL_IMAGE_3D:
+			case GL_IMAGE_1D_ARRAY:
+			case GL_IMAGE_2D_ARRAY:
 			case GL_INT_IMAGE_1D:
 			case GL_INT_IMAGE_2D:
 			case GL_INT_IMAGE_3D:
+			case GL_INT_IMAGE_1D_ARRAY:
+			case GL_INT_IMAGE_2D_ARRAY:
 			case GL_UNSIGNED_INT_IMAGE_1D:
 			case GL_UNSIGNED_INT_IMAGE_2D:
 			case GL_UNSIGNED_INT_IMAGE_3D:
+			case GL_UNSIGNED_INT_IMAGE_1D_ARRAY:
+			case GL_UNSIGNED_INT_IMAGE_2D_ARRAY:
 			case GL_UNSIGNED_INT_ATOMIC_COUNTER:
 			case GL_UNSIGNED_INT_IMAGE_BUFFER:
 			case GL_INT_IMAGE_BUFFER:
 			case GL_IMAGE_BUFFER:
-#endif /* LIB_GL */
 			{
 				dataType = Uniform::UNIFORM_INT;
 				break;
