@@ -104,6 +104,13 @@ class StatisticsQuery : public QueryObject {
 		 * @see @c GL_CLIPPING_OUTPUT_PRIMITIVES_ARB
 		 */
 		static StatisticsQuery createClippingOutputPrimitivesQuery();
+
+		/**
+		 * Create a statistics query to measure the time between GPU commands
+		 * 
+		 * @see @c GL_TIME_ELAPSED
+		 */
+		static StatisticsQuery createTimeElapsedQuery();
 };
 }
 
