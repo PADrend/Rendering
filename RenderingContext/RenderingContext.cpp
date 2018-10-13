@@ -105,7 +105,7 @@ class RenderingContext::InternalData {
 		std::stack<Geometry::Rect_i> viewportStack;
 
 		Geometry::Rect_i windowClientArea;
-
+		
 		InternalData() : targetRenderingStatus(), openGLRenderingStatus(), activeRenderingStatus(nullptr),
 			actualCoreRenderingStatus(), appliedCoreRenderingStatus(), globalUniforms(), textureStacks(),
 			currentViewport(0, 0, 0, 0) {
@@ -132,6 +132,8 @@ RenderingContext::RenderingContext() :
 	setPolygonOffset(PolygonOffsetParameters());
 	setStencil(StencilParameters());
 }
+
+bool RenderingContext::compabilityMode = true;
 
 RenderingContext::~RenderingContext() = default;
 
@@ -187,7 +189,8 @@ void RenderingContext::initGLState() {
 	glActiveTexture(GL_TEXTURE0);
 
 	// Do not use deprecated functions in a OpenGL core profile.
-//	if(glewIsSupported("GL_ARB_compatibility")) {
+	if(glewIsSupported("GL_ARB_compatibility")) {
+		compabilityMode = true;
 		glEnable(GL_COLOR_MATERIAL);
 
 		glShadeModel(GL_SMOOTH);
@@ -200,20 +203,21 @@ void RenderingContext::initGLState() {
 		glEnable(GL_NORMALIZE);
 
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-//	} else if(glewIsSupported("GL_VERSION_3_0") || glewIsSupported("GL_ARB_vertex_array_object")) {
-//		// Workaround: Create a single vertex array object here.
-//		// For the core profile of OpenGL 3.2 or higher this is required,
-//		// because glVertexAttribPointer generates an GL_INVALID_OPERATION without it.
-//		// In the future, vertex array objects should be integrated into the rendering system.
-//		GLuint vertexArrayObject;
-//		glGenVertexArrays(1, &vertexArrayObject);
-//		glBindVertexArray(vertexArrayObject);
-//	}
+		
+		glEnable(GL_POINT_SPRITE);
+	} else if(glewIsSupported("GL_VERSION_3_0") || glewIsSupported("GL_ARB_vertex_array_object")) {
+		compabilityMode = false;
+		// Workaround: Create a single vertex array object here.
+		// For the core profile of OpenGL 3.2 or higher this is required,
+		// because glVertexAttribPointer generates an GL_INVALID_OPERATION without it.
+		// In the future, vertex array objects should be integrated into the rendering system.
+		GLuint vertexArrayObject;
+		glGenVertexArrays(1, &vertexArrayObject);
+		glBindVertexArray(vertexArrayObject);
+	}
 
 	// Enable the possibility to write gl_PointSize from the vertex shader.
 	glEnable(GL_PROGRAM_POINT_SIZE);
-	glEnable(GL_POINT_SPRITE);
-	
 	
 	if( glewIsSupported("GL_ARB_seamless_cube_map") ) //! \see http://www.opengl.org/wiki/Cubemap_Texture#Seamless_cubemap
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -223,6 +227,7 @@ void RenderingContext::initGLState() {
 #ifdef WIN32
 	wglSwapIntervalEXT(false);
 #endif /* WIN32 */
+	GET_GL_ERROR();
 }
 
 static bool detectAMDGPU(){
@@ -279,7 +284,7 @@ void RenderingContext::applyChanges(bool forced) {
 			// apply uniforms
 			shader->applyUniforms(forced);
 			GET_GL_ERROR();
-		} else {
+		} else if(compabilityMode) {
 			StatusHandler_glCompatibility::apply(internalData->openGLRenderingStatus, internalData->targetRenderingStatus, forced);
 		}
 	} catch(const std::exception & e) {

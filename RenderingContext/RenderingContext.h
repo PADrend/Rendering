@@ -67,6 +67,7 @@ private:
 	std::unique_ptr<InternalData> internalData;
 
 	bool immediate;
+	static bool compabilityMode;
 
 public:
 
@@ -87,6 +88,9 @@ public:
 	void setImmediateMode(const bool enabled);
 	bool getImmediateMode() const {
 		return immediate;
+	}
+	static bool getCompabilityMode() {
+		return compabilityMode;
 	}
 
 	void applyChanges(bool forced = false);

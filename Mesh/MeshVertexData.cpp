@@ -192,7 +192,7 @@ void MeshVertexData::bind(RenderingContext & context, bool useVBO) {
 	Shader * shader = context.getActiveShader();
 	const GLsizei vSize=vd.getVertexSize();
 #ifdef LIB_GL
-	if (shader == nullptr || shader->usesClassicOpenGL()) {
+	if (RenderingContext::getCompabilityMode() && (shader == nullptr || shader->usesClassicOpenGL())) {
 
 		for(const auto & attr : vd.getAttributes()) {
 			if(attr.empty())

@@ -12,6 +12,7 @@
 #define SHADER_H
 
 #include "ShaderObjectInfo.h"
+#include "../RenderingContext/RenderingContext.h"
 #include <Util/ReferenceCounter.h>
 #include <Util/StringIdentifier.h>
 #include <cstdint>
@@ -33,7 +34,6 @@ namespace Rendering {
 class Uniform;
 class UniformRegistry;
 class RenderingStatus;
-class RenderingContext;
 
 /*!	Shader */
 class Shader : public Util::ReferenceCounter<Shader> {
@@ -55,8 +55,8 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		bool enable(RenderingContext & rc);
 		bool isActive(RenderingContext & rc); // (???) !=enabled
 
-		bool usesClassicOpenGL()const		{	return usageFlags & USE_GL;	}
-		bool usesSGUniforms()const			{	return usageFlags & USE_UNIFORMS;	}
+		bool usesClassicOpenGL()const		{	return RenderingContext::getCompabilityMode() && (usageFlags & USE_GL);	}
+		bool usesSGUniforms()const			{	return !RenderingContext::getCompabilityMode() || (usageFlags & USE_UNIFORMS);	}
 		void setUsage(flag_t newUsage)		{	usageFlags=newUsage;	}
 
 		RenderingStatus * getRenderingStatus()	{	return renderingData.get();	}

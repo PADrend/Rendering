@@ -13,6 +13,7 @@
 #include "MeshIndexData.h"
 #include "MeshVertexData.h"
 #include "../GLHeader.h"
+#include "../RenderingContext/RenderingContext.h"
 #include <Util/Macros.h>
 #include <iostream>
 
@@ -80,7 +81,7 @@ SimpleMeshDataStrategy * SimpleMeshDataStrategy::getDynamicVertexStrategy(){
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getPureLocalStrategy(){
 	static SimpleMeshDataStrategy strategy( 0 );
-	return &strategy;
+	return RenderingContext::getCompabilityMode() ? &strategy : getDynamicVertexStrategy();
 }
 
 // ----

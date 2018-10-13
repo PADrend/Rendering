@@ -118,42 +118,46 @@ void drawBox(RenderingContext & rc, const Geometry::Box & box) {
 
 void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
 	#ifdef LIB_GL
-	rc.pushAndSetShader(nullptr);
+	if(RenderingContext::getCompabilityMode()) {
+		rc.pushAndSetShader(nullptr);
 
-//  Too slow:
-//	rc.pushMatrix_modelToCamera();
-//	rc.resetMatrix();
-//	rc.applyChanges();
+	//  Too slow:
+	//	rc.pushMatrix_modelToCamera();
+	//	rc.resetMatrix();
+	//	rc.applyChanges();
 
-	glPushMatrix();
-	glLoadTransposeMatrixf( rc.getMatrix_worldToCamera().getData());
+		glPushMatrix();
+		glLoadTransposeMatrixf( rc.getMatrix_worldToCamera().getData());
 
-	static const unsigned int indices[]={
-		1,3,2,0,
-		5,7,3,1,
-		4,6,7,5,
-		0,2,6,4,
-		7,6,2,3,
-		4,5,1,0
-	};
-	float corners[8][3] = {{b.getMaxX(), b.getMaxY(), b.getMaxZ()},
-					{b.getMinX(), b.getMaxY(), b.getMaxZ()},
-					{b.getMaxX(), b.getMinY(), b.getMaxZ()},
-					{b.getMinX(), b.getMinY(), b.getMaxZ()},
-					{b.getMaxX(), b.getMaxY(), b.getMinZ()},
-					{b.getMinX(), b.getMaxY(), b.getMinZ()},
-					{b.getMaxX(), b.getMinY(), b.getMinZ()},
-					{b.getMinX(), b.getMinY(), b.getMinZ()}};
+		static const unsigned int indices[]={
+			1,3,2,0,
+			5,7,3,1,
+			4,6,7,5,
+			0,2,6,4,
+			7,6,2,3,
+			4,5,1,0
+		};
+		float corners[8][3] = {{b.getMaxX(), b.getMaxY(), b.getMaxZ()},
+						{b.getMinX(), b.getMaxY(), b.getMaxZ()},
+						{b.getMaxX(), b.getMinY(), b.getMaxZ()},
+						{b.getMinX(), b.getMinY(), b.getMaxZ()},
+						{b.getMaxX(), b.getMaxY(), b.getMinZ()},
+						{b.getMinX(), b.getMaxY(), b.getMinZ()},
+						{b.getMaxX(), b.getMinY(), b.getMinZ()},
+						{b.getMinX(), b.getMinY(), b.getMinZ()}};
 
-	glBegin(GL_QUADS);
-	for(auto & index : indices){
-		glVertex3fv(corners[index]);
+		glBegin(GL_QUADS);
+		for(auto & index : indices){
+			glVertex3fv(corners[index]);
+		}
+		glEnd();
+
+		glPopMatrix();
+	//	rc.popMatrix_modelToCamera();
+		rc.popShader();
+	} else {
+		drawAbsBox(rc,b);
 	}
-	glEnd();
-
-	glPopMatrix();
-//	rc.popMatrix_modelToCamera();
-	rc.popShader();
 	#else
 	drawAbsBox(rc,b);
 	#endif
@@ -171,8 +175,8 @@ void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
 		VertexDescription vertexDescription;
 		vertexDescription.appendPosition3D();
 		mesh = new Mesh(vertexDescription, 8, 16);
-		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 		mesh->setDrawMode(Mesh::DRAW_LINE_STRIP);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 
 		MeshIndexData & id = mesh->openIndexData();
 		uint32_t * indices = id.data();
@@ -206,20 +210,27 @@ void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
 		indices[15] = 2;
 		id.updateIndexRange();
 		id.markAsChanged();
+		
+		MeshVertexData & vd = mesh->openVertexData();
+		const Geometry::Box unitBox(Geometry::Vec3(-0.5f, -0.5f, -0.5f), Geometry::Vec3(0.5f, 0.5f, 0.5f));
+		float * vertices = reinterpret_cast<float *>(vd.data());
+		for (uint_fast8_t c = 0; c < 8; ++c) {
+			const Geometry::Vec3 & corner = unitBox.getCorner(static_cast<Geometry::corner_t> (c));
+			*vertices++ = corner.getX();
+			*vertices++ = corner.getY();
+			*vertices++ = corner.getZ();
+		}
+		vd.updateBoundingBox();
+		vd.markAsChanged();
 	}
 
-	MeshVertexData & vd = mesh->openVertexData();
-	float * vertices = reinterpret_cast<float *>(vd.data());
-	for (uint_fast8_t c = 0; c < 8; ++c) {
-		const Geometry::Vec3 & corner = box.getCorner(static_cast<Geometry::corner_t> (c));
-		*vertices++ = corner.getX();
-		*vertices++ = corner.getY();
-		*vertices++ = corner.getZ();
-	}
-	vd._setBoundingBox(box);
-	vd.markAsChanged();
-
+	Geometry::Matrix4x4 matrix;
+	matrix.translate(box.getCenter());
+	matrix.scale(box.getExtentX(), box.getExtentY(), box.getExtentZ());
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(matrix);
 	rc.displayMesh(mesh.get());
+	rc.popMatrix_modelToCamera();
 }
 
 void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {

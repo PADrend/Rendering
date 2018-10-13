@@ -10,6 +10,7 @@
 */
 #include "StatusHandler_glCompatibility.h"
 #include "RenderingStatus.h"
+#include "../RenderingContext.h"
 #include "../../GLHeader.h"
 #include "../../Helper.h"
 
@@ -22,6 +23,8 @@ namespace StatusHandler_glCompatibility{
 
 void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced) {
 #ifdef LIB_GL
+	if(!RenderingContext::getCompabilityMode())
+		return;
 
 	const bool cc = target.matrixCameraToWorldChanged(actual);
 	if (forced || cc) {

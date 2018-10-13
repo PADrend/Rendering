@@ -10,6 +10,7 @@
 */
 #include "StatusHandler_glCore.h"
 #include "CoreRenderingStatus.h"
+#include "../RenderingContext.h"
 #include "../../BufferObject.h"
 #include "../../GLHeader.h"
 #include "../../Helper.h"
@@ -137,7 +138,8 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 
 	// Line
 	if(forced || target.lineParametersChanged(actual)) {
-		glLineWidth(actual.getLineParameters().getWidth());
+		auto width = actual.getLineParameters().getWidth();
+		glLineWidth(RenderingContext::getCompabilityMode() ? width : std::min(width, 1.0f));
 		target.setLineParameters(actual.getLineParameters());
 	}
 
@@ -166,7 +168,7 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 	GET_GL_ERROR();
 
 #ifdef LIB_GL
-// 	if(glewIsSupported("GL_ARB_compatibility")) {
+ 	if(RenderingContext::getCompabilityMode()) {
 		// AlphaTest
 		if(forced || target.alphaTestParametersChanged(actual)) {
 			if(actual.getAlphaTestParameters().isEnabled()) {
@@ -178,19 +180,19 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 			target.setAlphaTestParameters(actual.getAlphaTestParameters());
 		}
 		GET_GL_ERROR();
-// 	}
+ 	}
 #endif /* LIB_GL */
 
 	// Lighting
 	if(forced || target.lightingParametersChanged(actual)) {
 #ifdef LIB_GL
-// 		if(glewIsSupported("GL_ARB_compatibility")) {
+ 		if(RenderingContext::getCompabilityMode()) {
 			if(actual.getLightingParameters().isEnabled()) {
 				glEnable(GL_LIGHTING);
 			} else {
 				glDisable(GL_LIGHTING);
 			}
-// 		}
+ 		}
 #endif /* LIB_GL */
 		target.setLightingParameters(actual.getLightingParameters());
 	}
