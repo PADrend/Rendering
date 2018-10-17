@@ -19,20 +19,6 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
 add_library(Rendering
-	CL/Event.cpp
-	CL/CLUtils.cpp
-	CL/CommandQueue.cpp
-	CL/Context.cpp
-	CL/Device.cpp
-	CL/Kernel.cpp
-	CL/Platform.cpp
-	CL/Program.cpp
-	CL/UserEvent.cpp
-	CL/Memory/Buffer.cpp
-	CL/Memory/BufferAccessor.cpp
-	CL/Memory/Image.cpp
-	CL/Memory/Memory.cpp
-	CL/Memory/Sampler.cpp
 	Mesh/Mesh.cpp
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp
@@ -106,18 +92,6 @@ find_package(GLImplementation REQUIRED)
 target_compile_definitions(Rendering PRIVATE "${GLIMPLEMENTATION_DEFINITIONS}")
 target_include_directories(Rendering PRIVATE ${GLIMPLEMENTATION_INCLUDE_DIRS})
 target_link_libraries(Rendering LINK_PRIVATE ${GLIMPLEMENTATION_LIBRARIES})
-
-# Dependency to OpenCL
-find_package(OpenCL QUIET)
-if(OPENCL_FOUND)
-	if( OPENCL_HAS_CPP_BINDINGS )
-		target_include_directories(Rendering PRIVATE ${OPENCL_INCLUDE_DIRS})
-		target_compile_definitions(Rendering PUBLIC RENDERING_HAS_LIB_OPENCL)
-		target_link_libraries(Rendering LINK_PRIVATE ${OPENCL_LIBRARIES})
-	else( OPENCL_HAS_CPP_BINDINGS )
-	    message(SEND_ERROR "No OpenCL CPP bindings found" )
-	endif( OPENCL_HAS_CPP_BINDINGS )
-endif()
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
