@@ -43,86 +43,77 @@ namespace Rendering {
 namespace TextureUtils {
 
 //! (static)
-PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat){
+PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat) {
 	PixelFormatGL glf;
-	if(pixelFormat.getValueType() == Util::TypeConstant::UINT8){
+	if(pixelFormat.getValueType() == Util::TypeConstant::UINT8) {
 		glf.glLocalDataType = GL_UNSIGNED_BYTE;
-#if defined(LIB_GL)
-		if( pixelFormat == Util::PixelFormat::MONO ){
+		if( pixelFormat == Util::PixelFormat::MONO ) {
 			glf.glLocalDataFormat = GL_RED;
-			glf.glInternalFormat = GL_RED; 
-		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT8, 0, 1, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+			glf.glInternalFormat = GL_R8; 
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT8, 0, 1, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RG;
-			glf.glInternalFormat = GL_RG; 
-		}else
-#endif
-		if( pixelFormat == Util::PixelFormat::RGB ){
+			glf.glInternalFormat = GL_RG8; 
+		}else if( pixelFormat == Util::PixelFormat::RGB ) {
 			glf.glLocalDataFormat = GL_RGB;
-			glf.glInternalFormat = GL_RGB; // GL_RGB8????
-		}
-#if defined(LIB_GL)
-		else if( pixelFormat == Util::PixelFormat::BGR ){
+			glf.glInternalFormat = GL_RGB8;
+		} else if( pixelFormat == Util::PixelFormat::BGR ) {
 			glf.glLocalDataFormat = GL_BGR;
-			glf.glInternalFormat = GL_BGR; 
-		} else if( pixelFormat == Util::PixelFormat::RGBA ){
+			glf.glInternalFormat = GL_RGB8; 
+		} else if( pixelFormat == Util::PixelFormat::RGBA ) {
 			glf.glLocalDataFormat = GL_RGBA;
-			glf.glInternalFormat = GL_RGBA; 
+			glf.glInternalFormat = GL_RGBA8; 
 		}
-#endif
-	}
-#if defined(LIB_GL)
-	else if(pixelFormat.getValueType() == Util::TypeConstant::UINT32){
+	} else if(pixelFormat.getValueType() == Util::TypeConstant::UINT32) {
 		glf.glLocalDataType = GL_UNSIGNED_INT;
-		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RED_INTEGER;
 			glf.glInternalFormat = GL_R32UI; 
-		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RG_INTEGER;
 			glf.glInternalFormat = GL_RG32UI; 
-		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, 8, Util::PixelFormat::NONE) ){
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, 8, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RGB_INTEGER;
 			glf.glInternalFormat = GL_RGB32UI;
-		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, 8, 12) ){
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, 8, 12) ) {
 			glf.glLocalDataFormat = GL_RGBA_INTEGER;
 			glf.glInternalFormat = GL_RGBA32UI; 
 		}
-	} else if(pixelFormat.getValueType() == Util::TypeConstant::INT32){
+	} else if(pixelFormat.getValueType() == Util::TypeConstant::INT32) {
 		glf.glLocalDataType = GL_INT;
-		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RED_INTEGER;
 			glf.glInternalFormat = GL_R32I; 
-		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RG_INTEGER;
 			glf.glInternalFormat = GL_RG32I; 
-		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, 8, Util::PixelFormat::NONE) ){
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, 8, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RGB_INTEGER;
 			glf.glInternalFormat = GL_RGB32I;
-		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, 8, 12) ){
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, 8, 12) ) {
 			glf.glLocalDataFormat = GL_RGBA_INTEGER;
-			glf.glInternalFormat = GL_RGBA32I; 
+			glf.glInternalFormat = GL_RGBA32I;
 		}
-	} else if(pixelFormat.getValueType() == Util::TypeConstant::FLOAT){
+	} else if(pixelFormat.getValueType() == Util::TypeConstant::FLOAT) {
 		glf.glLocalDataType = GL_FLOAT;
-		if( pixelFormat == Util::PixelFormat::MONO_FLOAT ){
+		if( pixelFormat == Util::PixelFormat::MONO_FLOAT ) {
 			glf.glLocalDataFormat = GL_RED;
 			glf.glInternalFormat = GL_R32F; 
-		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::FLOAT, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ){
+		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::FLOAT, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RG;
 			glf.glInternalFormat = GL_RG32F; 
-		} else if( pixelFormat == Util::PixelFormat::RGB_FLOAT ){
+		} else if( pixelFormat == Util::PixelFormat::RGB_FLOAT ) {
 			glf.glLocalDataFormat = GL_RGB;
-			glf.glInternalFormat = GL_RGB32F; // GL_RGB8????
-		} else if( pixelFormat == Util::PixelFormat::RGBA_FLOAT ){
+			glf.glInternalFormat = GL_RGB32F;
+		} else if( pixelFormat == Util::PixelFormat::RGBA_FLOAT ) {
 			glf.glLocalDataFormat = GL_RGBA;
 			glf.glInternalFormat = GL_RGBA32F; 
 		}
 	}
-#endif
 	return glf;
 }
 
 //! (static)
-Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat){
+Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat) {
 	using Util::PixelFormat;
 	
 	PixelFormat bitmapPixelFormat = PixelFormat::UNKNOWN;
@@ -131,7 +122,7 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 		
 #ifdef LIB_GL
 	if(glPixelFormat.glLocalDataType==GL_FLOAT) {
-		switch(glPixelFormat.glLocalDataFormat){
+		switch(glPixelFormat.glLocalDataFormat) {
 			case GL_RGBA:
 				bitmapPixelFormat = PixelFormat::RGBA_FLOAT;
 				break;
@@ -162,7 +153,7 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 				break;
 		}
 	}else if(glPixelFormat.glLocalDataType==GL_UNSIGNED_BYTE) {
-		switch (glPixelFormat.glLocalDataFormat){
+		switch (glPixelFormat.glLocalDataFormat) {
 			case GL_RGBA:
 				bitmapPixelFormat = PixelFormat::RGBA;
 				break;
@@ -193,7 +184,7 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 				break;
 		}
 	}else if(glPixelFormat.glLocalDataType==GL_UNSIGNED_INT) {
-		switch (glPixelFormat.glLocalDataFormat){
+		switch (glPixelFormat.glLocalDataFormat) {
 			case GL_RED_INTEGER:
 				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
 				break;
@@ -211,7 +202,7 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 				break;
 		}
 	}else if(glPixelFormat.glLocalDataType==GL_INT) {
-		switch (glPixelFormat.glLocalDataFormat){
+		switch (glPixelFormat.glLocalDataFormat) {
 			case GL_RED_INTEGER:
 				bitmapPixelFormat = PixelFormat( Util::TypeConstant::INT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
 				break;
@@ -265,8 +256,8 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 }
 
 //! (static)
-uint32_t textureTypeToGLTextureType(TextureType type){
-	switch(type){
+uint32_t textureTypeToGLTextureType(TextureType type) {
+	switch(type) {
 #if defined(LIB_GL)
 		case TextureType::TEXTURE_1D:
 			return static_cast<uint32_t>(GL_TEXTURE_1D);
@@ -299,7 +290,7 @@ uint32_t textureTypeToGLTextureType(TextureType type){
 // ----------------------------------------------------------------------------
 // factory functions
 
-static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering,bool clampToEdge=false,uint32_t samples=4){
+static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering,bool clampToEdge=false,uint32_t samples=4) {
 	Texture::Format format;
 	format.glTextureType = textureTypeToGLTextureType(type);
 	format.sizeX = sizeX;
@@ -323,7 +314,7 @@ static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t
 }
 
 //! [static] Factory
-Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge/*=false*/,uint32_t samples){
+Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge/*=false*/,uint32_t samples) {
 	if( numComponents<1||numComponents>4 )
 		throw std::logic_error("createTexture: Invalid numComponents.");
 	
@@ -375,9 +366,9 @@ Util::Reference<Texture> createDepthStencilTexture(uint32_t width, uint32_t heig
 Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height, uint32_t layers) {
 #if defined(LIB_GL)
 	if(layers > 0)
-		return create(TextureType::TEXTURE_2D_ARRAY, width, height, layers, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false, true);
+		return create(TextureType::TEXTURE_2D_ARRAY, width, height, layers, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F, false, true);
 	else
-		return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false);
+		return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F, false);
 #else
 	return nullptr;
 #endif
@@ -386,7 +377,7 @@ Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height, uin
 //! [static] Factory
 Util::Reference<Texture> createMultisampleDepthTexture(uint32_t width, uint32_t height, uint32_t samples) {
 #if defined(LIB_GL)
-	return create(TextureType::TEXTURE_2D_MULTISAMPLE, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT, false, samples);
+	return create(TextureType::TEXTURE_2D_MULTISAMPLE, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32, false, samples);
 #else
 	return nullptr;
 #endif
@@ -398,14 +389,14 @@ Util::Reference<Texture> createMultisampleTexture(uint32_t width, uint32_t heigh
 }
 
 //! [static] Factory
-Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents){
+Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents) {
 	return createColorTexture(type,sizeX,sizeY,numLayers,dataType,numComponents,false);
 }
 // ----------------------------
 
 Util::Reference<Texture> createNoiseTexture(uint32_t width, uint32_t height, bool alpha,float scaling) {
 #if defined(LIB_GL)
-	Util::Reference<Texture> texture = create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT,alpha ? GL_RGBA32F_ARB : GL_RGB32F_ARB,true);
+	Util::Reference<Texture> texture = create(TextureType::TEXTURE_2D,width,height,1, alpha ? GL_RGBA : GL_RGB, GL_FLOAT,alpha ? GL_RGBA32F : GL_RGB32F,true);
 
 	texture->allocateLocalData();
 	Util::Reference<Util::PixelAccessor> pixelAccessor = Util::PixelAccessor::create(texture->getLocalBitmap());
@@ -437,7 +428,7 @@ Util::Reference<Texture> createTextureDataArray_Vec4(const uint32_t size) {
 
 //! [static] Factory
 Util::Reference<Texture> createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo) {
-	auto t = create(TextureType::TEXTURE_2D, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA ,true);
+	auto t = create(TextureType::TEXTURE_2D, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8 ,true);
 
 	t->allocateLocalData();
 	GLubyte * tData=t->getLocalData();
@@ -457,13 +448,13 @@ Util::Reference<Texture> createChessTexture(uint32_t width, uint32_t height, int
 	return t;
 }
 
-Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, TextureType type, uint32_t numLayers, bool clampToEdge){
+Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, TextureType type, uint32_t numLayers, bool clampToEdge) {
 	const uint32_t bHeight = bitmap.getHeight();
 	const uint32_t width = bitmap.getWidth();
 
 	Texture::Format format;
 
-	if( numLayers==0 || numLayers>bHeight || (bHeight%numLayers) != 0){
+	if( numLayers==0 || numLayers>bHeight || (bHeight%numLayers) != 0) {
 		WARN("createTextureFromBitmap: Bitmap height is not dividable into given number of layers.");
 		return nullptr;
 	}
@@ -475,7 +466,7 @@ Util::Reference<Texture> createTextureFromBitmap(const Util::Bitmap & bitmap, Te
 	format.numLayers = numLayers;
 
 	format.pixelFormat = pixelFormatToGLPixelFormat(bitmap.getPixelFormat());
-	if(!format.pixelFormat.isValid()){
+	if(!format.pixelFormat.isValid()) {
 		WARN("createTextureFromBitmap: Bitmap has unimplemented pixel format.");
 		return nullptr;
 	}
@@ -563,8 +554,8 @@ Util::Reference<Texture> createTextureFromScreen(int xpos, int ypos, const Textu
 }
 
 //! [static]
-Util::Reference<Texture> createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/, int width/*=-1*/, int height/*=-1*/,bool useAlpha){
-	 if(width < 0 || height <0){
+Util::Reference<Texture> createTextureFromScreen(int xpos/*=0*/, int ypos/*=0*/, int width/*=-1*/, int height/*=-1*/,bool useAlpha) {
+	 if(width < 0 || height <0) {
 		GLint viewport[4];
 		glGetIntegerv(GL_VIEWPORT, viewport);
 		if(width<0)
@@ -605,7 +596,7 @@ bool compareTextures(Texture *t1, Texture *t2) {
 }
 
 //! [static]
-void updateTextureFromScreen(RenderingContext & context,Texture & t,const Geometry::Rect_i & textureRect, int screenPosX/*=0*/, int screenPosY/*=0*/){
+void updateTextureFromScreen(RenderingContext & context,Texture & t,const Geometry::Rect_i & textureRect, int screenPosX/*=0*/, int screenPosY/*=0*/) {
 	const Texture::Format & format = t.getFormat();
 	const int width=textureRect.getWidth()>static_cast<int>(format.sizeX) ? static_cast<int>(format.sizeX) : textureRect.getWidth();
 	const int height=textureRect.getHeight()>static_cast<int>(format.sizeY) ? static_cast<int>(format.sizeY) : textureRect.getHeight();
@@ -616,11 +607,11 @@ void updateTextureFromScreen(RenderingContext & context,Texture & t,const Geomet
 }
 
 //! [static]
-void updateTextureFromScreen(RenderingContext & context,Texture & t){
+void updateTextureFromScreen(RenderingContext & context,Texture & t) {
 	updateTextureFromScreen(context,t,Geometry::Rect_i(0,0,t.getFormat().sizeX,t.getFormat().sizeY));
 }
 //! [static]
-void drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect,Texture & t,const Geometry::Rect_f & textureRect){
+void drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect,Texture & t,const Geometry::Rect_f & textureRect) {
 #ifdef LIB_GL
 	std::vector<Texture *> textures;
 	textures.push_back(&t);
@@ -742,8 +733,8 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 }
 
 Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context,Texture & texture) {
-	if(texture.getLocalData() == nullptr){
-		if(!texture.isGLTextureValid()){
+	if(texture.getLocalData() == nullptr) {
+		if(!texture.isGLTextureValid()) {
 			WARN("Error creating bitmap: texture has no local data and gl data invalid");
 			return nullptr;
 		}
@@ -774,7 +765,7 @@ Util::Reference<Util::PixelAccessor> createDepthPixelAccessor(RenderingContext &
 			DepthAccessor(Util::Reference<Util::Bitmap> bitmap) :
 				Util::PixelAccessor(std::move(bitmap)) {
 			}
-			virtual ~DepthAccessor(){
+			virtual ~DepthAccessor() {
 			}
 
 		private:
@@ -831,7 +822,7 @@ Util::Reference<Util::PixelAccessor> createStencilPixelAccessor(RenderingContext
 			StencilAccessor(Util::Reference<Util::Bitmap> bitmap) :
 				Util::PixelAccessor(std::move(bitmap)) {
 			}
-			virtual ~StencilAccessor(){
+			virtual ~StencilAccessor() {
 			}
 
 		private:
