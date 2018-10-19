@@ -2172,5 +2172,51 @@ MeshVertexData* extractVertices(Mesh* mesh, const std::vector<uint32_t>& indices
   return result;
 }
 
+// -----------------------------------------------------------------------------
+
+void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sourceOffset, uint32_t targetOffset, uint32_t count) {
+	const auto& vd = source->getVertexDescription();
+	if(!(target->getVertexDescription() == vd)) {
+		WARN("copyVertices: Source and target mesh have incompatible vertex descriptions.");
+		return;
+	}	
+	if(source->getVertexCount() < sourceOffset+count) {
+		WARN("copyVertices: Not enough source vertices available.");
+		return;
+	}	
+	if(source->getVertexCount() < targetOffset+count) {
+		WARN("copyVertices: Target vertex count is too small.");
+		return;
+	}
+	
+	auto& srcVertices = source->_getVertexData();
+	auto& tgtVertices = source->_getVertexData();
+	
+	uint32_t srcStart = sourceOffset*vd.getVertexSize();
+	uint32_t tgtStart = targetOffset*vd.getVertexSize();
+	uint32_t srcEnd = (sourceOffset + count)*vd.getVertexSize();
+		
+	if(srcVertices.isUploaded() && tgtVertices.isUploaded()) {
+		BufferObject srcBO;
+		BufferObject tgtBO;
+		srcVertices._swapBufferObject(srcBO);
+		tgtVertices._swapBufferObject(tgtBO);
+		tgtBO.copy(srcBO, srcStart, tgtStart, count*vd.getVertexSize());
+		srcVertices._swapBufferObject(srcBO);
+		tgtVertices._swapBufferObject(tgtBO);
+		tgtVertices.releaseLocalData();
+	} else if(srcVertices.hasLocalData() && !tgtVertices.hasLocalData()) {
+		tgtVertices.download();
+	} else if(!srcVertices.hasLocalData() && tgtVertices.hasLocalData()) {
+		srcVertices.download();
+	}
+	
+	if(srcVertices.hasLocalData() && tgtVertices.hasLocalData()) {
+		std::copy(srcVertices.data() + srcStart, srcVertices.data() + srcEnd, tgtVertices.data() + tgtStart);
+		tgtVertices.markAsChanged();
+	}
+	
+}
+
 }
 }

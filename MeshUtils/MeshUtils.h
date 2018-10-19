@@ -392,6 +392,19 @@ float computeSurfaceArea(Mesh* mesh);
  */
 Rendering::MeshVertexData* extractVertices(Rendering::Mesh* mesh, const std::vector<uint32_t>& indices);
 
+/**
+ * Copies vertices from one mesh to another. 
+ * If both meshes are uploaded, it directly copies using the buffers.
+ *
+ * @param source Mesh to copy vertices from
+ * @param target Mesh to copy vertices to
+ * @param sourceOffset vertex offset of the source mesh
+ * @param targetOffset vertex offset of the target mesh
+ * @param count number of vertices to copy
+ * @author Sascha Brandt
+ */
+void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sourceOffset, uint32_t targetOffset, uint32_t count);
+
 }
 }
 

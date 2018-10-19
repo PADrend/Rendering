@@ -169,6 +169,14 @@ void BufferObject::clear(uint32_t internalFormat, uint32_t format, uint32_t type
 #endif
 }
 
+void BufferObject::copy(const BufferObject& source, uint32_t sourceOffset, uint32_t targetOffset, uint32_t size) {
+	source.bind(TARGET_COPY_READ_BUFFER);
+	bind(TARGET_COPY_WRITE_BUFFER);
+	glCopyBufferSubData(source.bufferId, bufferId, sourceOffset, targetOffset, size);
+	unbind(TARGET_COPY_WRITE_BUFFER);
+	source.unbind(TARGET_COPY_READ_BUFFER);
+}
+
 // Instantiate the template functions
 template void BufferObject::allocateData<uint8_t>(uint32_t, std::size_t, uint32_t);
 template void BufferObject::allocateData<uint16_t>(uint32_t, std::size_t, uint32_t);
