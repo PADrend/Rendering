@@ -159,8 +159,7 @@ void Texture::_createGLID(RenderingContext & context){
 
 
 void Texture::createMipmaps(RenderingContext & context) {
-	if(!hasMipmaps || dataHasChanged)
-		removeGLData();
+	mipmapCreationIsPlanned = true;
 	
 	if(!glId || dataHasChanged)
 		_uploadGLTexture(context);
@@ -177,7 +176,7 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 		_createGLID(context);
 
 	dataHasChanged = false;
-	int levels = mipmapCreationIsPlanned ? std::log2(std::min(getWidth(), getHeight())) : 1;
+	int levels = mipmapCreationIsPlanned ? (std::log2(std::max(getWidth(), getHeight())) + 1) : 1;
 
 	switch(tType) {
 	//! \todo add cube map support and 3d-texture support
@@ -310,15 +309,29 @@ void Texture::removeGLData(){
 	glId=0;
 }
 
-void Texture::downloadGLTexture(RenderingContext & context) {
+void Texture::downloadGLTexture(RenderingContext & context, uint8_t* target, uint32_t level) {
 	if(!glId){
 		WARN("downloadGLTexture: No glTexture available.");
 		return;
 	}
 	dataHasChanged = false;
+	
+	if(level>0 && target==nullptr) {
+		WARN("downloadGLTexture: Cannot download mip level without given target.");
+		return;
+	}
+	
+	if(level>0 && !hasMipmaps) {
+		WARN("downloadGLTexture: Texture has no mip levels.");
+		return;
+	}
 
-	if(!localBitmap)
-		allocateLocalData();
+	size_t dataSize = getDataSize() >> (level*2);
+	if(!target) {
+		if(localBitmap.isNull())
+			allocateLocalData();
+		target = getLocalData();
+	}
 
 	context.applyChanges();
 	switch( tType ){
@@ -328,7 +341,7 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 		case  TextureType::TEXTURE_2D_ARRAY:
 		case  TextureType::TEXTURE_3D:
 		case  TextureType::TEXTURE_CUBE_MAP:
-			glGetTextureImage(glId, 0, format.pixelFormat.glLocalDataFormat, format.pixelFormat.glLocalDataType, getDataSize(), getLocalData());
+			glGetTextureImage(glId, level, format.pixelFormat.glLocalDataFormat, format.pixelFormat.glLocalDataType, dataSize, target);
 			break;
 		/*case  TextureType::TEXTURE_CUBE_MAP:{
 			Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
@@ -344,7 +357,7 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 			break;
 		}*/
 		case TextureType::TEXTURE_BUFFER:{
-			bufferObject->download(getLocalData(), localBitmap->getDataSize());
+			bufferObject->download(target, dataSize);
 			break;
 		}
 		case  TextureType::TEXTURE_CUBE_MAP_ARRAY:

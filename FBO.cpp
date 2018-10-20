@@ -49,11 +49,7 @@ void FBO::unbind(){
 void FBO::attachTexture(RenderingContext & context, GLenum attachmentPoint, Texture * texture, uint32_t level, int32_t layer) {
 	prepare();
 	if( texture ){
-		GLuint textureId = texture->getGLId();
-		if(textureId==0){
-			texture->_uploadGLTexture(context);
-			textureId = texture->getGLId();
-		}
+		GLuint textureId = texture->_prepareForBinding(context);
 		if(layer+1 > texture->getNumLayers())
 			throw std::invalid_argument("FBO::attachTexture: invalid texture layer.");
 		

@@ -53,7 +53,7 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat) 
 		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT8, 0, 1, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RG;
 			glf.glInternalFormat = GL_RG8; 
-		}else if( pixelFormat == Util::PixelFormat::RGB ) {
+		} else if( pixelFormat == Util::PixelFormat::RGB ) {
 			glf.glLocalDataFormat = GL_RGB;
 			glf.glInternalFormat = GL_RGB8;
 		} else if( pixelFormat == Util::PixelFormat::BGR ) {
@@ -68,7 +68,7 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat) 
 		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RED_INTEGER;
 			glf.glInternalFormat = GL_R32UI; 
-		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RG_INTEGER;
 			glf.glInternalFormat = GL_RG32UI; 
 		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::UINT32, 0, 4, 8, Util::PixelFormat::NONE) ) {
@@ -83,7 +83,7 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat) 
 		if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, Util::PixelFormat::NONE, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RED_INTEGER;
 			glf.glInternalFormat = GL_R32I; 
-		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RG_INTEGER;
 			glf.glInternalFormat = GL_RG32I; 
 		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::INT32, 0, 4, 8, Util::PixelFormat::NONE) ) {
@@ -98,9 +98,9 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat) 
 		if( pixelFormat == Util::PixelFormat::MONO_FLOAT ) {
 			glf.glLocalDataFormat = GL_RED;
 			glf.glInternalFormat = GL_R32F; 
-		}else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::FLOAT, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
+		} else if( pixelFormat == Util::PixelFormat(Util::TypeConstant::FLOAT, 0, 4, Util::PixelFormat::NONE, Util::PixelFormat::NONE) ) {
 			glf.glLocalDataFormat = GL_RG;
-			glf.glInternalFormat = GL_RG32F; 
+			glf.glInternalFormat = GL_RG32F;
 		} else if( pixelFormat == Util::PixelFormat::RGB_FLOAT ) {
 			glf.glLocalDataFormat = GL_RGB;
 			glf.glInternalFormat = GL_RGB32F;
@@ -120,7 +120,6 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 	if(glPixelFormat.compressed)
 		return bitmapPixelFormat;
 		
-#ifdef LIB_GL
 	if(glPixelFormat.glLocalDataType==GL_FLOAT) {
 		switch(glPixelFormat.glLocalDataFormat) {
 			case GL_RGBA:
@@ -134,6 +133,9 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 				break;
 			case GL_BGR:
 				bitmapPixelFormat = PixelFormat::BGR_FLOAT;
+				break;
+			case GL_RG:
+				bitmapPixelFormat = PixelFormat( Util::TypeConstant::FLOAT, 0,4,PixelFormat::NONE,PixelFormat::NONE);
 				break;
 			case GL_DEPTH_COMPONENT:
 			case GL_RED:
@@ -152,7 +154,7 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 //				WARN("Texture::allocateLocalData: Unsupported glFormat.");
 				break;
 		}
-	}else if(glPixelFormat.glLocalDataType==GL_UNSIGNED_BYTE) {
+	} else if(glPixelFormat.glLocalDataType==GL_UNSIGNED_BYTE) {
 		switch (glPixelFormat.glLocalDataFormat) {
 			case GL_RGBA:
 				bitmapPixelFormat = PixelFormat::RGBA;
@@ -183,7 +185,7 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 //				WARN("Texture::allocateLocalData: Unsupported glFormat.");
 				break;
 		}
-	}else if(glPixelFormat.glLocalDataType==GL_UNSIGNED_INT) {
+	} else if(glPixelFormat.glLocalDataType==GL_UNSIGNED_INT) {
 		switch (glPixelFormat.glLocalDataFormat) {
 			case GL_RED_INTEGER:
 				bitmapPixelFormat = PixelFormat( Util::TypeConstant::UINT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
@@ -201,7 +203,7 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 //				WARN("Texture::allocateLocalData: Unsupported glFormat.");
 				break;
 		}
-	}else if(glPixelFormat.glLocalDataType==GL_INT) {
+	} else if(glPixelFormat.glLocalDataType==GL_INT) {
 		switch (glPixelFormat.glLocalDataFormat) {
 			case GL_RED_INTEGER:
 				bitmapPixelFormat = PixelFormat( Util::TypeConstant::INT32, 0, PixelFormat::NONE, PixelFormat::NONE, PixelFormat::NONE );
@@ -221,37 +223,9 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 		}
 	} else if(glPixelFormat.glLocalDataType == GL_UNSIGNED_INT_24_8_EXT) {
 		bitmapPixelFormat = PixelFormat::RGBA;
-	}else{
+	} else {
 //		WARN("Texture::allocateLocalData: Unsupported glDataType.");
 	}
-
-#else /* LIB_GL */
-
-	if(glPixelFormat.glLocalDataType == GL_FLOAT) {
-		switch (glPixelFormat.glLocalDataFormat) {
-			case GL_RGBA:
-				bitmapPixelFormat = PixelFormat::RGBA_FLOAT;
-				break;
-			case GL_RGB:
-				bitmapPixelFormat = PixelFormat::RGB_FLOAT;
-				break;
-			default:
-				break;
-		}
-	} else if(glPixelFormat.glLocalDataType == GL_UNSIGNED_BYTE) {
-		switch (glPixelFormat.glLocalDataFormat) {
-			case GL_RGBA:
-				bitmapPixelFormat = PixelFormat::RGBA;
-				break;
-			case GL_RGB:
-				bitmapPixelFormat = PixelFormat::RGB;
-				break;
-			default:
-				break;
-		}
-	}
-
-#endif /* LIB_GL */
 	return bitmapPixelFormat;
 }
 
@@ -732,7 +706,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	rc.popDepthBuffer();
 }
 
-Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context,Texture & texture) {
+Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context, Texture & texture) {
 	if(texture.getLocalData() == nullptr) {
 		if(!texture.isGLTextureValid()) {
 			WARN("Error creating bitmap: texture has no local data and gl data invalid");
@@ -741,6 +715,22 @@ Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context
 		texture.downloadGLTexture(context);
 	}
 	return createBitmapFromLocalTexture(texture);
+}
+
+Util::Reference<Util::Bitmap> createBitmapFromMipLevel(RenderingContext & context, Texture & texture, uint32_t level) {
+	if(level == 0)
+		return createBitmapFromTexture(context, texture);
+	auto format = glPixelFormatToPixelFormat(texture.getFormat().pixelFormat);
+	uint32_t w = texture.getWidth() >> level;
+	uint32_t h = texture.getHeight() >> level;
+	if(w*h == 0) {
+		WARN("Error creating bitmap: invalid mip level");
+		return nullptr;
+	}
+	Util::Reference<Util::Bitmap> targetBitmap = new Util::Bitmap(w, h, format);
+	texture.downloadGLTexture(context, targetBitmap->data(), level);
+	targetBitmap->flipVertically();
+	return targetBitmap;
 }
 
 Util::Reference<Util::Bitmap> createBitmapFromLocalTexture(const Texture & texture) {

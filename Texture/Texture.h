@@ -103,7 +103,7 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 
 		void _createGLID(RenderingContext & context);
 		void _uploadGLTexture(RenderingContext & context);
-		void downloadGLTexture(RenderingContext & context);
+		void downloadGLTexture(RenderingContext & context, uint8_t* target=nullptr, uint32_t level=0);
 		void removeGLData();
 
 		void allocateLocalData();

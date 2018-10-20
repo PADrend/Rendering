@@ -93,7 +93,9 @@ void drawTextureToScreen(RenderingContext & rc,
 bool compareTextures(Texture *t1, Texture *t2);
 
 //! the texture is downloaded to memory (if necessary), the proper Util-color format is chosen and the texture is flipped vertically.
-Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context,Texture & texture);
+Util::Reference<Util::Bitmap> createBitmapFromTexture(RenderingContext & context, Texture & texture);
+
+Util::Reference<Util::Bitmap> createBitmapFromMipLevel(RenderingContext & context, Texture & texture, uint32_t level);
 
 //! like createBitmapFromTexture, but the texture is NOT downloaded, but a warning is issued if it should have been.
 Util::Reference<Util::Bitmap> createBitmapFromLocalTexture(const Texture & texture);
