@@ -421,6 +421,7 @@ public:
 	void setShader(Shader * shader); // shader may be nullptr
 	void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
 	void dispatchComputeIndirect(size_t offset=0);
+	void dispatchComputeGroupSize(uint32_t numGroupsX, uint32_t groupSizeX, uint32_t numGroupsY=1, uint32_t groupSizeY=1, uint32_t numGroupsZ=1, uint32_t groupSizeZ=1);
 	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices);
 	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<std::string>& names);
 

@@ -801,30 +801,41 @@ const Shader * RenderingContext::getActiveShader() const {
 }
 
 void RenderingContext::dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) {	
-	#if defined(LIB_GL) and defined(GL_ARB_compute_shader)
-		if(!getActiveShader()) {
-			WARN("dispatchCompute: There is no active compute shader.");
-		} else {
-			applyChanges();
-			glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
-			GET_GL_ERROR();
-		}
-	#else
-		WARN("dispatchCompute: Compute shaders are not supported.");
-	#endif
+	if(!getActiveShader()) {
+		WARN("dispatchCompute: There is no active compute shader.");
+	} else {
+		applyChanges();
+		glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+		GET_GL_ERROR();
+	}
 }
 
 void RenderingContext::dispatchComputeIndirect(size_t offset) {	
-	#if defined(LIB_GL) and defined(GL_ARB_compute_shader)
+	if(!getActiveShader()) {
+		WARN("glDispatchComputeIndirect: There is no active compute shader.");
+	} else {
+		applyChanges();
+		glDispatchComputeIndirect(offset);
+		GET_GL_ERROR();
+	}
+}
+
+void RenderingContext::dispatchComputeGroupSize(uint32_t numGroupsX, uint32_t groupSizeX, uint32_t numGroupsY, uint32_t groupSizeY, uint32_t numGroupsZ, uint32_t groupSizeZ) {
+	static bool isSupported = isExtensionSupported("GL_ARB_compute_variable_group_size");	
+	#if defined(GL_ARB_compute_variable_group_size)
+		if(!isSupported) {
+			WARN("dispatchComputeGroupSize: variable group sizes are not supported.");
+			return;
+		}
 		if(!getActiveShader()) {
-			WARN("glDispatchComputeIndirect: There is no active compute shader.");
+			WARN("dispatchComputeGroupSize: There is no active compute shader.");
 		} else {
 			applyChanges();
-			glDispatchComputeIndirect(offset);
+			glDispatchComputeGroupSizeARB(numGroupsX, numGroupsY, numGroupsZ, groupSizeX, groupSizeY, groupSizeZ);
 			GET_GL_ERROR();
 		}
 	#else
-		WARN("glDispatchComputeIndirect: Compute shaders are not supported.");
+		WARN("dispatchComputeGroupSize: variable group sizes are not supported.");
 	#endif
 }
 
