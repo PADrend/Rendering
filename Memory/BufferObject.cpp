@@ -170,7 +170,7 @@ void BufferObject::bind(uint32_t bufferTarget, uint32_t location, size_t offset,
 	}
 }
 
-void BufferObject::unbind(uint32_t bufferTarget, uint32_t location) const {
+void BufferObject::unbind(uint32_t bufferTarget, uint32_t location) {
 	if(getMaxBufferBindings(bufferTarget) == 1)
 		glBindBuffer(bufferTarget, 0);
 	else

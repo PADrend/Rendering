@@ -33,6 +33,7 @@ public:
 		std::bitset<4> tfbos;
 		std::bitset<256> textures;
 		std::bitset<128> images;
+		std::bitset<11> other;
 	};
 	StateDiff_t makeDiff(const BindingState& other, bool forced=false) const;
 	void apply(const StateDiff_t& diff);

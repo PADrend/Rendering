@@ -8,6 +8,7 @@
 */
 #include "BindingState.h"
 #include "../GLHeader.h"
+#include <Util/StringUtils.h>
 
 namespace Rendering {
 
@@ -33,6 +34,40 @@ static inline GLenum convertImageFormat(const ImageBindParameters& param) {
 	return format;
 }
 
+static uint8_t getBufferTargetBit(uint32_t target) {
+	switch(target) {
+		case GL_ARRAY_BUFFER: return 0;
+		case GL_COPY_READ_BUFFER: return 1;
+		case GL_COPY_WRITE_BUFFER: return 2;
+		case GL_DISPATCH_INDIRECT_BUFFER: return 3;
+		case GL_DRAW_INDIRECT_BUFFER: return 4;
+		case GL_ELEMENT_ARRAY_BUFFER: return 5;
+		case GL_PIXEL_PACK_BUFFER: return 6;
+		case GL_PIXEL_UNPACK_BUFFER: return 7;
+		case GL_QUERY_BUFFER: return 8;
+		case GL_TEXTURE_BUFFER: return 9;
+		default:
+			WARN("Unknown buffer target " + Util::StringUtils::toString(target));
+			return 10;
+	}
+}
+
+static uint32_t getBufferTargetFromBit(uint8_t bit) {
+	switch(bit) {
+		case 0: return GL_ARRAY_BUFFER;
+		case 1: return GL_COPY_READ_BUFFER;
+		case 2: return GL_COPY_WRITE_BUFFER;
+		case 3: return GL_DISPATCH_INDIRECT_BUFFER;
+		case 4: return GL_DRAW_INDIRECT_BUFFER;
+		case 5: return GL_ELEMENT_ARRAY_BUFFER;
+		case 6: return GL_PIXEL_PACK_BUFFER;
+		case 7: return GL_PIXEL_UNPACK_BUFFER;
+		case 8: return GL_QUERY_BUFFER;
+		case 9: return GL_TEXTURE_BUFFER;
+		default: return 0;
+	}
+}
+
 static inline void bindOrRemoveBuffer(std::unordered_map<uint64_t, BindingState::BufferBinding>& bindings, uint32_t target, uint32_t location) {
 	union {
 		struct { uint32_t target; uint32_t location; };
@@ -48,7 +83,7 @@ static inline void bindOrRemoveBuffer(std::unordered_map<uint64_t, BindingState:
 			it->second.buffer->bind(target, location);
 		} else {
 			bindings.erase(it);
-			glBindBufferBase(target, location, 0);
+			BufferObject::unbind(target, location);
 		}
 	}
 }
@@ -72,6 +107,8 @@ BindingState::StateDiff_t BindingState::makeDiff(const BindingState& target, boo
 			case GL_TRANSFORM_FEEDBACK_BUFFER: 
 				diff.tfbos.set(e.second.location, forced || changed || target.getBufferBinding(key) != e.second);
 				break;
+			default:
+				diff.other.set(getBufferTargetBit(e.second.target), forced || changed || target.getBufferBinding(key) != e.second);
 		}
 	}
 	
@@ -91,6 +128,8 @@ BindingState::StateDiff_t BindingState::makeDiff(const BindingState& target, boo
 			case GL_TRANSFORM_FEEDBACK_BUFFER: 
 				diff.tfbos.set(e.second.location, forced || changed || getBufferBinding(key) != e.second);
 				break;
+			default: 
+				diff.other.set(getBufferTargetBit(e.second.target), forced || changed || getBufferBinding(key) != e.second);
 		}
 	}
 	
@@ -146,6 +185,15 @@ void BindingState::apply(const StateDiff_t& diff) {
 		for(uint_fast8_t i=0; i<diff.tfbos.size(); ++i) {
 			if(diff.tfbos.test(i))
 				bindOrRemoveBuffer(buffers, GL_TRANSFORM_FEEDBACK_BUFFER, i);
+		}
+		GET_GL_ERROR();
+	}
+	
+	// Other buffer
+	if(diff.other.any()) {
+		for(uint_fast8_t i=0; i<diff.other.size()-1; ++i) {
+			if(diff.other.test(i))
+				bindOrRemoveBuffer(buffers, getBufferTargetFromBit(i), 0);
 		}
 		GET_GL_ERROR();
 	}

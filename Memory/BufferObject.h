@@ -107,7 +107,7 @@ class BufferObject : public Util::ReferenceCounter<BufferObject> {
 		void bind(uint32_t bufferTarget, uint32_t location=0, size_t offset=0, size_t size=0) const;
 
 		//! Remove any binding of the given target.
-		void unbind(uint32_t bufferTarget, uint32_t location=0) const;
+		static void unbind(uint32_t bufferTarget, uint32_t location=0);
 
 		/**
 		 * @brief Allocate buffer data
