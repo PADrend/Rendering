@@ -53,6 +53,8 @@ static const Util::StringIdentifier BUFFER_MATERIALDATA("MaterialData");
 static const Util::StringIdentifier BUFFER_LIGHTDATA("LightData");
 static const Util::StringIdentifier BUFFER_LIGHTSETDATA("LightSetData");
 static const Util::StringIdentifier BUFFER_TEXTURESETDATA("TextureSetData");
+static const Uniform::UniformName UNIFORM_MATRIX_MODEL_TO_CAM("sg_matrix_modelToCamera");
+static const Uniform::UniformName UNIFORM_POINT_SIZE("sg_pointSize");
 
 static const uint32_t MAX_FRAMEDATA = 1;
 static const uint32_t MAX_OBJECTDATA = 512;
@@ -1295,32 +1297,63 @@ void RenderingContext::bindIndexBuffer(uint32_t bufferId) {
 // Draw Commands **********************************************************************************
 
 void RenderingContext::drawArrays(uint32_t mode, uint32_t first, uint32_t count) {
-	applyChanges();
-	
-	auto buffer = getBuffer(BUFFER_OBJECTDATA);
+	auto shader = getActiveShader();
+	if(!shader)
+		return;
+		
+	auto block = shader->getInterfaceBlock(BUFFER_OBJECTDATA);
 	uint32_t drawId = internalData->activeObjectData.drawId;
-	buffer->setValue(drawId, internalData->activeObjectData);
+	BufferView* buffer = nullptr;
 	
-  glDrawArraysInstancedBaseInstance(mode, first, count, 1, drawId);
+	if(block.location >= 0) {
+		// does the shader use the object-data?
+		buffer = getBuffer(BUFFER_OBJECTDATA);
+		buffer->setValue(drawId, internalData->activeObjectData);
+	} else {
+		// fallback to uniforms
+		_setUniformOnShader(shader, {UNIFORM_MATRIX_MODEL_TO_CAM, internalData->activeObjectData.matrix_modelToCamera}, false, false);
+		_setUniformOnShader(shader, {UNIFORM_POINT_SIZE, internalData->activeObjectData.pointSize.getSize()}, false, false);
+	}
 	
-	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA) {
-		internalData->activeObjectData.drawId = 0;
-		reinterpret_cast<StreamBufferView*>(buffer)->swap();
+	applyChanges();
+  glDrawArraysInstancedBaseInstance(mode, first, count, 1, drawId);	
+	
+	if(block.location >= 0) {
+		if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA) {
+			internalData->activeObjectData.drawId = 0;
+			reinterpret_cast<StreamBufferView*>(buffer)->swap();
+		}
 	}
 }
 
 void RenderingContext::drawElements(uint32_t mode, uint32_t type, uint32_t first, uint32_t count) {
-	applyChanges();
-	
-	auto buffer = getBuffer(BUFFER_OBJECTDATA);
+	auto shader = getActiveShader();
+	if(!shader)
+		return;
+		
+	auto block = shader->getInterfaceBlock(BUFFER_OBJECTDATA);
 	uint32_t drawId = internalData->activeObjectData.drawId;
-	buffer->setValue(drawId, internalData->activeObjectData);
+	BufferView* buffer = nullptr;
 	
+	if(block.location >= 0) {
+		// does the shader use the object-data?
+		buffer = getBuffer(BUFFER_OBJECTDATA);
+		buffer->setValue(drawId, internalData->activeObjectData);
+	} else {
+		// fallback to uniforms
+		_setUniformOnShader(shader, {UNIFORM_MATRIX_MODEL_TO_CAM, internalData->activeObjectData.matrix_modelToCamera}, false, false);
+		_setUniformOnShader(shader, {UNIFORM_POINT_SIZE, internalData->activeObjectData.pointSize.getSize()}, false, false);
+	}
+	
+	applyChanges();
 	glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, reinterpret_cast<uint8_t*>(first * getGLTypeSize(type)), 1, 0, drawId);
 	
-	if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA) {
-		internalData->activeObjectData.drawId = 0;
-		reinterpret_cast<StreamBufferView*>(buffer)->swap();
+	
+	if(block.location >= 0) {
+		if(++internalData->activeObjectData.drawId >= MAX_OBJECTDATA) {
+			internalData->activeObjectData.drawId = 0;
+			reinterpret_cast<StreamBufferView*>(buffer)->swap();
+		}
 	}
 }
 

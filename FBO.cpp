@@ -138,6 +138,12 @@ const char * FBO::getStatusMessage() {
 			return "[ERROR] Framebuffer incomplete: Draw buffer.";
 		case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
 			return "[ERROR] Framebuffer incomplete: Read buffer.";
+		case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+			return "[ERROR] Framebuffer incomplete: Sample count or sample locations are not the same for all renderbuffers.";
+		case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+			return "[ERROR] Framebuffer incomplete: Mixing of layered and unlayered attachments is not allowed.";
+		case GL_FRAMEBUFFER_UNDEFINED:
+			return "[ERROR] Default framebuffer does not exist.";
 		case GL_FRAMEBUFFER_UNSUPPORTED:
 			return "[ERROR] Unsupported by FBO implementation.";
 		default:
