@@ -56,14 +56,6 @@ static const Util::StringIdentifier BUFFER_TEXTURESETDATA("TextureSetData");
 static const Uniform::UniformName UNIFORM_MATRIX_MODEL_TO_CAM("sg_matrix_modelToCamera");
 static const Uniform::UniformName UNIFORM_POINT_SIZE("sg_pointSize");
 
-static const uint32_t MAX_FRAMEDATA = 1;
-static const uint32_t MAX_OBJECTDATA = 512;
-static const uint32_t MAX_MATERIALS = 256;
-static const uint32_t MAX_LIGHTS = 256;
-static const uint32_t MAX_LIGHTSETS = 1;
-static const uint32_t MAX_TEXTURESETS = 1;
-static const uint32_t MAX_ENABLED_LIGHTS = 8;
-
 struct FrameData {
 	Geometry::Matrix4x4f matrix_worldToCamera;
 	Geometry::Matrix4x4f matrix_cameraToWorld;
@@ -202,9 +194,13 @@ RenderingContext::RenderingContext() :
 	
 	internalData->targetPipelineState.setVertexArray(new VAO);
 	
+	internalData->targetLightSet.lights.fill(0);
+	internalData->targetTextureSet.fill(0);
+	
 	// initialize default buffers
 	auto buffer = new BufferView(new BufferObject, 0, sizeof(FrameData), MAX_FRAMEDATA);
 	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
+	buffer->setValue(0, internalData->targetFrameData);
 	registerBuffer(BUFFER_FRAMEDATA, buffer);
 	
 	buffer = new StreamBufferView(2, new BufferObject, 0, sizeof(ObjectData), MAX_OBJECTDATA);
@@ -221,19 +217,19 @@ RenderingContext::RenderingContext() :
 	
 	buffer = new BufferView(new BufferObject, 0, sizeof(LightSet), MAX_LIGHTSETS);
 	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
+	buffer->setValue(0, internalData->targetLightSet);
 	registerBuffer(BUFFER_LIGHTSETDATA, buffer);
 	
 	buffer = new BufferView(new BufferObject, 0, sizeof(TextureSet), MAX_TEXTURESETS);
 	buffer->allocateBuffer(BufferObject::FLAGS_DYNAMIC);
+	buffer->setValue(0, internalData->targetTextureSet);
 	registerBuffer(BUFFER_TEXTURESETDATA, buffer);
-	
 	// initialize lights
 	internalData->freeLightIds.insert(internalData->freeLightIds.end(), 0);
 	for(uint_fast8_t i=1; i<std::numeric_limits<uint8_t>::max(); ++i) {
 		internalData->freeLightIds.insert(internalData->freeLightIds.end(), i);
 		internalData->freeMaterialIds.insert(internalData->freeMaterialIds.end(), i);
 	}
-	
 }
 
 RenderingContext::~RenderingContext() = default;

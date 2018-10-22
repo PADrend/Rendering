@@ -11,8 +11,10 @@
 #include "ShaderObjectInfo.h"
 #include "../GLHeader.h"
 #include "../Helper.h"
+#include "../RenderingContext/RenderingParameters.h"
 #include <Util/IO/FileUtils.h>
 #include <Util/Macros.h>
+#include <Util/StringUtils.h>
 #include <cstddef>
 #include <vector>
 
@@ -66,6 +68,13 @@ uint32_t ShaderObjectInfo::compile() const {
 	}
 	header += defines;
 	header += "#define USE_UNIFORM_BUFFERS 1\n";
+	header += "#define MAX_FRAMEDATA " + Util::StringUtils::toString(MAX_FRAMEDATA) + "\n";
+	header += "#define MAX_OBJECTDATA " + Util::StringUtils::toString(MAX_OBJECTDATA) + "\n";
+	header += "#define MAX_MATERIALS " + Util::StringUtils::toString(MAX_MATERIALS) + "\n";
+	header += "#define MAX_LIGHTS " + Util::StringUtils::toString(MAX_LIGHTS) + "\n";
+	header += "#define MAX_LIGHTSETS " + Util::StringUtils::toString(MAX_LIGHTSETS) + "\n";
+	header += "#define MAX_TEXTURESETS " + Util::StringUtils::toString(MAX_TEXTURESETS) + "\n";
+	header += "#define MAX_ENABLED_LIGHTS " + Util::StringUtils::toString(MAX_ENABLED_LIGHTS) + "\n";
 	static const std::string versionPrefix = "#version";
 	if(strCode.compare(0, versionPrefix.length(), versionPrefix) == 0) {
 		header += "#line 2\n";

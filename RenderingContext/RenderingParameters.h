@@ -27,6 +27,14 @@
 namespace Rendering {
 class Texture;
 
+static const uint32_t MAX_FRAMEDATA = 1;
+static const uint32_t MAX_OBJECTDATA = 512;
+static const uint32_t MAX_MATERIALS = 256;
+static const uint32_t MAX_LIGHTS = 256;
+static const uint32_t MAX_LIGHTSETS = 1;
+static const uint32_t MAX_TEXTURESETS = 1;
+static const uint32_t MAX_ENABLED_LIGHTS = 35;
+
 namespace Comparison {
 /**
  * @brief Type of comparison function
