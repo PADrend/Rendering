@@ -2184,13 +2184,13 @@ void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sou
 		WARN("copyVertices: Not enough source vertices available.");
 		return;
 	}	
-	if(source->getVertexCount() < targetOffset+count) {
+	if(target->getVertexCount() < targetOffset+count) {
 		WARN("copyVertices: Target vertex count is too small.");
 		return;
 	}
 	
 	auto& srcVertices = source->_getVertexData();
-	auto& tgtVertices = source->_getVertexData();
+	auto& tgtVertices = target->_getVertexData();
 	
 	uint32_t srcStart = sourceOffset*vd.getVertexSize();
 	uint32_t tgtStart = targetOffset*vd.getVertexSize();
