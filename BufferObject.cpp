@@ -10,6 +10,7 @@
 */
 #include "BufferObject.h"
 #include "GLHeader.h"
+#include "Helper.h"
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -172,9 +173,10 @@ void BufferObject::clear(uint32_t internalFormat, uint32_t format, uint32_t type
 void BufferObject::copy(const BufferObject& source, uint32_t sourceOffset, uint32_t targetOffset, uint32_t size) {
 	source.bind(TARGET_COPY_READ_BUFFER);
 	bind(TARGET_COPY_WRITE_BUFFER);
-	glCopyBufferSubData(source.bufferId, bufferId, sourceOffset, targetOffset, size);
+	glCopyBufferSubData(TARGET_COPY_READ_BUFFER, TARGET_COPY_WRITE_BUFFER, sourceOffset, targetOffset, size);
 	unbind(TARGET_COPY_WRITE_BUFFER);
 	source.unbind(TARGET_COPY_READ_BUFFER);
+	GET_GL_ERROR();
 }
 
 // Instantiate the template functions
