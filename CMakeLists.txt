@@ -23,6 +23,7 @@ add_library(Rendering
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp
 	Mesh/MeshVertexData.cpp
+	Mesh/VertexAccessor.cpp
 	Mesh/VertexAttribute.cpp
 	Mesh/VertexAttributeAccessors.cpp
 	Mesh/VertexAttributeIds.cpp
@@ -32,10 +33,10 @@ add_library(Rendering
 	MeshUtils/MeshBuilder.cpp
 	MeshUtils/MeshUtils.cpp
 	MeshUtils/PlatonicSolids.cpp
+	MeshUtils/PrimitiveShapes.cpp
 	MeshUtils/QuadtreeMeshBuilder.cpp
 	MeshUtils/QuadtreeMeshBuilderDebug.cpp
 	MeshUtils/Simplification.cpp
-	MeshUtils/StreamMeshDataStrategy.cpp
 	MeshUtils/TriangleAccessor.cpp
 	MeshUtils/ConnectivityAccessor.cpp
 	RenderingContext/internal/StatusHandler_glCompatibility.cpp

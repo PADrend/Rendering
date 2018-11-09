@@ -1,444 +1,129 @@
 /*
-	This file is part of the Rendering library.
-	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
-	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
-	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	
-	This library is subject to the terms of the Mozilla Public License, v. 2.0.
-	You should have received a copy of the MPL along with this library; see the 
-	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
+ This file is part of the Rendering library.
+ Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
+ Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
+ Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+ Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
+ 
+ This library is subject to the terms of the Mozilla Public License, v. 2.0.
+ You should have received a copy of the MPL along with this library; see the
+ file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "MeshBuilder.h"
+#include "PrimitiveShapes.h"
 #include "MeshUtils.h"
+#include "../Mesh/VertexAccessor.h"
 #include "../Mesh/Mesh.h"
-#include "../Mesh/VertexAttributeIds.h"
-#include "../Texture/Texture.h"
-#include "../GLHeader.h"
-#include <Geometry/Box.h>
-#include <Geometry/BoxHelper.h>
-#include <Geometry/Convert.h>
+
 #include <Geometry/Matrix4x4.h>
-#include <Geometry/Sphere.h>
+
 #include <Geometry/Vec2.h>
 #include <Geometry/Vec3.h>
+#include <Geometry/Sphere.h>
 #include <Util/Graphics/Color.h>
-#include <Util/Graphics/ColorLibrary.h>
+#include <Util/Graphics/Bitmap.h>
 #include <Util/Graphics/PixelAccessor.h>
+
 #include <cmath>
 #include <map>
 
-#ifndef M_PI
-#define M_PI		3.14159265358979323846
-#endif
-
-#ifndef M_PI_2
-#define M_PI_2		1.57079632679489661923
-#endif
-
-
 namespace Rendering {
 namespace MeshUtils {
-
-// ---------------------------------------------------------------------------------------------------------------
-// static mesh creation helper
-
-void MeshBuilder::addBox(MeshBuilder & builder, const Geometry::Box & box) {
-	uint32_t nextIndex = builder.getNextIndex();
-	for (uint_fast8_t s = 0; s < 6; ++s) {
-		const Geometry::side_t side = static_cast<Geometry::side_t>(s);
-		const Geometry::corner_t * corners = Geometry::Helper::getCornerIndices(side);
-		const Geometry::Vec3 & normal = Geometry::Helper::getNormal(side);
-		for (uint_fast8_t v = 0; v < 4; ++v) {
-			const Geometry::Vec3 & corner = box.getCorner(corners[v]);
-			builder.position(corner);
-			builder.normal(normal);
-			builder.addVertex();
-		}
-		builder.addQuad(nextIndex + 0, nextIndex + 1, nextIndex + 2, nextIndex + 3);
-		nextIndex += 4;
-	}
+	
+static uint32_t nextPowerOfTwo(uint32_t n) {
+	--n;
+	n |= n >> 1;
+	n |= n >> 2;
+	n |= n >> 4;
+	n |= n >> 8;
+	n |= n >> 16;
+	return n + 1;
 }
 
-Mesh * MeshBuilder::createBox(const VertexDescription & vertexDesc, const Geometry::Box & box) {
-	MeshBuilder builder(vertexDesc);
-	builder.color(Util::ColorLibrary::WHITE);
-	addBox(builder,box);
-	return builder.buildMesh();
+//! Deprecated \see MeshUtils::createBox(...)
+Mesh * MeshBuilder::createBox(const VertexDescription & vd, const Geometry::Box & box) {
+	return MeshUtils::createBox(vd, box);
 }
 
-Mesh * MeshBuilder::createDome(const double radius /*= 100.0*/,
-							   const int horiRes /*= 40*/,
-							   const int vertRes /*= 40*/,
-							   const double halfSphereFraction /*= 1.0*/,
-							   const double imagePercentage /*= 1.0*/) {
-
-	const double azimuth_step = 2.0 * M_PI / static_cast<double> (horiRes);
-	const double elevation_step = halfSphereFraction * M_PI_2 / static_cast<double> (vertRes);
-	const uint32_t numVertices = (horiRes + 1) * (vertRes + 1);
-	const uint32_t numFaces = (2 * vertRes - 1) * horiRes;
-
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendTexCoord();
-	auto mesh = new Mesh(vertexDescription, numVertices, numFaces * 3);
-
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *> (vd.data());
-	double azimuth = 0.0f;
-	for (int k = 0; k <= horiRes; ++k) {
-		double elevation = M_PI_2;
-		for (int j = 0; j <= vertRes; ++j) {
-			v[0] = radius * cos(elevation) * sin(azimuth); //x
-			v[1] = radius * sin(elevation); //y
-			v[2] = radius * cos(elevation) * cos(azimuth); //z
-			v[3] = static_cast<float> (k) / static_cast<float> (horiRes); //u
-			v[4] = 1.0f - static_cast<float> (j) / static_cast<float> (vertRes) * imagePercentage; //v
-			v += 5;
-			elevation -= elevation_step;
-		}
-		azimuth += azimuth_step;
-	}
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * indices = id.data();
-	for (int k = 0; k < horiRes; ++k) {
-		*indices++ = vertRes + 2 + (vertRes + 1) * k;
-		*indices++ = 1 + (vertRes + 1) * k;
-		*indices++ = 0 + (vertRes + 1) * k;
-
-		for (int j = 1; j < vertRes; ++j) {
-			*indices++ = vertRes + 2 + (vertRes + 1) * k + j;
-			*indices++ = 1 + (vertRes + 1) * k + j;
-			*indices++ = 0 + (vertRes + 1) * k + j;
-
-			*indices++ = vertRes + 1 + (vertRes + 1) * k + j;
-			*indices++ = vertRes + 2 + (vertRes + 1) * k + j;
-			*indices++ = 0 + (vertRes + 1) * k + j;
-		}
-	}
-	id.updateIndexRange();
-	return mesh;
+//! Deprecated \see MeshUtils::addBox(...)
+void MeshBuilder::addBox(MeshBuilder & mb, const Geometry::Box & box) {
+	MeshUtils::addBox(mb, box);
 }
 
-void MeshBuilder::addSphere(MeshBuilder & builder, const Geometry::Sphere_f & sphere, uint32_t inclinationSegments, uint32_t azimuthSegments) {
-	const uint32_t indexOffset = builder.getNextIndex();
-	const double TWO_PI = 2.0 * M_PI;
-	const double inclinationIncrement = M_PI / static_cast<double>(inclinationSegments);
-	const double azimuthIncrement = TWO_PI / static_cast<double>(azimuthSegments);
-
-	// Multiple "North Poles"
-	builder.position(sphere.getCenter() + Geometry::Vec3f(0.0f, sphere.getRadius(), 0.0f));
-	builder.normal(Geometry::Vec3f(0.0f, 1.0f, 0.0f));
-	for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
-		const double u = 1.0 - ((static_cast<double>(azimuth) + 0.5) / static_cast<double>(azimuthSegments));
-		builder.texCoord0(Geometry::Vec2f(u, 1.0f));
-		builder.addVertex();
-	}
-
-	// Multiple "South Poles"
-	builder.position(sphere.getCenter() + Geometry::Vec3f(0.0f, -sphere.getRadius(), 0.0f));
-	builder.normal(Geometry::Vec3f(0.0f, -1.0f, 0.0f));
-	for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
-		const double u = 1.0 - (static_cast<double>(azimuth) / static_cast<double>(azimuthSegments));
-		builder.texCoord0(Geometry::Vec2f(u, 0.0f));
-		builder.addVertex();
-	}
-
-	for(uint_fast32_t inclination = 1; inclination < inclinationSegments; ++inclination) {
-		// This loop runs until azimuth equals azimuthSegments, because we need the same vertex positions with different texture coordinates.
-		for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
-			const double inclinationAngle = inclinationIncrement * static_cast<double>(inclination);
-			const double azimuthAngle = azimuthIncrement * static_cast<double>(azimuth);
-			const Geometry::Vec3f position = Geometry::Sphere_f::calcCartesianCoordinateUnitSphere(inclinationAngle, azimuthAngle);
-			builder.position(sphere.getCenter() + position*sphere.getRadius());
-			builder.normal(position);
-			builder.texCoord0(Geometry::Vec2f(
-				1.0 - (static_cast<double>(azimuth) / static_cast<double>(azimuthSegments)),
-				1.0 - (static_cast<double>(inclination) / static_cast<double>(inclinationSegments))));
-			builder.addVertex();
-		}
-	}
-
-	for(uint_fast32_t inclination = 1; inclination < inclinationSegments; ++inclination) {
-		const uint32_t rowOffset = indexOffset + (inclination + 1) * (azimuthSegments + 1);
-		for(uint_fast32_t azimuth = 0; azimuth < azimuthSegments; ++azimuth) {
-			if(inclination == 1) {
-				// Connect first row to north pole.
-				const uint32_t northPoleIndex = indexOffset + azimuth;
-				builder.addTriangle(northPoleIndex, rowOffset + azimuth + 1, rowOffset + azimuth);
-			} else {
-				builder.addQuad(
-					rowOffset - (azimuthSegments + 1) + azimuth,
-					rowOffset - (azimuthSegments + 1) + azimuth + 1,
-					rowOffset + azimuth + 1,
-					rowOffset + azimuth);
-				if(inclination == inclinationSegments - 1) {
-					// Connect last row to south pole.
-					const uint32_t southPoleIndex = indexOffset + (azimuthSegments + 1) + azimuth;
-					builder.addTriangle(southPoleIndex, rowOffset + azimuth, rowOffset + azimuth + 1);
-				}
-			}
-		}
-	}
+//! Deprecated \see MeshUtils::createDome(...)
+Mesh * MeshBuilder::createDome(const double radius, const int horiRes, const int vertRes, const double halfSphereFraction, const double imagePercentage) { 
+	VertexDescription vd;
+	vd.appendPosition3D();
+	vd.appendNormalByte();
+	vd.appendColorRGBAByte();
+	return MeshUtils::createDome(vd,radius,horiRes,vertRes,halfSphereFraction,imagePercentage);
+}
+					 
+//! Deprecated \see MeshUtils::createSphere(...)
+Mesh * MeshBuilder::createSphere(const VertexDescription & vd, uint32_t inclinationSegments, uint32_t azimuthSegments) {
+	return MeshUtils::createSphere(vd,Geometry::Sphere_f(),inclinationSegments,azimuthSegments);
 }
 
-Mesh * MeshBuilder::createSphere(const VertexDescription & vertexDesc,uint32_t inclinationSegments, uint32_t azimuthSegments) {
-	MeshBuilder builder(vertexDesc);
-	builder.color(Util::ColorLibrary::WHITE);
-	addSphere(builder,Geometry::Sphere_f({0,0,0},1.0f),inclinationSegments,azimuthSegments);
-	return builder.buildMesh();
+//! Deprecated \see MeshUtils::addSphere(...)
+void MeshBuilder::addSphere(MeshBuilder & mb, const Geometry::Sphere_f & sphere, uint32_t inclinationSegments, uint32_t azimuthSegments) { 
+	MeshUtils::addSphere(mb,sphere,inclinationSegments,azimuthSegments);
 }
 
-Mesh * MeshBuilder::createRingSector(float innerRadius, float outerRadius, uint8_t numSegments, float angle /* = 360 */){
-	if (numSegments < 1 || innerRadius >= outerRadius) {
-		return nullptr;
-	}
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	auto mesh = new Mesh(vertexDescription, numSegments * 2 + 2, 3 * numSegments * 2);
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *> (vd.data());
-	const float normal[3] = { -1.0f, 0.0f, 0.0f };
-
-	// Calculate vertices on the circle.
-	const float step = Geometry::Convert::degToRad(angle) / static_cast<float> (numSegments);
-	for (uint_fast8_t segment = 0; segment <= numSegments; ++segment) {
-		const float segmentAngle = static_cast<float> (segment) * step;
-		*v++ = 0.0f;
-		*v++ = innerRadius * std::sin(segmentAngle);
-		*v++ = innerRadius * std::cos(segmentAngle);
-		*v++ = normal[0];
-		*v++ = normal[1];
-		*v++ = normal[2];
-		*v++ = 0.0f;
-		*v++ = outerRadius * std::sin(segmentAngle);
-		*v++ = outerRadius * std::cos(segmentAngle);
-		*v++ = normal[0];
-		*v++ = normal[1];
-		*v++ = normal[2];
-	}
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * i = id.data();
-	for (uint_fast8_t segment = 0; segment < numSegments; ++segment) {
-		*i++ = 0 + segment * 2;
-		*i++ = 1 + segment * 2;
-		*i++ = 3 + segment * 2;
-		*i++ = 0 + segment * 2;
-		*i++ = 3 + segment * 2;
-		*i++ = 2 + segment * 2;
-	}
-	id.updateIndexRange();
-	return mesh;
+//! Deprecated \see MeshUtils::createDiscSector(...)
+Mesh * MeshBuilder::createDiscSector(float radius, uint8_t numSegments, float angle) { 
+	VertexDescription vd;
+	vd.appendPosition3D();
+	vd.appendNormalByte();
+	vd.appendColorRGBAByte();
+	return MeshUtils::createDiscSector(vd,radius,numSegments,angle);
 }
 
-Mesh * MeshBuilder::createDiscSector(float radius, uint8_t numSegments, float angle /* = 360 */) {
-	if (numSegments < 1) {
-		return nullptr;
-	}
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	MeshBuilder b(vertexDescription);
-	b.normal(Geometry::Vec3(-1.0f, 0.0f, 0.0f));
-	b.position(Geometry::Vec3(0,0,0));
-	b.addVertex();
-
-	// Calculate vertices on the circle.
-	const float step = Geometry::Convert::degToRad(angle) / static_cast<float> (numSegments);
-	for (uint_fast8_t segment = 0; segment <= numSegments; ++segment) {
-		const float segmentAngle = static_cast<float> (segment) * step;
-		b.position( Geometry::Vec3(0,radius * std::sin(segmentAngle),radius * std::cos(segmentAngle)) );
-		b.addVertex();
-	}
-	for (uint_fast8_t segment = 1; segment <= numSegments; ++segment)
-		b.addTriangle(0,segment,segment+1);
-	return b.buildMesh();
+//! Deprecated \see MeshUtils::createRingSector(...)
+Mesh * MeshBuilder::createRingSector(float innerRadius, float outerRadius, uint8_t numSegments, float angle) { 
+	VertexDescription vd;
+	vd.appendPosition3D();
+	vd.appendNormalByte();
+	vd.appendColorRGBAByte();
+	return MeshUtils::createRingSector(vd,innerRadius,outerRadius,numSegments,angle);
 }
 
-Mesh * MeshBuilder::createCone(float radius, float height, uint8_t numSegments) {
-	if (numSegments < 2) {
-		return nullptr;
-	}
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	auto mesh = new Mesh(vertexDescription, numSegments + 1, 3 * numSegments);
-
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *> (vd.data());
-
-
-	// First vertex is the apex.
-	const Geometry::Vec3f apex(height, 0.0f, 0.0f);
-	*v++ = apex.getX();
-	*v++ = apex.getY();
-	*v++ = apex.getZ();
-	*v++ = 1.0f;
-	*v++ = 0.0f;
-	*v++ = 0.0f;
-	// Calculate vertices of the base.
-	const float step = 6.28318530717958647692f / static_cast<float> (numSegments);
-	for (uint_fast8_t segment = 0; segment < numSegments; ++segment) {
-		const float angle = static_cast<float> (segment) * step;
-		const Geometry::Vec3f pos(0.0f, radius * std::sin(angle), radius * std::cos(angle));
-		const Geometry::Vec3f tangent(0.0f, pos.getZ(), -pos.getY());
-		const Geometry::Vec3f lateral = apex - pos;
-		Geometry::Vec3f normal = lateral.cross(tangent);
-		normal.normalize();
-		*v++ = pos.getX();
-		*v++ = pos.getY();
-		*v++ = pos.getZ();
-		*v++ = normal.getX();
-		*v++ = normal.getY();
-		*v++ = normal.getZ();
-	}
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * i = id.data();
-	for (uint_fast8_t segment = 1; segment < numSegments; ++segment) {
-		*i++ = segment;
-		*i++ = 0;
-		*i++ = segment + 1;
-	}
-	// Connect triangles to the vertex of the first triangle.
-	*i++ = numSegments;
-	*i++ = 0;
-	*i++ = 1;
-
-	id.updateIndexRange();
-	return mesh;
+//! Deprecated \see MeshUtils::createCone(...)
+Mesh * MeshBuilder::createCone(float radius, float height, uint8_t numSegments) { 
+	VertexDescription vd;
+	vd.appendPosition3D();
+	vd.appendNormalByte();
+	vd.appendColorRGBAByte();
+	return MeshUtils::createCone(vd,radius,height,numSegments);
 }
 
-Mesh * MeshBuilder::createConicalFrustum(float radiusBottom, float radiusTop, float height, uint8_t numSegments) {
-	if (numSegments < 2) {
-		return nullptr;
-	}
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	auto mesh = new Mesh(vertexDescription, 2 * numSegments, 3 * 2 * numSegments);
-
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *> (vd.data());
-
-	const float step = 6.28318530717958647692f / static_cast<float> (numSegments);
-	for (uint_fast8_t segment = 0; segment < numSegments; ++segment) {
-		const float angle = static_cast<float> (segment) * step;
-		const float sinAngle = std::sin(angle);
-		const float cosAngle = std::cos(angle);
-
-		const Geometry::Vec3f posBottom(0.0f, radiusBottom * sinAngle, radiusBottom * cosAngle);
-		const Geometry::Vec3f posTop(height, radiusTop * sinAngle, radiusTop * cosAngle);
-		const Geometry::Vec3f tangent(0.0f, posBottom.getZ(), -posBottom.getY());
-		const Geometry::Vec3f lateral = posTop - posBottom;
-		Geometry::Vec3f normal = lateral.cross(tangent);
-		normal.normalize();
-		// Set vertex on the bottom circle.
-		*v++ = posBottom.getX();
-		*v++ = posBottom.getY();
-		*v++ = posBottom.getZ();
-		*v++ = normal.getX();
-		*v++ = normal.getY();
-		*v++ = normal.getZ();
-		// Set vertex on the top circle.
-		*v++ = posTop.getX();
-		*v++ = posTop.getY();
-		*v++ = posTop.getZ();
-		*v++ = normal.getX();
-		*v++ = normal.getY();
-		*v++ = normal.getZ();
-	}
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * i = id.data();
-	for (int_fast16_t segment = 0; segment < 2 * (numSegments - 1); segment += 2) {
-		*i++ = segment;
-		*i++ = segment + 1;
-		*i++ = segment + 2;
-
-		*i++ = segment + 2;
-		*i++ = segment + 1;
-		*i++ = segment + 3;
-	}
-	// Connect last two triangles to the vertices of the first triangle.
-	*i++ = 2 * numSegments - 2;
-	*i++ = 2 * numSegments - 1;
-	*i++ = 0;
-
-	*i++ = 0;
-	*i++ = 2 * numSegments - 1;
-	*i++ = 1;
-
-	id.updateIndexRange();
-	return mesh;
+//! Deprecated \see MeshUtils::createConicalFrustum(...)
+Mesh * MeshBuilder::createConicalFrustum(float radiusBottom, float radiusTop, float height, uint8_t numSegments) { 
+	VertexDescription vd;
+	vd.appendPosition3D();
+	vd.appendNormalByte();
+	vd.appendColorRGBAByte();
+	return MeshUtils::createConicalFrustum(vd,radiusBottom,radiusTop,height,numSegments);
 }
 
-Mesh * MeshBuilder::createArrow(float radius, float length){
-	std::deque<Mesh *> meshes;
-	std::deque<Geometry::Matrix4x4> transformations;
-	Geometry::Matrix4x4 transform;
-
-	meshes.push_back(createConicalFrustum(radius, radius, length - 0.01f - 0.29f, 16));
-	transformations.push_back(transform);
-
-	meshes.push_back(createConicalFrustum(radius, 2.0f * radius, 0.01f, 16));
-	transform.translate(length - 0.29f - 0.01f, 0.0f, 0.0f);
-	transformations.push_back(transform);
-
-	meshes.push_back(createCone(2.0f * radius, 0.29f, 16));
-	transform.translate(0.01f, 0.0f, 0.0f);
-	transformations.push_back(transform);
-
-	Mesh * arrow = MeshUtils::combineMeshes(meshes, transformations);
-	MeshUtils::optimizeIndices(arrow);
-	return arrow;
+//! Deprecated \see MeshUtils::createArrow(...)
+Mesh * MeshBuilder::createArrow(float radius, float length) {
+	VertexDescription vd;
+	vd.appendPosition3D();
+	vd.appendNormalByte();
+	vd.appendColorRGBAByte();
+	return MeshUtils::createArrow(vd,radius,length);
 }
 
-Mesh * MeshBuilder::createRectangle(const VertexDescription & desc,float width, float height){
-	MeshBuilder b(desc);
-	b.normal( Geometry::Vec3(0,0,1.0f) );
-	// Set color for all vertices to white.
-	b.color(Util::ColorLibrary::WHITE);
-
-	b.texCoord0( Geometry::Vec2(0,0) );
-	b.position( Geometry::Vec3(-width*0.5,-height*0.5,0) );
-	b.addVertex();
-
-	b.texCoord0( Geometry::Vec2(0,1) );
-	b.position( Geometry::Vec3(-width*0.5,height*0.5,0) );
-	b.addVertex();
-
-	b.texCoord0( Geometry::Vec2(1,1) );
-	b.position( Geometry::Vec3(width*0.5,height*0.5,0) );
-	b.addVertex();
-
-	b.texCoord0( Geometry::Vec2(1,0) );
-	b.position( Geometry::Vec3(width*0.5,-height*0.5,0) );
-	b.addVertex();
-
-	b.addQuad(0,1,2,3);
-	return b.buildMesh();
+//! Deprecated \see MeshUtils::createRectangle(...)
+Mesh * MeshBuilder::createRectangle(const VertexDescription & vd,float width, float height) {
+	return MeshUtils::createRectangle(vd,width,height);
 }
 
-
-//! (static)
-Mesh * MeshBuilder::createMeshFromBitmaps(const VertexDescription & d,
-										  Util::Reference<Util::Bitmap> depth,
-										  Util::Reference<Util::Bitmap> color,
-										  Util::Reference<Util::Bitmap> normals) {
-	using namespace Geometry;
-
-	const uint32_t width = depth->getWidth();
-	const uint32_t height = depth->getHeight();
-
-	Util::Reference<Util::PixelAccessor> depthReader = Util::PixelAccessor::create(std::move(depth));
-	if( depthReader.isNull() || depthReader->getPixelFormat()!=Util::PixelFormat::MONO_FLOAT ){
+//! Deprecated
+Mesh * MeshBuilder::createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::Bitmap> depth, Util::Reference<Util::Bitmap> color, Util::Reference<Util::Bitmap> normals) {
+	
+	Util::Reference<Util::PixelAccessor> depthAcc = Util::PixelAccessor::create(std::move(depth));
+	if( depth.isNull() || depth->getPixelFormat()!=Util::PixelFormat::MONO_FLOAT ){
 		WARN("createMeshFromBitmaps: unsupported depth texture format");
 		return nullptr;
 	}
@@ -458,378 +143,105 @@ Mesh * MeshBuilder::createMeshFromBitmaps(const VertexDescription & d,
 			return nullptr;
 		}
 	}
-
-	MeshBuilder builder(d);
-
-	const float xScale=2.0 / width;
-	const float yScale=2.0 / height;
-	const float cut=1;
-
-	for(uint32_t y=0; y<height; ++y){
-		for(uint32_t x=0; x<width; ++x){
-			Vec3 pos(xScale * x - 1.0f, yScale * y - 1.0f, 2.0f * depthReader->readSingleValueFloat(x,y) - 1.0f);
-			builder.position( pos );
-			builder.color(colorReader->readColor4ub(x, y));
-			if(normalReader.isNotNull()){
-				Util::Color4f tmp = normalReader->readColor4f(x,y);
-				Vec3 normal=Vec3(tmp.getR()-0.5f,tmp.getG()-0.5f,tmp.getB()-0.5f);
-				if(!normal.isZero())
-					normal.normalize();
-				builder.normal(normal);
-			}
-
-			uint32_t index=builder.addVertex();
-			// add triangles
-			if(x>0 && y>0){
-				const float z_1_1 = depthReader->readSingleValueFloat(x - 1, y - 1);
-				const float z_1_0 = depthReader->readSingleValueFloat(x - 1, y);
-				const float z_0_1 = depthReader->readSingleValueFloat(x, y - 1);
-				const float z_0_0 = depthReader->readSingleValueFloat(x, y);
-
-				if( std::abs( z_0_0 - z_1_1 ) > std::abs( z_1_0 - z_0_1 ) ){
-					/*
-					_1_1	_0_1
-					  o---o  o
-					  |  /  /|
-					  | /  / |
-					  |/  /  |
-					  o  o---o
-					_1_0	_0_0
-
-					*/
-					if( z_1_1<cut && z_1_0<cut && z_0_1<cut  ){
-						builder.addIndex( index-width-1);
-						builder.addIndex( index-width);
-						builder.addIndex( index-1);
-					}
-//
-					if( z_0_1<cut && z_1_0<cut && z_0_0<cut  ){
-						builder.addIndex( index-width);
-						builder.addIndex( index);
-						builder.addIndex( index-1);
-					}
-				}else {
-					/*
-					_1_1	_0_1
-					  o  o---o
-					  |\  \  |
-					  | \  \ |
-					  |  \  \|
-					  o---o  o
-					_1_0	_0_0
-
-					*/
-					if( z_1_1<cut && z_1_0<cut && z_0_0<cut ){
-						builder.addIndex( index-width-1);
-						builder.addIndex( index);
-						builder.addIndex( index-1);
-					}
-
-					if( z_1_1<cut && z_0_1<cut && z_0_0<cut ){
-						builder.addIndex( index);
-						builder.addIndex( index-width-1);
-						builder.addIndex( index-width);
-					}
-				}
-			}
-		}
-	}
-
-	return builder.buildMesh();
+	return MeshUtils::createMeshFromBitmaps(vd,depthAcc,colorReader,normalReader);
+}
+									
+//! Deprecated \see MeshUtils::createHexGrid(...)
+Mesh * MeshBuilder::createHexGrid(const VertexDescription & vd, float width, float height, uint32_t rows, uint32_t columns) { 
+	return MeshUtils::createHexGrid(vd,width,height,rows,columns);
 }
 
-
-Mesh * MeshBuilder::createHexGrid(const VertexDescription & desc, float width, float height, uint32_t rows, uint32_t columns) {
-	MeshBuilder builder(desc);
-	static const Geometry::Vec3 Y_AXIS(0,1,0);
-	builder.normal(Y_AXIS);
-	builder.color(Util::ColorLibrary::WHITE);
-	Geometry::Vec2 uv(0,0);
-	
-	if(columns < 4 || rows < 3) {
-		WARN("createHexGrid: there has to be at least 4 columns and 3 rows.");
-		return nullptr;
-	}
-		
-	for(int32_t r=0; r<rows; ++r) {
-	  for(int32_t c=0; c<columns; ++c) {
-			int32_t b = (r%2==0 && c==1) ? 1 : ((r%2==0 && c==columns-2) ? -1 : 0);
-			int32_t gridX = 2*c + r%2 + b - 3;
-			int32_t gridY = r-1;
-			
-			uv.setValue(static_cast<float>(gridX) / (2.0f * (columns-4)), 1.0f - static_cast<float>(gridY) / (rows - 3));			
-			builder.texCoord0(uv);
-	    builder.position({uv.x()*width, 0, (1.0f-uv.y())*height});
-			builder.addVertex();
-			
-			if(c>0 && c<columns-2 && r>0 && r<rows-2) {
-				uint32_t idx = c + r*columns;
-				if(r%2==1) {
-					builder.addTriangle(idx, idx + columns, idx + columns + 1);
-	        if(c<columns-3)
-					  builder.addTriangle(idx, idx + columns + 1, idx + 1);
-				} else {
-					builder.addTriangle(idx, idx + columns, idx + 1);
-	        if(c<columns-3)
-					  builder.addTriangle(idx + 1, idx + columns, idx +columns + 1);
-				}
-			}
-	  }
-	}
-	return builder.buildMesh();
-	
+//! Deprecated \see MeshUtils::createVoxelMesh(...)
+Mesh * MeshBuilder::createVoxelMesh(const VertexDescription & vd, const Util::PixelAccessor& colorAcc, uint32_t depth) { 
+	return MeshUtils::createVoxelMesh(vd,colorAcc,depth);
 }
 
-
-Mesh * MeshBuilder::createVoxelMesh(const VertexDescription & desc, const Util::PixelAccessor& colorAcc, uint32_t depth) {	
-	//Util::Reference<Util::PixelAccessor> colorAcc = Util::PixelAccessor::create(std::move(voxelBitmap));
-	if( colorAcc.getPixelFormat().getNumComponents() < 4 ){
-		WARN("createVoxelMesh: unsupported color texture format. Requires 4 components.");
-		return nullptr;
-	}
-	if(colorAcc.getHeight()%depth != 0) {
-		WARN("createVoxelMesh: Bitmap height is not divisible by depth.");
-		return nullptr;
-	}
-	
-	MeshBuilder builder(desc);
-	Geometry::Vec3i res(colorAcc.getWidth(), colorAcc.getHeight()/depth, depth);
-	
-	const auto createQuad = [&](uint32_t x, uint32_t y, uint32_t z, uint8_t xMod, uint8_t yMod, uint8_t zMod, const Geometry::Vec3& normal){
-    uint32_t idx = builder.getNextIndex();
-    builder.normal(normal);
-    Geometry::Vec3 pos(x,y,z);
-    builder.position({pos.x() + ((xMod&1)>0?1.0f:0.0f),pos.y() + ((yMod&1)>0?1.0f:0.0f),pos.z() + ((zMod&1)>0?1.0f:0.0f)}); builder.addVertex();
-    builder.position({pos.x() + ((xMod&2)>0?1.0f:0.0f),pos.y() + ((yMod&2)>0?1.0f:0.0f),pos.z() + ((zMod&2)>0?1.0f:0.0f)}); builder.addVertex();
-    builder.position({pos.x() + ((xMod&4)>0?1.0f:0.0f),pos.y() + ((yMod&4)>0?1.0f:0.0f),pos.z() + ((zMod&4)>0?1.0f:0.0f)}); builder.addVertex();
-    builder.position({pos.x() + ((xMod&8)>0?1.0f:0.0f),pos.y() + ((yMod&8)>0?1.0f:0.0f),pos.z() + ((zMod&8)>0?1.0f:0.0f)}); builder.addVertex();
-    builder.addQuad(idx,idx+1,idx+2,idx+3);
-	};
-	
-  for(uint32_t z=0; z<res.z(); ++z) {    
-    for(uint32_t y=0; y<res.y(); ++y) {      
-      for(uint32_t x=0; x<res.x(); ++x) {
-        auto color = colorAcc.readColor4f(x, y + z*res.y()); 
-        if(color.a() > 0) {
-          builder.color(color);
-          if(x==0 || colorAcc.readColor4f(x-1, y + z*res.y()).a() < 0.1) 
-            createQuad(x, y, z, 0, 4|8, 2|4, {-1,0,0});
-          if(x==res.x()-1 || colorAcc.readColor4f(x+1, y + z*res.y()).a() < 0.1) 
-            createQuad(x, y, z, 1|2|4|8, 2|4, 4|8, {1,0,0});
-          if(y==0 || colorAcc.readColor4f(x, y-1 + z*res.y()).a() < 0.1) 
-            createQuad(x, y, z, 2|4, 0, 4|8, {0,-1,0});
-          if(y==res.y()-1 || colorAcc.readColor4f(x, y+1 + z*res.y()).a() < 0.1) 
-            createQuad(x, y, z, 4|8, 1|2|4|8, 2|4, {0,1,0});
-          if(z==0 || colorAcc.readColor4f(x, y + (z-1)*res.y()).a() < 0.1) 
-            createQuad(x, y, z, 4|8, 2|4, 0, {0,0,-1});
-          if(z==res.z()-1 || colorAcc.readColor4f(x, y + (z+1)*res.y()).a() < 0.1) 
-            createQuad(x, y, z, 2|4, 4|8, 1|2|4|8, {0,0,1});
-        }
-      }
-    }
-  }
-	
-	return builder.getNextIndex() == 0 ? nullptr : builder.buildMesh();
+//! Deprecated \see MeshUtils::createTorus(...)
+Mesh * MeshBuilder::createTorus(const VertexDescription & vd, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments) { 
+	return MeshUtils::createTorus(vd,innerRadius,outerRadius,majorSegments,minorSegments);
 }
 
-
-Mesh * MeshBuilder::createTorus(const VertexDescription & desc, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments) {
-	MeshBuilder builder(desc);
-	builder.color(Util::ColorLibrary::WHITE);
-	addTorus(builder, innerRadius, outerRadius, majorSegments, minorSegments);
-	return builder.buildMesh();
-}
-
-void MeshBuilder::addTorus(MeshBuilder & mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments) {
-	using namespace Geometry;
-	
-	innerRadius = std::max(0.0f, innerRadius);
-	majorSegments = std::max(3U, majorSegments);
-	minorSegments = std::max(3U, minorSegments);
-	if(innerRadius > outerRadius) {
-		WARN("MeshBuilder::addTorus: innerRadius is greater than outerRadius.");
-		return;
-	}
-	float minorRadius = (outerRadius - innerRadius) * 0.5;
-	float majorRadius = innerRadius + minorRadius;
-	for(uint32_t major=0; major<majorSegments; ++major) {
-		float u = major * 2.0 * M_PI / majorSegments;
-		Vec3 center(std::cos(u) * majorRadius, 0, std::sin(u) * majorRadius);
-		for(uint32_t minor=0; minor<minorSegments; ++minor) {
-			float v = minor * 2.0 * M_PI / minorSegments;
-			Vec3 n = (center.getNormalized() * std::cos(v) + Vec3(0, std::sin(v), 0)).getNormalized();
-			Vec3 p = center + n * minorRadius;
-			mb.position(p);
-			mb.normal(n);
-			mb.texCoord0(Vec2(1.0f - static_cast<float>(major)/majorSegments, static_cast<float>(minor)/minorSegments));
-			mb.addVertex();
-			mb.addQuad(
-				 major*minorSegments 										+  minor,
-		 	   major*minorSegments 										+ (minor+1)%minorSegments,
-				((major+1)%majorSegments)*minorSegments + (minor+1)%minorSegments,
-				((major+1)%majorSegments)*minorSegments +  minor
-			);
-		}
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------
-void MeshBuilder::MBVertex::setPosition(const VertexAttribute & attr,const Geometry::Vec2 &pos){
-	if(attr.getNumValues() != 2 || attr.getDataType() != GL_FLOAT ){
-		WARN("Unsupported format");
-		return;
-	}
-	float *v=floatPtr(attr);
-	*(v++) = pos.x();
-	*v = pos.y();
-}
-void MeshBuilder::MBVertex::setPosition(const VertexAttribute & attr,const Geometry::Vec3 &pos){
-	if(attr.getNumValues() < 3 || attr.getDataType() != GL_FLOAT ){
-		WARN("Unsupported format");
-		return;
-	}
-	float *v=floatPtr(attr);
-	*(v++) = pos.x();
-	*(v++) = pos.y();
-	*v = pos.z();
-	if(attr.getNumValues() == 4)
-		*(v+1) = 1;
-}
-void MeshBuilder::MBVertex::setNormal(const VertexAttribute & attr, const Geometry::Vec3f & n){
-	if(attr.getNumValues() < 3){
-		return;
-	}else if(attr.getDataType() == GL_FLOAT){
-		float *v=floatPtr( attr );
-		*(v++) = n.x();
-		*(v++) = n.y();
-		*v = n.z();
-	}else if(attr.getDataType() == GL_BYTE){
-		int8_t * v = int8Ptr(attr);
-		*(v++) = Geometry::Convert::toSigned<int8_t>(n.x());
-		*(v++) = Geometry::Convert::toSigned<int8_t>(n.y());
-		*v = Geometry::Convert::toSigned<int8_t>(n.z());
-	}else{
-		WARN("Unsupported format");
-	}
-}
-void MeshBuilder::MBVertex::setNormal(const VertexAttribute & attr, const Geometry::Vec3b & n){
-	if(attr.getNumValues() < 3){
-		return;
-	}else if(attr.getDataType() == GL_FLOAT){
-		float *v=floatPtr( attr );
-		*(v++) = Geometry::Convert::fromSignedTo<float, int8_t>(n.x());
-		*(v++) = Geometry::Convert::fromSignedTo<float, int8_t>(n.y());
-		*v = Geometry::Convert::fromSignedTo<float, int8_t>(n.z());
-	}else if(attr.getDataType() == GL_BYTE){
-		int8_t *v=int8Ptr(attr );
-		*(v++) = n.x();
-		*(v++) = n.y();
-		*v = n.z();
-	}else{
-		WARN("Unsupported format");
-	}
-}
-void MeshBuilder::MBVertex::setColor(const VertexAttribute & attr,const Util::Color4f &color){
-	if(attr.getNumValues() < 3){
-		return;
-	}else if(attr.getDataType() == GL_FLOAT){
-		float *v=floatPtr( attr );
-		*(v++) = color.getR();
-		*(v++) = color.getG();
-		*(v++) = color.getB();
-		if(attr.getNumValues()>3)
-			*v = color.getA();
-	}else if(attr.getDataType() == GL_UNSIGNED_BYTE){
-		uint8_t *v=uint8Ptr( attr );
-		Util::Color4ub cUb=Util::Color4ub(color);
-		*(v++) = cUb.getR();
-		*(v++) = cUb.getG();
-		*(v++) = cUb.getB();
-		if(attr.getNumValues()>3)
-			*v = cUb.getA();
-	}else{
-		WARN("Unsupported format");
-	}
-}
-void MeshBuilder::MBVertex::setColor(const VertexAttribute & attr, const Util::Color4ub & color) {
-	if(attr.getNumValues() < 3) {
-		return;
-	} else if(attr.getDataType() == GL_FLOAT) {
-		float * v = floatPtr(attr);
-		const Util::Color4f colorFloat(color);
-		*(v++) = colorFloat.getR();
-		*(v++) = colorFloat.getG();
-		*(v++) = colorFloat.getB();
-		if(attr.getNumValues() > 3) {
-			*v = colorFloat.getA();
-		}
-	} else if(attr.getDataType() == GL_UNSIGNED_BYTE) {
-		uint8_t * v = uint8Ptr(attr);
-		*(v++) = color.getR();
-		*(v++) = color.getG();
-		*(v++) = color.getB();
-		if(attr.getNumValues() > 3) {
-			*v = color.getA();
-		}
-	} else {
-		WARN("Unsupported format");
-	}
-}
-void MeshBuilder::MBVertex::setTex0(const VertexAttribute & attr,const Geometry::Vec2 & uv){
-	if(attr.getNumValues() < 2){
-		return;
-	}else if(attr.getDataType() == GL_FLOAT){
-		float *v=floatPtr( attr );
-		*(v++) = uv.x();
-		*(v++) = uv.y();
-	}else{
-		WARN("Unsupported format");
-	}
+//! Deprecated \see MeshUtils::addTorus(...)
+void MeshBuilder::addTorus(MeshBuilder & mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments) { 
+	MeshUtils::addTorus(mb,innerRadius,outerRadius,majorSegments,minorSegments);
 }
 
 // -----------------------------------------------------------------------------
 
-MeshBuilder::MeshBuilder() :
-	description(),
-	posAttr(description.appendPosition3D()),
-	normalAttr(description.appendNormalFloat()),
-	colorAttr(description.appendColorRGBAFloat()),
-	tex0Attr(description.appendTexCoord()),
-	currentVertex(description.getVertexSize()) {
+MeshBuilder::MeshBuilder() {
+	description.appendPosition3D();
+	description.appendNormalFloat();
+	description.appendColorRGBAFloat();
+	description.appendTexCoord();
+	vData.allocate(1, description);
+	iData.allocate(1);
+	currentVertex.allocate(1, description);
+	acc = new VertexAccessor(currentVertex);
+	acc->setColor(0, Util::Color4f{1,1,1,1}); // Default color WHITE
 }
 
-MeshBuilder::MeshBuilder(VertexDescription _description) :
-	description(std::move(_description)),
-	posAttr(description.getAttribute(VertexAttributeIds::POSITION)),
-	normalAttr(description.getAttribute(VertexAttributeIds::NORMAL)),
-	colorAttr(description.getAttribute(VertexAttributeIds::COLOR)),
-	tex0Attr(description.getAttribute(VertexAttributeIds::TEXCOORD0)),
-	currentVertex(description.getVertexSize()) {
+MeshBuilder::MeshBuilder(VertexDescription _description) : description(std::move(_description)) {
+	vData.allocate(1, description);
+	iData.allocate(1);
+	currentVertex.allocate(1, description);
+	acc = new VertexAccessor(currentVertex);
+	acc->setColor(0, Util::Color4f{1,1,1,1}); // Default color WHITE
 }
 
 MeshBuilder::~MeshBuilder() = default;
 
-void MeshBuilder::position(const Geometry::Vec2 & v){
+void MeshBuilder::position(const Geometry::Vec2 & v, const Util::StringIdentifier& attr) {
 	if(transMat) {
 		const auto transV = transMat->transformPosition(v.getX(), v.getY(), 0);
-		currentVertex.setPosition(posAttr, Geometry::Vec2(transV.getX(), transV.getY()));
+		acc->setPosition(0, transV, attr);
 	} else {
-		currentVertex.setPosition(posAttr, v);
+		acc->setTexCoord(0, v, attr);
 	}
 }
-void MeshBuilder::position(const Geometry::Vec3 & v) {
-	currentVertex.setPosition(posAttr, transMat ? transMat->transformPosition(v) : v);
+
+void MeshBuilder::position(const Geometry::Vec3f & v, const Util::StringIdentifier& attr) {
+	acc->setPosition(0, transMat ? transMat->transformPosition(v) : v, attr);
 }
-void MeshBuilder::normal(const Geometry::Vec3f & n) {
-	currentVertex.setNormal(normalAttr, transMat ? ((*transMat)*Geometry::Vec4(n,0.0)).xyz() : n);
+
+void MeshBuilder::position(const Geometry::Vec4 & v, const Util::StringIdentifier& attr) {
+	acc->setVec4(0, transMat ? (*transMat) * v : v, attr);
 }
-void MeshBuilder::normal(const Geometry::Vec3b & n) {
-	if(transMat){
-		normal( Geometry::Vec3f(n) );
-	}else{
-		currentVertex.setNormal(normalAttr, n);
-	}
+
+void MeshBuilder::normal(const Geometry::Vec3f & n, const Util::StringIdentifier& attr) {
+	acc->setNormal(0, transMat ? ((*transMat)*Geometry::Vec4(n,0.0)).xyz() : n, attr);
 }
+void MeshBuilder::normal(const Geometry::Vec3b & n, const Util::StringIdentifier& attr) {
+	normal( Geometry::Vec3f(n) );
+}
+
+void MeshBuilder::color(const Util::Color4f & c, const Util::StringIdentifier& attr) {
+	acc->setColor(0, c, attr);
+}
+
+void MeshBuilder::color(const Util::Color4ub & c, const Util::StringIdentifier& attr) {
+	acc->setColor(0, c, attr);
+}
+
+void MeshBuilder::texCoord0(const Geometry::Vec2 & uv, const Util::StringIdentifier& attr) {
+	acc->setTexCoord(0, uv, attr);
+}
+
+void MeshBuilder::values(const std::vector<float> & v, const Util::StringIdentifier& attr) {
+	acc->setFloats(0, v, attr);
+}
+
+void MeshBuilder::values(const std::vector<uint32_t> & v, const Util::StringIdentifier& attr) {
+	acc->setUInts(0, v, attr);
+}
+
+void MeshBuilder::value(float v, const Util::StringIdentifier& attr) {
+	acc->setFloat(0, v, attr);
+}
+
+void MeshBuilder::value(uint32_t v, const Util::StringIdentifier& attr) {
+	acc->setUInt(0, v, attr);
+}
+
 
 uint32_t MeshBuilder::addVertex(const Geometry::Vec3& pos, const Geometry::Vec3& n,
 								float r, float g, float b, float a,
@@ -841,13 +253,18 @@ uint32_t MeshBuilder::addVertex(const Geometry::Vec3& pos, const Geometry::Vec3&
 	return addVertex();
 }
 
-uint32_t MeshBuilder::addVertex(){
-	verts.emplace_back(currentVertex, description.getVertexSize());
-	return verts.size() - 1;
+uint32_t MeshBuilder::addVertex() {
+	if(vSize >= vData.getVertexCount())
+		vData.allocate(vData.getVertexCount()*2, description);
+		
+	std::copy(currentVertex.data(), currentVertex.data() + description.getVertexSize(), vData.data() + vSize * description.getVertexSize());
+	return vSize++;
 }
 
 void MeshBuilder::addIndex(uint32_t idx) {
-	inds.push_back(idx);
+	if(iSize >= iData.getIndexCount())
+		iData.allocate(iData.getIndexCount()*2);
+	iData[iSize++] = idx;
 }
 
 Mesh* MeshBuilder::buildMesh() {
@@ -855,29 +272,15 @@ Mesh* MeshBuilder::buildMesh() {
 		std::cerr << "Empty Mesh..? (MeshBuilder::buildMesh)\n";
 		return nullptr;
 	}
-	auto m = new Mesh(description, verts.size(), inds.size());
-
-	// vertices
-	MeshVertexData & vd=m->openVertexData();
-	uint8_t * vData=vd.data();
-	const size_t vSize=description.getVertexSize();
-	for(const auto & vertex : verts) {
-		std::copy(vertex.data.get(), vertex.data.get() + vSize, vData);
-		vData += vSize;
-	}
-	vd.updateBoundingBox();
-	verts.clear();
-
-	if(inds.empty()){
+	
+	vData.allocate(vSize, description);
+	iData.allocate(iSize);
+	vData.updateBoundingBox();
+	iData.updateIndexRange();
+	
+	auto m = new Mesh(iData, vData);
+	if(iSize == 0)
 		m->setUseIndexData(false);
-
-	}else{
-		// indices
-		MeshIndexData & id=m->openIndexData();
-		std::copy(inds.begin(),inds.end(),id.data());
-		id.updateIndexRange();
-		inds.clear();		
-	}
 
 	return m;
 }
@@ -900,8 +303,45 @@ void MeshBuilder::addTriangle(uint32_t idx0, uint32_t idx1,	uint32_t idx2) {
 	addIndex(idx2);
 }
 
+void MeshBuilder::addMesh(Mesh* mesh) {
+	if(iSize + mesh->getIndexCount() > iData.getIndexCount())
+		iData.allocate(nextPowerOfTwo(iSize + mesh->getIndexCount()));
+	if(vSize + mesh->getVertexCount() > vData.getVertexCount())
+		vData.allocate(nextPowerOfTwo(vSize + mesh->getVertexCount()), description);
+	
+	const auto& id = mesh->openIndexData();
+	const auto& vd = mesh->openVertexData();
+	
+	if(mesh->getIndexCount() > 0) {
+		std::copy(id.data(), id.data() + id.getIndexCount(), iData.data() + iSize);	
+		if(vSize > 0) {
+			for(uint32_t i=0; i<mesh->getIndexCount(); ++i) {
+				iData[iSize+i] += vSize;
+			}
+		}
+	}
+		
+	if(description == mesh->getVertexDescription()) {
+		std::copy(vd.data(), vd.data() + vd.dataSize(), vData.data() + vSize*description.getVertexSize());
+	} else {
+		std::unique_ptr<MeshVertexData> newVd(MeshUtils::convertVertices(vd, description));
+		std::copy(newVd->data(), newVd->data() + newVd->dataSize(), vData.data() + vSize*description.getVertexSize());
+	}
+	
+	if(transMat) {
+		VertexAccessor va(vData);
+		for(uint32_t i=0; i<mesh->getVertexCount(); ++i) {
+			va.setPosition(i+vSize, transMat->transformPosition(va.getPosition(i+vSize)));
+			va.setNormal(i+vSize, transMat->transformDirection(va.getNormal(i+vSize)));
+		}
+	}
+	
+	iSize += mesh->getIndexCount();
+	vSize += mesh->getVertexCount();
+}
+
 Geometry::Matrix4x4 MeshBuilder::getTransformation() const {
-	return transMat ? Geometry::Matrix4x4() : *transMat;
+	return !transMat ? Geometry::Matrix4x4() : *transMat;
 }
 void MeshBuilder::setTransformation(const Geometry::Matrix4x4 & m){
 	if(m.isIdentity()) {
@@ -912,6 +352,10 @@ void MeshBuilder::setTransformation(const Geometry::Matrix4x4 & m){
 }
 void MeshBuilder::setTransformation(const Geometry::SRT & s) {
 	setTransformation(Geometry::Matrix4x4(s));
+}
+
+void MeshBuilder::transform(const Geometry::Matrix4x4 & m) {
+	setTransformation(getTransformation() * m);
 }
 
 }

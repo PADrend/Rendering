@@ -61,6 +61,7 @@ void MeshIndexData::swap(MeshIndexData & other){
 void MeshIndexData::allocate(uint32_t count) {
 	indexCount = count;
 	indexArray.resize(indexCount, std::numeric_limits<uint32_t>::max());
+	indexArray.shrink_to_fit();
 	markAsChanged();
 }
 

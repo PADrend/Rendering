@@ -16,6 +16,7 @@
 #include "Mesh/VertexAttributeIds.h"
 #include "MeshUtils/MeshBuilder.h"
 #include "MeshUtils/MeshUtils.h"
+#include "MeshUtils/PrimitiveShapes.h"
 #include "MeshUtils/PlatonicSolids.h"
 #include "Shader/Shader.h"
 #include "Shader/Uniform.h"
@@ -104,7 +105,7 @@ void drawBox(RenderingContext & rc, const Geometry::Box & box) {
 		vertexDescription.appendPosition3D();
 		vertexDescription.appendNormalFloat();
 		const Geometry::Box unitBox(Geometry::Vec3(-0.5f, -0.5f, -0.5f), Geometry::Vec3(0.5f, 0.5f, 0.5f));
-		mesh = MeshUtils::MeshBuilder::createBox(vertexDescription, unitBox);
+		mesh = MeshUtils::createBox(vertexDescription, unitBox);
 	}
 
 	Geometry::Matrix4x4 matrix;

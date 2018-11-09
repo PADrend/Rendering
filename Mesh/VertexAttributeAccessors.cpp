@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -344,9 +345,9 @@ class FloatAttributeAccessorub : public FloatAttributeAccessor {
 		}
 
 		//! ---|> FloatAttributeAccessor
-		void setValues(uint32_t index, const std::vector<float>& values) override {
+		void setValues(uint32_t index, const float* values, uint32_t count) override {
 			assertRange(index);
-			uint32_t count = std::min<uint32_t>(values.size(), getAttribute().getNumValues());
+			count = std::min<uint32_t>(count, getAttribute().getNumValues());
 			uint8_t * v = _ptr<uint8_t>(index);
 			for(uint32_t i=0; i<count; ++i)
 				v[i] = Geometry::Convert::toUnsigned<uint8_t>(values[i]);
@@ -385,9 +386,9 @@ class FloatAttributeAccessorb : public FloatAttributeAccessor {
 		}
 
 		//! ---|> FloatAttributeAccessor
-		void setValues(uint32_t index, const std::vector<float>& values) override {
+		void setValues(uint32_t index, const float* values, uint32_t count) override {
 			assertRange(index);
-			uint32_t count = std::min<uint32_t>(values.size(), getAttribute().getNumValues());
+			count = std::min<uint32_t>(count, getAttribute().getNumValues());
 			int8_t * v = _ptr<int8_t>(index);
 			for(uint32_t i=0; i<count; ++i)
 				v[i] = Geometry::Convert::toSigned<int8_t>(values[i]);
@@ -426,9 +427,9 @@ class FloatAttributeAccessorHF : public FloatAttributeAccessor {
 		}
 		
 		//! ---|> FloatAttributeAccessor
-		void setValues(uint32_t index, const std::vector<float>& values) override {
+		void setValues(uint32_t index, const float* values, uint32_t count) override {
 			assertRange(index);
-			uint32_t count = std::min<uint32_t>(values.size(), getAttribute().getNumValues());
+			count = std::min<uint32_t>(count, getAttribute().getNumValues());
 			uint8_t * v = _ptr<uint8_t>(index);
 			for(uint32_t i=0; i<count; ++i)
 				v[i] = Geometry::Convert::floatToHalf(values[i]);
@@ -464,11 +465,11 @@ class FloatAttributeAccessorf : public FloatAttributeAccessor {
 		}
 		
 		//! ---|> FloatAttributeAccessor
-		void setValues(uint32_t index, const std::vector<float>& values) override {
+		void setValues(uint32_t index, const float* values, uint32_t count) override {
 			assertRange(index);
-			uint32_t count = std::min<uint32_t>(values.size(), getAttribute().getNumValues());
+			count = std::min<uint32_t>(count, getAttribute().getNumValues());
 			float * v=_ptr<float>(index);
-			std::copy(values.begin(), values.begin() + count, v);
+			std::copy(values, values + count, v);
 		}
 };
 
@@ -491,11 +492,43 @@ Util::Reference<FloatAttributeAccessor> FloatAttributeAccessor::create(MeshVerte
 // ---------------------------------
 // Unisigned Integer
 
+class UIntAttributeAccessorUI : public UIntAttributeAccessor {
+public:
+	UIntAttributeAccessorUI(MeshVertexData & _vData,const VertexAttribute & _attribute) :
+			UIntAttributeAccessor(_vData,_attribute) {}
+	virtual ~UIntAttributeAccessorUI() = default;
+
+	uint32_t getValue(uint32_t index) const  override {
+		assertRange(index);
+		const uint32_t * v=_ptr<const uint32_t>(index);
+		return v[0];
+	}
+
+	void setValue(uint32_t index, uint32_t value)  override {
+		assertRange(index);
+		uint32_t * v=_ptr<uint32_t>(index);
+		v[0] = value;
+	}
+
+	const std::vector<uint32_t> getValues(uint32_t index) const override {
+		assertRange(index);
+		const uint32_t * v=_ptr<const uint32_t>(index);
+		return std::vector<uint32_t>(v, v + getAttribute().getNumValues());
+	}
+
+	void setValues(uint32_t index, const uint32_t* values, uint32_t count) override {
+		assertRange(index);
+		count = std::min<uint32_t>(count, getAttribute().getNumValues());
+		uint32_t * v=_ptr<uint32_t>(index);
+		std::copy(values, values + count, v);
+	}
+};
+
 //! (static)
 Util::Reference<UIntAttributeAccessor> UIntAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
 	if(attr.getDataType() == GL_UNSIGNED_INT) {
-		return new UIntAttributeAccessor(_vData, attr);
+		return new UIntAttributeAccessorUI(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
 	}

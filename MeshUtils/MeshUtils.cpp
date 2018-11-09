@@ -34,6 +34,7 @@
 #include <Geometry/Interpolation.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Graphics/PixelAccessor.h>
+#include <Util/Graphics/NoiseGenerator.h>
 #include <Util/Macros.h>
 #include <Util/Utils.h>
 #include <Util/Numeric.h>
@@ -199,6 +200,7 @@ public:
 	float longestSideLength;
 };
 
+// -----------------------------------------------------------------------------
 
 RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, const uint32_t & newIndex, const VertexDescription & vd) {
 	FAIL_IF(rwa.getSize()!=rwb.getSize());
@@ -269,6 +271,8 @@ RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, cons
 	return ret;
 }
 
+// -----------------------------------------------------------------------------
+
 template<typename GLType>
 inline
 void interpolateValue(uint8_t* data, const RawVertex & rwa, const RawVertex & rwb, const VertexAttribute& attr, unsigned j, float a, float a_inv) {
@@ -276,6 +280,9 @@ void interpolateValue(uint8_t* data, const RawVertex & rwa, const RawVertex & rw
 	f += static_cast<float>((reinterpret_cast<const GLType *> (rwb.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a;
 	(reinterpret_cast<GLType *> (data + attr.getOffset() + j * sizeof(GLType)))[0] = static_cast<GLType>(f);
 }
+
+// -----------------------------------------------------------------------------
+
 
 RawVertex RawVertex::interpolate(const RawVertex & rwa, const RawVertex & rwb, float a, const uint32_t & newIndex, const VertexDescription & vd) {
 	FAIL_IF(rwa.getSize()!=rwb.getSize());
@@ -322,6 +329,8 @@ RawVertex RawVertex::interpolate(const RawVertex & rwa, const RawVertex & rwb, f
 	return ret;
 }
 
+// -----------------------------------------------------------------------------
+
 RawVertex RawVertex::move(const RawVertex & rw, const Geometry::Vec3 & dir, const uint32_t & newIndex, const VertexDescription & vd) {
 	auto data = new uint8_t[rw.getSize()];
 	std::copy(rw.getData(), rw.getData() + rw.getSize(), data);
@@ -335,6 +344,8 @@ RawVertex RawVertex::move(const RawVertex & rw, const Geometry::Vec3 & dir, cons
 	RawVertex ret(newIndex, data, rw.getSize());
 	return ret;
 }
+
+// -----------------------------------------------------------------------------
 
 Geometry::Sphere_f calculateBoundingSphere(Mesh * mesh) {
 	MeshVertexData & vertexData = mesh->openVertexData();
@@ -354,6 +365,8 @@ Geometry::Sphere_f calculateBoundingSphere(Mesh * mesh) {
 	}
 	return sphere;
 }
+
+// -----------------------------------------------------------------------------
 
 Geometry::Sphere_f calculateBoundingSphere(const std::vector<std::pair<Mesh *, Geometry::Matrix4x4>> & meshesAndTransformations) {
 	uint32_t sumVertexCount = 0;
@@ -380,6 +393,8 @@ Geometry::Sphere_f calculateBoundingSphere(const std::vector<std::pair<Mesh *, G
 	return sphere;
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 uint32_t calculateHash( Mesh * mesh ){
 	if(mesh==nullptr)
@@ -396,6 +411,8 @@ uint32_t calculateHash( Mesh * mesh ){
 	return h;
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 uint32_t calculateHash( const VertexDescription & vd ){
 	uint32_t h = 0;
@@ -404,6 +421,8 @@ uint32_t calculateHash( const VertexDescription & vd ){
 	}
 	return h;
 }
+
+// -----------------------------------------------------------------------------
 
 //! (static)
 bool compareMeshes( Mesh * mesh1,Mesh * mesh2 ){
@@ -430,6 +449,8 @@ bool compareMeshes( Mesh * mesh1,Mesh * mesh2 ){
 
 	return true;
 }
+
+// -----------------------------------------------------------------------------
 
 float getLongestSideLength(Mesh * m){
 	float maxSideLength = 0.0;
@@ -460,10 +481,14 @@ float getLongestSideLength(Mesh * m){
 	return maxSideLength;
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 void setMaterial(Mesh * mesh, const Util::Color4f & ambient, const Util::Color4f & diffuse, const Util::Color4f & /*specular*/, float /*shininess*/) {
 	setColor(mesh, Util::Color4f(ambient, diffuse, 0.2f));
 }
+
+// -----------------------------------------------------------------------------
 
 //! (static)
 void setColor(Mesh * mesh, const Util::Color4f & _color) {
@@ -482,6 +507,8 @@ void setColor(Mesh * mesh, const Util::Color4f & _color) {
 	vData.markAsChanged();
 
 }
+
+// -----------------------------------------------------------------------------
 
 //! (static)
 void splitLargeTriangles(Mesh * m, float maxSideLength) {
@@ -548,6 +575,8 @@ void splitLargeTriangles(Mesh * m, float maxSideLength) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 void shrinkMesh(Mesh * m, bool shrinkPosition) {
 	// prepare vertex description
@@ -607,6 +636,8 @@ void shrinkMesh(Mesh * m, bool shrinkPosition) {
 	oldVertices.updateBoundingBox();
 }
 
+// -----------------------------------------------------------------------------
+
 //! (internal) Transforms a range of vertices with the given matrix.
 static void transformVertexData(MeshVertexData & vData, const Matrix4x4f & transMat, uint32_t begin, uint32_t numVerts) {
 	transformCoordinates(vData, VertexAttributeIds::POSITION, transMat, begin, numVerts);
@@ -614,11 +645,15 @@ static void transformVertexData(MeshVertexData & vData, const Matrix4x4f & trans
 		transformNormals(vData, VertexAttributeIds::NORMAL, transMat, begin, numVerts);
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 void transform(MeshVertexData & vData, const Matrix4x4f & transMat) {
 	transformVertexData(vData, transMat, 0, vData.getVertexCount());
 	vData.updateBoundingBox();
 }
+
+// -----------------------------------------------------------------------------
 
 //! (static)
 void transformCoordinates(MeshVertexData & vData, Util::StringIdentifier attrName, const Geometry::Matrix4x4 & transMat, uint32_t begin,
@@ -631,6 +666,8 @@ void transformCoordinates(MeshVertexData & vData, Util::StringIdentifier attrNam
 	vData.markAsChanged();
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 void transformNormals(MeshVertexData & vData, Util::StringIdentifier attrName, const Geometry::Matrix4x4 & transMat, uint32_t begin,
 		uint32_t numVerts) {
@@ -642,6 +679,8 @@ void transformNormals(MeshVertexData & vData, Util::StringIdentifier attrName, c
 	vData.markAsChanged();
 }
 
+// -----------------------------------------------------------------------------
+
 inline bool canConvert(const VertexAttribute& oldAttr, const VertexAttribute& newAttr) {
 	if(oldAttr.getDataType() == GL_FLOAT) {
 		return newAttr.getDataType() == GL_BYTE || newAttr.getDataType() == GL_UNSIGNED_BYTE; // float to byte
@@ -650,6 +689,8 @@ inline bool canConvert(const VertexAttribute& oldAttr, const VertexAttribute& ne
 	}
 	return false;
 }
+
+// -----------------------------------------------------------------------------
 
 //! (static)
 MeshVertexData * convertVertices(const MeshVertexData & oldVertices, const VertexDescription & newVertexDescription) {
@@ -694,6 +735,8 @@ MeshVertexData * convertVertices(const MeshVertexData & oldVertices, const Verte
 	return newVertices;
 }
 
+// -----------------------------------------------------------------------------
+
 VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & vertexDescs) {
 	VertexDescription result;
 	for(const auto & desc : vertexDescs) {
@@ -714,6 +757,8 @@ VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & 
 	return result;
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 void removeColorData(Mesh * m) {
 	MeshVertexData & vertices = m->openVertexData();
@@ -724,6 +769,8 @@ void removeColorData(Mesh * m) {
 	std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, vdn));
 	vertices.swap(*newVertices.get());
 }
+
+// -----------------------------------------------------------------------------
 
 //! (static)
 void calculateNormals(Mesh * m) {
@@ -769,6 +816,9 @@ void calculateNormals(Mesh * m) {
 	}
 	vData.markAsChanged();
 }
+
+// -----------------------------------------------------------------------------
+
 /**
  * [static]
  * Combines the meshes from meshArray to a single mesh.
@@ -777,6 +827,9 @@ void calculateNormals(Mesh * m) {
 Mesh * combineMeshes(const std::deque<Mesh *> & meshArray) {
 	return combineMeshes(meshArray, std::deque<Geometry::Matrix4x4>());
 }
+
+// -----------------------------------------------------------------------------
+
 Mesh * combineMeshes(const std::deque<Mesh *> & meshArray, const std::deque<Geometry::Matrix4x4> & transformations) {
 	if (meshArray.empty()) {
 		return nullptr;
@@ -850,6 +903,8 @@ Mesh * combineMeshes(const std::deque<Mesh *> & meshArray, const std::deque<Geom
 	return mesh;
 }
 
+// -----------------------------------------------------------------------------
+
 /**
  * [static]
  * Splits a meshs vertex data into several data chunks of the given size.
@@ -888,6 +943,8 @@ std::deque<MeshVertexData> splitVertexData(Mesh * mesh, uint32_t chunkSize){
 	return result;
 }
 
+// -----------------------------------------------------------------------------
+
 /**
  * [static]
  * Extracts a range of vertices from a mesh.
@@ -912,6 +969,8 @@ MeshVertexData * extractVertexData(Mesh * mesh, uint32_t begin, uint32_t length)
 	return result;
 
 }
+
+// -----------------------------------------------------------------------------
 
 //! (static)
 void eliminateDuplicateVertices(Mesh * mesh) {
@@ -977,6 +1036,8 @@ void eliminateDuplicateVertices(Mesh * mesh) {
 	mesh->swap(*result.get());
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 Mesh * eliminateUnusedVertices(Mesh * mesh) {
 	const VertexDescription & desc = mesh->getVertexDescription();
@@ -1026,6 +1087,8 @@ Mesh * eliminateUnusedVertices(Mesh * mesh) {
 	return newMesh;
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 Mesh * eliminateLongTriangles(Mesh * mesh, float ratio) {
 	const MeshIndexData & originalIndices = mesh->openIndexData();
@@ -1063,6 +1126,8 @@ Mesh * eliminateLongTriangles(Mesh * mesh, float ratio) {
 	Util::Reference<Mesh> newMesh = new Mesh(newIndexData, vertexData);
 	return eliminateUnusedVertices(newMesh.get());
 }
+
+// -----------------------------------------------------------------------------
 
 Mesh * eliminateTrianglesBehindPlane(Mesh * mesh, const Geometry::Plane & plane) {
 	const MeshIndexData & originalIndices = mesh->openIndexData();
@@ -1103,6 +1168,8 @@ Mesh * eliminateTrianglesBehindPlane(Mesh * mesh, const Geometry::Plane & plane)
 	return new Mesh(newIndexData, vertexData);
 }
 
+// -----------------------------------------------------------------------------
+
 Mesh * eliminateZeroAreaTriangles(Mesh * mesh) {
 	const MeshIndexData & originalIndices = mesh->openIndexData();
 	const MeshVertexData & vertexData = mesh->openVertexData();
@@ -1132,6 +1199,8 @@ Mesh * eliminateZeroAreaTriangles(Mesh * mesh) {
 	return new Mesh(newIndexData, vertexData);
 }
 
+// -----------------------------------------------------------------------------
+
 static void normalize(float * n) {
 	const float length = std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
 	static int bla = 0;
@@ -1144,6 +1213,9 @@ static void normalize(float * n) {
 	n[1] *= factor;
 	n[2] *= factor;
 }
+
+// -----------------------------------------------------------------------------
+
 static void calcNormal(const float * a, const float * b, const float * c, float * n) {
 	/*  a_____________c
 	 *   ^           ^
@@ -1164,6 +1236,9 @@ static void calcNormal(const float * a, const float * b, const float * c, float 
 
 	normalize(n);
 }
+
+// -----------------------------------------------------------------------------
+
 Mesh * removeSkinsWithHoleCovering(Mesh * mesh, float maxNormalZ, float coveringMovement) {
 	const uint32_t indexCount = mesh->getIndexCount();
 	const MeshIndexData & originalIndices = mesh->openIndexData();
@@ -1219,6 +1294,8 @@ Mesh * removeSkinsWithHoleCovering(Mesh * mesh, float maxNormalZ, float covering
 	newVertexData.updateBoundingBox();
 	return new Mesh(newIndexData, newVertexData);
 }
+
+// -----------------------------------------------------------------------------
 
 void optimizeIndices(Mesh * mesh, const uint_fast8_t _cacheSize) {
 	struct Inner {
@@ -1414,6 +1491,8 @@ void optimizeIndices(Mesh * mesh, const uint_fast8_t _cacheSize) {
 	indices.swap(newIndices);
 }
 
+// -----------------------------------------------------------------------------
+
 void reverseWinding(Mesh * mesh) {
 	if (mesh->getDrawMode() != Mesh::DRAW_TRIANGLES) {
 		WARN("GL_TRIANGLES is the only supported mode.");
@@ -1428,6 +1507,8 @@ void reverseWinding(Mesh * mesh) {
 	}
 	id.markAsChanged();
 }
+
+// -----------------------------------------------------------------------------
 
 //! (static)
 void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringIdentifier to) {
@@ -1465,6 +1546,8 @@ void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringI
 	vertices.markAsChanged();
 }
 
+// -----------------------------------------------------------------------------
+
 //! (static)
 void calculateTextureCoordinates_projection(Mesh * mesh, Util::StringIdentifier attribName, const Geometry::Matrix4x4 & projection) {
 	MeshVertexData & vData = mesh->openVertexData();
@@ -1487,6 +1570,8 @@ void calculateTextureCoordinates_projection(Mesh * mesh, Util::StringIdentifier 
 
 	vData.markAsChanged();
 }
+
+// -----------------------------------------------------------------------------
 
 //!	(static)
 void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, const Util::StringIdentifier tangentVecName) {
@@ -1569,6 +1654,8 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 		tan2[index3] += tdir;
 	}
 
+	// -----------------------------------------------------------------------------
+
 	if (normalAttr.getDataType() == GL_FLOAT) {
 		for (uint32_t i = 0; i < vertices.getVertexCount(); ++i) {
 			const Vec3 normal(reinterpret_cast<float*> (vertices[i] + normalAttr.getOffset()));
@@ -1599,9 +1686,13 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 	}
 }
 
+// -----------------------------------------------------------------------------
+
 inline bool isZero(float f, float tolerance=std::numeric_limits<float>::epsilon()) {
 	return std::abs(f) <= tolerance;
 }
+
+// -----------------------------------------------------------------------------
 
 //!	(static)
 void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices, float tolerance) {
@@ -1723,6 +1814,8 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIn
 	}
 }
 
+// -----------------------------------------------------------------------------
+
 #define ADJ_AB 1
 #define ADJ_BC 2
 #define ADJ_CA 4
@@ -1753,6 +1846,8 @@ uint8_t getAdjacence(const SplitTriangle& t1, const SplitTriangle& t2, const Ver
 		return ADJ_CA;
 	return 0;
 }
+
+// -----------------------------------------------------------------------------
 
 //!	(static)
 void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_t> tIndices) {
@@ -1888,6 +1983,8 @@ int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray) {
 	return closest;
 }
 
+// -----------------------------------------------------------------------------
+
 
 //! (static)
 uint32_t mergeCloseVertices(Mesh * mesh, float tolerance) {
@@ -1973,6 +2070,7 @@ uint32_t mergeCloseVertices(Mesh * mesh, float tolerance) {
 
 	return oldCount-mesh->getVertexCount();
 }
+
 // -----------------------------------------------------------------------------
 
 std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance/*=0.001*/) {
@@ -2098,6 +2196,8 @@ std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance/*=0
 	return result;
 }
 
+// -----------------------------------------------------------------------------
+
 void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale, bool clampToEdge) {
 	if(!mesh || !displaceAcc) {
 		return;
@@ -2116,7 +2216,7 @@ void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float sc
 	for(uint32_t i=0; i<mesh->getVertexCount(); ++i) {
 		auto pos = pAcc->getPosition(i);
 		auto tc = tcAcc->getCoordinate(i);
-		auto n = nAcc->getNormal(0);
+		auto n = nAcc->getNormal(i);
 		uint32_t px = clampToEdge ? std::max(0, std::min<int32_t>(width-1, tc.x()*width)) : ((tc.x() - std::floor(tc.x())) * width);
 		uint32_t py = clampToEdge ? std::max(0, std::min<int32_t>(height-1, tc.y()*height)) : ((tc.y() - std::floor(tc.y())) * height);
 		auto value = displaceAcc->readSingleValueFloat(px, py) * scale;
@@ -2124,6 +2224,35 @@ void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float sc
 	}
 	vData.markAsChanged();
 }
+
+// -----------------------------------------------------------------------------
+
+void applyNoise(Mesh* mesh, float posScale, float noiseScale, uint32_t seed) {
+	if(!mesh)
+		return;
+	
+	const auto& vd = mesh->getVertexDescription();
+	if(!vd.hasAttribute(VertexAttributeIds::NORMAL)) {
+		WARN("applyNoise: Mesh requires normals.");
+		return;
+	}
+	
+	Util::NoiseGenerator gen(seed);
+	
+	auto& vData = mesh->openVertexData();
+	auto pAcc(PositionAttributeAccessor::create(vData, VertexAttributeIds::POSITION));
+	auto nAcc(NormalAttributeAccessor::create(vData, VertexAttributeIds::NORMAL));
+	for(uint32_t i=0; i<mesh->getVertexCount(); ++i) {
+		auto pos = pAcc->getPosition(i);
+		auto n = nAcc->getNormal(i);
+		auto value = gen.get(pos.x() * posScale, pos.y() * posScale, pos.z() * posScale) * noiseScale;
+		pAcc->setPosition(i, pos + n * value);
+	}
+	vData.markAsChanged();
+	vData.updateBoundingBox();
+}
+
+// -----------------------------------------------------------------------------
 
 void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float falloff) {
 	using namespace Geometry;
@@ -2143,6 +2272,8 @@ void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float fall
 	}
 }
 
+// -----------------------------------------------------------------------------
+
 float computeSurfaceArea(Mesh* mesh) {
 	if(!mesh || mesh->getDrawMode() != Mesh::DRAW_TRIANGLES) return 0;
 	auto tAcc = TriangleAccessor::create(mesh);
@@ -2151,6 +2282,8 @@ float computeSurfaceArea(Mesh* mesh) {
 		area += tAcc->getTriangle(i).calcArea();
 	return area;
 }
+
+// -----------------------------------------------------------------------------
 
 MeshVertexData* extractVertices(Mesh* mesh, const std::vector<uint32_t>& indices) {
   const VertexDescription & desc = mesh->getVertexDescription();
@@ -2217,6 +2350,8 @@ void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sou
 	}
 	
 }
+
+// -----------------------------------------------------------------------------
 
 }
 }

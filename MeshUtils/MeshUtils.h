@@ -362,6 +362,18 @@ std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.0
  */
 void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale=1.0, bool clampToEdge=false);
 
+
+/**
+ * Moves every vertex along their normal using the value of a 3D perlin noise function.
+ *
+ * @param mesh The mesh
+ * @param seed The seed for the noise generator
+ * @param posScale scale factor multiplied with each position
+ * @param noiseScale scale factor multiplied with the noise value
+ * @author Sascha Brandt
+ */
+void applyNoise(Mesh* mesh, float posScale=1.0, float noiseScale=1.0, uint32_t seed=0);
+
 /**
  * Sets the y-coordinates of all vertices in a radius around a given 3d position to it's y-coordinate (with cubic bezier falloff) 
  *

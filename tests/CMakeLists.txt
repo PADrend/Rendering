@@ -15,6 +15,7 @@ if(RENDERING_BUILD_TESTS)
 		DrawTest.cpp
 		RenderingTestMain.cpp
 		StatisticsQueryTest.cpp
+		VertexAccessorTest.cpp
 	)
 
 	target_link_libraries(RenderingTest LINK_PRIVATE Rendering)
