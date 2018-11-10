@@ -2227,7 +2227,7 @@ void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float sc
 
 // -----------------------------------------------------------------------------
 
-void applyNoise(Mesh* mesh, float posScale, float noiseScale, uint32_t seed) {
+void applyNoise(Mesh* mesh, float noiseScale, const Geometry::Matrix4x4& transform, uint32_t seed) {
 	if(!mesh)
 		return;
 	
@@ -2244,8 +2244,9 @@ void applyNoise(Mesh* mesh, float posScale, float noiseScale, uint32_t seed) {
 	auto nAcc(NormalAttributeAccessor::create(vData, VertexAttributeIds::NORMAL));
 	for(uint32_t i=0; i<mesh->getVertexCount(); ++i) {
 		auto pos = pAcc->getPosition(i);
+		auto tPos = transform.transformPosition(pos);
 		auto n = nAcc->getNormal(i);
-		auto value = gen.get(pos.x() * posScale, pos.y() * posScale, pos.z() * posScale) * noiseScale;
+		auto value = gen.get(tPos.x(), tPos.y(), tPos.z()) * noiseScale;
 		pAcc->setPosition(i, pos + n * value);
 	}
 	vData.markAsChanged();

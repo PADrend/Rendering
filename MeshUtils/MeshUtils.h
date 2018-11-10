@@ -11,6 +11,8 @@
 #ifndef MESHUTILS_H
 #define MESHUTILS_H
 
+#include <Geometry/Matrix4x4.h>
+
 #include <cstdint>
 #include <deque>
 #include <utility>
@@ -19,8 +21,6 @@
 #include <limits>
 
 namespace Geometry {
-template<typename _T> class _Matrix4x4;
-typedef _Matrix4x4<float> Matrix4x4;
 template<typename _T> class _Plane;
 typedef _Plane<float> Plane;
 template<typename _T> class _Sphere;
@@ -368,11 +368,11 @@ void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float sc
  *
  * @param mesh The mesh
  * @param seed The seed for the noise generator
- * @param posScale scale factor multiplied with each position
  * @param noiseScale scale factor multiplied with the noise value
+ * @param transform transformation matrix applied on each position
  * @author Sascha Brandt
  */
-void applyNoise(Mesh* mesh, float posScale=1.0, float noiseScale=1.0, uint32_t seed=0);
+void applyNoise(Mesh* mesh, float noiseScale=1.0, const Geometry::Matrix4x4& transform={}, uint32_t seed=0);
 
 /**
  * Sets the y-coordinates of all vertices in a radius around a given 3d position to it's y-coordinate (with cubic bezier falloff) 
