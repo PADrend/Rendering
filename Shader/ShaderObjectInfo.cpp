@@ -25,7 +25,7 @@ const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_CONTROL = GL_TESS_CONTROL_SHA
 const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_EVALUATION = GL_TESS_EVALUATION_SHADER;
 const uint32_t ShaderObjectInfo::SHADER_STAGE_COMPUTE = GL_COMPUTE_SHADER;
 
-static void printShaderInfoLog(uint32_t obj, const std::string & code) {
+static void printShaderInfoLog(uint32_t obj, const std::string & code, const Util::FileName& file) {
 	GLint infoLogLength = 0;
 	GET_GL_ERROR();
 	glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &infoLogLength);
@@ -39,7 +39,10 @@ static void printShaderInfoLog(uint32_t obj, const std::string & code) {
 		if(s.find("successfully") == std::string::npos && 
 			s.find("shader(s) linked.") == std::string::npos && 
 			s.find("No errors.") == std::string::npos) {
-			WARN(std::string("Shader compile error:\n") + s + "\nShader code:\n" + code);
+			if(file.empty())
+				WARN(std::string("Shader compile error:\n") + s + "\nShader code:\n" + code);
+			else
+				WARN(std::string("Shader compile error:\n") + s + "\nin shader file: " + file.toShortString() + "\n");
 		}
 	}
 	GET_GL_ERROR();
@@ -81,7 +84,7 @@ uint32_t ShaderObjectInfo::compile() const {
 	GLint compileStatus;
 	glGetShaderiv(handle, GL_COMPILE_STATUS, &compileStatus);
 	if(compileStatus == GL_FALSE) {
-		printShaderInfoLog(handle, strCode);
+		printShaderInfoLog(handle, strCode, filename);
 		GET_GL_ERROR();
 		glDeleteShader(handle);
 		return 0;
@@ -120,19 +123,19 @@ ShaderObjectInfo ShaderObjectInfo::createCompute(const std::string & code) {
 }
 
 ShaderObjectInfo ShaderObjectInfo::loadVertex(const Util::FileName & file) {
-	return createVertex(Util::FileUtils::getParsedFileContents(file));
+	return createVertex(Util::FileUtils::getParsedFileContents(file)).setFileName(file);
 }
 
 ShaderObjectInfo ShaderObjectInfo::loadFragment(const Util::FileName & file) {
-	return createFragment(Util::FileUtils::getParsedFileContents(file));
+	return createFragment(Util::FileUtils::getParsedFileContents(file)).setFileName(file);
 }
 
 ShaderObjectInfo ShaderObjectInfo::loadGeometry(const Util::FileName & file) {
-	return createGeometry(Util::FileUtils::getParsedFileContents(file));
+	return createGeometry(Util::FileUtils::getParsedFileContents(file)).setFileName(file);
 }
 
 ShaderObjectInfo ShaderObjectInfo::loadCompute(const Util::FileName & file) {
-	return createCompute(Util::FileUtils::getParsedFileContents(file));
+	return createCompute(Util::FileUtils::getParsedFileContents(file)).setFileName(file);
 }
 
 }
