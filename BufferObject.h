@@ -132,7 +132,7 @@ class BufferObject {
 		 * and unbind the buffer object.
 		 */
 		template<typename T>
-		std::vector<T> downloadData(uint32_t bufferTarget, std::size_t numberOfElements) const;
+		std::vector<T> downloadData(uint32_t bufferTarget, size_t numberOfElements, size_t offset=0) const;
 
 		//! @c true if and only if prepare() was executed at least once without an execution of destroy() afterwards. 
 		bool isValid() const {

@@ -133,20 +133,20 @@ void BufferObject::uploadSubData(uint32_t bufferTarget, const std::vector<T> & d
 
 #if defined(LIB_GL)
 template<typename T>
-std::vector<T> BufferObject::downloadData(uint32_t bufferTarget, std::size_t numberOfElements) const {
+std::vector<T> BufferObject::downloadData(uint32_t bufferTarget, std::size_t numberOfElements, size_t offset) const {
 	if(bufferId == 0) {
 		return std::vector<T>();
 	}
 	bind(bufferTarget);
 	const T * bufferData = reinterpret_cast<const T *>(glMapBuffer(bufferTarget, GL_READ_ONLY));
-	const std::vector<T> result(bufferData, bufferData + numberOfElements);
+	const std::vector<T> result(bufferData + offset, bufferData + offset + numberOfElements);
 	glUnmapBuffer(bufferTarget);
 	unbind(bufferTarget);
 	return result;
 }
 #elif defined(LIB_GLESv2)
 template<typename T>
-std::vector<T> BufferObject::downloadData(uint32_t /*bufferTarget*/, std::size_t /*numberOfElements*/) const {
+std::vector<T> BufferObject::downloadData(uint32_t /*bufferTarget*/, std::size_t /*numberOfElements*/, size_t /*offset*/) const {
 	return std::vector<T>();
 }
 #endif
@@ -213,15 +213,15 @@ template void BufferObject::uploadSubData<int64_t>(uint32_t, const std::vector<i
 template void BufferObject::uploadSubData<float>(uint32_t, const std::vector<float> &, size_t);
 template void BufferObject::uploadSubData<double>(uint32_t, const std::vector<double> &, size_t);
 
-template std::vector<uint8_t> BufferObject::downloadData<uint8_t>(uint32_t, std::size_t) const;
-template std::vector<uint16_t> BufferObject::downloadData<uint16_t>(uint32_t, std::size_t) const;
-template std::vector<uint32_t> BufferObject::downloadData<uint32_t>(uint32_t, std::size_t) const;
-template std::vector<uint64_t> BufferObject::downloadData<uint64_t>(uint32_t, std::size_t) const;
-template std::vector<int8_t> BufferObject::downloadData<int8_t>(uint32_t, std::size_t) const;
-template std::vector<int16_t> BufferObject::downloadData<int16_t>(uint32_t, std::size_t) const;
-template std::vector<int32_t> BufferObject::downloadData<int32_t>(uint32_t, std::size_t) const;
-template std::vector<int64_t> BufferObject::downloadData<int64_t>(uint32_t, std::size_t) const;
-template std::vector<float> BufferObject::downloadData<float>(uint32_t, std::size_t) const;
-template std::vector<double> BufferObject::downloadData<double>(uint32_t, std::size_t) const;
+template std::vector<uint8_t> BufferObject::downloadData<uint8_t>(uint32_t, size_t, size_t) const;
+template std::vector<uint16_t> BufferObject::downloadData<uint16_t>(uint32_t, size_t, size_t) const;
+template std::vector<uint32_t> BufferObject::downloadData<uint32_t>(uint32_t, size_t, size_t) const;
+template std::vector<uint64_t> BufferObject::downloadData<uint64_t>(uint32_t, size_t, size_t) const;
+template std::vector<int8_t> BufferObject::downloadData<int8_t>(uint32_t, size_t, size_t) const;
+template std::vector<int16_t> BufferObject::downloadData<int16_t>(uint32_t, size_t, size_t) const;
+template std::vector<int32_t> BufferObject::downloadData<int32_t>(uint32_t, size_t, size_t) const;
+template std::vector<int64_t> BufferObject::downloadData<int64_t>(uint32_t, size_t, size_t) const;
+template std::vector<float> BufferObject::downloadData<float>(uint32_t, size_t, size_t) const;
+template std::vector<double> BufferObject::downloadData<double>(uint32_t, size_t, size_t) const;
 
 }
