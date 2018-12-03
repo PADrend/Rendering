@@ -22,6 +22,7 @@
 #include <Util/StringUtils.h>
 #include <cstddef>
 #include <iostream>
+#include <cmath>
 
 
 namespace Rendering {
@@ -199,14 +200,25 @@ void Texture::createMipmaps(RenderingContext & context) {
 		glBindTexture(format.glTextureType,glId);
 		GET_GL_ERROR();
 
-	#ifdef LIB_GL
-		glGenerateMipmapEXT(format.glTextureType);
-	#elif defined(LIB_GLESv2)
-		glGenerateMipmap(GL_TEXTURE_2D);
-	#endif
+		if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT || format.pixelFormat.glLocalDataType == GL_INT) {
+			// for integer textures glGenerateMipmap is prohibited, therefore just allocate the storage
+			int maxLevel = std::log2(std::max(getWidth(), getHeight()));
+			for(int level=1; level<=maxLevel; ++level)
+				_uploadGLTexture(context, level);
+		} else {
+			#ifdef LIB_GL
+				glGenerateMipmap(format.glTextureType);
+			#elif defined(LIB_GLESv2)
+				glGenerateMipmap(GL_TEXTURE_2D);
+			#endif
+		}
 
 		hasMipmaps = true;
-		glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+		if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT || format.pixelFormat.glLocalDataType == GL_INT) {
+		  glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+		} else {
+		  glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+		}
 
 		GET_GL_ERROR();
 		context.popTexture(0);
@@ -214,7 +226,7 @@ void Texture::createMipmaps(RenderingContext & context) {
 	}
 }
 
-void Texture::_uploadGLTexture(RenderingContext & context) {
+void Texture::_uploadGLTexture(RenderingContext & context, int level/*=0*/) {
 	GLint activeTexture;
 	glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture);
 
@@ -226,30 +238,31 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 	context.pushAndSetTexture(0,nullptr); // store and disable texture unit 0, so that we can use it without side effects.
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(format.glTextureType,glId);
+	auto width = std::max(1, static_cast<GLsizei>(getWidth()) >> level);
+	auto height = std::max(1, static_cast<GLsizei>(getHeight()) >> level);
+	auto depth = std::max(1, static_cast<GLsizei>(getNumLayers()) >> level);
 
 	switch(tType) {
 #ifdef LIB_GL
 	//! \todo add cube map support and 3d-texture support
 
 		case TextureType::TEXTURE_1D: {
-			glTexImage1D(GL_TEXTURE_1D, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-					static_cast<GLsizei>(getWidth()), 0, static_cast<GLenum>(format.pixelFormat.glLocalDataFormat),
+			glTexImage1D(GL_TEXTURE_1D, level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+					width, 0, static_cast<GLenum>(format.pixelFormat.glLocalDataFormat),
 					static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
 			break;
 		}
 #endif
 		case TextureType::TEXTURE_2D: {
 			if(format.pixelFormat.compressed) {
-				glCompressedTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-										static_cast<GLsizei>(getWidth()),
-										static_cast<GLsizei>(getHeight()), 0,
+				glCompressedTexImage2D(GL_TEXTURE_2D, level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+										width, height, 0,
 										static_cast<GLsizei>(format.compressedImageSize),
 										getLocalData());
 			}else{
 					GET_GL_ERROR();
-				glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-										static_cast<GLsizei>(getWidth()),
-										static_cast<GLsizei>(getHeight()), 0,
+				glTexImage2D(GL_TEXTURE_2D, level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+										width, height, 0,
 										static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
 										static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
 						GET_GL_ERROR();
@@ -260,18 +273,16 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 			Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
 			if(pa){ // local data available?
 				for(uint_fast8_t layer =0; layer < 6; layer++){
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-								static_cast<GLsizei>(getWidth()),
-								static_cast<GLsizei>(getHeight()), 0,
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+								width, height, 0,
 								static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
-								static_cast<GLenum>(format.pixelFormat.glLocalDataType), pa->_ptr<uint8_t>(0, getHeight() * layer));
+								static_cast<GLenum>(format.pixelFormat.glLocalDataType), pa->_ptr<uint8_t>(0, height * layer));
 				}
 			}
 			else{ // -> just allocate gpu data.
 				for(uint_fast8_t layer =0; layer < 6; ++layer){
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-								static_cast<GLsizei>(getWidth()),
-								static_cast<GLsizei>(getHeight()), 0,
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+								width, height, 0,
 								static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
 								static_cast<GLenum>(format.pixelFormat.glLocalDataType), nullptr);
 				}
@@ -308,9 +319,8 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 		
 		}
 		case  TextureType::TEXTURE_1D_ARRAY:{
-			glTexImage2D(GL_TEXTURE_1D_ARRAY, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-							static_cast<GLsizei>(getWidth()),static_cast<GLsizei>(getNumLayers()), 
-							0,
+			glTexImage2D(GL_TEXTURE_1D_ARRAY, level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+							width, depth, 0,
 							static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
 							static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
 			break;
@@ -318,17 +328,15 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 		case  TextureType::TEXTURE_2D_ARRAY:
 		case  TextureType::TEXTURE_3D:
 		case  TextureType::TEXTURE_CUBE_MAP_ARRAY:{
-			glTexImage3D(static_cast<GLenum>(format.glTextureType), 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-							static_cast<GLsizei>(getWidth()), static_cast<GLsizei>(getHeight()),static_cast<GLsizei>(getNumLayers()), 
-							0,
+			glTexImage3D(static_cast<GLenum>(format.glTextureType), level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+							width, height, depth, 0,
 							static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
 							static_cast<GLenum>(format.pixelFormat.glLocalDataType), getLocalData());
 			break;
 		}
 		case TextureType::TEXTURE_2D_MULTISAMPLE: {
 			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, format.numSamples, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-									static_cast<GLsizei>(getWidth()),
-									static_cast<GLsizei>(getHeight()), false);
+									width, height, false);
 			GET_GL_ERROR();
 			break;
 		}

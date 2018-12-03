@@ -102,7 +102,7 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		bool getUseLinearMagFilter() const					{	return format.linearMagFilter;	}
 
 		void _createGLID(RenderingContext & context);
-		void _uploadGLTexture(RenderingContext & context);
+		void _uploadGLTexture(RenderingContext & context, int level=0);
 		void downloadGLTexture(RenderingContext & context);
 		void removeGLData();
 
