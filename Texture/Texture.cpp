@@ -152,7 +152,15 @@ void Texture::_createGLID(RenderingContext & context){
 		glTextureParameteri(glId,GL_TEXTURE_WRAP_T,format.glWrapT);
 		glTextureParameteri(glId,GL_TEXTURE_WRAP_R,format.glWrapR);
 		glTextureParameteri(glId,GL_TEXTURE_MAG_FILTER,format.linearMagFilter ? GL_LINEAR : GL_NEAREST);
-		glTextureParameteri(glId,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR : GL_NEAREST);
+		if(mipmapCreationIsPlanned) {
+			if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT || format.pixelFormat.glLocalDataType == GL_INT) {
+			  glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+			} else {
+			  glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+			}
+		} else {
+			glTextureParameteri(glId,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR : GL_NEAREST);
+		}
 	}
 	GET_GL_ERROR();
 }
@@ -167,7 +175,6 @@ void Texture::createMipmaps(RenderingContext & context) {
 	mipmapCreationIsPlanned = false;
 	glGenerateTextureMipmap(glId);
 	hasMipmaps = true;
-	glTextureParameteri(glId,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
 	GET_GL_ERROR();
 }
 
