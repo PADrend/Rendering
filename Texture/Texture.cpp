@@ -215,7 +215,7 @@ void Texture::createMipmaps(RenderingContext & context) {
 
 		hasMipmaps = true;
 		if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT || format.pixelFormat.glLocalDataType == GL_INT) {
-		  glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+		  glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		} else {
 		  glTexParameteri(format.glTextureType,GL_TEXTURE_MIN_FILTER,format.linearMinFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
 		}
