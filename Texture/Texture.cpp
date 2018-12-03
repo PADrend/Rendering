@@ -240,7 +240,7 @@ void Texture::_uploadGLTexture(RenderingContext & context, int level/*=0*/) {
 	glBindTexture(format.glTextureType,glId);
 	auto width = std::max(1, static_cast<GLsizei>(getWidth()) >> level);
 	auto height = std::max(1, static_cast<GLsizei>(getHeight()) >> level);
-	auto depth = std::max(1, static_cast<GLsizei>(getNumLayers()) >> level);
+	auto depth = tType == TextureType::TEXTURE_3D ? std::max(1, static_cast<GLsizei>(getNumLayers()) >> level) : getNumLayers();
 
 	switch(tType) {
 #ifdef LIB_GL
