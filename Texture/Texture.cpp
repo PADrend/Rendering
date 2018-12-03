@@ -391,6 +391,37 @@ void Texture::removeGLData(){
 	glId=0;
 }
 
+void Texture::clearGLData(const Util::Color4f& color) {
+	static const bool clearSupported = isExtensionSupported("GL_VERSION_4_4");
+	if(!clearSupported){
+		WARN("clearGLData: Requires at least OpenGL 4.4 to work.");
+		return;
+	}
+#if defined(LIB_GL)
+	if(!isGLTextureValid())
+		return;
+	
+	int maxLevel = hasMipmaps ? std::log2(std::max(getWidth(), getHeight())) : 0;
+	std::vector<uint8_t> data;
+	
+	if(format.pixelFormat.glLocalDataType == GL_FLOAT) {
+		data.resize(sizeof(float)*4);
+		std::copy(reinterpret_cast<const uint8_t*>(color.data()), reinterpret_cast<const uint8_t*>(color.data()+4), data.data());
+	} else if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT || format.pixelFormat.glLocalDataType == GL_INT) {
+		data.resize(sizeof(int32_t)*4);
+		std::vector<int32_t> values = {static_cast<int32_t>(color.r()),static_cast<int32_t>(color.g()), static_cast<int32_t>(color.b()), static_cast<int32_t>(color.a())};
+		std::copy(reinterpret_cast<const uint8_t*>(values.data()), reinterpret_cast<const uint8_t*>(values.data()+4), data.data());
+	} else if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_BYTE || format.pixelFormat.glLocalDataType == GL_BYTE) {
+		data.resize(4);
+		Util::Color4ub colorb(color);
+		std::copy(colorb.data(), colorb.data()+4, data.data());
+	}
+
+	for(int level=0; level<=maxLevel; ++level)
+		glClearTexImage(glId, level, format.pixelFormat.glLocalDataFormat, format.pixelFormat.glLocalDataType, data.empty() ? nullptr : data.data());
+#endif
+}
+
 void Texture::downloadGLTexture(RenderingContext & context) {
 #ifdef LIB_GL
 	if(!glId){

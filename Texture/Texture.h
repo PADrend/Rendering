@@ -14,6 +14,7 @@
 #include "TextureType.h"
 #include "PixelFormatGL.h"
 
+#include <Util/Graphics/Color.h>
 #include <Util/ReferenceCounter.h>
 #include <Util/References.h>
 #include <Util/IO/FileName.h>
@@ -105,6 +106,7 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		void _uploadGLTexture(RenderingContext & context, int level=0);
 		void downloadGLTexture(RenderingContext & context);
 		void removeGLData();
+		void clearGLData(const Util::Color4f& color={});
 
 		void allocateLocalData();
 
