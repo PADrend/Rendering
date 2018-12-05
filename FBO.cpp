@@ -226,8 +226,10 @@ const char * FBO::getStatusMessage(RenderingContext & context) {
 	return "[ERROR] Unknown error.";
 }
 
-void FBO::setDrawBuffers(uint32_t number) {
+void FBO::setDrawBuffers(RenderingContext & context, uint32_t number) {
 #ifdef LIB_GL
+	context.pushAndSetFBO(this);
+	context.applyChanges();
 	static const GLenum buffers[] = {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT1,
@@ -242,13 +244,14 @@ void FBO::setDrawBuffers(uint32_t number) {
 		throw std::invalid_argument("Unsupported number of draw buffers requested");
 	}
 	glDrawBuffers(static_cast<GLsizei>(number), buffers);
+	context.popFBO();
 #endif /* LIB_GL */
 }
 
 void FBO::blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect) {
 #ifdef LIB_GL
 	context.pushFBO();
-	context.applyChanges(true);
+	context.applyChanges();
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, glId);
 	glDrawBuffer(GL_BACK);

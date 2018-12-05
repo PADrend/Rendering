@@ -89,7 +89,7 @@ class FBO : public Util::ReferenceCounter<FBO> {
 		 * @throw std::logic_error if the GL implementation does not support this functionality.
 		 * @see function @c glDrawBuffers
 		 */
-		void setDrawBuffers(uint32_t number);
+		void setDrawBuffers(RenderingContext & context, uint32_t number);
 
 		//! copy a block of pixels from this framebuffer to the screen
 		void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect);
