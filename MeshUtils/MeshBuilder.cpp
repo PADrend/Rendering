@@ -274,10 +274,13 @@ Mesh* MeshBuilder::buildMesh() {
 	}
 	
 	vData.allocate(vSize, description);
-	iData.allocate(iSize);
 	vData.updateBoundingBox();
-	iData.updateIndexRange();
-	
+  
+  if(iSize > 0) {
+  	iData.allocate(iSize);
+  	iData.updateIndexRange();
+  }
+
 	auto m = new Mesh(iData, vData);
 	if(iSize == 0)
 		m->setUseIndexData(false);
