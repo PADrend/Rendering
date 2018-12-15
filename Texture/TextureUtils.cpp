@@ -145,6 +145,7 @@ Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat)
 				bitmapPixelFormat = PixelFormat::BGR_FLOAT;
 				break;
 			case GL_DEPTH_COMPONENT:
+			case GL_DEPTH_COMPONENT32:
 			case GL_RED:
 				bitmapPixelFormat = PixelFormat( Util::TypeConstant::FLOAT, 0,PixelFormat::NONE,PixelFormat::NONE,PixelFormat::NONE);
 				break;
@@ -382,6 +383,19 @@ Util::Reference<Texture> createDepthTexture(uint32_t width, uint32_t height, uin
 	return nullptr;
 #endif
 }
+
+//! [static] Factory
+Util::Reference<Texture> createHDRDepthTexture(uint32_t width, uint32_t height, uint32_t layers) {
+#if defined(LIB_GL)
+	if(layers > 0)
+		return create(TextureType::TEXTURE_2D_ARRAY, width, height, layers, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F, false, true);
+	else
+		return create(TextureType::TEXTURE_2D, width, height, 1, GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F, false);
+#else
+	return nullptr;
+#endif
+}
+
 
 //! [static] Factory
 Util::Reference<Texture> createMultisampleDepthTexture(uint32_t width, uint32_t height, uint32_t samples) {
