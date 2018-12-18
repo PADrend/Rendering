@@ -94,8 +94,8 @@ target_include_directories(Rendering PRIVATE ${GLIMPLEMENTATION_INCLUDE_DIRS})
 target_link_libraries(Rendering LINK_PRIVATE ${GLIMPLEMENTATION_LIBRARIES})
 
 # Set version of library
-set_target_properties(Rendering PROPERTIES VERSION ${RENDERING_VERSION}
-                                           SOVERSION ${RENDERING_VERSION_MAJOR})
+set_target_properties(Rendering PROPERTIES VERSION ${Rendering_VERSION}
+                                           SOVERSION ${Rendering_VERSION_MAJOR})
                                            
 add_subdirectory(tests)
 
@@ -143,7 +143,7 @@ configure_package_config_file(RenderingConfig.cmake.in ${CMAKE_CURRENT_BINARY_DI
                               NO_SET_AND_CHECK_MACRO
                               NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/RenderingConfigVersion.cmake
-                                 VERSION ${RENDERING_VERSION}
+                                 VERSION ${Rendering_VERSION}
                                  COMPATIBILITY SameMajorVersion)
 
 # Install the configuration files
@@ -153,13 +153,13 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RenderingConfig.cmake ${CMAKE_CURRENT_
 # Packaging
 include(InstallRequiredSystemLibraries)
 
-set(CPACK_PACKAGE_NAME "librendering${RENDERING_VERSION_MAJOR}")
+set(CPACK_PACKAGE_NAME "librendering${Rendering_VERSION_MAJOR}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Rendering library")
 set(CPACK_PACKAGE_VENDOR "Benjamin Eikel; Claudius Jaehn; Ralf Petring")
 set(CPACK_PACKAGE_CONTACT "Benjamin Eikel <benjamin@eikel.org>")
-set(CPACK_PACKAGE_VERSION_MAJOR ${RENDERING_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${RENDERING_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${RENDERING_VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION_MAJOR ${Rendering_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${Rendering_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${Rendering_VERSION_PATCH})
 set(CPACK_PACKAGE_FILE_NAME "libRendering")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_STRIP_FILES ON)
