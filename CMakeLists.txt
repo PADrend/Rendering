@@ -6,13 +6,8 @@
 # You should have received a copy of the MPL along with this library; see the 
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
-cmake_minimum_required(VERSION 2.8.11)
-project(Rendering)
-
-set(RENDERING_VERSION_MAJOR 0)
-set(RENDERING_VERSION_MINOR 2)
-set(RENDERING_VERSION_PATCH 0)
-set(RENDERING_VERSION_STRING ${RENDERING_VERSION_MAJOR}.${RENDERING_VERSION_MINOR}.${RENDERING_VERSION_PATCH})
+cmake_minimum_required(VERSION 3.1.0)
+project(Rendering VERSION 0.2.0)
 
 # Set up install directories
 include(GNUInstallDirs)
@@ -106,7 +101,7 @@ else()
 endif()
 
 # Set version of library
-set_target_properties(Rendering PROPERTIES VERSION ${RENDERING_VERSION_STRING}
+set_target_properties(Rendering PROPERTIES VERSION ${RENDERING_VERSION}
                                            SOVERSION ${RENDERING_VERSION_MAJOR})
                                            
 add_subdirectory(tests)
@@ -155,7 +150,7 @@ configure_package_config_file(RenderingConfig.cmake.in ${CMAKE_CURRENT_BINARY_DI
                               NO_SET_AND_CHECK_MACRO
                               NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/RenderingConfigVersion.cmake
-                                 VERSION ${RENDERING_VERSION_STRING}
+                                 VERSION ${RENDERING_VERSION}
                                  COMPATIBILITY SameMajorVersion)
 
 # Install the configuration files
