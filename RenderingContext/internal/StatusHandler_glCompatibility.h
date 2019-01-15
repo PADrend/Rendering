@@ -15,6 +15,7 @@ namespace Rendering {
 
 class RenderingStatus;
 
+//! @internal
 namespace StatusHandler_glCompatibility{
 
 void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced);

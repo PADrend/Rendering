@@ -28,6 +28,7 @@ namespace Rendering {
  * Storage for shader type and shader code. There is no GL handle stored in
  * here. When compiling an object, the handle is returned and has to be stored
  * by the caller.
+ * @ingroup shader
  */
 class ShaderObjectInfo {
 	public:

@@ -28,28 +28,31 @@ namespace Rendering {
 class RenderingContext;
 class BufferObject;
 
-/***
- ** Texture
- **
- **	Coordinates:
- **
- ** (0,sizeY-1,numLayers-1)             (sizeX,sizeY,numLayers-1)
- **               +---------------+  
- **               |               |  
- **               .     ...       .
- **               .               .
- **               |               |  
- ** (0,0,1)       +---------------+ (sizeX-1,0,1)
- ** (0,sizeY-1,0) +---------------+ (sizeX-1,sizeY-1,0)
- **               |      /\       |  
- **               |     /  \      |
- **               |      ||       |
- **               |      ||       |
- **               +---------------+
- ** (0,0,0)                  (sizeX,0,0)
- **
- ** \note the coordinates are different to the ones used in Util::Bitmap
- **/
+//! @defgroup texture
+
+/**
+ * Texture
+ *
+ *	Coordinates:
+ *
+ * (0,sizeY-1,numLayers-1)             (sizeX,sizeY,numLayers-1)
+ *               +---------------+  
+ *               |               |  
+ *               .     ...       .
+ *               .               .
+ *               |               |  
+ * (0,0,1)       +---------------+ (sizeX-1,0,1)
+ * (0,sizeY-1,0) +---------------+ (sizeX-1,sizeY-1,0)
+ *               |      /\       |  
+ *               |     /  \      |
+ *               |      ||       |
+ *               |      ||       |
+ *               +---------------+
+ * (0,0,0)                  (sizeX,0,0)
+ *
+ * \note the coordinates are different to the ones used in Util::Bitmap
+ * @ingroup texture
+ */
 class Texture: public Util::ReferenceCounter<Texture>	{
 	public:
 		

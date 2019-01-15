@@ -35,7 +35,11 @@ class Uniform;
 class UniformRegistry;
 class RenderingStatus;
 
-/*!	Shader */
+//! @defgroup shader Shader
+
+/** Shader
+ * @ingroup shader
+ */
 class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name Main */
 	// @{

@@ -14,6 +14,7 @@ namespace Rendering {
 
 class CoreRenderingStatus;
 
+//! @internal
 namespace StatusHandler_glCore{
 
 void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, bool forced);

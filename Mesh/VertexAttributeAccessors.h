@@ -25,6 +25,10 @@
 
 namespace Rendering {
 
+/** @addtogroup mesh
+ * @{
+ */
+ 
 /*! Base class of all VertexAttributeAccessor-classes.
 	\note A VertexAttributeAccessor only stays valid as long as the referenced MeshVertexData is not altered externally! */
 class VertexAttributeAccessor : public Util::ReferenceCounter<VertexAttributeAccessor>{
@@ -211,5 +215,6 @@ class UIntAttributeAccessor : public VertexAttributeAccessor{
 		}
 };
 
+//! @}
 }
 #endif // VERTEXACCESSOR_H

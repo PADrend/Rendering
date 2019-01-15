@@ -55,6 +55,7 @@ class VertexDescription;
  * @author Benjamin Eikel
  * @author Stefan Arens
  * @author Paul Justus
+ * @ingroup mesh
  */
 namespace MeshUtils {
 

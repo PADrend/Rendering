@@ -55,9 +55,10 @@ class Color4f;
 
 namespace Rendering {
 
-/***
- ** Uniform
- **/
+/**
+ * Uniform
+ * @ingroup shader
+ */
 class Uniform {
 		//! dataType_t ---> bytes per value
 		static const size_t dataSizeIndex[];

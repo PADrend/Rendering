@@ -19,7 +19,9 @@
 namespace Rendering {
 
 /*! IndexData-Class .
-	Part of the Mesh implementation containing all index specific data of a mesh. */
+	Part of the Mesh implementation containing all index specific data of a mesh. 
+	@ingroup mesh
+*/
 class MeshIndexData {
 	public:
 		MeshIndexData();

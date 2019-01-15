@@ -27,6 +27,10 @@
 namespace Rendering {
 class Texture;
 
+/** @addtogroup context
+ * @{
+ */
+
 namespace Comparison {
 /**
  * @brief Type of comparison function
@@ -1041,6 +1045,7 @@ enum class TexUnitUsageParameter : uint8_t {
 
 static const uint8_t MAX_TEXTURES = 8;
 
+//! @}
 }
 
 #endif // PARAMETERSTRUCTS_H

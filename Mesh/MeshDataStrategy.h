@@ -26,7 +26,9 @@ class RenderingContext;
 	\note All instances of this class should be created only once and re-used (they are probably never deleted)
 	\note If a mesh does not have a data-strategy, the default strategy is used.
 	\note If an implementation does make use of gl-calls, be carefull if the
-		mesh is accesed from a non-gl-thread. */
+		mesh is accesed from a non-gl-thread. 
+	@ingroup mesh
+*/
 class MeshDataStrategy {
 		static MeshDataStrategy * defaultStrategy;
 	public:
@@ -66,7 +68,9 @@ class MeshDataStrategy {
 
 // -------------------------------------------------------------------
 
-/*!	SimpleMeshDataStrategy ---|> MeshDataStrategy */
+/*!	SimpleMeshDataStrategy ---|> MeshDataStrategy
+	@ingroup mesh
+*/
 class SimpleMeshDataStrategy : public MeshDataStrategy {
 	public:
 		/*!	Return an instance of the SimpleMeshDataStrategy:

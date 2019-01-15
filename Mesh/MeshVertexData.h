@@ -28,7 +28,9 @@ class VertexDescription;
 	- The local storage for the vertex data (If the data is uploaded to
 		the graphics card, the local copy may be freed.)
 	- The vertex buffer id, if the data has been uploaded to graphics memory.
-	- A bounding box enclosing all vertices.	*/
+	- A bounding box enclosing all vertices.
+	@ingroup mesh
+*/
 class MeshVertexData {
 		std::vector<uint8_t> binaryData;
 		const VertexDescription * vertexDescription;

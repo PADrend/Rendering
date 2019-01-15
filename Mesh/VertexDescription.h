@@ -22,9 +22,10 @@ class StringIdentifier;
 }
 namespace Rendering {
 
-/***
- ** VertexDescription
- **/
+/**
+ * VertexDescription
+ * @ingroup mesh
+ */
 class VertexDescription {
 	public:
 

@@ -16,6 +16,10 @@
 
 namespace Rendering {
 
+/** @addtogroup helper
+ * @{
+ */
+ 
 void enableGLErrorChecking();
 void disableGLErrorChecking();
 void checkGLError(const char * file, int line);
@@ -91,6 +95,7 @@ void enableDebugOutput();
  */
 void disableDebugOutput();
 
+//! @}
 }
 
 #define GET_GL_ERROR() \

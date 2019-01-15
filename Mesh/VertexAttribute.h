@@ -23,6 +23,7 @@ namespace Rendering {
  *
  * @author Claudius Jähn, Benjamin Eikel
  * @date 2011-07-21
+ * @ingroup mesh
  */
 class VertexAttribute {
 	public:

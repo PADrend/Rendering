@@ -57,6 +57,9 @@ enum class TexUnitUsageParameter : uint8_t;
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
 
+//! @defgroup context Rendering Context
+
+//! @ingroup context
 class RenderingContext {
 
 	//! @name General

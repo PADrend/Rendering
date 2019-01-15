@@ -24,6 +24,7 @@ namespace Rendering {
  *
  * @author Benjamin Eikel
  * @date 2012-04-19
+ * @ingroup context
  */
 class BufferObject {
 	public:		

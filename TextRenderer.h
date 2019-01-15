@@ -33,6 +33,7 @@ class RenderingContext;
  * 
  * @author Benjamin Eikel
  * @date 2013-07-10
+ * @ingroup draw
  */
 class TextRenderer {
 	private:

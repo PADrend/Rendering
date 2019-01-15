@@ -51,6 +51,12 @@ class Color4f;
  */
 namespace Rendering {
 
+//! @defgroup draw Draw
+
+/** @addtogroup draw
+ * @{
+ */
+
 void drawAbsBox(RenderingContext & rc, const Geometry::Box & box);
 void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
 void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box);
@@ -116,6 +122,7 @@ void enableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, 
 void disableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements);
 void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32_t elementCount, uint32_t instanceCount);
 
+//! @}
 }
 
 #endif /* DRAW_H_ */

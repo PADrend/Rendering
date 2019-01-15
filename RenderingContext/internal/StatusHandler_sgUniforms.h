@@ -14,6 +14,7 @@ namespace Rendering {
 
 class RenderingStatus;
 
+//! @internal
 namespace StatusHandler_sgUniforms{
 
 void apply(RenderingStatus & target, const RenderingStatus & actual, bool forced);

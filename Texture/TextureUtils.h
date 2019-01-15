@@ -34,7 +34,9 @@ class PixelFormat;
 namespace Rendering {
 class RenderingContext;
 
-//! Collection of texture related operations.
+/** Collection of texture related operations.
+ * @ingroup texture
+ */
 namespace TextureUtils {
 
 const unsigned int RAW_16BIT_BW = 0;

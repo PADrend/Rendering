@@ -22,7 +22,8 @@ class Shader;
 
 
 /*! (internal) Collection of Uniforms. Objects of this class are internally used by Shaders to track their Uniforms and
-	by the RenderingContext, which has one instance for managing global uniforms. */
+	by the RenderingContext, which has one instance for managing global uniforms.
+	@ingroup shader */
 class UniformRegistry {
 	private:
 		struct entry_t;

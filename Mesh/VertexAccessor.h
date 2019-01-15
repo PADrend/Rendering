@@ -34,6 +34,7 @@ namespace Rendering {
  *
  * \note Due to the lazy initialization, using a VertexAttributeAccessor for a single attribute directly might be faster
  * \see VertexAttributeAccessor
+ * @ingroup mesh
  */
 class VertexAccessor : public Util::ReferenceCounter<VertexAccessor> {
 private:
