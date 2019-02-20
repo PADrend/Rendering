@@ -434,6 +434,7 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 		allocateLocalData();
 
 	context.pushAndSetTexture(0,this);
+	context.applyChanges();
 	switch( tType ){
 		case  TextureType::TEXTURE_1D:
 		case  TextureType::TEXTURE_2D:
