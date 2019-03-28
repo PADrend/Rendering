@@ -71,6 +71,13 @@ void QueryObject::end() const {
 #endif
 }
 
+void QueryObject::queryCounter() const {
+#if defined(LIB_GL)
+	if(queryType == GL_TIMESTAMP)
+		glQueryCounter(id, static_cast<GLenum>(queryType));
+#endif
+}
+
 static std::deque<uint32_t> freeIds;
 static const uint32_t batchSize = 500;
 
