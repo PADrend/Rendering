@@ -227,6 +227,20 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 	}
 	GET_GL_ERROR();
 
+		// PrimitiveRestart
+	#ifdef LIB_GL
+		if(forced || target.primitiveRestartParametersChanged(actual)) {
+			if(actual.getPrimitiveRestartParameters().isEnabled()) {
+				glEnable(GL_PRIMITIVE_RESTART);
+				glPrimitiveRestartIndex(actual.getPrimitiveRestartParameters().getIndex());
+			} else {
+				glDisable(GL_PRIMITIVE_RESTART);
+			}
+			target.setPrimitiveRestartParameters(actual.getPrimitiveRestartParameters());
+		}
+		GET_GL_ERROR();
+	#endif /* LIB_GL */
+
 	// Textures
 	if(forced || target.texturesChanged(actual)) {
 		for(uint_fast8_t unit = 0; unit < MAX_TEXTURES; ++unit) {

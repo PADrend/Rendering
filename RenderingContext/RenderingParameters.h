@@ -853,6 +853,34 @@ class PolygonOffsetParameters {
 		}
 };
 
+
+// -------------------------------------------
+
+class PrimitiveRestartParameters {
+	private:
+		uint32_t index;
+		bool enabled;
+
+	public:
+		//! Disable primitive restart.
+		PrimitiveRestartParameters() : index(), enabled(false) {}
+		//! Enable primitive restart with the given index.
+		explicit PrimitiveRestartParameters(uint32_t index) : index(index), enabled(true) {}
+		bool operator!=(const PrimitiveRestartParameters & other) const { return enabled != other.enabled || index != other.index; }
+		bool operator==(const PrimitiveRestartParameters & other) const { return enabled == other.enabled && index == other.index; }
+
+		uint32_t getIndex() const { return index; }
+		bool isEnabled() const {
+			return enabled;
+		}
+		void enable() {
+			enabled = true;
+		}
+		void disable() {
+			enabled = false;
+		}
+};
+
 // -------------------------------------------
 
 class ScissorParameters {

@@ -75,6 +75,7 @@ class RenderingContext::InternalData {
 		std::stack<PointParameters> pointParameterStack;
 		std::stack<PolygonModeParameters> polygonModeParameterStack;
 		std::stack<PolygonOffsetParameters> polygonOffsetParameterStack;
+		std::stack<PrimitiveRestartParameters> primitiveRestartParameterStack;
 		std::stack<ScissorParameters> scissorParametersStack;
 		ScissorParameters currentScissorParameters;
 		std::stack<StencilParameters> stencilParameterStack;
@@ -847,6 +848,35 @@ void RenderingContext::setPolygonOffset(const PolygonOffsetParameters & p) {
 	if(immediate)
 		applyChanges();
 }
+
+// PolygonOffset ************************************************************************************
+const PrimitiveRestartParameters & RenderingContext::getPrimitiveRestartParameters() const {
+	return internalData->actualCoreRenderingStatus.getPrimitiveRestartParameters();
+}
+void RenderingContext::popPrimitiveRestart() {
+	if(internalData->primitiveRestartParameterStack.empty()) {
+		WARN("popPrimitiveRestart: Empty PrimitiveRestart stack");
+		return;
+	}
+	setPrimitiveRestart(internalData->primitiveRestartParameterStack.top());
+	internalData->primitiveRestartParameterStack.pop();
+}
+
+void RenderingContext::pushPrimitiveRestart() {
+	internalData->primitiveRestartParameterStack.emplace(internalData->actualCoreRenderingStatus.getPrimitiveRestartParameters());
+}
+
+void RenderingContext::pushAndSetPrimitiveRestart(const PrimitiveRestartParameters & p) {
+	pushPrimitiveRestart();
+	setPrimitiveRestart(p);
+}
+
+void RenderingContext::setPrimitiveRestart(const PrimitiveRestartParameters & p) {
+	internalData->actualCoreRenderingStatus.setPrimitiveRestartParameters(p);
+	if(immediate)
+		applyChanges();
+}
+
 
 // Scissor ************************************************************************************
 

@@ -34,6 +34,7 @@ class CoreRenderingStatus {
 			lineParameters(),
 			polygonModeParameters(),
 			polygonOffsetParameters(),
+			primitiveRestartParameters(),
 			stencilCheckNumber(),
 			stencilParameters(),
 			texturesCheckNumber(),
@@ -216,6 +217,24 @@ class CoreRenderingStatus {
 		}
 		void setPolygonOffsetParameters(const PolygonOffsetParameters & p) {
 			polygonOffsetParameters = p;
+		}
+	//	@}
+
+	// ------
+
+	//!	@name PrimitiveRestart
+	//	@{
+	private:
+		PrimitiveRestartParameters primitiveRestartParameters;
+	public:
+		bool primitiveRestartParametersChanged(const CoreRenderingStatus & actual) const {
+			return primitiveRestartParameters != actual.primitiveRestartParameters;
+		}
+		const PrimitiveRestartParameters & getPrimitiveRestartParameters() const {
+			return primitiveRestartParameters;
+		}
+		void setPrimitiveRestartParameters(const PrimitiveRestartParameters & p) {
+			primitiveRestartParameters = p;
 		}
 	//	@}
 

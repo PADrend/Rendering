@@ -46,6 +46,7 @@ class Mesh;
 class PointParameters;
 class PolygonModeParameters;
 class PolygonOffsetParameters;
+class PrimitiveRestartParameters;
 class ScissorParameters;
 class StencilParameters;
 class Shader;
@@ -396,6 +397,17 @@ public:
 	void pushPolygonOffset();
 	void pushAndSetPolygonOffset(const PolygonOffsetParameters & polygonOffsetParameter);
 	void setPolygonOffset(const PolygonOffsetParameters & polygonOffsetParameter);
+	// @}
+	
+	// ------
+
+	//! @name Primitive restart
+	//	@{
+	const PrimitiveRestartParameters & getPrimitiveRestartParameters() const;
+	void popPrimitiveRestart();
+	void pushPrimitiveRestart();
+	void pushAndSetPrimitiveRestart(const PrimitiveRestartParameters & parameters);
+	void setPrimitiveRestart(const PrimitiveRestartParameters & parameters);
 	// @}
 
 
