@@ -27,6 +27,7 @@ add_library(Rendering
 	Mesh/VertexAttributeAccessors.cpp
 	Mesh/VertexAttributeIds.cpp
 	Mesh/VertexDescription.cpp
+	MeshUtils/ConnectivityAccessor.cpp
 	MeshUtils/LocalMeshDataHolder.cpp
 	MeshUtils/MarchingCubesMeshBuilder.cpp
 	MeshUtils/MeshBuilder.cpp
@@ -37,7 +38,7 @@ add_library(Rendering
 	MeshUtils/QuadtreeMeshBuilderDebug.cpp
 	MeshUtils/Simplification.cpp
 	MeshUtils/TriangleAccessor.cpp
-	MeshUtils/ConnectivityAccessor.cpp
+	MeshUtils/WireShapes.cpp
 	RenderingContext/internal/StatusHandler_glCompatibility.cpp
 	RenderingContext/internal/StatusHandler_glCore.cpp
 	RenderingContext/internal/StatusHandler_sgUniforms.cpp

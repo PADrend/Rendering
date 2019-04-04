@@ -96,10 +96,10 @@ public:
 	explicit MeshBuilder(VertexDescription description);
 	~MeshBuilder();
 	
-	/*!	true if no no vertices were added so far.	*/
+	/*! true if no no vertices were added so far.	*/
 	bool isEmpty() const { return vSize == 0; }
 
-	//!	Build a new mesh using the internal vertex and index buffer.
+	//! Build a new mesh using the internal vertex and index buffer.
 	Mesh * buildMesh();
 
 	/*! Sets the current vertex data for the following vertices (like a state in OpenGL). 
@@ -121,21 +121,21 @@ public:
 		The index of the new vertex is returned.*/
 	uint32_t addVertex();
 
-	/*!	Add a vertex to the internal buffer. The index of the new vertex is returned.  deprecated!!!!!	*/
+	/*! Add a vertex to the internal buffer. The index of the new vertex is returned.  deprecated!!!!!	*/
 	uint32_t addVertex(const Geometry::Vec3& pos, const Geometry::Vec3& n,
 						float r, float g, float b, float a,
 						float u, float v) __attribute__((deprecated));
 
-	/*!	Add a index to the interal buffer	*/
+	/*! Add a index to the interal buffer	*/
 	void addIndex(uint32_t idx);
 
-	/*!	Adds a quad to the internal buffer, clockwise.	*/
+	/*! Adds a quad to the internal buffer, clockwise.	*/
 	void addQuad(uint32_t idx0, uint32_t idx1, uint32_t idx2, uint32_t idx3);
 
-	/*!	Adds a three indices	*/
+	/*! Adds a three indices	*/
 	void addTriangle(uint32_t idx0, uint32_t idx1, uint32_t idx2);
 
-	/*!	Get current vertex count which is the index of next vertex added. */
+	/*! Get current vertex count which is the index of next vertex added. */
 	uint32_t getNextIndex() const { return vSize; }
 	
 	//! Add entire mesh to meshBuilder
