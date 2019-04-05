@@ -9,10 +9,10 @@
 #ifndef RENDERING_MESH_VERTEX_ACCESSOR_H_
 #define RENDERING_MESH_VERTEX_ACCESSOR_H_
 
-#include <Rendering/Mesh/MeshVertexData.h>
-#include <Rendering/Mesh/VertexDescription.h>
-#include <Rendering/Mesh/VertexAttributeIds.h>
-#include <Rendering/Mesh/VertexAttributeAccessors.h>
+#include "MeshVertexData.h"
+#include "VertexDescription.h"
+#include "VertexAttributeIds.h"
+#include "VertexAttributeAccessors.h"
 
 #include <Util/StringIdentifier.h>
 #include <Util/ReferenceCounter.h>
