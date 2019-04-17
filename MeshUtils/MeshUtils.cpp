@@ -2331,13 +2331,7 @@ void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sou
 	uint32_t srcEnd = (sourceOffset + count)*vd.getVertexSize();
 		
 	if(srcVertices.isUploaded() && tgtVertices.isUploaded()) {
-		BufferObject srcBO;
-		BufferObject tgtBO;
-		srcVertices._swapBufferObject(srcBO);
-		tgtVertices._swapBufferObject(tgtBO);
-		tgtBO.copy(srcBO, srcStart, tgtStart, count*vd.getVertexSize());
-		srcVertices._swapBufferObject(srcBO);
-		tgtVertices._swapBufferObject(tgtBO);
+		srcVertices.getBuffer()->copy(*tgtVertices.getBuffer(), count*vd.getVertexSize(), srcVertices.getOffset()+srcStart, tgtVertices.getOffset()+tgtStart);
 		tgtVertices.releaseLocalData();
 	} else if(srcVertices.hasLocalData() && !tgtVertices.hasLocalData()) {
 		tgtVertices.download();

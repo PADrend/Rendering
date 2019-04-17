@@ -353,6 +353,24 @@ public:
 
 // ------
 
+//!	@name PrimitiveRestart
+//	@{
+private:
+	PrimitiveRestartParameters primitiveRestartParameters;
+public:
+	bool PrimitiveRestartParametersChanged(const PipelineState & actual) const {
+		return primitiveRestartParameters != actual.primitiveRestartParameters;
+	}
+	const PrimitiveRestartParameters & getPrimitiveRestartParameters() const {
+		return primitiveRestartParameters;
+	}
+	void setPrimitiveRestartParameters(const PrimitiveRestartParameters & p) {
+		primitiveRestartParameters = p;
+	}
+//	@}
+
+// ------
+
 //!	@name Stencil
 //	@{
 private:

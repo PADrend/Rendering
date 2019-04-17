@@ -411,14 +411,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_UNSIGNED_INT_ATOMIC_COUNTER:
 			case GL_UNSIGNED_INT_IMAGE_BUFFER:
 			case GL_INT_IMAGE_BUFFER:
-			case GL_IMAGE_BUFFER:			
-			case GL_UNSIGNED_INT:
-			case GL_IMAGE_1D_ARRAY:
-			case GL_IMAGE_2D_ARRAY:
-			case GL_INT_IMAGE_1D_ARRAY:
-			case GL_INT_IMAGE_2D_ARRAY:
-			case GL_UNSIGNED_INT_IMAGE_1D_ARRAY:
-			case GL_UNSIGNED_INT_IMAGE_2D_ARRAY:
+			case GL_IMAGE_BUFFER:
 			{
 				dataType = Uniform::UNIFORM_INT;
 				break;

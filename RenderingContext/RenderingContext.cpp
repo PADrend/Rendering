@@ -233,8 +233,6 @@ RenderingContext::RenderingContext() :
 	}
 }
 
-bool RenderingContext::compabilityMode = true;
-
 RenderingContext::~RenderingContext() = default;
 
 void RenderingContext::resetDisplayMeshFn() {
@@ -661,7 +659,7 @@ void RenderingContext::setPolygonOffset(const PolygonOffsetParameters & p) {
 
 // PolygonOffset ************************************************************************************
 const PrimitiveRestartParameters & RenderingContext::getPrimitiveRestartParameters() const {
-	return internalData->actualCoreRenderingStatus.getPrimitiveRestartParameters();
+	return internalData->targetPipelineState.getPrimitiveRestartParameters();
 }
 void RenderingContext::popPrimitiveRestart() {
 	if(internalData->primitiveRestartParameterStack.empty()) {
@@ -673,7 +671,7 @@ void RenderingContext::popPrimitiveRestart() {
 }
 
 void RenderingContext::pushPrimitiveRestart() {
-	internalData->primitiveRestartParameterStack.emplace(internalData->actualCoreRenderingStatus.getPrimitiveRestartParameters());
+	internalData->primitiveRestartParameterStack.emplace(internalData->targetPipelineState.getPrimitiveRestartParameters());
 }
 
 void RenderingContext::pushAndSetPrimitiveRestart(const PrimitiveRestartParameters & p) {
@@ -682,9 +680,7 @@ void RenderingContext::pushAndSetPrimitiveRestart(const PrimitiveRestartParamete
 }
 
 void RenderingContext::setPrimitiveRestart(const PrimitiveRestartParameters & p) {
-	internalData->actualCoreRenderingStatus.setPrimitiveRestartParameters(p);
-	if(immediate)
-		applyChanges();
+	internalData->targetPipelineState.setPrimitiveRestartParameters(p);
 }
 
 
