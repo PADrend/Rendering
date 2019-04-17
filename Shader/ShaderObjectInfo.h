@@ -16,6 +16,8 @@
 #include <utility>
 #include <vector>
 
+#include <Util/IO/FileName.h>
+
 // Forward declarations
 namespace Util {
 class FileName;
@@ -26,6 +28,7 @@ namespace Rendering {
  * Storage for shader type and shader code. There is no GL handle stored in
  * here. When compiling an object, the handle is returned and has to be stored
  * by the caller.
+ * @ingroup shader
  */
 class ShaderObjectInfo {
 	public:
@@ -39,6 +42,7 @@ class ShaderObjectInfo {
 		uint32_t type;
 		std::string code;
 		std::string defines;
+		Util::FileName filename;
 
 		ShaderObjectInfo(uint32_t _type, std::string _code) :
 			type(_type), code(std::move(_code)) {
@@ -103,6 +107,10 @@ class ShaderObjectInfo {
 
 		//! Load a ComputeShaderObject from the given file.
 		static ShaderObjectInfo loadCompute(const Util::FileName & file);
+	
+		const Util::FileName & getFileName() const { return filename; }
+	private:
+		ShaderObjectInfo& setFileName(const Util::FileName & f) { filename=f; return *this; }
 };
 
 }

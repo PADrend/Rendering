@@ -27,6 +27,9 @@
 namespace Rendering {
 class Texture;
 
+/** @addtogroup context
+ * @{
+ */
 static const uint32_t MAX_FRAMEDATA = 1;
 static const uint32_t MAX_OBJECTDATA = 512;
 static const uint32_t MAX_MATERIALS = 256;
@@ -852,6 +855,34 @@ class PolygonOffsetParameters {
 		}
 };
 
+
+// -------------------------------------------
+
+class PrimitiveRestartParameters {
+	private:
+		uint32_t index;
+		bool enabled;
+
+	public:
+		//! Disable primitive restart.
+		PrimitiveRestartParameters() : index(), enabled(false) {}
+		//! Enable primitive restart with the given index.
+		explicit PrimitiveRestartParameters(uint32_t index) : index(index), enabled(true) {}
+		bool operator!=(const PrimitiveRestartParameters & other) const { return enabled != other.enabled || index != other.index; }
+		bool operator==(const PrimitiveRestartParameters & other) const { return enabled == other.enabled && index == other.index; }
+
+		uint32_t getIndex() const { return index; }
+		bool isEnabled() const {
+			return enabled;
+		}
+		void enable() {
+			enabled = true;
+		}
+		void disable() {
+			enabled = false;
+		}
+};
+
 // -------------------------------------------
 
 class ScissorParameters {
@@ -1044,6 +1075,7 @@ enum class TexUnitUsageParameter : uint8_t {
 
 static const uint8_t MAX_TEXTURES = 16;
 
+//! @}
 }
 
 #endif // PARAMETERSTRUCTS_H

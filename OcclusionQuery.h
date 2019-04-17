@@ -21,6 +21,7 @@ class RenderingContext;
  *
  * @author Benjamin Eikel, Claudius Jähn
  * @date 2009-12-10
+ * @ingroup helper
  */
 class OcclusionQuery : public QueryObject{
 	public:

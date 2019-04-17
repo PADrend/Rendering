@@ -25,6 +25,7 @@ class Texture;
 * @see http://www.opengl.org/registry/specs/ARB/pixel_buffer_object.txt
 * @author Benjamin Eikel
 * @date 2011-06-12
+* @ingroup texture
 */
 class PBO : public Util::ReferenceCounter<PBO> {
 	private:

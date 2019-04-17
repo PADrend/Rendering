@@ -209,18 +209,16 @@ void Texture::_uploadGLTexture(RenderingContext & context) {
 			/*Util::Reference<Util::PixelAccessor> pa =  Util::PixelAccessor::create(getLocalBitmap());
 			if(pa){ // local data available?
 				for(uint_fast8_t layer =0; layer < 6; layer++){
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-								static_cast<GLsizei>(getWidth()),
-								static_cast<GLsizei>(getHeight()), 0,
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+								width, height, 0,
 								static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
-								static_cast<GLenum>(format.pixelFormat.glLocalDataType), pa->_ptr<uint8_t>(0, getHeight() * layer));
+								static_cast<GLenum>(format.pixelFormat.glLocalDataType), pa->_ptr<uint8_t>(0, height * layer));
 				}
 			}
 			else{ // -> just allocate gpu data.
 				for(uint_fast8_t layer =0; layer < 6; ++layer){
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, 0, static_cast<GLint>(format.pixelFormat.glInternalFormat),
-								static_cast<GLsizei>(getWidth()),
-								static_cast<GLsizei>(getHeight()), 0,
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer, level, static_cast<GLint>(format.pixelFormat.glInternalFormat),
+								width, height, 0,
 								static_cast<GLenum>(format.pixelFormat.glLocalDataFormat), 
 								static_cast<GLenum>(format.pixelFormat.glLocalDataType), nullptr);
 				}
@@ -314,6 +312,35 @@ void Texture::removeGLData(){
 	if(glId)
 		glDeleteTextures(1,&glId);
 	glId=0;
+}
+
+void Texture::clearGLData(const Util::Color4f& color) {
+	static const bool clearSupported = isExtensionSupported("GL_VERSION_4_4");
+	if(!clearSupported){
+		WARN("clearGLData: Requires at least OpenGL 4.4 to work.");
+		return;
+	}
+	if(!isGLTextureValid())
+		return;
+	
+	int maxLevel = hasMipmaps ? std::log2(std::max(getWidth(), getHeight())) : 0;
+	std::vector<uint8_t> data;
+	
+	if(format.pixelFormat.glLocalDataType == GL_FLOAT) {
+		data.resize(sizeof(float)*4);
+		std::copy(reinterpret_cast<const uint8_t*>(color.data()), reinterpret_cast<const uint8_t*>(color.data()+4), data.data());
+	} else if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT || format.pixelFormat.glLocalDataType == GL_INT) {
+		data.resize(sizeof(int32_t)*4);
+		std::vector<int32_t> values = {static_cast<int32_t>(color.r()),static_cast<int32_t>(color.g()), static_cast<int32_t>(color.b()), static_cast<int32_t>(color.a())};
+		std::copy(reinterpret_cast<const uint8_t*>(values.data()), reinterpret_cast<const uint8_t*>(values.data()+4), data.data());
+	} else if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_BYTE || format.pixelFormat.glLocalDataType == GL_BYTE) {
+		data.resize(4);
+		Util::Color4ub colorb(color);
+		std::copy(colorb.data(), colorb.data()+4, data.data());
+	}
+
+	for(int level=0; level<=maxLevel; ++level)
+		glClearTexImage(glId, level, format.pixelFormat.glLocalDataFormat, format.pixelFormat.glLocalDataType, data.empty() ? nullptr : data.data());
 }
 
 void Texture::downloadGLTexture(RenderingContext & context, uint8_t* target, uint32_t level) {

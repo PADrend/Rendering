@@ -47,6 +47,7 @@ class Mesh;
 class PointParameters;
 class PolygonModeParameters;
 class PolygonOffsetParameters;
+class PrimitiveRestartParameters;
 class ScissorParameters;
 class StencilParameters;
 class Shader;
@@ -57,6 +58,9 @@ class VertexAttribute;
 class VertexDescription;
 enum class TexUnitUsageParameter : uint8_t;
 
+//! @defgroup context Rendering Context
+
+//! @ingroup context
 class RenderingContext {
 
 	//! @name General
@@ -405,6 +409,17 @@ public:
 	void pushPolygonOffset();
 	void pushAndSetPolygonOffset(const PolygonOffsetParameters & polygonOffsetParameter);
 	void setPolygonOffset(const PolygonOffsetParameters & polygonOffsetParameter);
+	// @}
+	
+	// ------
+
+	//! @name Primitive restart
+	//	@{
+	const PrimitiveRestartParameters & getPrimitiveRestartParameters() const;
+	void popPrimitiveRestart();
+	void pushPrimitiveRestart();
+	void pushAndSetPrimitiveRestart(const PrimitiveRestartParameters & parameters);
+	void setPrimitiveRestart(const PrimitiveRestartParameters & parameters);
 	// @}
 
 

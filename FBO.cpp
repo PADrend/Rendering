@@ -25,7 +25,6 @@ FBO::FBO() : glId(0){
 
 FBO::~FBO() {
 	if(glId!=0){
-		glDeleteFramebuffers(1, &glId);
 		glId=0;
 	}
 	//dtor

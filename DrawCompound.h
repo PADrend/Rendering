@@ -29,6 +29,10 @@ class Color4f;
 
 namespace Rendering {
 
+/** @addtogroup draw
+ * @{
+ */
+ 
 //! Draw a symbolized camera using the given rendering context, and color.
 void drawCamera(RenderingContext & rc, const Util::Color4f & color);
 
@@ -39,6 +43,7 @@ void drawFrustum(RenderingContext & rc, const Geometry::Frustum & frustum, const
 
 void drawGrid(RenderingContext & rc, float scale = 1.0f);
 
+//! @}
 }
 
 #endif /* RENDERING_DRAWCOMPOUND_H_ */

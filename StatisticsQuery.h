@@ -20,6 +20,7 @@ class RenderingContext;
  * @see https://www.opengl.org/registry/specs/ARB/pipeline_statistics_query.txt
  * @author Benjamin Eikel
  * @date 2016-01-08
+ * @ingroup helper
  */
 class StatisticsQuery : public QueryObject {
 	private:
@@ -111,6 +112,13 @@ class StatisticsQuery : public QueryObject {
 		 * @see @c GL_TIME_ELAPSED
 		 */
 		static StatisticsQuery createTimeElapsedQuery();
+
+		/**
+		 * Create a statistics query to measure the current GL time
+		 * 
+		 * @see @c GL_TIME_ELAPSED
+		 */
+		static StatisticsQuery createTimestampQuery();
 };
 }
 

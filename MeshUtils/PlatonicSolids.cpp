@@ -3,16 +3,20 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+  Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "PlatonicSolids.h"
+#include "MeshBuilder.h"
 #include "../Mesh/Mesh.h"
 #include "../Mesh/MeshIndexData.h"
 #include "../Mesh/MeshVertexData.h"
 #include "../Mesh/VertexDescription.h"
+#include <Geometry/Vec3.h>
+
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -22,18 +26,18 @@
 namespace Rendering {
 namespace MeshUtils {
 namespace PlatonicSolids {
+using namespace Geometry;
 
 // Vertex positions and face connectivity are taken from http://geometrictools.com/Documentation/PlatonicSolids.pdf.
 
-Mesh * createTetrahedron() {
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	auto mesh = new Mesh(vertexDescription, 4, 3 * 4);
+Mesh* createTetrahedron(const VertexDescription& vd) {
+  MeshBuilder mb(vd);
+  addTetrahedron(mb);
+  return mb.buildMesh();
+}
 
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *>(vd.data());
-
+void addTetrahedron(MeshBuilder& mb) {
+  uint32_t idx = mb.getNextIndex();
 	// sqrt(2) / 3
 	const float sqrtTwoOT = 0.47140452079103168293f;
 	// sqrt(6) / 3
@@ -41,144 +45,130 @@ Mesh * createTetrahedron() {
 	const float oneThird = 0.33333333333333333333f;
 
 	// Because we have unit lengths here, normals equal positions.
-	*v++ = 0.0f; *v++ = 0.0f; *v++ = 1.0f;
-	*v++ = 0.0f; *v++ = 0.0f; *v++ = 1.0f;
-	*v++ = 2.0f * sqrtTwoOT; *v++ = 0.0f; *v++ = -oneThird;
-	*v++ = 2.0f * sqrtTwoOT; *v++ = 0.0f; *v++ = -oneThird;
-	*v++ = -sqrtTwoOT; *v++ = sqrtSixOT; *v++ = -oneThird;
-	*v++ = -sqrtTwoOT; *v++ = sqrtSixOT; *v++ = -oneThird;
-	*v++ = -sqrtTwoOT; *v++ = -sqrtSixOT; *v++ = -oneThird;
-	*v++ = -sqrtTwoOT; *v++ = -sqrtSixOT; *v++ = -oneThird;
+	mb.position(Vec3{0.0f, 0.0f, 1.0f});
+	mb.normal(Vec3{0.0f, 0.0f, 1.0f});
+	mb.addVertex();
+	mb.position(Vec3{2.0f * sqrtTwoOT, 0.0f, -oneThird});
+	mb.normal(Vec3{2.0f * sqrtTwoOT, 0.0f, -oneThird});
+	mb.addVertex();
+	mb.position(Vec3{-sqrtTwoOT, sqrtSixOT, -oneThird});
+	mb.normal(Vec3{-sqrtTwoOT, sqrtSixOT, -oneThird});
+	mb.addVertex();
+	mb.position(Vec3{-sqrtTwoOT, -sqrtSixOT, -oneThird});
+	mb.normal(Vec3{-sqrtTwoOT, -sqrtSixOT, -oneThird});
+	mb.addVertex();
 
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * i = id.data();
-
-	*i++ = 0; *i++ = 1; *i++ = 2;
-	*i++ = 0; *i++ = 2; *i++ = 3;
-	*i++ = 0; *i++ = 3; *i++ = 1;
-	*i++ = 1; *i++ = 3; *i++ = 2;
-
-	id.updateIndexRange();
-	return mesh;
+	mb.addTriangle(idx + 0, idx + 1, idx + 2);
+	mb.addTriangle(idx + 0, idx + 2, idx + 3);
+	mb.addTriangle(idx + 0, idx + 3, idx + 1);
+	mb.addTriangle(idx + 1, idx + 3, idx + 2);
 }
 
 
-Mesh * createCube() {
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	auto mesh = new Mesh(vertexDescription, 8, 3 * 12);
+Mesh* createCube(const VertexDescription& vd) {
+  MeshBuilder mb(vd);
+  addCube(mb);
+  return mb.buildMesh();
+}
 
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *>(vd.data());
-
+void addCube(MeshBuilder& mb) {
+  uint32_t idx = mb.getNextIndex();
 	// 1 / sqrt(3)
 	const float oneOverSqrtThree = 0.57735026918962576450f;
 
 	// Because we have unit lengths here, normals equal positions.
-	*v++ = -oneOverSqrtThree; *v++ = -oneOverSqrtThree; *v++ = -oneOverSqrtThree;
-	*v++ = -oneOverSqrtThree; *v++ = -oneOverSqrtThree; *v++ = -oneOverSqrtThree;
+	mb.position(Vec3{-oneOverSqrtThree, -oneOverSqrtThree, -oneOverSqrtThree});
+	mb.normal(Vec3{-oneOverSqrtThree, -oneOverSqrtThree, -oneOverSqrtThree});
+	mb.addVertex();
 
-	*v++ =  oneOverSqrtThree; *v++ = -oneOverSqrtThree; *v++ = -oneOverSqrtThree;
-	*v++ =  oneOverSqrtThree; *v++ = -oneOverSqrtThree; *v++ = -oneOverSqrtThree;
+	mb.position(Vec3{ oneOverSqrtThree, -oneOverSqrtThree, -oneOverSqrtThree});
+	mb.normal(Vec3{ oneOverSqrtThree, -oneOverSqrtThree, -oneOverSqrtThree});
+	mb.addVertex();
 
-	*v++ =  oneOverSqrtThree; *v++ =  oneOverSqrtThree; *v++ = -oneOverSqrtThree;
-	*v++ =  oneOverSqrtThree; *v++ =  oneOverSqrtThree; *v++ = -oneOverSqrtThree;
+	mb.position(Vec3{ oneOverSqrtThree,  oneOverSqrtThree, -oneOverSqrtThree});
+	mb.normal(Vec3{ oneOverSqrtThree,  oneOverSqrtThree, -oneOverSqrtThree});
+	mb.addVertex();
 
-	*v++ = -oneOverSqrtThree; *v++ =  oneOverSqrtThree; *v++ = -oneOverSqrtThree;
-	*v++ = -oneOverSqrtThree; *v++ =  oneOverSqrtThree; *v++ = -oneOverSqrtThree;
+	mb.position(Vec3{-oneOverSqrtThree,  oneOverSqrtThree, -oneOverSqrtThree});
+	mb.normal(Vec3{-oneOverSqrtThree,  oneOverSqrtThree, -oneOverSqrtThree});
+	mb.addVertex();
 
-	*v++ = -oneOverSqrtThree; *v++ = -oneOverSqrtThree; *v++ =  oneOverSqrtThree;
-	*v++ = -oneOverSqrtThree; *v++ = -oneOverSqrtThree; *v++ =  oneOverSqrtThree;
+	mb.position(Vec3{-oneOverSqrtThree, -oneOverSqrtThree,  oneOverSqrtThree});
+	mb.normal(Vec3{-oneOverSqrtThree, -oneOverSqrtThree,  oneOverSqrtThree});
+	mb.addVertex();
 
-	*v++ =  oneOverSqrtThree; *v++ = -oneOverSqrtThree; *v++ =  oneOverSqrtThree;
-	*v++ =  oneOverSqrtThree; *v++ = -oneOverSqrtThree; *v++ =  oneOverSqrtThree;
+	mb.position(Vec3{ oneOverSqrtThree, -oneOverSqrtThree,  oneOverSqrtThree});
+	mb.normal(Vec3{ oneOverSqrtThree, -oneOverSqrtThree,  oneOverSqrtThree});
+	mb.addVertex();
 
-	*v++ =  oneOverSqrtThree; *v++ =  oneOverSqrtThree; *v++ =  oneOverSqrtThree;
-	*v++ =  oneOverSqrtThree; *v++ =  oneOverSqrtThree; *v++ =  oneOverSqrtThree;
+	mb.position(Vec3{ oneOverSqrtThree,  oneOverSqrtThree,  oneOverSqrtThree});
+	mb.normal(Vec3{ oneOverSqrtThree,  oneOverSqrtThree,  oneOverSqrtThree});
+	mb.addVertex();
 
-	*v++ = -oneOverSqrtThree; *v++ =  oneOverSqrtThree; *v++ =  oneOverSqrtThree;
-	*v++ = -oneOverSqrtThree; *v++ =  oneOverSqrtThree; *v++ =  oneOverSqrtThree;
+	mb.position(Vec3{-oneOverSqrtThree,  oneOverSqrtThree,  oneOverSqrtThree});
+	mb.normal(Vec3{-oneOverSqrtThree,  oneOverSqrtThree,  oneOverSqrtThree});
+	mb.addVertex();
 
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * i = id.data();
-
-	*i++ = 0; *i++ = 3; *i++ = 1;
-	*i++ = 3; *i++ = 2; *i++ = 1;
-
-	*i++ = 0; *i++ = 1; *i++ = 4;
-	*i++ = 1; *i++ = 5; *i++ = 4;
-
-	*i++ = 0; *i++ = 4; *i++ = 3;
-	*i++ = 4; *i++ = 7; *i++ = 3;
-
-	*i++ = 6; *i++ = 5; *i++ = 2;
-	*i++ = 5; *i++ = 1; *i++ = 2;
-
-	*i++ = 6; *i++ = 2; *i++ = 7;
-	*i++ = 2; *i++ = 3; *i++ = 7;
-
-	*i++ = 6; *i++ = 7; *i++ = 5;
-	*i++ = 7; *i++ = 4; *i++ = 5;
-
-	id.updateIndexRange();
-	return mesh;
+	mb.addTriangle(idx + 0, idx + 3, idx + 1);
+	mb.addTriangle(idx + 3, idx + 2, idx + 1);
+	mb.addTriangle(idx + 0, idx + 1, idx + 4);
+	mb.addTriangle(idx + 1, idx + 5, idx + 4);
+	mb.addTriangle(idx + 0, idx + 4, idx + 3);
+	mb.addTriangle(idx + 4, idx + 7, idx + 3);
+	mb.addTriangle(idx + 6, idx + 5, idx + 2);
+	mb.addTriangle(idx + 5, idx + 1, idx + 2);
+	mb.addTriangle(idx + 6, idx + 2, idx + 7);
+	mb.addTriangle(idx + 2, idx + 3, idx + 7);
+	mb.addTriangle(idx + 6, idx + 7, idx + 5);
+	mb.addTriangle(idx + 7, idx + 4, idx + 5);
 }
 
-Mesh * createOctahedron() {
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	auto mesh = new Mesh(vertexDescription, 6, 3 * 8);
+Mesh* createOctahedron(const VertexDescription& vd) {
+  MeshBuilder mb(vd);
+  addOctahedron(mb);
+  return mb.buildMesh();
+}
 
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *>(vd.data());
-
+void addOctahedron(MeshBuilder& mb) {
+  uint32_t idx = mb.getNextIndex();
 	// Because we have unit lengths here, normals equal positions.
-	*v++ = 1.0f; *v++ = 0.0f; *v++ = 0.0f;
-	*v++ = 1.0f; *v++ = 0.0f; *v++ = 0.0f;
-	*v++ = -1.0f; *v++ = 0.0f; *v++ = 0.0f;
-	*v++ = -1.0f; *v++ = 0.0f; *v++ = 0.0f;
-	*v++ = 0.0f; *v++ = 1.0f; *v++ = 0.0f;
-	*v++ = 0.0f; *v++ = 1.0f; *v++ = 0.0f;
-	*v++ = 0.0f; *v++ = -1.0f; *v++ = 0.0f;
-	*v++ = 0.0f; *v++ = -1.0f; *v++ = 0.0f;
-	*v++ = 0.0f; *v++ = 0.0f; *v++ = 1.0f;
-	*v++ = 0.0f; *v++ = 0.0f; *v++ = 1.0f;
-	*v++ = 0.0f; *v++ = 0.0f; *v++ = -1.0f;
-	*v++ = 0.0f; *v++ = 0.0f; *v++ = -1.0f;
-
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * i = id.data();
-
-	*i++ = 4; *i++ = 0; *i++ = 2;
-	*i++ = 4; *i++ = 2; *i++ = 1;
-	*i++ = 4; *i++ = 1; *i++ = 3;
-	*i++ = 4; *i++ = 3; *i++ = 0;
-	*i++ = 5; *i++ = 2; *i++ = 0;
-	*i++ = 5; *i++ = 1; *i++ = 2;
-	*i++ = 5; *i++ = 3; *i++ = 1;
-	*i++ = 5; *i++ = 0; *i++ = 3;
-
-	id.updateIndexRange();
-	return mesh;
+	mb.position(Vec3{1.0f, 0.0f, 0.0f});
+	mb.normal(Vec3{1.0f, 0.0f, 0.0f});
+	mb.addVertex();
+	mb.position(Vec3{-1.0f, 0.0f, 0.0f});
+	mb.normal(Vec3{-1.0f, 0.0f, 0.0f});
+	mb.addVertex();
+	mb.position(Vec3{0.0f, 1.0f, 0.0f});
+	mb.normal(Vec3{0.0f, 1.0f, 0.0f});
+	mb.addVertex();
+	mb.position(Vec3{0.0f, -1.0f, 0.0f});
+	mb.normal(Vec3{0.0f, -1.0f, 0.0f});
+	mb.addVertex();
+	mb.position(Vec3{0.0f, 0.0f, 1.0f});
+	mb.normal(Vec3{0.0f, 0.0f, 1.0f});
+	mb.addVertex();
+	mb.position(Vec3{0.0f, 0.0f, -1.0f});
+	mb.normal(Vec3{0.0f, 0.0f, -1.0f});
+	mb.addVertex();
+	
+	mb.addTriangle(idx + 4, idx + 0, idx + 2);
+	mb.addTriangle(idx + 4, idx + 2, idx + 1);
+	mb.addTriangle(idx + 4, idx + 1, idx + 3);
+	mb.addTriangle(idx + 4, idx + 3, idx + 0);
+	mb.addTriangle(idx + 5, idx + 2, idx + 0);
+	mb.addTriangle(idx + 5, idx + 1, idx + 2);
+	mb.addTriangle(idx + 5, idx + 3, idx + 1);
+	mb.addTriangle(idx + 5, idx + 0, idx + 3);
 }
 
-Mesh * createDodecahedron() {
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	auto mesh = new Mesh(vertexDescription, 20, 3 * 36);
+Mesh* createDodecahedron(const VertexDescription& vd) {
+  MeshBuilder mb(vd);
+  addDodecahedron(mb);
+  return mb.buildMesh();
+}
 
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *>(vd.data());
-
+void addDodecahedron(MeshBuilder& mb) {
+  uint32_t idx = mb.getNextIndex();
 	// 1 / sqrt(3)
 	const float a = 0.57735026918962576450f;
 	// sqrt((3 - sqrt(5)) / 6)
@@ -187,106 +177,117 @@ Mesh * createDodecahedron() {
 	const float c = 0.93417235896271569645f;
 
 	// Because we have unit lengths here, normals equal positions.
-	*v++ =  a; *v++ =  a; *v++ =  a;
-	*v++ =  a; *v++ =  a; *v++ =  a;
-	*v++ =  a; *v++ =  a; *v++ = -a;
-	*v++ =  a; *v++ =  a; *v++ = -a;
-	*v++ =  a; *v++ = -a; *v++ =  a;
-	*v++ =  a; *v++ = -a; *v++ =  a;
-	*v++ =  a; *v++ = -a; *v++ = -a;
-	*v++ =  a; *v++ = -a; *v++ = -a;
+	mb.position(Vec3{ a,  a,  a});
+	mb.normal(Vec3{ a,  a,  a});
+	mb.addVertex();
+	mb.position(Vec3{ a,  a, -a});
+	mb.normal(Vec3{ a,  a, -a});
+	mb.addVertex();
+	mb.position(Vec3{ a, -a,  a});
+	mb.normal(Vec3{ a, -a,  a});
+	mb.addVertex();
+	mb.position(Vec3{ a, -a, -a});
+	mb.normal(Vec3{ a, -a, -a});
+	mb.addVertex();
 
-	*v++ = -a; *v++ =  a; *v++ =  a;
-	*v++ = -a; *v++ =  a; *v++ =  a;
-	*v++ = -a; *v++ =  a; *v++ = -a;
-	*v++ = -a; *v++ =  a; *v++ = -a;
-	*v++ = -a; *v++ = -a; *v++ =  a;
-	*v++ = -a; *v++ = -a; *v++ =  a;
-	*v++ = -a; *v++ = -a; *v++ = -a;
-	*v++ = -a; *v++ = -a; *v++ = -a;
+	mb.position(Vec3{-a,  a,  a});
+	mb.normal(Vec3{-a,  a,  a});
+	mb.addVertex();
+	mb.position(Vec3{-a,  a, -a});
+	mb.normal(Vec3{-a,  a, -a});
+	mb.addVertex();
+	mb.position(Vec3{-a, -a,  a});
+	mb.normal(Vec3{-a, -a,  a});
+	mb.addVertex();
+	mb.position(Vec3{-a, -a, -a});
+	mb.normal(Vec3{-a, -a, -a});
+	mb.addVertex();
 
-	*v++ =  b; *v++ =  c; *v++ =  0;
-	*v++ =  b; *v++ =  c; *v++ =  0;
-	*v++ = -b; *v++ =  c; *v++ =  0;
-	*v++ = -b; *v++ =  c; *v++ =  0;
-	*v++ =  b; *v++ = -c; *v++ =  0;
-	*v++ =  b; *v++ = -c; *v++ =  0;
-	*v++ = -b; *v++ = -c; *v++ =  0;
-	*v++ = -b; *v++ = -c; *v++ =  0;
+	mb.position(Vec3{ b,  c,  0});
+	mb.normal(Vec3{ b,  c,  0});
+	mb.addVertex();
+	mb.position(Vec3{-b,  c,  0});
+	mb.normal(Vec3{-b,  c,  0});
+	mb.addVertex();
+	mb.position(Vec3{ b, -c,  0});
+	mb.normal(Vec3{ b, -c,  0});
+	mb.addVertex();
+	mb.position(Vec3{-b, -c,  0});
+	mb.normal(Vec3{-b, -c,  0});
+	mb.addVertex();
 
-	*v++ =  c; *v++ =  0; *v++ =  b;
-	*v++ =  c; *v++ =  0; *v++ =  b;
-	*v++ =  c; *v++ =  0; *v++ = -b;
-	*v++ =  c; *v++ =  0; *v++ = -b;
-	*v++ = -c; *v++ =  0; *v++ =  b;
-	*v++ = -c; *v++ =  0; *v++ =  b;
-	*v++ = -c; *v++ =  0; *v++ = -b;
-	*v++ = -c; *v++ =  0; *v++ = -b;
+	mb.position(Vec3{ c,  0,  b});
+	mb.normal(Vec3{ c,  0,  b});
+	mb.addVertex();
+	mb.position(Vec3{ c,  0, -b});
+	mb.normal(Vec3{ c,  0, -b});
+	mb.addVertex();
+	mb.position(Vec3{-c,  0,  b});
+	mb.normal(Vec3{-c,  0,  b});
+	mb.addVertex();
+	mb.position(Vec3{-c,  0, -b});
+	mb.normal(Vec3{-c,  0, -b});
+	mb.addVertex();
 
-	*v++ =  0; *v++ =  b; *v++ =  c;
-	*v++ =  0; *v++ =  b; *v++ =  c;
-	*v++ =  0; *v++ = -b; *v++ =  c;
-	*v++ =  0; *v++ = -b; *v++ =  c;
-	*v++ =  0; *v++ =  b; *v++ = -c;
-	*v++ =  0; *v++ =  b; *v++ = -c;
-	*v++ =  0; *v++ = -b; *v++ = -c;
-	*v++ =  0; *v++ = -b; *v++ = -c;
-
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * i = id.data();
-
-	*i++ =  0; *i++ =  8; *i++ =  9;
-	*i++ =  0; *i++ =  9; *i++ =  4;
-	*i++ =  0; *i++ =  4; *i++ = 16;
-	*i++ =  0; *i++ = 12; *i++ = 13;
-	*i++ =  0; *i++ = 13; *i++ =  1;
-	*i++ =  0; *i++ =  1; *i++ =  8;
-	*i++ =  0; *i++ = 16; *i++ = 17;
-	*i++ =  0; *i++ = 17; *i++ =  2;
-	*i++ =  0; *i++ =  2; *i++ = 12;
-	*i++ =  8; *i++ =  1; *i++ = 18;
-	*i++ =  8; *i++ = 18; *i++ =  5;
-	*i++ =  8; *i++ =  5; *i++ =  9;
-	*i++ = 12; *i++ =  2; *i++ = 10;
-	*i++ = 12; *i++ = 10; *i++ =  3;
-	*i++ = 12; *i++ =  3; *i++ = 13;
-	*i++ = 16; *i++ =  4; *i++ = 14;
-	*i++ = 16; *i++ = 14; *i++ =  6;
-	*i++ = 16; *i++ =  6; *i++ = 17;
-	*i++ =  9; *i++ =  5; *i++ = 15;
-	*i++ =  9; *i++ = 15; *i++ = 14;
-	*i++ =  9; *i++ = 14; *i++ =  4;
-	*i++ =  6; *i++ = 11; *i++ = 10;
-	*i++ =  6; *i++ = 10; *i++ =  2;
-	*i++ =  6; *i++ =  2; *i++ = 17;
-	*i++ =  3; *i++ = 19; *i++ = 18;
-	*i++ =  3; *i++ = 18; *i++ =  1;
-	*i++ =  3; *i++ =  1; *i++ = 13;
-	*i++ =  7; *i++ = 15; *i++ =  5;
-	*i++ =  7; *i++ =  5; *i++ = 18;
-	*i++ =  7; *i++ = 18; *i++ = 19;
-	*i++ =  7; *i++ = 11; *i++ =  6;
-	*i++ =  7; *i++ =  6; *i++ = 14;
-	*i++ =  7; *i++ = 14; *i++ = 15;
-	*i++ =  7; *i++ = 19; *i++ =  3;
-	*i++ =  7; *i++ =  3; *i++ = 10;
-	*i++ =  7; *i++ = 10; *i++ = 11;
-
-	id.updateIndexRange();
-	return mesh;
+	mb.position(Vec3{ 0,  b,  c});
+	mb.normal(Vec3{ 0,  b,  c});
+	mb.addVertex();
+	mb.position(Vec3{ 0, -b,  c});
+	mb.normal(Vec3{ 0, -b,  c});
+	mb.addVertex();
+	mb.position(Vec3{ 0,  b, -c});
+	mb.normal(Vec3{ 0,  b, -c});
+	mb.addVertex();
+	mb.position(Vec3{ 0, -b, -c});
+	mb.normal(Vec3{ 0, -b, -c});
+	mb.addVertex();
+	
+	mb.addTriangle(idx +  0, idx +  8, idx +  9);
+	mb.addTriangle(idx +  0, idx +  9, idx +  4);
+	mb.addTriangle(idx +  0, idx +  4, idx + 16);
+	mb.addTriangle(idx +  0, idx + 12, idx + 13);
+	mb.addTriangle(idx +  0, idx + 13, idx +  1);
+	mb.addTriangle(idx +  0, idx +  1, idx +  8);
+	mb.addTriangle(idx +  0, idx + 16, idx + 17);
+	mb.addTriangle(idx +  0, idx + 17, idx +  2);
+	mb.addTriangle(idx +  0, idx +  2, idx + 12);
+	mb.addTriangle(idx +  8, idx +  1, idx + 18);
+	mb.addTriangle(idx +  8, idx + 18, idx +  5);
+	mb.addTriangle(idx +  8, idx +  5, idx +  9);
+	mb.addTriangle(idx + 12, idx +  2, idx + 10);
+	mb.addTriangle(idx + 12, idx + 10, idx +  3);
+	mb.addTriangle(idx + 12, idx +  3, idx + 13);
+	mb.addTriangle(idx + 16, idx +  4, idx + 14);
+	mb.addTriangle(idx + 16, idx + 14, idx +  6);
+	mb.addTriangle(idx + 16, idx +  6, idx + 17);
+	mb.addTriangle(idx +  9, idx +  5, idx + 15);
+	mb.addTriangle(idx +  9, idx + 15, idx + 14);
+	mb.addTriangle(idx +  9, idx + 14, idx +  4);
+	mb.addTriangle(idx +  6, idx + 11, idx + 10);
+	mb.addTriangle(idx +  6, idx + 10, idx +  2);
+	mb.addTriangle(idx +  6, idx +  2, idx + 17);
+	mb.addTriangle(idx +  3, idx + 19, idx + 18);
+	mb.addTriangle(idx +  3, idx + 18, idx +  1);
+	mb.addTriangle(idx +  3, idx +  1, idx + 13);
+	mb.addTriangle(idx +  7, idx + 15, idx +  5);
+	mb.addTriangle(idx +  7, idx +  5, idx + 18);
+	mb.addTriangle(idx +  7, idx + 18, idx + 19);
+	mb.addTriangle(idx +  7, idx + 11, idx +  6);
+	mb.addTriangle(idx +  7, idx +  6, idx + 14);
+	mb.addTriangle(idx +  7, idx + 14, idx + 15);
+	mb.addTriangle(idx +  7, idx + 19, idx +  3);
+	mb.addTriangle(idx +  7, idx +  3, idx + 10);
+	mb.addTriangle(idx +  7, idx + 10, idx + 11);
 }
 
-Mesh * createIcosahedron() {
-	VertexDescription vertexDescription;
-	vertexDescription.appendPosition3D();
-	vertexDescription.appendNormalFloat();
-	auto mesh = new Mesh(vertexDescription, 12, 3 * 20);
+Mesh* createIcosahedron(const VertexDescription& vd) {
+  MeshBuilder mb(vd);
+  addIcosahedron(mb);
+  return mb.buildMesh();
+}
 
-	MeshVertexData & vd = mesh->openVertexData();
-	float * v = reinterpret_cast<float *> (vd.data());
-
+void addIcosahedron(MeshBuilder& mb) {
+  uint32_t idx = mb.getNextIndex();
 	// Golden Ratio (1 + sqrt(5)) / 2
 	//const float gr = 1.61803398874989484820f;
 	// Length of the vectors sqrt(1 + gr^2)
@@ -297,65 +298,69 @@ Mesh * createIcosahedron() {
 	const float oneN = 0.52573111211913360602f;
 
 	// Because we have unit lengths here, normals equal positions.
-	*v++ = grN; *v++ = oneN; *v++ = 0.0f;
-	*v++ = grN; *v++ = oneN; *v++ = 0.0f;
-	*v++ = -grN; *v++ = oneN; *v++ = 0.0f;
-	*v++ = -grN; *v++ = oneN; *v++ = 0.0f;
-	*v++ = grN; *v++ = -oneN; *v++ = 0.0f;
-	*v++ = grN; *v++ = -oneN; *v++ = 0.0f;
-	*v++ = -grN; *v++ = -oneN; *v++ = 0.0f;
-	*v++ = -grN; *v++ = -oneN; *v++ = 0.0f;
+	mb.position(Vec3{grN, oneN, 0.0f});
+	mb.normal(Vec3{grN, oneN, 0.0f});
+	mb.addVertex();
+	mb.position(Vec3{-grN, oneN, 0.0f});
+	mb.normal(Vec3{-grN, oneN, 0.0f});
+	mb.addVertex();
+	mb.position(Vec3{grN, -oneN, 0.0f});
+	mb.normal(Vec3{grN, -oneN, 0.0f});
+	mb.addVertex();
+	mb.position(Vec3{-grN, -oneN, 0.0f});
+	mb.normal(Vec3{-grN, -oneN, 0.0f});
+	mb.addVertex();
 
-	*v++ = oneN; *v++ = 0.0f; *v++ = grN;
-	*v++ = oneN; *v++ = 0.0f; *v++ = grN;
-	*v++ = oneN; *v++ = 0.0f; *v++ = -grN;
-	*v++ = oneN; *v++ = 0.0f; *v++ = -grN;
-	*v++ = -oneN; *v++ = 0.0f; *v++ = grN;
-	*v++ = -oneN; *v++ = 0.0f; *v++ = grN;
-	*v++ = -oneN; *v++ = 0.0f; *v++ = -grN;
-	*v++ = -oneN; *v++ = 0.0f; *v++ = -grN;
+	mb.position(Vec3{oneN, 0.0f, grN});
+	mb.normal(Vec3{oneN, 0.0f, grN});
+	mb.addVertex();
+	mb.position(Vec3{oneN, 0.0f, -grN});
+	mb.normal(Vec3{oneN, 0.0f, -grN});
+	mb.addVertex();
+	mb.position(Vec3{-oneN, 0.0f, grN});
+	mb.normal(Vec3{-oneN, 0.0f, grN});
+	mb.addVertex();
+	mb.position(Vec3{-oneN, 0.0f, -grN});
+	mb.normal(Vec3{-oneN, 0.0f, -grN});
+	mb.addVertex();
 
-	*v++ = 0.0f; *v++ = grN; *v++ = oneN;
-	*v++ = 0.0f; *v++ = grN; *v++ = oneN;
-	*v++ = 0.0f; *v++ = -grN; *v++ = oneN;
-	*v++ = 0.0f; *v++ = -grN; *v++ = oneN;
-	*v++ = 0.0f; *v++ = grN; *v++ = -oneN;
-	*v++ = 0.0f; *v++ = grN; *v++ = -oneN;
-	*v++ = 0.0f; *v++ = -grN; *v++ = -oneN;
-	*v++ = 0.0f; *v++ = -grN; *v++ = -oneN;
-
-	vd.updateBoundingBox();
-
-	MeshIndexData & id = mesh->openIndexData();
-	uint32_t * i = id.data();
-
-	*i++ = 0; *i++ = 8; *i++ = 4;
-	*i++ = 1; *i++ = 10; *i++ = 7;
-	*i++ = 2; *i++ = 9; *i++ = 11;
-	*i++ = 7; *i++ = 3; *i++ = 1;
-
-	*i++ = 0; *i++ = 5; *i++ = 10;
-	*i++ = 3; *i++ = 9; *i++ = 6;
-	*i++ = 3; *i++ = 11; *i++ = 9;
-	*i++ = 8; *i++ = 6; *i++ = 4;
-
-	*i++ = 2; *i++ = 4; *i++ = 9;
-	*i++ = 3; *i++ = 7; *i++ = 11;
-	*i++ = 4; *i++ = 2; *i++ = 0;
-	*i++ = 9; *i++ = 4; *i++ = 6;
-
-	*i++ = 2; *i++ = 11; *i++ = 5;
-	*i++ = 0; *i++ = 10; *i++ = 8;
-	*i++ = 5; *i++ = 0; *i++ = 2;
-	*i++ = 10; *i++ = 5; *i++ = 7;
-
-	*i++ = 1; *i++ = 6; *i++ = 8;
-	*i++ = 1; *i++ = 8; *i++ = 10;
-	*i++ = 6; *i++ = 1; *i++ = 3;
-	*i++ = 11; *i++ = 7; *i++ = 5;
-
-	id.updateIndexRange();
-	return mesh;
+	mb.position(Vec3{0.0f, grN, oneN});
+	mb.normal(Vec3{0.0f, grN, oneN});
+	mb.addVertex();
+	mb.position(Vec3{0.0f, -grN, oneN});
+	mb.normal(Vec3{0.0f, -grN, oneN});
+	mb.addVertex();
+	mb.position(Vec3{0.0f, grN, -oneN});
+	mb.normal(Vec3{0.0f, grN, -oneN});
+	mb.addVertex();
+	mb.position(Vec3{0.0f, -grN, -oneN});
+	mb.normal(Vec3{0.0f, -grN, -oneN});
+	mb.addVertex();
+	
+	mb.addTriangle(idx + 0, idx + 8, idx + 4);
+	mb.addTriangle(idx + 1, idx + 10,idx + 7);
+	mb.addTriangle(idx + 2, idx + 9, idx + 11);
+	mb.addTriangle(idx + 7, idx + 3, idx + 1);
+  
+	mb.addTriangle(idx + 0, idx + 5, idx + 10);
+	mb.addTriangle(idx + 3, idx + 9, idx + 6);
+	mb.addTriangle(idx + 3, idx + 11,idx + 9);
+	mb.addTriangle(idx + 8, idx + 6, idx + 4);
+  
+	mb.addTriangle(idx + 2, idx + 4, idx + 9);
+	mb.addTriangle(idx + 3, idx + 7, idx + 11);
+	mb.addTriangle(idx + 4, idx + 2, idx + 0);
+	mb.addTriangle(idx + 9, idx + 4, idx + 6);
+  
+	mb.addTriangle(idx + 2, idx + 11,idx + 5);
+	mb.addTriangle(idx + 0, idx + 10,idx + 8);
+	mb.addTriangle(idx + 5, idx + 0, idx + 2);
+	mb.addTriangle(idx + 10,idx + 5, idx + 7);
+  
+	mb.addTriangle(idx + 1, idx + 6, idx + 8);
+	mb.addTriangle(idx + 1, idx + 8, idx + 10);
+	mb.addTriangle(idx + 6, idx + 1, idx + 3);
+	mb.addTriangle(idx + 11,idx + 7 ,idx + 5);
 }
 
 Mesh * createEdgeSubdivisionSphere(Mesh * platonicSolid, uint8_t subdivisions) {

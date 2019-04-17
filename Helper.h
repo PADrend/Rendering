@@ -16,6 +16,10 @@
 
 namespace Rendering {
 
+/** @addtogroup helper
+ * @{
+ */
+ 
 void enableGLErrorChecking();
 void disableGLErrorChecking();
 void checkGLError(const char * file, int line);
@@ -113,6 +117,7 @@ int32_t getMaxTextureBindings();
  */
 int32_t getMaxImageBindings();
 
+//! @}
 }
 
 #define GET_GL_ERROR() \

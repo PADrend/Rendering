@@ -15,7 +15,8 @@
 #include <cstdint>
 
 namespace Rendering {
-
+	
+//! @ingroup mesh
 namespace VertexAttributeIds{
 
 extern const Util::StringIdentifier 	POSITION;

@@ -15,6 +15,7 @@ namespace Rendering {
 
 /*! A Texture's type. (Corresponds to 'glTextureType', but the actual value is independent from OpenGL.
 	\note Value assignment must never change! (they may be used for serialization)
+	@ingroup texture
 */
 enum class TextureType : std::uint8_t{
 	TEXTURE_1D = 0,

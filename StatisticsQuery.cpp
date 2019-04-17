@@ -116,4 +116,12 @@ StatisticsQuery StatisticsQuery::createTimeElapsedQuery() {
 #endif
 }
 
+StatisticsQuery StatisticsQuery::createTimestampQuery() {
+#if defined(LIB_GL)
+	return StatisticsQuery(GL_TIMESTAMP);
+#elif defined(LIB_GLESv2)
+	return StatisticsQuery(0);
+#endif
+}
+
 }

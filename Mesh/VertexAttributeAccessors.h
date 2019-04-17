@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2018 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -15,6 +16,7 @@
 #include "VertexAttributeIds.h"
 #include "MeshVertexData.h"
 #include "VertexDescription.h"
+#include "VertexAttributeIds.h"
 
 #include <Geometry/Vec3.h>
 #include <Geometry/Vec2.h>
@@ -24,6 +26,10 @@
 
 namespace Rendering {
 
+/** @addtogroup mesh
+ * @{
+ */
+ 
 /*! Base class of all VertexAttributeAccessor-classes.
 	\note A VertexAttributeAccessor only stays valid as long as the referenced MeshVertexData is not altered externally! */
 class VertexAttributeAccessor : public Util::ReferenceCounter<VertexAttributeAccessor>{
@@ -166,7 +172,7 @@ class FloatAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a FloatAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<FloatAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name);
+		static Util::Reference<FloatAttributeAccessor> create(MeshVertexData & _vData, Util::StringIdentifier name);
 
 		virtual ~FloatAttributeAccessor(){}
 
@@ -176,7 +182,10 @@ class FloatAttributeAccessor : public VertexAttributeAccessor{
 
 		virtual const std::vector<float> getValues(uint32_t index) const = 0;
 
-		virtual void setValues(uint32_t index, const std::vector<float>& values) = 0;
+		virtual void setValues(uint32_t index, const float* values, uint32_t count) = 0;
+		inline void setValues(uint32_t index, const std::vector<float>& values) {
+			setValues(index, values.data(), values.size());
+		}
 };
 
 // ---------------------------------
@@ -192,35 +201,21 @@ class UIntAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a UIntAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<UIntAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name);
-
+		static Util::Reference<UIntAttributeAccessor> create(MeshVertexData & _vData, Util::StringIdentifier name);
 		virtual ~UIntAttributeAccessor(){}
 
-		uint32_t getValue(uint32_t index) const {
-			assertRange(index);
-			const uint32_t * v=_ptr<const uint32_t>(index);
-			return v[0];
-		}
+		virtual uint32_t getValue(uint32_t index) const = 0;
 
-		void setValue(uint32_t index, uint32_t value){
-			assertRange(index);
-			uint32_t * v=_ptr<uint32_t>(index);
-			v[0] = value;
-		}
+		virtual void setValue(uint32_t index, uint32_t value) = 0;
 
-		const std::vector<uint32_t> getValues(uint32_t index) const {
-			assertRange(index);
-			const uint32_t * v=_ptr<const uint32_t>(index);
-			return std::vector<uint32_t>(v, v + getAttribute().getNumValues());
-		}
-
-		void setValues(uint32_t index, const std::vector<uint32_t>& values){
-			assertRange(index);
-			assertNumValues(index, values.size());
-			uint32_t * v=_ptr<uint32_t>(index);
-			std::copy(values.begin(), values.end(), v);
+		virtual const std::vector<uint32_t> getValues(uint32_t index) const = 0;
+		
+		virtual void setValues(uint32_t index, const uint32_t* values, uint32_t count) = 0;
+		inline void setValues(uint32_t index, const std::vector<uint32_t>& values) {
+			setValues(index, values.data(), values.size());
 		}
 };
 
+//! @}
 }
 #endif // VERTEXACCESSOR_H

@@ -20,6 +20,7 @@ namespace Rendering {
  * @see OcclusionQuery.h
  * @author Benjamin Eikel, Claudius Jähn
  * @date 2013-03-21
+ * @ingroup helper
  */
 class QueryObject {
 	public:
@@ -56,6 +57,9 @@ class QueryObject {
 
 		//!	Stop the query.
 		void end() const;
+		
+		//! Record the GL time; only used with GL_TIMESTAMP
+		void queryCounter() const;
 
 		bool isValid()const	{	return id!=0;	}
 		

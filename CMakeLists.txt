@@ -6,13 +6,12 @@
 # You should have received a copy of the MPL along with this library; see the 
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
-cmake_minimum_required(VERSION 2.8.11)
-project(Rendering)
+cmake_minimum_required(VERSION 3.1.0)
+project(Rendering VERSION 0.2.0)
 
-set(RENDERING_VERSION_MAJOR 0)
-set(RENDERING_VERSION_MINOR 2)
-set(RENDERING_VERSION_PATCH 0)
-set(RENDERING_VERSION_STRING ${RENDERING_VERSION_MAJOR}.${RENDERING_VERSION_MINOR}.${RENDERING_VERSION_PATCH})
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set up install directories
 include(GNUInstallDirs)
@@ -27,19 +26,23 @@ add_library(Rendering
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp
 	Mesh/MeshVertexData.cpp
+	Mesh/VertexAccessor.cpp
 	Mesh/VertexAttribute.cpp
 	Mesh/VertexAttributeAccessors.cpp
 	Mesh/VertexAttributeIds.cpp
 	Mesh/VertexDescription.cpp
+	MeshUtils/ConnectivityAccessor.cpp
 	MeshUtils/LocalMeshDataHolder.cpp
 	MeshUtils/MarchingCubesMeshBuilder.cpp
 	MeshUtils/MeshBuilder.cpp
 	MeshUtils/MeshUtils.cpp
 	MeshUtils/PlatonicSolids.cpp
+	MeshUtils/PrimitiveShapes.cpp
 	MeshUtils/QuadtreeMeshBuilder.cpp
 	MeshUtils/QuadtreeMeshBuilderDebug.cpp
 	MeshUtils/Simplification.cpp
 	MeshUtils/TriangleAccessor.cpp
+	MeshUtils/WireShapes.cpp
 	MeshUtils/ConnectivityAccessor.cpp
 	RenderingContext/BindingState.cpp
 	RenderingContext/PipelineState.cpp
@@ -95,20 +98,9 @@ target_compile_definitions(Rendering PRIVATE "${GLIMPLEMENTATION_DEFINITIONS}")
 target_include_directories(Rendering PRIVATE ${GLIMPLEMENTATION_INCLUDE_DIRS})
 target_link_libraries(Rendering LINK_PRIVATE ${GLIMPLEMENTATION_LIBRARIES})
 
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-	set_property(TARGET Rendering APPEND_STRING PROPERTY COMPILE_FLAGS "-std=c++11 ")
-elseif(COMPILER_SUPPORTS_CXX0X)
-	set_property(TARGET Rendering APPEND_STRING PROPERTY COMPILE_FLAGS "-std=c++0x ")
-else()
-	message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
-
 # Set version of library
-set_target_properties(Rendering PROPERTIES VERSION ${RENDERING_VERSION_STRING}
-                                           SOVERSION ${RENDERING_VERSION_MAJOR})
+set_target_properties(Rendering PROPERTIES VERSION ${Rendering_VERSION}
+                                           SOVERSION ${Rendering_VERSION_MAJOR})
                                            
 add_subdirectory(tests)
 
@@ -156,7 +148,7 @@ configure_package_config_file(RenderingConfig.cmake.in ${CMAKE_CURRENT_BINARY_DI
                               NO_SET_AND_CHECK_MACRO
                               NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/RenderingConfigVersion.cmake
-                                 VERSION ${RENDERING_VERSION_STRING}
+                                 VERSION ${Rendering_VERSION}
                                  COMPATIBILITY SameMajorVersion)
 
 # Install the configuration files
@@ -166,13 +158,13 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RenderingConfig.cmake ${CMAKE_CURRENT_
 # Packaging
 include(InstallRequiredSystemLibraries)
 
-set(CPACK_PACKAGE_NAME "librendering${RENDERING_VERSION_MAJOR}")
+set(CPACK_PACKAGE_NAME "librendering${Rendering_VERSION_MAJOR}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Rendering library")
 set(CPACK_PACKAGE_VENDOR "Benjamin Eikel; Claudius Jaehn; Ralf Petring")
 set(CPACK_PACKAGE_CONTACT "Benjamin Eikel <benjamin@eikel.org>")
-set(CPACK_PACKAGE_VERSION_MAJOR ${RENDERING_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${RENDERING_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${RENDERING_VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION_MAJOR ${Rendering_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${Rendering_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${Rendering_VERSION_PATCH})
 set(CPACK_PACKAGE_FILE_NAME "libRendering")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_STRIP_FILES ON)

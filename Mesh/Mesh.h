@@ -30,6 +30,8 @@ class MeshDataStrategy;
 class VertexDescription;
 class RenderingContext;
 
+//! @defgroup mesh Meshes
+
 /**
  * Class for polygonal meshes.
  * A mesh consisting of four components:
@@ -59,6 +61,7 @@ class RenderingContext;
  * \endcode
  * \note After an existing mesh has been changed, vd.markAsChanged() and id.markAsChanged() have
  * to be called so that the VBO can be updated. After allocate(...) this is not necessary.
+ * @ingroup mesh
  */
 class Mesh : public Util::ReferenceCounter<Mesh> {
 	PROVIDES_TYPE_NAME_NV(Mesh)

@@ -80,6 +80,7 @@ void MeshVertexData::allocate(uint32_t count, const VertexDescription & vd) {
 	setVertexDescription(vd);
 	setElementCount(count);
 	binaryData.resize(vd.getVertexSize() * count);
+	binaryData.shrink_to_fit();
 	markAsChanged();
 }
 

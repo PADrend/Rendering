@@ -12,7 +12,8 @@
 #include <cstdint>
 
 namespace Rendering {
-
+	
+//! @ingroup texture
 struct PixelFormatGL{
 	uint32_t glLocalDataFormat, glLocalDataType, glInternalFormat;
 	bool compressed;

@@ -391,6 +391,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_SAMPLER_1D_SHADOW:
 			case GL_SAMPLER_2D_SHADOW:
 			case GL_UNSIGNED_INT_SAMPLER_2D:
+			case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
 			case GL_INT_SAMPLER_2D:
 			case GL_IMAGE_1D:
 			case GL_IMAGE_2D:
@@ -410,7 +411,14 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_UNSIGNED_INT_ATOMIC_COUNTER:
 			case GL_UNSIGNED_INT_IMAGE_BUFFER:
 			case GL_INT_IMAGE_BUFFER:
-			case GL_IMAGE_BUFFER:
+			case GL_IMAGE_BUFFER:			
+			case GL_UNSIGNED_INT:
+			case GL_IMAGE_1D_ARRAY:
+			case GL_IMAGE_2D_ARRAY:
+			case GL_INT_IMAGE_1D_ARRAY:
+			case GL_INT_IMAGE_2D_ARRAY:
+			case GL_UNSIGNED_INT_IMAGE_1D_ARRAY:
+			case GL_UNSIGNED_INT_IMAGE_2D_ARRAY:
 			{
 				dataType = Uniform::UNIFORM_INT;
 				break;
@@ -445,7 +453,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			}
 			default:{
 				std::cout << "Uniform type: 0x" << std::hex << glType <<  std::dec<<"\n";
-				WARN("getActiveUniforms: Unimplmented uniform type '"+name+"'");
+				WARN("getActiveUniforms: Unimplemented uniform type '"+name+"'");
 				continue;
 			}
 

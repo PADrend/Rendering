@@ -129,6 +129,7 @@ class RenderingContext::InternalData {
 		std::stack<LineParameters> lineParameterStack;
 		std::stack<PolygonModeParameters> polygonModeParameterStack;
 		std::stack<PolygonOffsetParameters> polygonOffsetParameterStack;
+		std::stack<PrimitiveRestartParameters> primitiveRestartParameterStack;
 		std::stack<ScissorParameters> scissorParametersStack;
 		std::stack<StencilParameters> stencilParameterStack;
 						
@@ -232,6 +233,8 @@ RenderingContext::RenderingContext() :
 	}
 }
 
+bool RenderingContext::compabilityMode = true;
+
 RenderingContext::~RenderingContext() = default;
 
 void RenderingContext::resetDisplayMeshFn() {
@@ -290,6 +293,7 @@ void RenderingContext::initGLState() {
 #ifdef WIN32
 	wglSwapIntervalEXT(false);
 #endif /* WIN32 */
+	GET_GL_ERROR();
 }
 
 //! (static)
@@ -654,6 +658,35 @@ void RenderingContext::pushAndSetPolygonOffset(const PolygonOffsetParameters & p
 void RenderingContext::setPolygonOffset(const PolygonOffsetParameters & p) {
 	internalData->targetPipelineState.setPolygonOffsetParameters(p);
 }
+
+// PolygonOffset ************************************************************************************
+const PrimitiveRestartParameters & RenderingContext::getPrimitiveRestartParameters() const {
+	return internalData->actualCoreRenderingStatus.getPrimitiveRestartParameters();
+}
+void RenderingContext::popPrimitiveRestart() {
+	if(internalData->primitiveRestartParameterStack.empty()) {
+		WARN("popPrimitiveRestart: Empty PrimitiveRestart stack");
+		return;
+	}
+	setPrimitiveRestart(internalData->primitiveRestartParameterStack.top());
+	internalData->primitiveRestartParameterStack.pop();
+}
+
+void RenderingContext::pushPrimitiveRestart() {
+	internalData->primitiveRestartParameterStack.emplace(internalData->actualCoreRenderingStatus.getPrimitiveRestartParameters());
+}
+
+void RenderingContext::pushAndSetPrimitiveRestart(const PrimitiveRestartParameters & p) {
+	pushPrimitiveRestart();
+	setPrimitiveRestart(p);
+}
+
+void RenderingContext::setPrimitiveRestart(const PrimitiveRestartParameters & p) {
+	internalData->actualCoreRenderingStatus.setPrimitiveRestartParameters(p);
+	if(immediate)
+		applyChanges();
+}
+
 
 // Scissor ************************************************************************************
 

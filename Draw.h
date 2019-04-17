@@ -23,6 +23,8 @@
 namespace Geometry {
 template<typename value_t> class _Box;
 typedef _Box<float> Box;
+template<typename value_t> class _Sphere;
+typedef _Sphere<float> Sphere;
 template<typename _T> class _Rect;
 typedef _Rect<float> Rect;
 typedef _Rect<int> Rect_i;
@@ -51,6 +53,12 @@ class Color4f;
  */
 namespace Rendering {
 
+//! @defgroup draw Draw
+
+/** @addtogroup draw
+ * @{
+ */
+
 void drawAbsBox(RenderingContext & rc, const Geometry::Box & box);
 void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
 void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box);
@@ -59,6 +67,8 @@ void drawBox(RenderingContext & rc, const Geometry::Box & box);
 void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
 void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box);
 void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
+void drawWireframeSphere(RenderingContext & rc, const Geometry::Sphere & sphere);
+void drawWireframeSphere(RenderingContext & rc, const Geometry::Sphere & sphere, const Util::Color4f & color);
 
 /**
  * @note Because OpenGL immediate mode is used inside this function,

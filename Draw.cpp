@@ -16,7 +16,9 @@
 #include "Mesh/VertexAttributeIds.h"
 #include "MeshUtils/MeshBuilder.h"
 #include "MeshUtils/MeshUtils.h"
+#include "MeshUtils/PrimitiveShapes.h"
 #include "MeshUtils/PlatonicSolids.h"
+#include "MeshUtils/WireShapes.h"
 #include "Shader/Shader.h"
 #include "Shader/Uniform.h"
 #include "GLHeader.h"
@@ -29,6 +31,7 @@
 #include <Geometry/Vec3.h>
 #include <Geometry/Vec2.h>
 #include <Geometry/Convert.h>
+#include <Geometry/Sphere.h>
 #include <Util/Graphics/ColorLibrary.h>
 #include <Util/Graphics/Color.h>
 #include <Util/References.h>
@@ -104,7 +107,7 @@ void drawBox(RenderingContext & rc, const Geometry::Box & box) {
 		vertexDescription.appendPosition3D();
 		vertexDescription.appendNormalFloat();
 		const Geometry::Box unitBox(Geometry::Vec3(-0.5f, -0.5f, -0.5f), Geometry::Vec3(0.5f, 0.5f, 0.5f));
-		mesh = MeshUtils::MeshBuilder::createBox(vertexDescription, unitBox);
+		mesh = MeshUtils::createBox(vertexDescription, unitBox);
 	}
 
 	Geometry::Matrix4x4 matrix;
@@ -117,48 +120,7 @@ void drawBox(RenderingContext & rc, const Geometry::Box & box) {
 }
 
 void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
-	/* deprecated
-	#ifdef LIB_GL
-	
-	rc.pushAndSetShader(nullptr);
 
-//  Too slow:
-//	rc.pushMatrix_modelToCamera();
-//	rc.resetMatrix();
-//	rc.applyChanges();
-
-	glPushMatrix();
-	glLoadTransposeMatrixf( rc.getMatrix_worldToCamera().getData());
-
-	static const unsigned int indices[]={
-		1,3,2,0,
-		5,7,3,1,
-		4,6,7,5,
-		0,2,6,4,
-		7,6,2,3,
-		4,5,1,0
-	};
-	float corners[8][3] = {{b.getMaxX(), b.getMaxY(), b.getMaxZ()},
-					{b.getMinX(), b.getMaxY(), b.getMaxZ()},
-					{b.getMaxX(), b.getMinY(), b.getMaxZ()},
-					{b.getMinX(), b.getMinY(), b.getMaxZ()},
-					{b.getMaxX(), b.getMaxY(), b.getMinZ()},
-					{b.getMinX(), b.getMaxY(), b.getMinZ()},
-					{b.getMaxX(), b.getMinY(), b.getMinZ()},
-					{b.getMinX(), b.getMinY(), b.getMinZ()}};
-
-	glBegin(GL_QUADS);
-	for(auto & index : indices){
-		glVertex3fv(corners[index]);
-	}
-	glEnd();
-
-	glPopMatrix();
-//	rc.popMatrix_modelToCamera();
-	rc.popShader();
-	#else
-	drawAbsBox(rc,b);
-	#endif*/
 	drawAbsBox(rc,b);
 }
 
@@ -173,54 +135,9 @@ void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
 	if (mesh.isNull()) {
 		VertexDescription vertexDescription;
 		vertexDescription.appendPosition3D();
-		mesh = new Mesh(vertexDescription, 8, 16);
-		mesh->setDrawMode(Mesh::DRAW_LINE_STRIP);
-		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
-
-		MeshIndexData & id = mesh->openIndexData();
-		uint32_t * indices = id.data();
-		/*
-		 *  Corners:
-		 *     6---------7
-		 *    /|        /|
-		 *   / |       / |
-		 *  2---------3  |
-		 *  |  |      |  |
-		 *  |  4------|--5
-		 *  | /       | /
-		 *  |/        |/
-		 *  0---------1
-		 */
-		indices[0] = 0;
-		indices[1] = 2;
-		indices[2] = 3;
-		indices[3] = 1;
-		indices[4] = 5;
-		indices[5] = 7;
-		indices[6] = 6;
-		indices[7] = 4;
-		indices[8] = 0;
-		indices[9] = 1;
-		indices[10] = 3;
-		indices[11] = 7;
-		indices[12] = 5;
-		indices[13] = 4;
-		indices[14] = 6;
-		indices[15] = 2;
-		id.updateIndexRange();
-		id.markAsChanged();
-		
-		MeshVertexData & vd = mesh->openVertexData();
 		const Geometry::Box unitBox(Geometry::Vec3(-0.5f, -0.5f, -0.5f), Geometry::Vec3(0.5f, 0.5f, 0.5f));
-		float * vertices = reinterpret_cast<float *>(vd.data());
-		for (uint_fast8_t c = 0; c < 8; ++c) {
-			const Geometry::Vec3 & corner = unitBox.getCorner(static_cast<Geometry::corner_t> (c));
-			*vertices++ = corner.getX();
-			*vertices++ = corner.getY();
-			*vertices++ = corner.getZ();
-		}
-		vd.updateBoundingBox();
-		vd.markAsChanged();
+		mesh = MeshUtils::WireShapes::createWireBox(vertexDescription, unitBox);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 	}
 
 	Geometry::Matrix4x4 matrix;
@@ -229,12 +146,37 @@ void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box) {
 	rc.pushMatrix_modelToCamera();
 	rc.multMatrix_modelToCamera(matrix);
 	rc.displayMesh(mesh.get());
-	rc.popMatrix_modelToCamera();		
+	rc.popMatrix_modelToCamera();
 }
 
 void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
 	rc.pushAndSetColorMaterial(color);
 	drawWireframeBox(rc, box);
+	rc.popMaterial();
+}
+
+void drawWireframeSphere(RenderingContext & rc, const Geometry::Sphere & sphere) {
+	static Util::Reference<Mesh> mesh;
+	if (mesh.isNull()) {
+		VertexDescription vertexDescription;
+		vertexDescription.appendPosition3D();
+		const Geometry::Sphere unitSphere(Geometry::Vec3(0,0,0), 1);
+		mesh = MeshUtils::WireShapes::createWireSphere(vertexDescription, unitSphere, 32);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
+	}
+
+	Geometry::Matrix4x4 matrix;
+	matrix.translate(sphere.getCenter());
+	matrix.scale(sphere.getRadius());
+	rc.pushMatrix_modelToCamera();
+	rc.multMatrix_modelToCamera(matrix);
+	rc.displayMesh(mesh.get());
+	rc.popMatrix_modelToCamera();
+}
+
+void drawWireframeSphere(RenderingContext & rc, const Geometry::Sphere & sphere, const Util::Color4f & color) {
+	rc.pushAndSetColorMaterial(color);
+	drawWireframeSphere(rc, sphere);
 	rc.popMaterial();
 }
 
@@ -317,33 +259,12 @@ void drawQuad(RenderingContext & rc, const Geometry::Vec3f & lowerLeft, const Ge
 
 void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect) {
 	static Util::Reference<Mesh> mesh;
-	if (mesh.isNull()) {
+	if(mesh.isNull()) {
 		VertexDescription vertexDescription;
 		vertexDescription.appendPosition2D();
-		mesh = new Mesh(vertexDescription, 4, 4);
-		mesh->setDrawMode(Mesh::DRAW_LINE_LOOP);
-
-		MeshVertexData & vd = mesh->openVertexData();
-		float * vertices = reinterpret_cast<float *> (vd.data());
-		*vertices++ = 0.0f; // Bottom left
-		*vertices++ = 0.0f;
-		*vertices++ = 1.0f; // Bottom right
-		*vertices++ = 0.0f;
-		*vertices++ = 1.0f; // Top right
-		*vertices++ = 1.0f;
-		*vertices++ = 0.0f; // Top left
-		*vertices++ = 1.0f;
-		vd.updateBoundingBox();
-		vd.markAsChanged();
-
-		MeshIndexData & id = mesh->openIndexData();
-		uint32_t * indices = id.data();
-		indices[0] = 0;
-		indices[1] = 1;
-		indices[2] = 2;
-		indices[3] = 3;
-		id.updateIndexRange();
-		id.markAsChanged();
+		Geometry::Rect unitRect(0,0,1,1);
+		mesh = MeshUtils::WireShapes::createWireRectangle(vertexDescription, unitRect);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 	}
 
 	Geometry::Matrix4x4 matrix;
@@ -363,35 +284,12 @@ void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const
 
 void drawRect(RenderingContext & rc, const Geometry::Rect & rect) {
 	static Util::Reference<Mesh> mesh;
-	if (mesh.isNull()) {
+	if(mesh.isNull()) {
 		VertexDescription vertexDescription;
 		vertexDescription.appendPosition2D();
-		mesh = new Mesh(vertexDescription, 4, 6);
-		mesh->setDrawMode(Mesh::DRAW_TRIANGLES);
-
-		MeshVertexData & vd = mesh->openVertexData();
-		float * vertices = reinterpret_cast<float *> (vd.data());
-		*vertices++ = 0.0f; // Bottom left
-		*vertices++ = 0.0f;
-		*vertices++ = 1.0f; // Bottom right
-		*vertices++ = 0.0f;
-		*vertices++ = 1.0f; // Top right
-		*vertices++ = 1.0f;
-		*vertices++ = 0.0f; // Top left
-		*vertices++ = 1.0f;
-		vd.updateBoundingBox();
-		vd.markAsChanged();
-
-		MeshIndexData & id = mesh->openIndexData();
-		uint32_t * indices = id.data();
-		indices[0] = 0;
-		indices[1] = 2;
-		indices[2] = 1;
-		indices[3] = 0;
-		indices[4] = 3;
-		indices[5] = 2;
-		id.updateIndexRange();
-		id.markAsChanged();
+		Geometry::Rect unitRect(0,0,1,1);
+		mesh = MeshUtils::createRectangle(vertexDescription, unitRect);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 	}
 
 	Geometry::Matrix4x4 matrix;
@@ -411,27 +309,11 @@ void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Co
 
 void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius) {
 	static Util::Reference<Mesh> mesh;
-	if (mesh.isNull()) {
+	if(mesh.isNull()) {
 		VertexDescription vertexDescription;
 		vertexDescription.appendPosition2D();
-		uint32_t segments = 32;
-		mesh = new Mesh(vertexDescription, segments, segments);
-		mesh->setDrawMode(Mesh::DRAW_LINE_LOOP);
-
-		MeshVertexData & vd = mesh->openVertexData();
-		MeshIndexData & id = mesh->openIndexData();
-		float * vertices = reinterpret_cast<float *> (vd.data());
-		uint32_t * indices = id.data();
-		for(uint32_t s=0; s<segments; ++s) {
-			float a = s * Geometry::Convert::degToRad(360.0f) / segments;
-			*vertices++ = std::sin(a); 
-			*vertices++ = std::cos(a); ;
-			indices[s] = s;
-		}
-		vd.updateBoundingBox();
-		vd.markAsChanged();
-		id.updateIndexRange();
-		id.markAsChanged();
+		mesh = MeshUtils::WireShapes::createWireCircle(vertexDescription, 1, 32);
+		mesh->setDataStrategy(SimpleMeshDataStrategy::getPureLocalStrategy());
 	}
 
 	Geometry::Matrix4x4 matrix;

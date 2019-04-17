@@ -11,6 +11,8 @@
 #ifndef MESHUTILS_H
 #define MESHUTILS_H
 
+#include <Geometry/Matrix4x4.h>
+
 #include <cstdint>
 #include <deque>
 #include <utility>
@@ -19,8 +21,6 @@
 #include <limits>
 
 namespace Geometry {
-template<typename _T> class _Matrix4x4;
-typedef _Matrix4x4<float> Matrix4x4;
 template<typename _T> class _Plane;
 typedef _Plane<float> Plane;
 template<typename _T> class _Sphere;
@@ -55,6 +55,7 @@ class VertexDescription;
  * @author Benjamin Eikel
  * @author Stefan Arens
  * @author Paul Justus
+ * @ingroup mesh
  */
 namespace MeshUtils {
 
@@ -362,6 +363,18 @@ std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.0
  */
 void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale=1.0, bool clampToEdge=false);
 
+
+/**
+ * Moves every vertex along their normal using the value of a 3D perlin noise function.
+ *
+ * @param mesh The mesh
+ * @param seed The seed for the noise generator
+ * @param noiseScale scale factor multiplied with the noise value
+ * @param transform transformation matrix applied on each position
+ * @author Sascha Brandt
+ */
+void applyNoise(Mesh* mesh, float noiseScale=1.0, const Geometry::Matrix4x4& transform={}, uint32_t seed=0);
+
 /**
  * Sets the y-coordinates of all vertices in a radius around a given 3d position to it's y-coordinate (with cubic bezier falloff) 
  *
@@ -391,6 +404,19 @@ float computeSurfaceArea(Mesh* mesh);
  * @author Sascha Brandt
  */
 Rendering::MeshVertexData* extractVertices(Rendering::Mesh* mesh, const std::vector<uint32_t>& indices);
+
+/**
+ * Copies vertices from one mesh to another. 
+ * If both meshes are uploaded, it directly copies using the buffers.
+ *
+ * @param source Mesh to copy vertices from
+ * @param target Mesh to copy vertices to
+ * @param sourceOffset vertex offset of the source mesh
+ * @param targetOffset vertex offset of the target mesh
+ * @param count number of vertices to copy
+ * @author Sascha Brandt
+ */
+void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sourceOffset, uint32_t targetOffset, uint32_t count);
 
 }
 }

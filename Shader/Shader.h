@@ -12,6 +12,7 @@
 #define SHADER_H
 
 #include "ShaderObjectInfo.h"
+#include "../RenderingContext/RenderingContext.h"
 #include <Util/ReferenceCounter.h>
 #include <Util/StringIdentifier.h>
 #include <cstdint>
@@ -35,7 +36,11 @@ class UniformRegistry;
 class ProgramState;
 class RenderingContext;
 
-/*!	Shader */
+//! @defgroup shader Shader
+
+/** Shader
+ * @ingroup shader
+ */
 class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name Main */
 	// @{

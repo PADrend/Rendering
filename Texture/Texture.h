@@ -14,6 +14,7 @@
 #include "TextureType.h"
 #include "PixelFormatGL.h"
 
+#include <Util/Graphics/Color.h>
 #include <Util/ReferenceCounter.h>
 #include <Util/References.h>
 #include <Util/IO/FileName.h>
@@ -27,28 +28,31 @@ namespace Rendering {
 class RenderingContext;
 class BufferObject;
 
-/***
- ** Texture
- **
- **	Coordinates:
- **
- ** (0,sizeY-1,numLayers-1)             (sizeX,sizeY,numLayers-1)
- **               +---------------+  
- **               |               |  
- **               .     ...       .
- **               .               .
- **               |               |  
- ** (0,0,1)       +---------------+ (sizeX-1,0,1)
- ** (0,sizeY-1,0) +---------------+ (sizeX-1,sizeY-1,0)
- **               |      /\       |  
- **               |     /  \      |
- **               |      ||       |
- **               |      ||       |
- **               +---------------+
- ** (0,0,0)                  (sizeX,0,0)
- **
- ** \note the coordinates are different to the ones used in Util::Bitmap
- **/
+//! @defgroup texture
+
+/**
+ * Texture
+ *
+ *	Coordinates:
+ *
+ * (0,sizeY-1,numLayers-1)             (sizeX,sizeY,numLayers-1)
+ *               +---------------+  
+ *               |               |  
+ *               .     ...       .
+ *               .               .
+ *               |               |  
+ * (0,0,1)       +---------------+ (sizeX-1,0,1)
+ * (0,sizeY-1,0) +---------------+ (sizeX-1,sizeY-1,0)
+ *               |      /\       |  
+ *               |     /  \      |
+ *               |      ||       |
+ *               |      ||       |
+ *               +---------------+
+ * (0,0,0)                  (sizeX,0,0)
+ *
+ * \note the coordinates are different to the ones used in Util::Bitmap
+ * @ingroup texture
+ */
 class Texture: public Util::ReferenceCounter<Texture>	{
 	public:
 		
@@ -105,6 +109,7 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		void _uploadGLTexture(RenderingContext & context);
 		void downloadGLTexture(RenderingContext & context, uint8_t* target=nullptr, uint32_t level=0);
 		void removeGLData();
+		void clearGLData(const Util::Color4f& color={});
 
 		void allocateLocalData();
 

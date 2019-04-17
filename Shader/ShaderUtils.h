@@ -15,6 +15,7 @@
 
 namespace Rendering {
 class Shader;
+//! @ingroup shader
 namespace ShaderUtils {
 
 //! Create a shader that writes the pixel normal into the color buffer.
