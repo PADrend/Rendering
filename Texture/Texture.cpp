@@ -495,4 +495,17 @@ void Texture::_setGLId(uint32_t _glId) {
 	}	
 }
 
+
+void Texture::enableComparision(RenderingContext & context, Comparison::function_t func) {
+	if(!glId || dataHasChanged)
+		_uploadGLTexture(context);
+#ifdef LIB_GL
+	context.pushAndSetTexture(0,this);
+	context.applyChanges();
+	glTexParameteri(format.glTextureType, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+	glTexParameteri(format.glTextureType, GL_TEXTURE_COMPARE_FUNC, Comparison::functionToGL(func));
+	context.popTexture(0);
+#endif
+}
+
 }

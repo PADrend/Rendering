@@ -13,6 +13,7 @@
 
 #include "TextureType.h"
 #include "PixelFormatGL.h"
+#include "../RenderingContext/RenderingParameters.h"
 
 #include <Util/Graphics/Color.h>
 #include <Util/ReferenceCounter.h>
@@ -166,6 +167,8 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 	 * WARNING: The format is not updated and needs to fit the gl texture. 
 	 */
 	void _setGLId(uint32_t glId);
+	
+	void enableComparision(RenderingContext & context, Comparison::function_t func);
 
 	private:
 		TextureType tType;
