@@ -1,13 +1,14 @@
 #
 # This file is part of the Rendering library.
 # Copyright (C) 2009-2013 Benjamin Eikel <benjamin@eikel.org>
+# Copyright (C) 2014-2019 Sascha Brandt <sascha@brandt.graphics>
 #
 # This library is subject to the terms of the Mozilla Public License, v. 2.0.
 # You should have received a copy of the MPL along with this library; see the 
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
 cmake_minimum_required(VERSION 3.1.0)
-project(Rendering VERSION 0.2.0)
+project(Rendering VERSION 0.3.0)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -76,13 +77,13 @@ add_library(Rendering
 
 # Dependency to Geometry
 if(NOT TARGET Geometry)
-	find_package(Geometry 0.2.0 REQUIRED NO_MODULE)
+	find_package(Geometry 0.3.0 REQUIRED NO_MODULE)
 endif()
 target_link_libraries(Rendering LINK_PUBLIC Geometry)
 
 # Dependency to Util
 if(NOT TARGET Util)
-	find_package(Util 0.2.0 REQUIRED NO_MODULE)
+	find_package(Util 0.3.0 REQUIRED NO_MODULE)
 endif()
 target_link_libraries(Rendering LINK_PUBLIC Util)
 
@@ -101,10 +102,6 @@ set_target_properties(Rendering PROPERTIES VERSION ${Rendering_VERSION}
 add_subdirectory(tests)
 
 # Install the header files
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/CL/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/CL COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/CL/Memory/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/CL/Memory COMPONENT headers)
 file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Mesh/*.h")
 install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Mesh COMPONENT headers)
 file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/MeshUtils/*.h")
@@ -156,7 +153,7 @@ include(InstallRequiredSystemLibraries)
 
 set(CPACK_PACKAGE_NAME "librendering${Rendering_VERSION_MAJOR}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Rendering library")
-set(CPACK_PACKAGE_VENDOR "Benjamin Eikel; Claudius Jaehn; Ralf Petring")
+set(CPACK_PACKAGE_VENDOR "Benjamin Eikel; Claudius Jaehn; Ralf Petring; Sascha Brandt")
 set(CPACK_PACKAGE_CONTACT "Benjamin Eikel <benjamin@eikel.org>")
 set(CPACK_PACKAGE_VERSION_MAJOR ${Rendering_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${Rendering_VERSION_MINOR})
