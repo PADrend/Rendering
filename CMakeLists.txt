@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(GNUInstallDirs)
 set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
-add_library(Rendering
+add_library(Rendering SHARED
 	Mesh/Mesh.cpp
 	Mesh/MeshDataStrategy.cpp
 	Mesh/MeshIndexData.cpp
@@ -97,8 +97,8 @@ target_link_libraries(Rendering LINK_PRIVATE ${GLIMPLEMENTATION_LIBRARIES})
 
 # Set version of library
 set_target_properties(Rendering PROPERTIES VERSION ${Rendering_VERSION}
-                                           SOVERSION ${Rendering_VERSION_MAJOR})
-                                           
+																					 SOVERSION ${Rendering_VERSION_MAJOR}
+																					 LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 add_subdirectory(tests)
 
 # Install the header files
@@ -126,9 +126,9 @@ install(TARGETS Rendering EXPORT LibraryExport
 
 # Set include directories for users of this library
 target_include_directories(Rendering
-                           INTERFACE
-                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>"
-                           "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>")
+													 INTERFACE
+													 "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>"
+													 "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>")
 
 # Library export
 install(EXPORT LibraryExport DESTINATION ${CMAKE_INSTALL_CMAKECONFIGDIR} FILE RenderingTargets.cmake COMPONENT developmentlibraries)
@@ -136,13 +136,13 @@ install(EXPORT LibraryExport DESTINATION ${CMAKE_INSTALL_CMAKECONFIGDIR} FILE Re
 # Create the configuration files
 include(CMakePackageConfigHelpers)
 configure_package_config_file(RenderingConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/RenderingConfig.cmake
-                              INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKECONFIGDIR}
-                              PATH_VARS CMAKE_INSTALL_CMAKECONFIGDIR
-                              NO_SET_AND_CHECK_MACRO
-                              NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+															INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKECONFIGDIR}
+															PATH_VARS CMAKE_INSTALL_CMAKECONFIGDIR
+															NO_SET_AND_CHECK_MACRO
+															NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/RenderingConfigVersion.cmake
-                                 VERSION ${Rendering_VERSION}
-                                 COMPATIBILITY SameMajorVersion)
+																 VERSION ${Rendering_VERSION}
+																 COMPATIBILITY SameMajorVersion)
 
 # Install the configuration files
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RenderingConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/RenderingConfigVersion.cmake
