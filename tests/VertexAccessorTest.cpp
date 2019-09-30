@@ -7,7 +7,7 @@
  file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#include "VertexAccessorTest.h"
+#include <catch2/catch.hpp>
 #include <Rendering/Mesh/MeshVertexData.h>
 #include <Rendering/Mesh/MeshIndexData.h>
 #include <Rendering/Mesh/VertexDescription.h>
@@ -16,18 +16,16 @@
 #include <Util/Timer.h>
 #include <Util/References.h>
 
-#include <cppunit/TestAssert.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <random>
 #include <vector>
-CPPUNIT_TEST_SUITE_REGISTRATION(VertexAccessorTest);
 
 using namespace Rendering;
 
-void VertexAccessorTest::compareSpeed() {
+TEST_CASE("VertexAccessorTest_compareSpeed", "[VertexAccessorTest]") {
   std::cout << std::endl;  
 	const float coordinateRange = 1000.0f;
 	std::uniform_real_distribution<float> coordinateDist(-coordinateRange, coordinateRange);
@@ -56,7 +54,7 @@ void VertexAccessorTest::compareSpeed() {
       acc->setPosition(i, positions[i]);
     }
     for(uint32_t i=0; i<vData.getVertexCount(); ++i) {
-      CPPUNIT_ASSERT(acc->getPosition(i).distance(positions[i]) < epsilon);
+      REQUIRE(acc->getPosition(i).distance(positions[i]) < epsilon);
     }
     std::cout << "PositionAttributeAccessor: " << t.getMilliseconds() << " ms" << std::endl;    
   }
@@ -68,7 +66,7 @@ void VertexAccessorTest::compareSpeed() {
       acc->setPosition(i, positions[i]);
     }
     for(uint32_t i=0; i<vData.getVertexCount(); ++i) {
-      CPPUNIT_ASSERT(acc->getPosition(i).distance(positions[i]) < epsilon);
+      REQUIRE(acc->getPosition(i).distance(positions[i]) < epsilon);
     }
     std::cout << "VertexAccessor: " << t.getMilliseconds() << " ms" << std::endl;    
   }

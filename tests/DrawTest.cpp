@@ -6,8 +6,8 @@
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#include "DrawTest.h"
-#include <cppunit/TestAssert.h>
+#include <catch2/catch.hpp>
+
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
 #include <Rendering/RenderingContext/RenderingContext.h>
@@ -16,9 +16,8 @@
 #include <Util/Timer.h>
 #include <cstdint>
 #include <iostream>
-CPPUNIT_TEST_SUITE_REGISTRATION(DrawTest);
 
-void DrawTest::testBox() {
+TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
 

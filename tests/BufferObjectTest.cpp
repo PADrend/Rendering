@@ -6,8 +6,8 @@
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#include "BufferObjectTest.h"
-#include <cppunit/TestAssert.h>
+#include <catch2/catch.hpp>
+
 #include <Rendering/BufferObject.h>
 #include <algorithm>
 #include <cstddef>
@@ -15,30 +15,29 @@
 #include <functional>
 #include <random>
 #include <vector>
-CPPUNIT_TEST_SUITE_REGISTRATION(BufferObjectTest);
 
-void BufferObjectTest::test() {
+TEST_CASE("BufferObjectTest_test", "[BufferObjectTest]") {
 	using namespace Rendering;
 	{ // Check prepare() and destroy()
 		BufferObject boA;
 		BufferObject boB;
-		CPPUNIT_ASSERT(!boA.isValid());
-		CPPUNIT_ASSERT(!boB.isValid());
+		REQUIRE(!boA.isValid());
+		REQUIRE(!boB.isValid());
 		boA.prepare();
 		boB.prepare();
-		CPPUNIT_ASSERT(boA.isValid());
-		CPPUNIT_ASSERT(boB.isValid());
+		REQUIRE(boA.isValid());
+		REQUIRE(boB.isValid());
 		boA.destroy();
 		boB.destroy();
-		CPPUNIT_ASSERT(!boA.isValid());
-		CPPUNIT_ASSERT(!boB.isValid());
+		REQUIRE(!boA.isValid());
+		REQUIRE(!boB.isValid());
 	}
 	{ // Check move constructor
 		BufferObject boA;
 		boA.prepare();
 		BufferObject boB(std::move(boA));
-		CPPUNIT_ASSERT(!boA.isValid());
-		CPPUNIT_ASSERT(boB.isValid());
+		REQUIRE(!boA.isValid());
+		REQUIRE(boB.isValid());
 	}
 	{ // Check move assignment operator
 		BufferObject boA;
@@ -46,7 +45,7 @@ void BufferObjectTest::test() {
 		boA.prepare();
 		boB.prepare();
 		boB = std::move(boA);
-		CPPUNIT_ASSERT(boA.isValid());
-		CPPUNIT_ASSERT(boB.isValid());
+		REQUIRE(boA.isValid());
+		REQUIRE(boB.isValid());
 	}
 }
