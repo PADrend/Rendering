@@ -17,10 +17,25 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
-# glew
+# OpenGL & glew
 
-find_package(OpenGL QUIET)
-if(OPENGL_FOUND)
+option(RENDERING_BACKEND_GLES "Defines wether GLESv2 is used as rendering backend." OFF)
+
+if(RENDERING_BACKEND_GLES)
+  find_package(GLESv2 REQUIRED)
+  target_compile_definitions(RenderingExtern INTERFACE "LIB_GLESv2")
+  target_include_directories(RenderingExtern INTERFACE ${GLESV2_INCLUDE_DIRS})
+  target_link_libraries(RenderingExtern INTERFACE ${GLESV2_LIBRARIES})
+  set(GLIMPLEMENTATION_FOUND ${GLESV2_FOUND})
+else()
+  find_package(OpenGL REQUIRED)
+  target_compile_definitions(RenderingExtern INTERFACE "LIB_GL")
+  target_include_directories(RenderingExtern INTERFACE ${OPENGL_INCLUDE_DIR})
+  target_link_libraries(RenderingExtern INTERFACE ${OPENGL_LIBRARIES})
+  set(GLIMPLEMENTATION_FOUND ${OPENGL_FOUND})
+endif()
+
+if(GLIMPLEMENTATION_FOUND)  
   FetchContent_Declare(
     glew
     URL http://downloads.sourceforge.net/project/glew/glew/2.1.0/glew-2.1.0.tgz
