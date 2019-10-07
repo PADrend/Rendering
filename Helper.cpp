@@ -16,6 +16,19 @@
 #include <android/log.h>
 #endif /* defined(ANDROID) */
 
+#ifdef _WIN32
+#ifndef WIN32
+#define WIN32
+#endif
+#include <windows.h>
+#elif defined(__linux__)
+#include <dlfcn.h>
+#endif
+
+#include "extern/renderdoc_app.h"
+
+#include <Util/Macros.h>
+
 namespace Rendering {
 
 static bool GLErrorChecking = false;
@@ -278,6 +291,71 @@ void disableDebugOutput() {
 #else
 	std::cerr << "GL_ARB_debug_output is not supported" << std::endl;
 #endif
+}
+
+
+void pushDebugGroup(const std::string& name) {
+#if defined(LIB_GL) && defined(GL_VERSION_4_3)
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name.c_str());
+#endif
+}
+
+void popDebugGroup() {
+#if defined(LIB_GL) && defined(GL_VERSION_4_3)
+  glPopDebugGroup();
+#endif
+}
+
+
+static RENDERDOC_API_1_4_0* getAPI() {
+  static RENDERDOC_API_1_4_0* rdoc_api = nullptr;
+  if(!rdoc_api) {    
+#if defined(_WIN32)
+    if(HMODULE mod = GetModuleHandleA("renderdoc.dll")) {
+      pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+      int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void **)&rdoc_api);
+      if(ret != 1) {
+        WARN("Could not load RenderDoc API");
+        rdoc_api = nullptr;
+      }
+    }
+#elif defined(__linux__)
+    if(void *mod = dlopen("librenderdoc.so", RTLD_NOW | RTLD_NOLOAD)) {
+      pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)dlsym(mod, "RENDERDOC_GetAPI");
+      int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void **)&rdoc_api);
+      if(ret != 1) {
+        WARN("Could not load RenderDoc API");
+        rdoc_api = nullptr;
+      }
+    }
+#endif
+  }
+  return rdoc_api;
+}
+
+void triggerCapture() {
+  auto rdoc_api = getAPI();  
+  if(rdoc_api) {
+    rdoc_api->TriggerCapture();
+  } else {
+    WARN("RenderDoc API is not loaded!");
+  }
+}
+
+void startCapture() {
+  auto rdoc_api = getAPI();
+  if(rdoc_api) {
+    rdoc_api->StartFrameCapture(nullptr, nullptr);
+  } else {
+    WARN("RenderDoc API is not loaded!");
+  }
+}
+
+void endCapture() {
+  auto rdoc_api = getAPI();
+  if(rdoc_api) {
+    rdoc_api->EndFrameCapture(nullptr, nullptr);
+  }
 }
 
 }

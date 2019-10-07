@@ -95,6 +95,38 @@ void enableDebugOutput();
  */
 void disableDebugOutput();
 
+/**
+ * Push a named debug group into the command stream
+ * 
+ * @param name Name of the debug group
+ * @see @c glPushDebugGroup
+ */
+void pushDebugGroup(const std::string& name);
+
+/**
+ * Pop the active debug group
+ * @see @c glPopDebugGroup
+ */
+void popDebugGroup();
+
+/**
+ * Triggers a capture of the current GL state in RenderDoc.
+ * @note Requires RenderDoc
+ */
+void triggerCapture();
+
+/**
+ * Starts capturing of the GL state in RenderDoc.
+ * @note Requires RenderDoc
+ */
+void startCapture();
+
+/**
+ * Ends the active capture.
+ * @note Requires RenderDoc
+ */
+void endCapture();
+
 //! @}
 }
 
