@@ -449,6 +449,21 @@ Util::Reference<Texture> createTextureDataArray_Vec4(const uint32_t size) {
 	return createDataTexture(TextureType::TEXTURE_1D,size,1,1,Util::TypeConstant::FLOAT,4); 
 }
 
+Util::Reference<Texture> createColorPalette(const std::vector<Util::Color4f>& colors) {
+	if(colors.empty()) {
+		WARN("createColorPalette: invalid number of colors!");
+		return nullptr;
+	}
+	auto t = create(TextureType::TEXTURE_1D, colors.size(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA, true, true);
+	t->allocateLocalData();
+	auto acc = Util::PixelAccessor::create(t->getLocalBitmap());
+	for(uint32_t i=0; i<colors.size(); ++i) {
+		acc->writeColor(i, 0, colors[i]);
+	}
+	t->dataChanged();
+	return t;
+}
+
 //! [static] Factory
 Util::Reference<Texture> createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo) {
 	auto t = create(TextureType::TEXTURE_2D, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA ,true);

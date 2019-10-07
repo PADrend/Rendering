@@ -76,6 +76,8 @@ Util::Reference<Texture> createDataTexture(TextureType type,uint32_t sizeX,uint3
 Util::Reference<Texture> createTextureDataArray_Vec4(const uint32_t size);
 Util::Reference<Texture> createChessTexture(uint32_t width, uint32_t height, int fieldSize_powOfTwo=8);
 
+Util::Reference<Texture> createColorPalette(const std::vector<Util::Color4f>& colors);
+
 /*! Create a texture of the given @p textureType from the given @p bitmap.
 	- For textureType TEXTURE_1D and TEXTURE_2D, numLayers must be 1.
 	- For textureType TEXTURE_CUBE_MAP, numLayers must be 6.
