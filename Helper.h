@@ -11,6 +11,8 @@
 #ifndef RENDERING_HELPER_H
 #define RENDERING_HELPER_H
 
+#include <Util/TypeConstant.h>
+
 #include <cstdint>
 #include <iosfwd>
 
@@ -39,6 +41,22 @@ const char * getGLTypeString(uint32_t type);
  * @return Size in bytes, or zero if the type is invalid.
  */
 uint32_t getGLTypeSize(uint32_t type);
+
+/**
+ * Returns the OpenGL type for the given resource attribute type.
+ *
+ * @param type the attribute type (e.g., TypeConstant).
+ * @return The corresponding OpenGL type constant.
+ */
+uint32_t getGLType(Util::TypeConstant type);
+
+/**
+ * Returns the resource attribute type for the given OpenGL type.
+ *
+ * @param type the OpenGL type.
+ * @return The corresponding attribute type.
+ */
+Util::TypeConstant getAttributeType(uint32_t glType);
 
 /**
  * Write information about the current OpenGL context to the given stream.

@@ -150,6 +150,37 @@ unsigned int getGLTypeSize(uint32_t type) {
 	}
 }
 
+uint32_t getGLType(Util::TypeConstant type) {	
+	switch(static_cast<Util::TypeConstant>(type)) {
+		case Util::TypeConstant::UINT8: return GL_UNSIGNED_BYTE;
+		case Util::TypeConstant::UINT16: return GL_UNSIGNED_SHORT;
+		case Util::TypeConstant::UINT32: return GL_UNSIGNED_INT;
+		case Util::TypeConstant::UINT64: return 0; // unsupported
+		case Util::TypeConstant::INT8: return GL_BYTE;
+		case Util::TypeConstant::INT16: return GL_SHORT;
+		case Util::TypeConstant::INT32: return GL_INT;
+		case Util::TypeConstant::INT64: return 0; // unsupported
+		case Util::TypeConstant::FLOAT: return GL_FLOAT;
+		case Util::TypeConstant::DOUBLE: return GL_DOUBLE;
+		case Util::TypeConstant::HALF: return GL_HALF_FLOAT;
+	}
+}
+
+Util::TypeConstant getAttributeType(uint32_t glType) {
+	switch (static_cast<GLenum>(glType)) {
+		case GL_UNSIGNED_BYTE: return Util::TypeConstant::UINT8;
+		case GL_BYTE: return Util::TypeConstant::UINT16;
+		case GL_UNSIGNED_SHORT: return Util::TypeConstant::UINT32;
+		case GL_SHORT: return Util::TypeConstant::INT8;
+		case GL_UNSIGNED_INT: return Util::TypeConstant::INT16;
+		case GL_INT: return Util::TypeConstant::INT32;
+		case GL_FLOAT: return Util::TypeConstant::FLOAT;
+		case GL_DOUBLE: return Util::TypeConstant::DOUBLE;
+		case GL_HALF_FLOAT: return Util::TypeConstant::HALF;
+		default: return Util::TypeConstant::UINT8;
+	}
+}
+
 void outputGLInformation(std::ostream & output) {
 	output << "OpenGL vendor: " << glGetString(GL_VENDOR) << '\n';
 	output << "OpenGL renderer: " << glGetString(GL_RENDERER) << '\n';

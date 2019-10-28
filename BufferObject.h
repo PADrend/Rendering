@@ -145,6 +145,23 @@ class BufferObject {
 		void clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
     
     void copy(const BufferObject& source, uint32_t sourceOffset, uint32_t targetOffset, uint32_t size);
+		
+		/** 
+		 * Map all or part of a buffer object's data store into the client's address space
+		 * @note The buffer has to be unmapped before using it for rendering.
+		 * 
+		 * @param offset The offset into the buffer in bytes.
+		 * @param size The size of the buffer range in bytes to map. When <tt>size</tt> is 0, the entire buffer is mapped.
+		 * @param allowWrite Indicates that the returned pointer may be used to modify buffer object data.
+		 * @param allowRead Indicates that the returned pointer may be used to read buffer object data.
+		 * @return The mapped data pointer, or <tt>nullptr</tt> if the mapping failed.
+		 */
+		uint8_t* map(uint32_t offset=0, uint32_t size=0, bool allowWrite=true, bool allowRead=true);
+		
+		/** 
+		 * Unmaps a previously mapped buffer.
+		 */
+		void unmap();
 };
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;

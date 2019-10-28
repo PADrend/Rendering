@@ -118,6 +118,10 @@ class MeshVertexData {
 			\note the size of the new buffer must be equal to that of the old one.
 			\note Use only if you know what you are doing!	*/		
 		void _swapBufferObject(BufferObject & other)	{	bufferObject.swap(other);	}
+		
+		/*! get the internal BufferObject.
+		\note Use only if you know what you are doing!	*/		
+		BufferObject& _getBufferObject() { return bufferObject; }
 };
 
 
