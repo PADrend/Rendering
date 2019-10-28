@@ -24,10 +24,8 @@ add_library(Rendering SHARED
 	Mesh/MeshIndexData.cpp
 	Mesh/MeshVertexData.cpp
 	Mesh/VertexAccessor.cpp
-	Mesh/VertexAttribute.cpp
 	Mesh/VertexAttributeAccessors.cpp
 	Mesh/VertexAttributeIds.cpp
-	Mesh/VertexDescription.cpp
 	MeshUtils/ConnectivityAccessor.cpp
 	MeshUtils/LocalMeshDataHolder.cpp
 	MeshUtils/MarchingCubesMeshBuilder.cpp

@@ -93,9 +93,9 @@ Mesh * StreamerNGC::loadMesh(std::istream & input){
 
 	VertexDescription vd;
 	const VertexAttribute & posAttr = vd.appendPosition3D();
-	const VertexAttribute & normalAttr = vd.appendAttribute(VertexAttributeIds::NORMAL,normalComponentCount,normalType);
-	const VertexAttribute & colorAttr = vd.appendAttribute(VertexAttributeIds::COLOR,colorComponentCount,colorType);
-	const VertexAttribute & tex0Attr = vd.appendAttribute(VertexAttributeIds::TEXCOORD0,texCoordComponentCount,texCoordType);
+	const VertexAttribute & normalAttr = vd.appendAttribute(VertexAttributeIds::NORMAL,getAttributeType(normalType),normalComponentCount);
+	const VertexAttribute & colorAttr = vd.appendAttribute(VertexAttributeIds::COLOR,getAttributeType(colorType),colorComponentCount);
+	const VertexAttribute & tex0Attr = vd.appendAttribute(VertexAttributeIds::TEXCOORD0,getAttributeType(texCoordType),texCoordComponentCount);
 
 
 	MeshVertexData & vData=mesh->openVertexData();

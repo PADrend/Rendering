@@ -17,8 +17,10 @@
 #include "VertexDescription.h"
 #include "VertexAttributeIds.h"
 
+
 #include <Geometry/Vec3.h>
 #include <Geometry/Vec2.h>
+#include <Util/Resources/AttributeAccessor.h>
 #include <Util/ReferenceCounter.h>
 #include <Util/References.h>
 #include <Util/Graphics/Color.h>

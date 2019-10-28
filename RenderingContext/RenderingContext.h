@@ -12,6 +12,7 @@
 #ifndef RENDERING_RENDERINCONTEXT_H_
 #define RENDERING_RENDERINCONTEXT_H_
 
+#include "../Mesh/VertexDescription.h"
 #include <Util/CountedObjectWrapper.h>
 #include <cstdint>
 #include <memory>
@@ -53,7 +54,6 @@ class Shader;
 class Texture;
 class Uniform;
 class UniformRegistry;
-class VertexAttribute;
 enum class TexUnitUsageParameter : uint8_t;
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;

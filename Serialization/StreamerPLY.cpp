@@ -684,7 +684,7 @@ bool StreamerPLY::saveMesh(Mesh * mesh, std::ostream & output) {
 		// TODO what is the meaning of this variable? it is never read...
 		//bool failure=true;
 
-		std::string prefix=std::string("property ")+getGLTypeString(attr.getDataType())+' ';
+		std::string prefix=std::string("property ")+getGLTypeString(getGLType(attr.getDataType()))+' ';
 
 		if(attr.getNameId()==VertexAttributeIds::POSITION){
 			if(attr.getNumValues()>0)

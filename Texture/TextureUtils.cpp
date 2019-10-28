@@ -707,7 +707,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	std::vector<VertexAttribute> texCoordAttr;
 	texCoordAttr.reserve(numTextures);
 	for(uint_fast8_t i = 0; i < numTextures; ++i) {
-		texCoordAttr.push_back(vertexDesc.appendAttribute(VertexAttributeIds::getTextureCoordinateIdentifier(i), 2, GL_FLOAT,false));
+		texCoordAttr.push_back(vertexDesc.appendTexCoord(i));
 	}
 
 	Util::Reference<Mesh> mesh = new Mesh(vertexDesc, 4, 6);

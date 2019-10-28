@@ -157,11 +157,11 @@ class ColorAttributeAccessor4ub : public ColorAttributeAccessor {
 //! (static) Factory
 Util::Reference<ColorAttributeAccessor> ColorAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getNumValues() >= 4 && attr.getDataType() == GL_FLOAT) {
+	if(attr.getNumValues() >= 4 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new ColorAttributeAccessor4f(_vData, attr);
-	} else if(attr.getNumValues() >= 3 && attr.getDataType() == GL_FLOAT) {
+	} else if(attr.getNumValues() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new ColorAttributeAccessor3f(_vData, attr);
-	} else if(attr.getNumValues() >= 4 && attr.getDataType() == GL_UNSIGNED_BYTE) {
+	} else if(attr.getNumValues() >= 4 && attr.getDataType() == Util::TypeConstant::UINT8) {
 		return new ColorAttributeAccessor4ub(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -223,9 +223,9 @@ class NormalAttributeAccessor3f : public NormalAttributeAccessor {
 //! (static)
 Util::Reference<NormalAttributeAccessor> NormalAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getNumValues() >= 3 && attr.getDataType() == GL_FLOAT) {
+	if(attr.getNumValues() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new NormalAttributeAccessor3f(_vData, attr);
-	} else if(attr.getNumValues() >= 4 && attr.getDataType() == GL_BYTE) {
+	} else if(attr.getNumValues() >= 4 && attr.getDataType() == Util::TypeConstant::INT8) {
 		return new NormalAttributeAccessor4b(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -288,9 +288,9 @@ class PositionAttributeAccessorHF : public PositionAttributeAccessor {
 //! (static)
 Util::Reference<PositionAttributeAccessor> PositionAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getNumValues() >= 3 && attr.getDataType() == GL_FLOAT) {
+	if(attr.getNumValues() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new PositionAttributeAccessorF(_vData, attr);
-	} else if(attr.getNumValues() >= 3 && attr.getDataType() == GL_HALF_FLOAT) {
+	} else if(attr.getNumValues() >= 3 && attr.getDataType() == Util::TypeConstant::HALF) {
 		return new PositionAttributeAccessorHF(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -303,7 +303,7 @@ Util::Reference<PositionAttributeAccessor> PositionAttributeAccessor::create(Mes
 //! (static)
 Util::Reference<TexCoordAttributeAccessor> TexCoordAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getNumValues() == 2 && attr.getDataType() == GL_FLOAT) {
+	if(attr.getNumValues() == 2 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new TexCoordAttributeAccessor(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -476,13 +476,13 @@ class FloatAttributeAccessorf : public FloatAttributeAccessor {
 //! (static)
 Util::Reference<FloatAttributeAccessor> FloatAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getDataType() == GL_FLOAT) {
+	if(attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new FloatAttributeAccessorf(_vData, attr);
-	} else if(attr.getDataType() == GL_BYTE) {
+	} else if(attr.getDataType() == Util::TypeConstant::INT8) {
 		return new FloatAttributeAccessorb(_vData, attr);
-	} else if(attr.getDataType() == GL_UNSIGNED_BYTE) {
+	} else if(attr.getDataType() == Util::TypeConstant::UINT8) {
 		return new FloatAttributeAccessorub(_vData, attr);
-	} else if(attr.getDataType() == GL_HALF_FLOAT) {
+	} else if(attr.getDataType() == Util::TypeConstant::HALF) {
 		return new FloatAttributeAccessorHF(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -527,7 +527,7 @@ public:
 //! (static)
 Util::Reference<UIntAttributeAccessor> UIntAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getDataType() == GL_UNSIGNED_INT) {
+	if(attr.getDataType() == Util::TypeConstant::UINT32) {
 		return new UIntAttributeAccessorUI(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');

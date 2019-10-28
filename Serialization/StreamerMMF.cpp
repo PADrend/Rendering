@@ -157,7 +157,7 @@ void StreamerMMF::readVertexData(Mesh * mesh, Reader & in) {
 		if(name.empty())
 			WARN(warningPrefix+"Found unnamed vertex attribute.");
 
-		vd.appendAttribute(name,numValues,glType);
+		vd.appendAttribute(name,getAttributeType(glType),numValues);
 //        vd.setData(index, numValues, glType);
 
 	}
@@ -231,7 +231,7 @@ bool StreamerMMF::saveMesh(Mesh * mesh, std::ostream & output) {
 		}
 		write(headerOut,attrId);				// attrId
 		write(headerOut,attr.getNumValues());	// numValues
-		write(headerOut,attr.getDataType());	// dataType
+		write(headerOut,getGLType(attr.getDataType()));	// dataType
 		if(attrId==MMF_CUSTOM_ATTR_ID){
 			std::string name(attr.getName());
 			while(name.length()%4!=0)// fill name up with \0 until 32bit alignment is reached

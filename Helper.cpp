@@ -28,6 +28,8 @@
 #include "extern/renderdoc_app.h"
 
 #include <Util/Macros.h>
+#include <Util/TypeConstant.h>
+#include <Util/Resources/ResourceFormat.h>
 
 namespace Rendering {
 

@@ -19,7 +19,7 @@
 #include "RenderingParameters.h"
 #include "../BufferObject.h"
 #include "../Mesh/Mesh.h"
-#include "../Mesh/VertexAttribute.h"
+#include "../Mesh/VertexDescription.h"
 #include "../Shader/Shader.h"
 #include "../Shader/UniformRegistry.h"
 #include "../Texture/Texture.h"
@@ -1495,10 +1495,10 @@ void RenderingContext::enableVertexAttribArray(const VertexAttribute & attr, con
 	if(location != -1) {
 		GLuint attribLocation = static_cast<GLuint> (location);
 		internalData->activeVertexAttributeBindings.emplace(attribLocation);
-		if( attr.getConvertToFloat() ){
-			glVertexAttribPointer(attribLocation, attr.getNumValues(), attr.getDataType(), attr.getNormalize() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
+		if( attr.isNormalized() || attr.getDataType() == Util::TypeConstant::FLOAT || attr.getDataType() == Util::TypeConstant::DOUBLE || attr.getDataType() == Util::TypeConstant::HALF ){
+			glVertexAttribPointer(attribLocation, attr.getNumValues(), getGLType(attr.getDataType()), attr.isNormalized() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
 		} else {
-			glVertexAttribIPointer(attribLocation, attr.getNumValues(), attr.getDataType(), stride, data + attr.getOffset());
+			glVertexAttribIPointer(attribLocation, attr.getNumValues(), getGLType(attr.getDataType()), stride, data + attr.getOffset());
 		}
 		glEnableVertexAttribArray(attribLocation);
 	}

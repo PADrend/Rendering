@@ -211,60 +211,58 @@ RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, cons
 			continue;
 		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
 			switch (attr.getDataType()) {
-			case GL_FLOAT: {
+			case Util::TypeConstant::FLOAT: {
 				GLfloat f = (reinterpret_cast<const GLfloat *> (rwa.getData() + attr.getOffset()))[j];
 				f += (reinterpret_cast<const GLfloat *> (rwb.getData() + attr.getOffset()))[j];
 				(reinterpret_cast<GLfloat *> (data + attr.getOffset()))[j] = f / 2;
 			}
 				break;
-			case GL_UNSIGNED_BYTE: {
+			case Util::TypeConstant::UINT8: {
 				uint32_t ub = (reinterpret_cast<const GLubyte *> (rwa.getData() + attr.getOffset() + j * sizeof(GLubyte)))[0];
 				ub += (reinterpret_cast<const GLubyte *> (rwb.getData() + attr.getOffset() + j * sizeof(GLubyte)))[0];
 				(reinterpret_cast<GLubyte *> (data + attr.getOffset() + j * sizeof(GLubyte)))[0] = ub / 2;
 			}
 				break;
-			case GL_BYTE: {
+			case Util::TypeConstant::INT8: {
 				int32_t sb = (reinterpret_cast<const GLbyte *> (rwa.getData() + attr.getOffset() + j * sizeof(GLbyte)))[0];
 				sb += (reinterpret_cast<const GLbyte *> (rwb.getData() + attr.getOffset() + j * sizeof(GLbyte)))[0];
 				(reinterpret_cast<GLbyte *> (data + attr.getOffset() + j * sizeof(GLbyte)))[0] = sb / 2;
 			}
 				break;
-			case GL_UNSIGNED_SHORT: {
+			case Util::TypeConstant::UINT16: {
 				uint32_t us = (reinterpret_cast<const GLushort *> (rwa.getData() + attr.getOffset() + j * sizeof(GLushort)))[0];
 				us += (reinterpret_cast<const GLushort *> (rwb.getData() + attr.getOffset() + j * sizeof(GLushort)))[0];
 				(reinterpret_cast<GLushort *> (data + attr.getOffset() + j * sizeof(GLushort)))[0] = us / 2;
 			}
 				break;
-			case GL_SHORT: {
+			case Util::TypeConstant::INT16: {
 				int32_t ss = (reinterpret_cast<const GLshort *> (rwa.getData() + attr.getOffset() + j * sizeof(GLshort)))[0];
 				ss += (reinterpret_cast<const GLshort *> (rwb.getData() + attr.getOffset() + j * sizeof(GLshort)))[0];
 				(reinterpret_cast<GLshort *> (data + attr.getOffset() + j * sizeof(GLshort)))[0] = ss / 2;
 			}
 				break;
-			case GL_UNSIGNED_INT: {
+			case Util::TypeConstant::UINT32: {
 				uint64_t ui = (reinterpret_cast<const GLuint *> (rwa.getData() + attr.getOffset() + j * sizeof(GLuint)))[0];
 				ui += (reinterpret_cast<const GLuint *> (rwb.getData() + attr.getOffset() + j * sizeof(GLuint)))[0];
 				(reinterpret_cast<GLuint *> (data + attr.getOffset() + j * sizeof(GLuint)))[0] = ui / 2;
 			}
 				break;
-			case GL_INT: {
+			case Util::TypeConstant::INT32: {
 				int64_t si = (reinterpret_cast<const GLint *> (rwa.getData() + attr.getOffset() + j * sizeof(GLint)))[0];
 				si += (reinterpret_cast<const GLint *> (rwb.getData() + attr.getOffset() + j * sizeof(GLint)))[0];
 				(reinterpret_cast<GLint *> (data + attr.getOffset() + j * sizeof(GLint)))[0] = si / 2;
 			}
 				break;
 #ifdef LIB_GL
-				case GL_DOUBLE: {
+				case Util::TypeConstant::DOUBLE: {
 					GLdouble d = (reinterpret_cast<const GLdouble *> (rwa.getData() + attr.getOffset() + j * sizeof(GLdouble)))[0];
 					d += (reinterpret_cast<const GLdouble *> (rwb.getData() + attr.getOffset() + j * sizeof(GLdouble)))[0];
 					(reinterpret_cast<GLdouble *> (data + attr.getOffset() + j * sizeof(GLdouble)))[0] = d / 2;
 				}
 				break;
 #endif /* LIB_GL */
-			case GL_BOOL:
-				continue;
 			default:
-				FAIL();
+				continue;
 			}
 		}
 	}
@@ -294,35 +292,33 @@ RawVertex RawVertex::interpolate(const RawVertex & rwa, const RawVertex & rwb, f
 			continue;
 		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
 			switch (attr.getDataType()) {
-			case GL_FLOAT:
+			case Util::TypeConstant::FLOAT:
 				interpolateValue<GLfloat>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
-			case GL_UNSIGNED_BYTE:
+			case Util::TypeConstant::UINT8:
 				interpolateValue<GLubyte>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
-			case GL_BYTE:
+			case Util::TypeConstant::INT8:
 				break;
-			case GL_UNSIGNED_SHORT:
+			case Util::TypeConstant::UINT16:
 				interpolateValue<GLushort>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
-			case GL_SHORT:
+			case Util::TypeConstant::INT16:
 				interpolateValue<GLshort>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
-			case GL_UNSIGNED_INT:
+			case Util::TypeConstant::UINT32:
 				interpolateValue<GLuint>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
-			case GL_INT:
+			case Util::TypeConstant::INT32:
 				interpolateValue<GLint>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
 #ifdef LIB_GL
-				case GL_DOUBLE:
+				case Util::TypeConstant::DOUBLE:
 					interpolateValue<GLdouble>(data, rwa, rwb, attr, j, a, a_inv);
 					break;
 #endif /* LIB_GL */
-			case GL_BOOL:
-				continue;
 			default:
-				FAIL();
+				continue;
 			}
 		}
 	}
@@ -457,7 +453,7 @@ float getLongestSideLength(Mesh * m){
 	const VertexDescription & vd = m->getVertexDescription();
 	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
 	std::vector<RawVertex> vertexArray;
-	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+	if (posAttr.getDataType() != Util::TypeConstant::FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
 		WARN("splitLargeTriangles: Unsupported vertex format.");
 		return -1;
 	}
@@ -514,7 +510,7 @@ void setColor(Mesh * mesh, const Util::Color4f & _color) {
 void splitLargeTriangles(Mesh * m, float maxSideLength) {
 	const VertexDescription & vd = m->getVertexDescription();
 	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
-	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+	if (posAttr.getDataType() != Util::TypeConstant::FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
 		WARN("splitLargeTriangles: Unsupported vertex format.");
 		return;
 	}
@@ -588,19 +584,19 @@ void shrinkMesh(Mesh * m, bool shrinkPosition) {
 	bool convertPosition = false;
 	for(const auto & attr : vdOld.getAttributes()) {
 		// can shrink normals?
-		if (attr.getNameId() == VertexAttributeIds::NORMAL && attr.getDataType() == GL_FLOAT && attr.getNumValues() >= 3) {
+		if (attr.getNameId() == VertexAttributeIds::NORMAL && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getNumValues() >= 3) {
 			vdNew.appendNormalByte();
 			convertNormals = true;
 		} // can shrink colors?
-		else if (attr.getNameId() == VertexAttributeIds::COLOR && attr.getDataType() == GL_FLOAT && attr.getNumValues() >= 3) {
+		else if (attr.getNameId() == VertexAttributeIds::COLOR && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getNumValues() >= 3) {
 			vdNew.appendColorRGBAByte();
 			convertColors = true;
 		} // can shrink position?
-		else if (shrinkPosition && attr.getNameId() == VertexAttributeIds::POSITION && attr.getDataType() == GL_FLOAT && attr.getNumValues() >= 3) {
+		else if (shrinkPosition && attr.getNameId() == VertexAttributeIds::POSITION && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getNumValues() >= 3) {
 			vdNew.appendPosition4DHalf();
 			convertPosition = true;
 		} else { // just copy
-			vdNew.appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType(), attr.getNormalize());
+			vdNew.appendAttribute(attr.getNameId(), attr.getDataType(), attr.getNumValues(), attr.isNormalized());
 		}
 	}
 
@@ -682,10 +678,10 @@ void transformNormals(MeshVertexData & vData, Util::StringIdentifier attrName, c
 // -----------------------------------------------------------------------------
 
 inline bool canConvert(const VertexAttribute& oldAttr, const VertexAttribute& newAttr) {
-	if(oldAttr.getDataType() == GL_FLOAT) {
-		return newAttr.getDataType() == GL_BYTE || newAttr.getDataType() == GL_UNSIGNED_BYTE; // float to byte
-	} else if(newAttr.getDataType() == GL_FLOAT) {
-		return oldAttr.getDataType() == GL_BYTE || oldAttr.getDataType() == GL_UNSIGNED_BYTE; // byte to float
+	if(oldAttr.getDataType() == Util::TypeConstant::FLOAT) {
+		return newAttr.getDataType() == Util::TypeConstant::INT8 || newAttr.getDataType() == Util::TypeConstant::UINT8; // float to byte
+	} else if(newAttr.getDataType() == Util::TypeConstant::FLOAT) {
+		return oldAttr.getDataType() == Util::TypeConstant::INT8 || oldAttr.getDataType() == Util::TypeConstant::UINT8; // byte to float
 	}
 	return false;
 }
@@ -740,17 +736,17 @@ MeshVertexData * convertVertices(const MeshVertexData & oldVertices, const Verte
 VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & vertexDescs) {
 	VertexDescription result;
 	for(const auto & desc : vertexDescs) {
-		const VertexDescription::attributeContainer_t & attributes = desc.getAttributes();
+		const auto & attributes = desc.getAttributes();
 		for(const auto & attr : attributes) {
 			const VertexAttribute & resultAttr = result.getAttribute(attr.getNameId());
 			if (resultAttr.empty()) {
-				result.appendAttribute(attr.getNameId(), attr.getNumValues(), attr.getDataType(), attr.getNormalize());
+				result.appendAttribute(attr.getNameId(), attr.getDataType(), attr.getNumValues(), attr.isNormalized());
 			} else if (!(attr == resultAttr)) {
-				uint8_t attrTypeSize = getGLTypeSize(attr.getDataType());
-				uint8_t resultAttrTypeSize = getGLTypeSize(resultAttr.getDataType());
+				uint8_t attrTypeSize = getGLTypeSize(getGLType(attr.getDataType()));
+				uint8_t resultAttrTypeSize = getGLTypeSize(getGLType(resultAttr.getDataType()));
 				result.updateAttribute(
-						VertexAttribute(std::max(attr.getNumValues(), resultAttr.getNumValues()),
-								attrTypeSize > resultAttrTypeSize ? attr.getDataType() : resultAttr.getDataType(), attr.getNameId(), attr.getNormalize()&&resultAttr.getNormalize() ));
+						VertexAttribute(attr.getNameId(), attrTypeSize > resultAttrTypeSize ? attr.getDataType() : resultAttr.getDataType(), 
+							std::max(attr.getNumValues(), resultAttr.getNumValues()), attr.isNormalized()&&resultAttr.isNormalized() ));
 			}
 		}
 	}
@@ -764,7 +760,7 @@ void removeColorData(Mesh * m) {
 	MeshVertexData & vertices = m->openVertexData();
 	const VertexDescription & vdo = vertices.getVertexDescription();
 	VertexDescription vdn = vdo;
-	vdn.appendAttribute(VertexAttributeIds::COLOR, 0, 0, false);
+	vdn.appendAttribute(VertexAttributeIds::COLOR, Util::TypeConstant::UINT8, 0, false);
 
 	std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, vdn));
 	vertices.swap(*newVertices.get());
@@ -1521,7 +1517,7 @@ void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringI
 	{
 		VertexDescription vdCopy(vertices.getVertexDescription());
 		const VertexAttribute & vaFrom = vdCopy.getAttribute(from);
-		VertexAttribute vaTo(vaFrom.getNumValues(), vaFrom.getDataType(), to, vaFrom.getNormalize());
+		VertexAttribute vaTo(to, vaFrom.getDataType(), vaFrom.getNumValues(), vaFrom.isNormalized());
 		vdCopy.updateAttribute(vaTo);
 
 		std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, vdCopy));
@@ -1555,7 +1551,7 @@ void calculateTextureCoordinates_projection(Mesh * mesh, Util::StringIdentifier 
 	// add slot for 2 float coordinates
 	if (!vData.getVertexDescription().hasAttribute(attribName)) {
 		VertexDescription newVd = vData.getVertexDescription();
-		newVd.appendAttribute(attribName, 2, GL_FLOAT,false);
+		newVd.appendFloat(attribName, 2, false);
 		std::unique_ptr<MeshVertexData> newVertices(convertVertices(vData, newVd));
 		vData.swap(*newVertices.get());
 	}
@@ -1584,24 +1580,24 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 		if (mesh->getDrawMode() != Mesh::DRAW_TRIANGLES)
 			INVALID_ARGUMENT_EXCEPTION("addTangentVectors: No triangle mesh.");
 
-		if (vertices.getVertexDescription().getAttribute(VertexAttributeIds::POSITION).getDataType() != GL_FLOAT)
+		if (vertices.getVertexDescription().getAttribute(VertexAttributeIds::POSITION).getDataType() != Util::TypeConstant::FLOAT)
 			INVALID_ARGUMENT_EXCEPTION("addTangentVectors: No float positions.");
 
 		if (vertices.getVertexDescription().getAttribute(VertexAttributeIds::NORMAL).empty())
 			INVALID_ARGUMENT_EXCEPTION("addTangentVectors: No normals.");
 
-		if (vertices.getVertexDescription().getAttribute(uvName).getDataType() != GL_FLOAT
+		if (vertices.getVertexDescription().getAttribute(uvName).getDataType() != Util::TypeConstant::FLOAT
 				|| vertices.getVertexDescription().getAttribute(uvName).getNumValues() < 2)
 			INVALID_ARGUMENT_EXCEPTION("addTangentVectors: No or wrong texture coordinates.");
 
 		// add slot for 4 byte tangent vector
 		if (vertices.getVertexDescription().getAttribute(tangentVecName).empty()) {
 			VertexDescription newVd = vertices.getVertexDescription();
-			newVd.appendAttribute(tangentVecName, 4, GL_BYTE, true);
+			newVd.appendAttribute(tangentVecName, Util::TypeConstant::INT8, 4, true);
 			std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, newVd));
 			vertices.swap(*newVertices.get());
 		}
-		if (vertices.getVertexDescription().getAttribute(tangentVecName).getDataType() != GL_BYTE || vertices.getVertexDescription().getAttribute(
+		if (vertices.getVertexDescription().getAttribute(tangentVecName).getDataType() != Util::TypeConstant::INT8 || vertices.getVertexDescription().getAttribute(
 				tangentVecName).getNumValues() != 4)
 			INVALID_ARGUMENT_EXCEPTION("createTextureCoordinates_boxProjection: Wrong tangent format.");
 
@@ -1656,7 +1652,7 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 
 	// -----------------------------------------------------------------------------
 
-	if (normalAttr.getDataType() == GL_FLOAT) {
+	if (normalAttr.getDataType() == Util::TypeConstant::FLOAT) {
 		for (uint32_t i = 0; i < vertices.getVertexCount(); ++i) {
 			const Vec3 normal(reinterpret_cast<float*> (vertices[i] + normalAttr.getOffset()));
 			const Vec3 & t = tan1[i];
@@ -1669,7 +1665,7 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 			tPtr[2] = handedness * static_cast<int8_t> (tan.z());
 			tPtr[3] = handedness;
 		}
-	} else if (normalAttr.getDataType() == GL_BYTE) {
+	} else if (normalAttr.getDataType() == Util::TypeConstant::INT8) {
 		for (uint32_t i = 0; i < vertices.getVertexCount(); ++i) {
 			const int8_t * nPtr = reinterpret_cast<const int8_t*> (vertices[i] + normalAttr.getOffset());
 			const Vec3 normal((Vec3(nPtr[0], nPtr[1], nPtr[2])).normalize());
@@ -1698,7 +1694,7 @@ inline bool isZero(float f, float tolerance=std::numeric_limits<float>::epsilon(
 void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices, float tolerance) {
 	const VertexDescription & vd = m->getVertexDescription();
 	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
-	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+	if (posAttr.getDataType() != Util::TypeConstant::FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
 		WARN("cutMesh: Unsupported vertex format.");
 		return;
 	}
@@ -1853,7 +1849,7 @@ uint8_t getAdjacence(const SplitTriangle& t1, const SplitTriangle& t2, const Ver
 void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_t> tIndices) {
 	const VertexDescription & vd = m->getVertexDescription();
 	const VertexAttribute & posAttr = vd.getAttribute(VertexAttributeIds::POSITION);
-	if (posAttr.getDataType() != GL_FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
+	if (posAttr.getDataType() != Util::TypeConstant::FLOAT || m->getDrawMode() != Mesh::DRAW_TRIANGLES) {
 		WARN("extrudeTriangles: Unsupported vertex format.");
 		return;
 	}

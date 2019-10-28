@@ -199,40 +199,41 @@ void MeshVertexData::bind(RenderingContext & context, bool useVBO) {
 			if(attr.empty())
 				continue;
 			const Util::StringIdentifier nameId=attr.getNameId();
+			const GLenum dataType = getGLType(attr.getDataType());
 
 			if(nameId==VertexAttributeIds::POSITION) {
 				context.enableClientState(GL_VERTEX_ARRAY);
-				glVertexPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glVertexPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::NORMAL) {
 				context.enableClientState(GL_NORMAL_ARRAY);
-				glNormalPointer(attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glNormalPointer(dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::COLOR) {
 				context.enableClientState(GL_COLOR_ARRAY);
-				glColorPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glColorPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD0) {
 				context.enableTextureClientState(GL_TEXTURE0);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD1) {
 				context.enableTextureClientState(GL_TEXTURE1);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD2) {
 				context.enableTextureClientState(GL_TEXTURE2);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD3) {
 				context.enableTextureClientState(GL_TEXTURE3);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD4) {
 				context.enableTextureClientState(GL_TEXTURE4);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD5) {
 				context.enableTextureClientState(GL_TEXTURE5);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD6) {
 				context.enableTextureClientState(GL_TEXTURE6);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD7) {
 				context.enableTextureClientState(GL_TEXTURE7);
-				glTexCoordPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(shader != nullptr) { // ????????does this work?????
 				context.enableVertexAttribArray(attr, vertexPosition, vSize);
 			}
@@ -243,7 +244,7 @@ void MeshVertexData::bind(RenderingContext & context, bool useVBO) {
 				continue;
 			if(attr.getNameId()==VertexAttributeIds::POSITION) {
 				context.enableClientState(GL_VERTEX_ARRAY);
-				glVertexPointer(attr.getNumValues(), attr.getDataType(), vSize, vertexPosition + attr.getOffset());
+				glVertexPointer(attr.getNumValues(), getGLType(attr.getDataType()), vSize, vertexPosition + attr.getOffset());
 				break;
 			}
 		}
