@@ -214,6 +214,10 @@ void RenderingContext::initGLState() {
 
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		
+	}
+	
+	if(glewIsSupported("GL_ARB_compatibility")) {
+		// needs to be enabled if the context was created with compability mode
 		glEnable(GL_POINT_SPRITE);
 	}
 
