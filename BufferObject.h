@@ -52,6 +52,13 @@ class BufferObject {
 		static const uint32_t USAGE_DYNAMIC_DRAW;
 		static const uint32_t USAGE_DYNAMIC_READ;
 		static const uint32_t USAGE_DYNAMIC_COPY;
+		
+		enum class AccessFlag : uint8_t {
+			NO_ACCESS = 0,
+			READ_ONLY = 1,
+			WRITE_ONLY = 2,
+			READ_WRITE = 3
+		};
 	
 	private:
 		//! OpenGL handle for this buffer object.
@@ -156,7 +163,7 @@ class BufferObject {
 		 * @param allowRead Indicates that the returned pointer may be used to read buffer object data.
 		 * @return The mapped data pointer, or <tt>nullptr</tt> if the mapping failed.
 		 */
-		uint8_t* map(uint32_t offset=0, uint32_t size=0, bool allowWrite=true, bool allowRead=true);
+		uint8_t* map(uint32_t offset=0, uint32_t size=0, AccessFlag access=AccessFlag::READ_WRITE);
 		
 		/** 
 		 * Unmaps a previously mapped buffer.

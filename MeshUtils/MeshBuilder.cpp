@@ -176,7 +176,7 @@ MeshBuilder::MeshBuilder() {
 	vData.allocate(1, description);
 	iData.allocate(1);
 	currentVertex.allocate(1, description);
-	acc = new VertexAccessor(currentVertex);
+	acc = VertexAccessor::create(currentVertex);
 	acc->setColor(0, Util::Color4f{1,1,1,1}); // Default color WHITE
 }
 
@@ -184,7 +184,7 @@ MeshBuilder::MeshBuilder(VertexDescription _description) : description(std::move
 	vData.allocate(1, description);
 	iData.allocate(1);
 	currentVertex.allocate(1, description);
-	acc = new VertexAccessor(currentVertex);
+	acc = VertexAccessor::create(currentVertex);
 	acc->setColor(0, Util::Color4f{1,1,1,1}); // Default color WHITE
 }
 
@@ -227,19 +227,19 @@ void MeshBuilder::texCoord0(const Geometry::Vec2 & uv, const Util::StringIdentif
 }
 
 void MeshBuilder::values(const std::vector<float> & v, const Util::StringIdentifier& attr) {
-	acc->setFloats(0, v, attr);
+	acc->writeValues(0, attr, v);
 }
 
 void MeshBuilder::values(const std::vector<uint32_t> & v, const Util::StringIdentifier& attr) {
-	acc->setUInts(0, v, attr);
+	acc->writeValues(0, attr, v);
 }
 
 void MeshBuilder::value(float v, const Util::StringIdentifier& attr) {
-	acc->setFloat(0, v, attr);
+	acc->writeValue(0, attr, v);
 }
 
 void MeshBuilder::value(uint32_t v, const Util::StringIdentifier& attr) {
-	acc->setUInt(0, v, attr);
+	acc->writeValue(0, attr, v);
 }
 
 
@@ -332,10 +332,10 @@ void MeshBuilder::addMesh(Mesh* mesh) {
 	}
 	
 	if(transMat) {
-		VertexAccessor va(vData);
+		auto va = VertexAccessor::create(vData);
 		for(uint32_t i=0; i<mesh->getVertexCount(); ++i) {
-			va.setPosition(i+vSize, transMat->transformPosition(va.getPosition(i+vSize)));
-			va.setNormal(i+vSize, transMat->transformDirection(va.getNormal(i+vSize)));
+			va->setPosition(i+vSize, transMat->transformPosition(va->getPosition(i+vSize)));
+			va->setNormal(i+vSize, transMat->transformDirection(va->getNormal(i+vSize)));
 		}
 	}
 	

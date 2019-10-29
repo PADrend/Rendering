@@ -11,6 +11,9 @@
 #include "BufferObject.h"
 #include "GLHeader.h"
 #include "Helper.h"
+
+#include <Util/Macros.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -179,21 +182,29 @@ void BufferObject::copy(const BufferObject& source, uint32_t sourceOffset, uint3
 	GET_GL_ERROR();
 }
 
-uint8_t* BufferObject::map(uint32_t offset, uint32_t size, bool allowWrite, bool allowRead) {
+uint8_t* BufferObject::map(uint32_t offset, uint32_t size, AccessFlag access) {
+	GLenum gl_access;
+	switch(access) {
+		case AccessFlag::READ_ONLY: gl_access = GL_READ_ONLY; break;
+		case AccessFlag::WRITE_ONLY: gl_access = GL_WRITE_ONLY; break;
+		case AccessFlag::READ_WRITE: gl_access = GL_READ_WRITE; break;
+		default: 
+			WARN("BufferObject::map: Cannot map buffer with access flag NO_ACCESS");
+			return nullptr;
+	}
 	bind(TARGET_COPY_WRITE_BUFFER);
 	uint8_t* ptr = nullptr;
-	GLenum access = (allowWrite ? GL_MAP_WRITE_BIT  : 0) | (allowRead ? GL_MAP_READ_BIT : 0);
 	if(size == 0)
-		ptr = static_cast<uint8_t*>(glMapBuffer(GL_COPY_WRITE_BUFFER, access));
+		ptr = static_cast<uint8_t*>(glMapBuffer(TARGET_COPY_WRITE_BUFFER, gl_access));
 	else
-		ptr = static_cast<uint8_t*>(glMapBufferRange(GL_COPY_WRITE_BUFFER, offset, size, access));
+		ptr = static_cast<uint8_t*>(glMapBufferRange(TARGET_COPY_WRITE_BUFFER, offset, size, gl_access));
 	unbind(TARGET_COPY_WRITE_BUFFER);
 	return ptr;
 }
 
 void BufferObject::unmap() {
 	bind(TARGET_COPY_WRITE_BUFFER);
-	glUnmapBuffer(GL_COPY_WRITE_BUFFER);
+	glUnmapBuffer(TARGET_COPY_WRITE_BUFFER);
 	unbind(TARGET_COPY_WRITE_BUFFER);
 }
 
