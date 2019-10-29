@@ -190,7 +190,16 @@ void RenderingContext::initGLState() {
 	glActiveTexture(GL_TEXTURE0);
 
 	// Do not use deprecated functions in a OpenGL core profile.
-	if(glewIsSupported("GL_ARB_compatibility")) {
+	if(glewIsSupported("GL_VERSION_3_0") || glewIsSupported("GL_ARB_vertex_array_object")) {
+		compabilityMode = false;
+		// Workaround: Create a single vertex array object here.
+		// For the core profile of OpenGL 3.2 or higher this is required,
+		// because glVertexAttribPointer generates an GL_INVALID_OPERATION without it.
+		// In the future, vertex array objects should be integrated into the rendering system.
+		GLuint vertexArrayObject;
+		glGenVertexArrays(1, &vertexArrayObject);
+		glBindVertexArray(vertexArrayObject);
+	} else if(glewIsSupported("GL_ARB_compatibility")) {
 		compabilityMode = true;
 		glEnable(GL_COLOR_MATERIAL);
 
@@ -206,15 +215,6 @@ void RenderingContext::initGLState() {
 		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		
 		glEnable(GL_POINT_SPRITE);
-	} else if(glewIsSupported("GL_VERSION_3_0") || glewIsSupported("GL_ARB_vertex_array_object")) {
-		compabilityMode = false;
-		// Workaround: Create a single vertex array object here.
-		// For the core profile of OpenGL 3.2 or higher this is required,
-		// because glVertexAttribPointer generates an GL_INVALID_OPERATION without it.
-		// In the future, vertex array objects should be integrated into the rendering system.
-		GLuint vertexArrayObject;
-		glGenVertexArrays(1, &vertexArrayObject);
-		glBindVertexArray(vertexArrayObject);
 	}
 
 	// Enable the possibility to write gl_PointSize from the vertex shader.
