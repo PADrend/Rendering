@@ -113,7 +113,7 @@ public:
 		readValues(index, location, reinterpret_cast<float*>(&v), 2);
 		return v;
 	}
-	void setTexCoord(uint32_t index, const Geometry::Vec2& p, Util::StringIdentifier name=VertexAttributeIds::POSITION) {
+	void setTexCoord(uint32_t index, const Geometry::Vec2& p, Util::StringIdentifier name=VertexAttributeIds::TEXCOORD0) {
 		writeValues(index, name, p.getVec(), 2);
 	}
 	void setTexCoord(uint32_t index, const Geometry::Vec2& p, uint16_t location) {
