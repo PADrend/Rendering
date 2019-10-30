@@ -3,7 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	Copyright (C) 2014-2018 Sascha Brandt <sascha@brandt.graphics>
+	Copyright (C) 2014-2019 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -18,13 +18,15 @@
 #include <Util/CountedObjectWrapper.h>
 
 namespace Rendering {
-
+	
+//! @defgroup rendering_resources Resources
+	
 /**
  * Representation of an OpenGL buffer object (BO).
  *
  * @author Benjamin Eikel
  * @date 2012-04-19
- * @ingroup context
+ * @ingroup rendering_resources
  */
 class BufferObject {
 	public:		

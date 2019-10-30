@@ -30,7 +30,10 @@ class MeshDataStrategy;
 class VertexDescription;
 class RenderingContext;
 
-//! @defgroup mesh Meshes
+//! @addtogroup rendering_resources
+//! @{
+//! @defgroup mesh Mesh
+//! @}
 
 /**
  * Class for polygonal meshes.

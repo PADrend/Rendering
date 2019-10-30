@@ -27,7 +27,14 @@
 namespace Rendering {
 class Texture;
 
+
 /** @addtogroup context
+ * @{
+ * @defgroup rendering_parameter Rendering Parameters
+ * @}
+ */
+
+/** @addtogroup rendering_parameter
  * @{
  */
 

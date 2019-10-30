@@ -21,6 +21,7 @@
 
 using namespace Util;
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerNGC::fileExtension = "ngc";
 
@@ -169,4 +170,5 @@ uint8_t StreamerNGC::queryCapabilities(const std::string & extension) {
 	}
 }
 
+}
 }

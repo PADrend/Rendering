@@ -21,6 +21,7 @@
 #include <limits>
 
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerXYZ::fileExtension = "xyz";
 
@@ -250,5 +251,6 @@ void StreamerXYZ::clusterPoints( std::istream & input, std::vector<std::ostream*
 	}
 	std::cout << "Done.\n";
 	
+}
 }
 }

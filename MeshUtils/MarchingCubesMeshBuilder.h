@@ -28,6 +28,7 @@ namespace MeshUtils {
  * Based on tables by Cory Gene Bloyd.
  * The source code is based on the examples on the site "Polygonising a scalar field" from Paul Bourke
  * \see http://paulbourke.net/geometry/polygonise/
+ * @ingroup mesh_builder
  */
 namespace MarchingCubesMeshBuilder {
 

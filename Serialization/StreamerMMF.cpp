@@ -21,6 +21,7 @@
 
 using namespace Util;
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerMMF::fileExtension = "mmf";
 
@@ -282,4 +283,5 @@ uint8_t StreamerMMF::queryCapabilities(const std::string & extension) {
 	}
 }
 
+}
 }

@@ -32,6 +32,10 @@ class MeshIndexData;
 class PositionAttributeAccessor;
 namespace MeshUtils {
 
+/**
+ * Allows to get triangles of a mesh.
+ * @ingroup mesh_accessor
+ */
 class TriangleAccessor : public Util::ReferenceCounter<TriangleAccessor> {
 private:
 	MeshIndexData& indices;

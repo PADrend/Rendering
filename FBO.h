@@ -55,7 +55,7 @@ class Texture;
 		// download a texture to access the pixel data
 		colorTexture->downloadGLTexture();
 	\endcode
-	@ingroup texture
+	@ingroup rendering_resources
 */
 class FBO : public Util::ReferenceCounter<FBO> {
 	public:

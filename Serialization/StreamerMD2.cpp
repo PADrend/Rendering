@@ -20,6 +20,7 @@ using namespace Util;
 using namespace std;
 
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerMD2::fileExtension = "md2";
 
@@ -426,4 +427,5 @@ uint8_t StreamerMD2::queryCapabilities(const std::string & extension) {
 	}
 }
 
+}
 }

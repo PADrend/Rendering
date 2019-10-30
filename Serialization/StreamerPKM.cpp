@@ -15,6 +15,7 @@
 #include <cstdint>
 
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerPKM::fileExtension = "pkm";
 
@@ -90,4 +91,5 @@ uint8_t StreamerPKM::queryCapabilities(const std::string & extension) {
 	}
 }
 
+}
 }

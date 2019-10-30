@@ -18,6 +18,7 @@
 
 using namespace Util;
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerMVBO::fileExtension = "mvbo";
 
@@ -103,4 +104,5 @@ uint8_t StreamerMVBO::queryCapabilities(const std::string & extension) {
 	}
 }
 
+}
 }

@@ -48,6 +48,9 @@ class VertexDescription;
 namespace MeshUtils {
 class MeshBuilder;
 
+//! @addtogroup mesh_builder
+//! @{
+
 /**
  * Return the mesh of a three-dimensional, axis-aligned box.
  * Positions, and normals are supported.
@@ -279,6 +282,7 @@ Mesh* createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::P
 //! Adds a mesh from bitmap to the given meshBuilder. \see createMeshFromBitmaps(...)
 void addMeshFromBitmaps(MeshBuilder& mb, Util::Reference<Util::PixelAccessor> depth, Util::Reference<Util::PixelAccessor> color = nullptr, Util::Reference<Util::PixelAccessor> normals = nullptr);
 
+//! @}
 }
 } /* Rendering */
 

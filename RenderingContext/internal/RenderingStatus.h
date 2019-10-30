@@ -25,6 +25,7 @@ namespace Rendering {
 class Shader;
 
 //! (internal) Used by shaders and the renderingContext to track the state of shader (and openGL) dependent properties.
+//! @ingroup context
 class RenderingStatus {
 
 	//!	@name General

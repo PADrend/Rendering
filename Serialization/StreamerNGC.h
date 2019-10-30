@@ -14,6 +14,7 @@
 #include "AbstractRenderingStreamer.h"
 
 namespace Rendering {
+namespace Serialization {
 
 /**
 
@@ -55,6 +56,7 @@ class StreamerNGC : public AbstractRenderingStreamer {
 		static const char * const fileExtension;
 };
 
+}
 }
 
 #endif /* RENDERING_STREAMERNGC_H_ */

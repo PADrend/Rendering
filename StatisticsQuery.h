@@ -20,7 +20,7 @@ class RenderingContext;
  * @see https://www.opengl.org/registry/specs/ARB/pipeline_statistics_query.txt
  * @author Benjamin Eikel
  * @date 2016-01-08
- * @ingroup helper
+ * @ingroup rendering_helper
  */
 class StatisticsQuery : public QueryObject {
 	private:

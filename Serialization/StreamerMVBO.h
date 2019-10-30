@@ -15,6 +15,7 @@
 #include <cstdint>
 
 namespace Rendering {
+namespace Serialization {
 
 /**
 
@@ -61,6 +62,7 @@ class StreamerMVBO : public AbstractRenderingStreamer {
 		uint32_t read(std::istream & in)const;
 };
 
+}
 }
 
 #endif /* RENDERING_STREAMERMVBO_H_ */

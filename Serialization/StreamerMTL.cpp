@@ -14,6 +14,7 @@
 #include <Util/StringUtils.h>
 
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerMTL::fileExtension = "mtl";
 
@@ -116,4 +117,5 @@ uint8_t StreamerMTL::queryCapabilities(const std::string & extension) {
 	}
 }
 
+}
 }

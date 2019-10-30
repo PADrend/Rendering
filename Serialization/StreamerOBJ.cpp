@@ -24,6 +24,7 @@
 using namespace Util;
 
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerOBJ::fileExtension = "obj";
 
@@ -351,4 +352,5 @@ uint8_t StreamerOBJ::queryCapabilities(const std::string & extension) {
 	}
 }
 
+}
 }

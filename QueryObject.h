@@ -20,7 +20,7 @@ namespace Rendering {
  * @see OcclusionQuery.h
  * @author Benjamin Eikel, Claudius Jähn
  * @date 2013-03-21
- * @ingroup helper
+ * @ingroup rendering_helper
  */
 class QueryObject {
 	public:

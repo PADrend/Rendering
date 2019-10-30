@@ -23,6 +23,7 @@ template<typename Type> class WrapperAttribute;
 namespace Rendering {
 class MeshIndexData;
 class MeshVertexData;
+namespace Serialization {
 
 struct MD2Header
 {
@@ -138,6 +139,7 @@ class StreamerMD2 : public AbstractRenderingStreamer {
 
 
 };
+}
 }
 
 #endif // LoaderMD2_H

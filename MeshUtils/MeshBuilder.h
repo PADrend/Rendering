@@ -23,6 +23,13 @@
 #include <cstdint>
 #include <memory>
 
+/** @addtogroup mesh
+ * @{
+ * @defgroup mesh_builder Mesh Builder
+ * Mesh builders can be used to create meshes.
+ * @}
+ */
+ 
 namespace Geometry {
 template<typename value_t> class _Box;
 typedef _Box<float> Box;
@@ -56,6 +63,9 @@ class VertexAccessor;
 
 namespace MeshUtils {
 
+/** Utility class that allows building meshes
+* @ingroup mesh_builder
+*/
 class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
 	public:
 		//! Deprecated \see MeshUtils::createBox(...)

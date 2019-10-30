@@ -16,6 +16,7 @@ class FileName;
 }
 
 namespace Rendering {
+namespace Serialization {
 
 class StreamerXYZ : public AbstractRenderingStreamer {
 	public:
@@ -42,6 +43,7 @@ class StreamerXYZ : public AbstractRenderingStreamer {
 		static const char * const fileExtension;
 };
 
+}
 }
 
 #endif /* RENDERING_STREAMERXYZ_H_ */

@@ -21,6 +21,7 @@
 
 namespace Rendering {
 class Mesh;
+namespace Serialization {
 
 /**
  * Interface for classes that are capable of converting between meshes and streams, or textures and streams.
@@ -29,7 +30,7 @@ class Mesh;
  * @author Benjamin Eikel
  * @date 2011-09-08
  */
-class AbstractRenderingStreamer : public Util::AbstractStreamer {
+class AbstractRenderingStreamer : public Util::Serialization::AbstractStreamer {
 	public:
 		virtual ~AbstractRenderingStreamer() {
 		}
@@ -97,10 +98,11 @@ class AbstractRenderingStreamer : public Util::AbstractStreamer {
 
 	protected:
 		//! Creation is only possible in subclasses.
-		AbstractRenderingStreamer() : Util::AbstractStreamer() {
+		AbstractRenderingStreamer() : Util::Serialization::AbstractStreamer() {
 		}
 };
 
+}
 }
 
 #endif /* RENDERING_ABSTRACTRENDERINGSTREAMER_H_ */

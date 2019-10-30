@@ -31,7 +31,7 @@ namespace MeshUtils {
 /**
  * class QuadtreeMeshBuilder provides a static function for creating a mesh from the specified
  * depth-texture, color-texture and normal-texture.
- *
+ * @ingroup mesh_builder
  */
 class QuadtreeMeshBuilder {
 public:

@@ -25,7 +25,7 @@
 
 namespace Rendering {
 
-/** @addtogroup mesh
+/** @addtogroup mesh_accessor
  * @{
  */
  

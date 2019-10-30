@@ -35,6 +35,8 @@ class Mesh;
 class VertexDescription;
 namespace MeshUtils {
 class MeshBuilder;
+
+//! @ingroup mesh_builder
 namespace WireShapes {
 
 /**

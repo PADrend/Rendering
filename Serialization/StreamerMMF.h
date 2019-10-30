@@ -15,6 +15,7 @@
 #include <cstdint>
 
 namespace Rendering {
+namespace Serialization {
 
 /**
 
@@ -117,6 +118,7 @@ class StreamerMMF : public AbstractRenderingStreamer {
 		static void write(std::ostream & out, uint32_t x);
 };
 
+}
 }
 
 #endif /* RENDERING_STREAMERMMF_H_ */

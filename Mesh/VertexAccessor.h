@@ -28,13 +28,21 @@
 
 namespace Rendering {
 class Mesh;
-	
+
+/** @addtogroup mesh
+ * @{
+ * @defgroup mesh_accessor Mesh Accessors
+ * Mesh accessors should be used when modifying the vertex data of an existing mesh.
+ * @}
+ */
+
 /**
  * Utility class to access all vertex attributes of a mesh.
  * Directly maps the vertex data of a mesh in GPU memory if it uploaded.
  *
  * \note Do not upload or render the mesh while the Accessor is active.
  * \see VertexAttributeAccessor
+ * @ingroup mesh_accessor
  */
 class VertexAccessor : public Util::ResourceAccessor {
 private:

@@ -20,6 +20,8 @@ namespace Rendering {
 class Mesh;
 namespace MeshUtils {
 class MeshBuilder;
+
+//! @ingroup mesh_builder
 namespace PlatonicSolids {
 
 

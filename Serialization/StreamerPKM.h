@@ -14,6 +14,7 @@
 #include "AbstractRenderingStreamer.h"
 
 namespace Rendering {
+namespace Serialization {
 
 /**
  * Loader for the Ericsson Texture Compression (ETC) format (PKM 10).
@@ -37,6 +38,7 @@ class StreamerPKM : public AbstractRenderingStreamer {
 		static const char * const fileExtension;
 };
 
+}
 }
 
 #endif /* RENDERING_STREAMERPKM_H_ */

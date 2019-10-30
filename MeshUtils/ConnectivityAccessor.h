@@ -59,6 +59,7 @@ namespace MeshUtils {
  * c1 - corner of t0 and next triangle corner of c0 (see getNextTriangleCorner)
  * c2 - corner of v1 and next vertex corner of c0 (see getNextVertexCorner)
  * @endverbatim
+ * @ingroup mesh_accessor
  */
 class ConnectivityAccessor : public Util::ReferenceCounter<ConnectivityAccessor> {
 private:

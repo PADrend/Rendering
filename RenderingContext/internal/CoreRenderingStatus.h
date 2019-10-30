@@ -19,6 +19,7 @@
 namespace Rendering {
 
 //! (internal) Used by the renderingContext to track changes made to the shader independent core-state of OpenGL.
+//! @ingroup context
 class CoreRenderingStatus {
 	//!	@name Construction
 	//	@{

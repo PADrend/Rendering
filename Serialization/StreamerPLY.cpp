@@ -26,6 +26,7 @@
 #include <vector>
 
 namespace Rendering {
+namespace Serialization {
 
 const char * const StreamerPLY::fileExtension = "ply";
 
@@ -762,4 +763,5 @@ uint8_t StreamerPLY::queryCapabilities(const std::string & extension) {
 	}
 }
 
+}
 }

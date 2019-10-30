@@ -14,6 +14,7 @@
 #include "AbstractRenderingStreamer.h"
 
 namespace Rendering {
+namespace Serialization {
 
 class StreamerOBJ : public AbstractRenderingStreamer {
 	public:
@@ -28,6 +29,7 @@ class StreamerOBJ : public AbstractRenderingStreamer {
 		static uint8_t queryCapabilities(const std::string & extension);
 		static const char * const fileExtension;
 };
+}
 }
 
 #endif /* RENDERING_STREAMEROBJ_H_ */

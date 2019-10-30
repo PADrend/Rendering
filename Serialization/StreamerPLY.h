@@ -14,6 +14,7 @@
 #include "AbstractRenderingStreamer.h"
 
 namespace Rendering {
+namespace Serialization {
 
 class StreamerPLY : public AbstractRenderingStreamer {
 	public:
@@ -31,6 +32,7 @@ class StreamerPLY : public AbstractRenderingStreamer {
 		static const char * const fileExtension;
 };
 
+}
 }
 
 #endif /* RENDERING_STREAMERPLY_H_ */

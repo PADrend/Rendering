@@ -17,8 +17,10 @@
 #include <iosfwd>
 
 namespace Rendering {
+	
+//! @defgroup rendering_helper Helper
 
-/** @addtogroup helper
+/** @addtogroup rendering_helper
  * @{
  */
  
