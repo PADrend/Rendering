@@ -91,6 +91,7 @@ void StreamerMMF::readVertexData(Mesh * mesh, Reader & in) {
 		uint32_t numValues = in.read_uint32();
 		uint32_t glType = in.read_uint32();
 		uint32_t extLength = in.read_uint32();
+		bool normalized = false;
 		std::string name;
 
 		switch(attrId) {
@@ -101,11 +102,13 @@ void StreamerMMF::readVertexData(Mesh * mesh, Reader & in) {
 				}
 			case 0x01: {
 					static const std::string s( VertexAttributeIds::NORMAL.toString() );
+					normalized = true;
 					name = s;
 					break;
 				}
 			case 0x02: {
 					static const std::string s( VertexAttributeIds::COLOR.toString() );
+					normalized = glType == getGLType(Util::TypeConstant::INT8) || glType == getGLType(Util::TypeConstant::UINT8);
 					name = s;
 					break;
 				}
@@ -157,7 +160,7 @@ void StreamerMMF::readVertexData(Mesh * mesh, Reader & in) {
 		if(name.empty())
 			WARN(warningPrefix+"Found unnamed vertex attribute.");
 
-		vd.appendAttribute(name,getAttributeType(glType),numValues);
+		vd.appendAttribute(name,getAttributeType(glType),numValues,normalized);
 //        vd.setData(index, numValues, glType);
 
 	}

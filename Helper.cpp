@@ -189,7 +189,7 @@ void outputGLInformation(std::ostream & output) {
 	GLint profile;
 	glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
 	output << "OpenGL version: " << glGetString(GL_VERSION);
-	output << " (" << ((profile|GL_CONTEXT_COMPATIBILITY_PROFILE_BIT)>0 ? "compability" : "core") << ")" << '\n';
+	output << " (" << ((profile&GL_CONTEXT_COMPATIBILITY_PROFILE_BIT)>0 ? "compability" : "core") << ")" << '\n';
 	output << "OpenGL shading language version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << '\n';
 }
 

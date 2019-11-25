@@ -39,5 +39,28 @@ void main() {
 	return Shader::createShader(vertexProgram, fragmentProgram, Shader::USE_GL | Shader::USE_UNIFORMS);
 }
 
+Util::Reference<Shader> createDefaultShader() {
+	const std::string vertexProgram(
+R"***(#version 130
+in vec3 sg_Position;
+in vec4 sg_Color;
+uniform mat4 sg_matrix_modelToClipping;
+out vec4 vs_color;
+void main() {
+	vs_color = sg_Color;
+	gl_Position = sg_matrix_modelToClipping * vec4(sg_Position, 1.0);
+}
+)***");
+	const std::string fragmentProgram(
+R"***(#version 130
+in vec4 vs_color;
+out vec4 fs_color;
+void main() {
+	fs_color = vs_color;
+}
+)***");
+	return Shader::createShader(vertexProgram, fragmentProgram, Shader::USE_GL | Shader::USE_UNIFORMS);
+}
+
 }
 }

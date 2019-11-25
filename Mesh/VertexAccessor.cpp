@@ -16,18 +16,10 @@
 
 namespace Rendering {
 
-static Util::ResourceFormat convert(const VertexDescription& vd) {
-	Util::ResourceFormat format;
-	for(const auto& attr : vd.getAttributes()) {
-		format.appendAttribute(attr.getNameId(), getAttributeType(attr.getDataType()), attr.getNumValues(), attr.getNormalize());
-	}
-	return format;
-}
-
 VertexAccessor::VertexAccessor(MeshVertexData& _vData, uint8_t* ptr) : 
 	Util::ResourceAccessor(ptr, 
 		_vData.getVertexCount() * _vData.getVertexDescription().getVertexSize(), 
-		convert(_vData.getVertexDescription())
+		_vData.getVertexDescription()
 	), vData(_vData) { }
 
 VertexAccessor::~VertexAccessor() {
