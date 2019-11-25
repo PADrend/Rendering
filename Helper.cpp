@@ -184,7 +184,10 @@ Util::TypeConstant getAttributeType(uint32_t glType) {
 void outputGLInformation(std::ostream & output) {
 	output << "OpenGL vendor: " << glGetString(GL_VENDOR) << '\n';
 	output << "OpenGL renderer: " << glGetString(GL_RENDERER) << '\n';
-	output << "OpenGL version: " << glGetString(GL_VERSION) << '\n';
+	GLint profile;
+	glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
+	output << "OpenGL version: " << glGetString(GL_VERSION);
+	output << " (" << ((profile|GL_CONTEXT_COMPATIBILITY_PROFILE_BIT)>0 ? "compability" : "core") << ")" << '\n';
 	output << "OpenGL shading language version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << '\n';
 }
 
