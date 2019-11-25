@@ -169,10 +169,10 @@ uint32_t getGLType(Util::TypeConstant type) {
 Util::TypeConstant getAttributeType(uint32_t glType) {
 	switch (static_cast<GLenum>(glType)) {
 		case GL_UNSIGNED_BYTE: return Util::TypeConstant::UINT8;
-		case GL_BYTE: return Util::TypeConstant::UINT16;
-		case GL_UNSIGNED_SHORT: return Util::TypeConstant::UINT32;
-		case GL_SHORT: return Util::TypeConstant::INT8;
-		case GL_UNSIGNED_INT: return Util::TypeConstant::INT16;
+		case GL_UNSIGNED_SHORT: return Util::TypeConstant::UINT16;
+		case GL_UNSIGNED_INT: return Util::TypeConstant::UINT32;
+		case GL_BYTE: return Util::TypeConstant::INT8;
+		case GL_SHORT: return Util::TypeConstant::INT16;
 		case GL_INT: return Util::TypeConstant::INT32;
 		case GL_FLOAT: return Util::TypeConstant::FLOAT;
 		case GL_DOUBLE: return Util::TypeConstant::DOUBLE;
