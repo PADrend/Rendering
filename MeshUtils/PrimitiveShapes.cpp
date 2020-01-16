@@ -470,7 +470,7 @@ Mesh* createHexGrid(const VertexDescription& vd, float width, float height, uint
 
 void addVoxelMesh(MeshBuilder& mb, const Util::PixelAccessor& colorAcc, uint32_t depth) {
 	//Util::Reference<Util::PixelAccessor> colorAcc = Util::PixelAccessor::create(std::move(voxelBitmap));
-	if( colorAcc.getPixelFormat().getNumComponents() < 4 ){
+	if( colorAcc.getPixelFormat().getComponentCount() < 4 ){
 		WARN("createVoxelMesh: unsupported color texture format. Requires 4 components.");
 		return;
 	}

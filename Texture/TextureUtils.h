@@ -28,7 +28,7 @@ namespace Util {
 class Bitmap;
 class FileName;
 class PixelAccessor;
-class PixelFormat;
+class AttributeFormat;
 }
 
 namespace Rendering {
@@ -41,8 +41,8 @@ namespace TextureUtils {
 
 const unsigned int RAW_16BIT_BW = 0;
 
-PixelFormatGL pixelFormatToGLPixelFormat(const Util::PixelFormat & pixelFormat);
-Util::PixelFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat);
+PixelFormatGL pixelFormatToGLPixelFormat(const Util::AttributeFormat & pixelFormat);
+Util::AttributeFormat glPixelFormatToPixelFormat(const PixelFormatGL& glPixelFormat);
 uint32_t textureTypeToGLTextureType(TextureType type);
 
 Util::Reference<Texture> createStdCubeTexture(uint32_t width, bool alpha);
