@@ -1,6 +1,6 @@
 /*
 	This file is part of the Rendering library.
-	Copyright (C) 2018-2019 Sascha Brandt <sascha@brandt.graphics>
+	Copyright (C) 2018-2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the
@@ -47,7 +47,7 @@ class Mesh;
 class VertexAccessor : public Util::ResourceAccessor {
 private:
 	MeshVertexData& vData;
-	VertexAccessor(MeshVertexData& _vData, uint8_t* ptr);
+	explicit VertexAccessor(MeshVertexData& _vData, uint8_t* ptr);
 public:	
 	virtual ~VertexAccessor();
 	
