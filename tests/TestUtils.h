@@ -14,7 +14,7 @@
 
 class TestUtils {
 public:
-	static std::unique_ptr<Util::UI::Window> window;
+	static Util::Reference<Util::UI::Window> window;
 };
 
 #endif /* TESTUTILS_H_ */

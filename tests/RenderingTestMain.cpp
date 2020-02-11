@@ -18,7 +18,7 @@
 
 #include <memory>
 
-std::unique_ptr<Util::UI::Window> TestUtils::window;
+Util::Reference<Util::UI::Window> TestUtils::window;
 
 int main( int argc, char* argv[] ) {
   Util::init();
@@ -35,6 +35,6 @@ int main( int argc, char* argv[] ) {
 	
 	auto result = Catch::Session().run( argc, argv );
 	
-	TestUtils::window.release();
+	TestUtils::window = nullptr;
 	return result;
 }
