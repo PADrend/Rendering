@@ -57,16 +57,18 @@ PixelFormatGL pixelFormatToGLPixelFormat(const Util::AttributeFormat & pixelForm
 			glf.glInternalFormat = GL_RG; 
 		} else if( pixelFormat.getComponentCount() == 3 && pixelFormat.getInternalType() == PixelFormat::INTERNAL_TYPE_BGRA ){
 			glf.glLocalDataFormat = GL_BGR;
-			glf.glInternalFormat = GL_BGR; 
-		} else if( pixelFormat == Util::PixelFormat::RGBA ){
+			glf.glInternalFormat = GL_BGR;
+		} else if( pixelFormat.getComponentCount() == 3 ){
+			glf.glLocalDataFormat = GL_RGB;
+			glf.glInternalFormat = GL_RGB;
+		} else if( pixelFormat.getComponentCount() == 4 && pixelFormat.getInternalType() == PixelFormat::INTERNAL_TYPE_BGRA ){
+			glf.glLocalDataFormat = GL_BGRA;
+			glf.glInternalFormat = GL_BGRA;
+		} else if( pixelFormat.getComponentCount() == 4 ){
 			glf.glLocalDataFormat = GL_RGBA;
 			glf.glInternalFormat = GL_RGBA; 
-		} else
-#endif
-		if( pixelFormat.getComponentCount() == 3 ){
-			glf.glLocalDataFormat = GL_RGB;
-			glf.glInternalFormat = GL_RGB; // GL_RGB8????
 		}
+#endif
 	}
 #if defined(LIB_GL)
 	else if(pixelFormat.getDataType() == Util::TypeConstant::UINT32){

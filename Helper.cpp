@@ -215,11 +215,12 @@ float readDepthValue(int32_t x, int32_t y) {
 	return z;
 }
 
-#define STDCALL 
 
 #if defined(LIB_GLEW) && defined(LIB_GL) && defined(GL_ARB_debug_output)
 #if defined(_WIN32)
 #define STDCALL __attribute__((__stdcall__))
+#else
+#define STDCALL 
 #endif
 
 static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, const void * ) STDCALL;
