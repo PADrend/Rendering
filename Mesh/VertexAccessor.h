@@ -95,8 +95,8 @@ public:
 		const auto data = readValues<float>(index, location, 4);
 		return Util::Color4f(data);
 	}
-	Util::Color4f getColor4ub(uint32_t index, uint16_t location) const {
-		return Util::Color4f(getColor4f(index, location));
+	Util::Color4ub getColor4ub(uint32_t index, uint16_t location) const {
+		return Util::Color4ub(getColor4f(index, location));
 	}
 	void setColor(uint32_t index, const Util::Color4f& c, Util::StringIdentifier name=VertexAttributeIds::COLOR) {
 		writeValues(index, name, c.data(), 4);

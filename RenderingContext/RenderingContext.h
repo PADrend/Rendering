@@ -426,6 +426,7 @@ public:
 	void dispatchComputeIndirect(size_t offset=0);
 	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices);
 	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<std::string>& names);
+	void drawMeshTask(uint32_t count=1, uint32_t first=0);
 
 	//! (internal) called by Shader::setUniform(...)
 	void _setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced);

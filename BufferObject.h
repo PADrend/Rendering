@@ -152,6 +152,7 @@ class BufferObject {
 		
 		void clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
 		void clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
+		void clear();
     
     void copy(const BufferObject& source, uint32_t sourceOffset, uint32_t targetOffset, uint32_t size);
 		

@@ -173,6 +173,10 @@ void BufferObject::clear(uint32_t internalFormat, uint32_t format, uint32_t type
 #endif
 }
 
+void BufferObject::clear() {
+	clear(GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT);
+}
+
 void BufferObject::copy(const BufferObject& source, uint32_t sourceOffset, uint32_t targetOffset, uint32_t size) {
 	source.bind(TARGET_COPY_READ_BUFFER);
 	bind(TARGET_COPY_WRITE_BUFFER);

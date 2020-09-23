@@ -38,8 +38,8 @@ endif()
 if(GLIMPLEMENTATION_FOUND)  
   FetchContent_Declare(
     glew
-    URL http://downloads.sourceforge.net/project/glew/glew/2.1.0/glew-2.1.0.tgz
-  	URL_MD5 "b2ab12331033ddfaa50dc39345343980"
+    URL http://downloads.sourceforge.net/project/glew/glew/2.2.0/glew-2.2.0.tgz
+  	URL_MD5 "3579164bccaef09e36c0af7f4fd5c7c7"
   )
 
   FetchContent_GetProperties(glew)

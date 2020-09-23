@@ -38,6 +38,8 @@ class ShaderObjectInfo {
 		static const uint32_t SHADER_STAGE_TESS_CONTROL;
 		static const uint32_t SHADER_STAGE_TESS_EVALUATION;
 		static const uint32_t SHADER_STAGE_COMPUTE;
+		static const uint32_t SHADER_STAGE_TASK;
+		static const uint32_t SHADER_STAGE_MESH;
 	private:
 		uint32_t type;
 		std::string code;
@@ -96,6 +98,20 @@ class ShaderObjectInfo {
 		 */
 		static ShaderObjectInfo createCompute(const std::string & code);
 
+		/**
+		 * Create a MeshShaderObject from the given code
+		 * 
+		 * @note Inserts "#define SG_MESH_SHADER" before the first line.
+		 */
+		static ShaderObjectInfo createMesh(const std::string & code);
+
+		/**
+		 * Create a TaskShaderObject from the given code
+		 * 
+		 * @note Inserts "#define SG_TASK_SHADER" before the first line.
+		 */
+		static ShaderObjectInfo createTask(const std::string & code);
+
 		//! Load a VertexShaderObject from the given file.
 		static ShaderObjectInfo loadVertex(const Util::FileName & file);
 
@@ -107,6 +123,12 @@ class ShaderObjectInfo {
 
 		//! Load a ComputeShaderObject from the given file.
 		static ShaderObjectInfo loadCompute(const Util::FileName & file);
+
+		//! Load a MeshShaderObject from the given file.
+		static ShaderObjectInfo loadMesh(const Util::FileName & file);
+
+		//! Load a TaskShaderObject from the given file.
+		static ShaderObjectInfo loadTask(const Util::FileName & file);
 	
 		const Util::FileName & getFileName() const { return filename; }
 	private:

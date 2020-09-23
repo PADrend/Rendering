@@ -119,6 +119,7 @@ public:
 	void position(const Geometry::Vec4 & v, const Util::StringIdentifier& attr=VertexAttributeIds::POSITION);
 	void normal(const Geometry::Vec3f & n, const Util::StringIdentifier& attr=VertexAttributeIds::NORMAL);
 	void normal(const Geometry::Vec3b & n, const Util::StringIdentifier& attr=VertexAttributeIds::NORMAL);
+	void normal(const Geometry::Vec4 & n, const Util::StringIdentifier& attr=VertexAttributeIds::NORMAL);
 	void color(const Util::Color4f & c, const Util::StringIdentifier& attr=VertexAttributeIds::COLOR);
 	void color(const Util::Color4ub & c, const Util::StringIdentifier& attr=VertexAttributeIds::COLOR);
 	void texCoord0(const Geometry::Vec2 & uv, const Util::StringIdentifier& attr=VertexAttributeIds::TEXCOORD0);

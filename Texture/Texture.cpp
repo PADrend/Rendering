@@ -43,7 +43,7 @@ uint32_t Texture::Format::getPixelSize()const{
 #ifdef LIB_GL
 		case GL_RG:
 		case GL_RG_INTEGER:
-			pixelSize*=4;
+			pixelSize*=2;
 			break;
 #endif
 
@@ -73,7 +73,7 @@ uint32_t Texture::Format::getPixelSize()const{
 			//pixelSize*=1;
 			break;
 		default:
-			throw std::runtime_error("Format::getPixelSize: Unsupported format.");
+			throw std::runtime_error("Format::getPixelSize: Unsupported format " + std::to_string(pixelFormat.glLocalDataFormat) + ".");
 	}
 	return pixelSize;
 }

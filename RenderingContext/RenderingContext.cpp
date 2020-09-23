@@ -1121,6 +1121,20 @@ void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::v
 	}
 }
 
+void RenderingContext::drawMeshTask(uint32_t count, uint32_t first) {
+	static const bool support = isExtensionSupported("GL_NV_mesh_shader");
+	#if defined(LIB_GL) and defined(GL_NV_mesh_shader)
+		if(!getActiveShader()) {
+			WARN("drawMeshTask: There is no active shader.");
+		} else if(support) {
+			applyChanges();
+			glDrawMeshTasksNV(first, count);
+			GET_GL_ERROR();
+		} else
+	#endif
+	WARN("drawMeshTask: Mesh shaders are not supported.");
+}
+
 void RenderingContext::_setUniformOnShader(Shader * shader, const Uniform & uniform, bool warnIfUnused, bool forced) {
 	shader->_getUniformRegistry()->setUniform(uniform, warnIfUnused, forced);
 	if(immediate && getActiveShader() == shader)
