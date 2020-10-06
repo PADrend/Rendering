@@ -27,13 +27,13 @@ namespace Rendering {
  */
 class VertexAttribute {
 	public:
-		VertexAttribute();
-		VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId, bool _normalize, bool _convertToFloat = true);
+		RENDERINGAPI VertexAttribute();
+		RENDERINGAPI VertexAttribute(uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId, bool _normalize, bool _convertToFloat = true);
 		bool operator==(const VertexAttribute & other)const{
 			return nameId==other.nameId && offset==other.offset && numValues==other.numValues && dataType==other.dataType && normalize==other.normalize;
 		}
-		bool operator<(const VertexAttribute & other)const;
-		std::string toString()const;
+		RENDERINGAPI bool operator<(const VertexAttribute & other)const;
+		RENDERINGAPI std::string toString()const;
 
 		bool empty()const					{	return numValues==0;	}
 		uint16_t getOffset()const			{	return offset;	}
@@ -45,7 +45,7 @@ class VertexAttribute {
 		const std::string & getName()const	{	return name;	}
 		bool getConvertToFloat()const			{	return convertToFloat;	}
 	private:
-		VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name, bool _normalize, bool _convertToFloat = true);
+		RENDERINGAPI VertexAttribute(uint16_t _offset,uint8_t _numValues, uint32_t _dataType, Util::StringIdentifier _nameId,std::string _name, bool _normalize, bool _convertToFloat = true);
 		friend class VertexDescription;
 		uint16_t offset;
 		uint16_t dataSize;

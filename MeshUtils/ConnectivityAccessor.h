@@ -70,15 +70,15 @@ private:
 	std::vector<uint32_t> vertexCorners;
 	std::vector<uint32_t> triangleNextCorners;
 protected:
-	void assertCornerRange(uint32_t cIndex) const;
-	void assertVertexRange(uint32_t vIndex) const;
-	void assertTriangleRange(uint32_t tIndex) const;
-	ConnectivityAccessor(Mesh* mesh);
+	RENDERINGAPI void assertCornerRange(uint32_t cIndex) const;
+	RENDERINGAPI void assertVertexRange(uint32_t vIndex) const;
+	RENDERINGAPI void assertTriangleRange(uint32_t tIndex) const;
+	RENDERINGAPI ConnectivityAccessor(Mesh* mesh);
 public:
 	/*! (static factory)
 		Create a ConnectivityAccessor for the given Mesh.
 		If no Accessor can be created, an std::invalid_argument exception is thrown. */
-	static Util::Reference<ConnectivityAccessor> create(Mesh* mesh);
+	RENDERINGAPI static Util::Reference<ConnectivityAccessor> create(Mesh* mesh);
 
 	virtual ~ConnectivityAccessor() {}
 
@@ -87,14 +87,14 @@ public:
 	 * @param vIndex the vertex index
 	 * @return the vertex position
 	 */
-	Geometry::Vec3 getVertex(uint32_t vIndex) const;
+	RENDERINGAPI Geometry::Vec3 getVertex(uint32_t vIndex) const;
 
 	/**
 	 * Return the three vertex indices of a triangle.
 	 * @param tIndex the triangle index
 	 * @return a tuple of 3 vertex indices
 	 */
-	TriangleAccessor::TriangleIndices_t getTriangle(uint32_t tIndex) const;
+	RENDERINGAPI TriangleAccessor::TriangleIndices_t getTriangle(uint32_t tIndex) const;
 
 	/**
 	 * Return the corner joining a vertex with a triangle
@@ -102,63 +102,63 @@ public:
 	 * @param tIndex the triangle index
 	 * @return the corner index joining the vertex with the triangle
 	 */
-	uint32_t getCorner(uint32_t vIndex, uint32_t tIndex) const;
+	RENDERINGAPI uint32_t getCorner(uint32_t vIndex, uint32_t tIndex) const;
 
 	/**
 	 * Return one of the corners incident to a vertex
 	 * @param vIndex the vertex index
 	 * @return the corner index incident to the vertex
 	 */
-	uint32_t getVertexCorner(uint32_t vIndex) const;
+	RENDERINGAPI uint32_t getVertexCorner(uint32_t vIndex) const;
 
 	/**
 	 * Return one of the corners of a triangle.
 	 * @param tIndex the triangle index
 	 * @return the corner index incident to the triangle
 	 */
-	uint32_t getTriangleCorner(uint32_t tIndex) const;
+	RENDERINGAPI uint32_t getTriangleCorner(uint32_t tIndex) const;
 
 	/**
 	 * Return the vertex associated with a corner.
 	 * @param cIndex the corner index
 	 * @return the vertex index associated with the corner.
 	 */
-	uint32_t getCornerVertex(uint32_t cIndex) const;
+	RENDERINGAPI uint32_t getCornerVertex(uint32_t cIndex) const;
 
 	/**
 	 * Return the triangle associated with a corner.
 	 * @param cIndex the corner index
 	 * @return the triangle index associated with the corner.
 	 */
-	uint32_t getCornerTriangle(uint32_t cIndex) const;
+	RENDERINGAPI uint32_t getCornerTriangle(uint32_t cIndex) const;
 
 	/**
 	 * Return the next corner incident on the vertex associated with a corner.
 	 * @param cIndex the corner index
 	 * @return the next corner index incident on the vertex associated with the corner
 	 */
-	uint32_t getNextVertexCorner(uint32_t cIndex) const;
+	RENDERINGAPI uint32_t getNextVertexCorner(uint32_t cIndex) const;
 
 	/**
 	 * Return the next corner within the triangle associated with a corner.
 	 * @param cIndex the corner index
 	 * @return the next corner within the triangle associated with the corner.
 	 */
-	uint32_t getNextTriangleCorner(uint32_t cIndex) const;
+	RENDERINGAPI uint32_t getNextTriangleCorner(uint32_t cIndex) const;
 
 	/**
 	 * Return the triangles that are adjacent to a vertex.
 	 * @param vIndex the vertex index
 	 * @return list of adjacent triangle indices
 	 */
-	std::vector<uint32_t> getVertexAdjacentTriangles(uint32_t vIndex) const;
+	RENDERINGAPI std::vector<uint32_t> getVertexAdjacentTriangles(uint32_t vIndex) const;
 
 	/**
 	 * Return the vertices that are adjacent to a vertex.
 	 * @param vIndex the vertex index
 	 * @return list of adjacent vertex indices
 	 */
-	std::vector<uint32_t> getVertexAdjacentVertices(uint32_t vIndex) const;
+	RENDERINGAPI std::vector<uint32_t> getVertexAdjacentVertices(uint32_t vIndex) const;
 
 	/**
 	 * Return the triangles that share an edge with a triangle.
@@ -166,7 +166,7 @@ public:
 	 * @param tIndex the triangle index
 	 * @return list of adjacent triangle indices
 	 */
-	std::vector<uint32_t> getAdjacentTriangles(uint32_t tIndex) const;
+	RENDERINGAPI std::vector<uint32_t> getAdjacentTriangles(uint32_t tIndex) const;
 
 	/**
 	 * Tests if an edge is a border edge.
@@ -175,7 +175,7 @@ public:
 	 * @param vIndex2 the second vertex index
 	 * @return true, if the edge is a border edge (and is, in fact, an edge)
 	 */
-	bool isBorderEdge(uint32_t vIndex1, uint32_t vIndex2) const;
+	RENDERINGAPI bool isBorderEdge(uint32_t vIndex1, uint32_t vIndex2) const;
 
 	/**
 	 * Tests if a triangle is a border triangle.
@@ -183,7 +183,7 @@ public:
 	 * @param tIndex the triangle index
 	 * @return true, if the triangle is a border triangle.
 	 */
-	bool isBorderTriangle(uint32_t tIndex) const;
+	RENDERINGAPI bool isBorderTriangle(uint32_t tIndex) const;
 
 };
 

@@ -72,15 +72,15 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	/*!	@name Main */
 	// @{
 	public:
-		Mesh();
-		Mesh(MeshIndexData meshIndexData, MeshVertexData meshVertexData);
-		Mesh(const VertexDescription & desc,uint32_t vertexCount,uint32_t indexCount);
+		RENDERINGAPI Mesh();
+		RENDERINGAPI Mesh(MeshIndexData meshIndexData, MeshVertexData meshVertexData);
+		RENDERINGAPI Mesh(const VertexDescription & desc,uint32_t vertexCount,uint32_t indexCount);
 		Mesh(const Mesh &) = default;
 		Mesh(Mesh &&) = default;
 
-		Mesh* clone()const;
+		RENDERINGAPI Mesh* clone()const;
 
-		void swap(Mesh & m);
+		RENDERINGAPI void swap(Mesh & m);
 
 		/**
 		 * Return the amount of main memory currently occupied by this mesh.
@@ -88,7 +88,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		 * @note If the mesh data is currently not present in main memory, only a small number is returned (probably @c sizeof(Mesh)).
 		 * @return Amount of memory in bytes
 		 */
-		size_t getMainMemoryUsage() const;
+		RENDERINGAPI size_t getMainMemoryUsage() const;
 
 		/**
 		 * Return the amount of graphics memory currently occupied by this mesh.
@@ -96,7 +96,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		 * @note If the mesh data is currently not uploaded to the graphics card, zero is returned.
 		 * @return Amount of memory in bytes
 		 */
-		size_t getGraphicsMemoryUsage() const;
+		RENDERINGAPI size_t getGraphicsMemoryUsage() const;
 
 		/*! Returns true if no data is set. */
 		bool empty()const										{	return useIndexData ? (vertexData.empty() || indexData.empty()) : vertexData.empty();	}
@@ -112,7 +112,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 				--> vertexData.bind() & indexData.drawElements(...) OR (if no indexData is present) vertexData.drawArray(...)
 			\note **Attention** The function has to be called from within the GL-thread!	
 			\note Except if you know what you are doing, use renderingContext.displayMesh(mesh) instead. */
-		void _display(RenderingContext & context,uint32_t firstElement,uint32_t elementCount);
+		RENDERINGAPI void _display(RenderingContext & context,uint32_t firstElement,uint32_t elementCount);
 
 		/**
 		 * Return the number of primitives stored in this mesh. The number
@@ -123,7 +123,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		 * vertices will be used. If non-zero, use the number of elements to
 		 * do the calculation.
 		 */
-		uint32_t getPrimitiveCount(uint32_t numElements = 0) const;
+		RENDERINGAPI uint32_t getPrimitiveCount(uint32_t numElements = 0) const;
 
 	private:
 		void operator=(const Mesh &) = delete;
@@ -140,7 +140,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 
 		/*! Returns a reference to the indexData member and assures that if the mesh contains
 			index data, this data can be accessed via MeshIndexData.data()	*/
-		MeshIndexData & openIndexData();
+		RENDERINGAPI MeshIndexData & openIndexData();
 
 		uint32_t getIndexCount() const {
 			return useIndexData ? indexData.getIndexCount() : 0;
@@ -174,7 +174,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 
 		/*! Returns a reference to the vertexData member and assures that if the mesh contains
 			vertex data, this data can be accessed via MeshVertexData.data()	*/
-		MeshVertexData & openVertexData();
+		RENDERINGAPI MeshVertexData & openVertexData();
 
 		uint32_t getVertexCount()const   						{   return vertexData.getVertexCount(); }
 		const VertexDescription & getVertexDescription()const	{   return vertexData.getVertexDescription();	}
@@ -193,7 +193,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		}
 
 		//! Set a new data strategy.
-		void setDataStrategy(MeshDataStrategy * newStrategy);
+		RENDERINGAPI void setDataStrategy(MeshDataStrategy * newStrategy);
 
 	private:
 		MeshDataStrategy * dataStrategy;
@@ -240,7 +240,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		 * @retval @c GL_TRIANGLES if @a drawMode is @c DRAW_TRIANGLES
 		 * @retval @c GL_INVALID_ENUM otherwise
 		 */
-		uint32_t getGLDrawMode() const;
+		RENDERINGAPI uint32_t getGLDrawMode() const;
 		/**
 		 * Convert an OpenGL constant to the draw mode.
 		 * Set @a drawMode to
@@ -250,7 +250,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		 * - @c DRAW_LINES if @p glDrawMode is @c GL_LINES
 		 * - @c DRAW_TRIANGLES otherwise
 		 */
-		void setGLDrawMode(uint32_t glDrawMode);
+		RENDERINGAPI void setGLDrawMode(uint32_t glDrawMode);
 	// @}
 	
 	

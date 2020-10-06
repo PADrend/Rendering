@@ -24,9 +24,9 @@ namespace Rendering {
 */
 class MeshIndexData {
 	public:
-		MeshIndexData();
+		RENDERINGAPI MeshIndexData();
 		//! Copy all data from @p other
-		MeshIndexData(const MeshIndexData & other);
+		RENDERINGAPI MeshIndexData(const MeshIndexData & other);
 		MeshIndexData(MeshIndexData &&) = default;
 
 		~MeshIndexData() = default;
@@ -34,13 +34,13 @@ class MeshIndexData {
 		MeshIndexData & operator=(const MeshIndexData &) = delete;
 		MeshIndexData & operator=(MeshIndexData &&) = default;
 
-		void swap(MeshIndexData & other);
+		RENDERINGAPI void swap(MeshIndexData & other);
 		uint32_t getIndexCount()const						{	return indexCount;	}
 		bool empty()const									{	return indexCount==0;	}
 
 		// data
-		void allocate(uint32_t count);
-		void releaseLocalData();
+		RENDERINGAPI void allocate(uint32_t count);
+		RENDERINGAPI void releaseLocalData();
 		const uint32_t * data() const						{	return indexArray.data();	}
 		uint32_t * data() 									{	return indexArray.data();	}
 		std::size_t dataSize() const						{	return indexArray.size() * sizeof(uint32_t);	}
@@ -56,24 +56,24 @@ class MeshIndexData {
 		inline uint32_t getMaxIndex() const 				{   return maxIndex;    }
 		/*! Recalculates the index range of the mesh.
 			\note Should be called whenever the vertices are changed.	*/
-		void updateIndexRange();
+		RENDERINGAPI void updateIndexRange();
 
 		// vbo
 		inline bool isUploaded()const						{   return bufferObject.isValid();    }
 
 		//! Call @a upload() with default usage hint.
-		bool upload();
+		RENDERINGAPI bool upload();
 		/*! (internal) Create or update a VBO if hasChanged is set to true.
 			hasChanged is set to false.	*/
-		bool upload(uint32_t usageHint);
+		RENDERINGAPI bool upload(uint32_t usageHint);
 		/*! (internal) */
-		bool download();
-		void downloadTo(std::vector<uint32_t> & destination) const;
+		RENDERINGAPI bool download();
+		RENDERINGAPI void downloadTo(std::vector<uint32_t> & destination) const;
 		/*! (internal) */
-		void removeGlBuffer();
+		RENDERINGAPI void removeGlBuffer();
 		/*! (internal) Draw the vertices referenced by the indices using the VBO or a VertexArray.
 			Used by MeshDataStrategy::doDisplay(..) */
-		void drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices);
+		RENDERINGAPI void drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices);
 
 		/*! Swap the internal BufferObject.
 			\note The local data is not changed!

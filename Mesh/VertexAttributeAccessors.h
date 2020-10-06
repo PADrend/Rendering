@@ -44,7 +44,7 @@ class VertexAttributeAccessor : public Util::ReferenceCounter<VertexAttributeAcc
 				dataPtr( vData.data() + attribute.getOffset() ) {}
 
 		void assertRange(uint32_t index)const			{	if(index>=vData.getVertexCount()) throwRangeError(index); }
-		void assertNumValues(uint32_t index, uint32_t count) const;
+		RENDERINGAPI void assertNumValues(uint32_t index, uint32_t count) const;
 	public:
 		virtual ~VertexAttributeAccessor() {}
 
@@ -54,7 +54,7 @@ class VertexAttributeAccessor : public Util::ReferenceCounter<VertexAttributeAcc
 		template<typename number_t>
 		number_t * _ptr(uint32_t index)const			{	return reinterpret_cast<number_t*>(dataPtr+index*vertexSize); }
 	private:
-		void throwRangeError(uint32_t index)const;		
+		RENDERINGAPI void throwRangeError(uint32_t index)const;		
 };
 
 
@@ -71,7 +71,7 @@ class ColorAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a ColorAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<ColorAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::COLOR);
+		RENDERINGAPI static Util::Reference<ColorAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::COLOR);
 
 		virtual ~ColorAttributeAccessor(){}
 
@@ -94,7 +94,7 @@ class NormalAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a NormalAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<NormalAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::NORMAL);
+		RENDERINGAPI static Util::Reference<NormalAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::NORMAL);
 
 		virtual ~NormalAttributeAccessor(){}
 
@@ -116,7 +116,7 @@ class PositionAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a PositionAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<PositionAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::POSITION);
+		RENDERINGAPI static Util::Reference<PositionAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::POSITION);
 
 		virtual ~PositionAttributeAccessor(){}
 
@@ -139,7 +139,7 @@ class TexCoordAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a TexCoordAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<TexCoordAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::TEXCOORD0);
+		RENDERINGAPI static Util::Reference<TexCoordAttributeAccessor> create(MeshVertexData & _vData,Util::StringIdentifier name=VertexAttributeIds::TEXCOORD0);
 
 		virtual ~TexCoordAttributeAccessor(){}
 
@@ -171,7 +171,7 @@ class FloatAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a FloatAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<FloatAttributeAccessor> create(MeshVertexData & _vData, Util::StringIdentifier name);
+		RENDERINGAPI static Util::Reference<FloatAttributeAccessor> create(MeshVertexData & _vData, Util::StringIdentifier name);
 
 		virtual ~FloatAttributeAccessor(){}
 
@@ -200,7 +200,7 @@ class UIntAttributeAccessor : public VertexAttributeAccessor{
 		/*! (static factory)
 			Create a UIntAttributeAccessor for the given MeshVertexData's attribute having the given name.
 			If no Accessor can be created, an std::invalid_argument exception is thrown. */
-		static Util::Reference<UIntAttributeAccessor> create(MeshVertexData & _vData, Util::StringIdentifier name);
+		RENDERINGAPI static Util::Reference<UIntAttributeAccessor> create(MeshVertexData & _vData, Util::StringIdentifier name);
 		virtual ~UIntAttributeAccessor(){}
 
 		virtual uint32_t getValue(uint32_t index) const = 0;

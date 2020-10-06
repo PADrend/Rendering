@@ -95,12 +95,12 @@ class StreamerMMF : public AbstractRenderingStreamer {
 		virtual ~StreamerMMF() {
 		}
 
-		Util::GenericAttributeList * loadGeneric(std::istream & input) override;
-		Mesh * loadMesh(std::istream & input) override;
-		bool saveMesh(Mesh * mesh, std::ostream & output) override;
+		RENDERINGAPI Util::GenericAttributeList * loadGeneric(std::istream & input) override;
+		RENDERINGAPI Mesh * loadMesh(std::istream & input) override;
+		RENDERINGAPI bool saveMesh(Mesh * mesh, std::ostream & output) override;
 
-		static uint8_t queryCapabilities(const std::string & extension);
-		static const char * const fileExtension;
+		RENDERINGAPI static uint8_t queryCapabilities(const std::string & extension);
+		RENDERINGAPI static const char * const fileExtension;
 
 	private:
 		struct Reader{
@@ -111,11 +111,11 @@ class StreamerMMF : public AbstractRenderingStreamer {
 			void skip(uint32_t size);
 
 		};
-		static void readVertexData(Mesh * mesh, Reader & in);
-		static void readIndexData(Mesh * mesh, Reader & in);
+		RENDERINGAPI static void readVertexData(Mesh * mesh, Reader & in);
+		RENDERINGAPI static void readIndexData(Mesh * mesh, Reader & in);
 
 
-		static void write(std::ostream & out, uint32_t x);
+		RENDERINGAPI static void write(std::ostream & out, uint32_t x);
 };
 
 }

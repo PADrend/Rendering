@@ -79,13 +79,13 @@ public:
 		QuadTree & operator=(QuadTree &&) = delete;
 	public:
 		/** [ctor] creates a QuadTree-root width specified x, y, width and height */
-		QuadTree(uint16_t x, uint16_t y, uint16_t _width, uint16_t _height);
+		RENDERINGAPI QuadTree(uint16_t x, uint16_t y, uint16_t _width, uint16_t _height);
 
 		/** [ctor] creates a QuadTree-node with specified parent, x, y, width and height */
-		QuadTree(QuadTree * parent, uint16_t x, uint16_t y, uint16_t _width, uint16_t _height);
+		RENDERINGAPI QuadTree(QuadTree * parent, uint16_t x, uint16_t y, uint16_t _width, uint16_t _height);
 
 		/** [dtor] */
-		~QuadTree();
+		RENDERINGAPI ~QuadTree();
 
 		/**
 		 * checks whether current quad-tree is leaf (has got no children)
@@ -114,20 +114,20 @@ public:
 		 * simply tries to split the current node into four smaller nodes
 		 * @return true if splitting was successful, or false if the node has been already split
 		 */
-		bool split();
+		RENDERINGAPI bool split();
 
 		/**
 		 * collects all leaf-nodes from current node's subtree
 		 * @param leaves : list to that all leaves will be collected
 		 */
-		void collectLeaves(std::deque<QuadTree *> & leaves);
-		uint8_t collectVertices(std::vector<vertex_t> & vertices) const;
+		RENDERINGAPI void collectLeaves(std::deque<QuadTree *> & leaves);
+		RENDERINGAPI uint8_t collectVertices(std::vector<vertex_t> & vertices) const;
 
 	private:
 		/**
 		 * arranges the neighbors and performs balancing the quadtree
 		 */
-		void arrangeNeighbors();
+		RENDERINGAPI void arrangeNeighbors();
 
 		static void makeHorizontalNeighbors(QuadTree * left, QuadTree * right) {
 			if(left != nullptr) {
@@ -161,7 +161,7 @@ public:
 			 * @param depthDisruption This factor is multiplied with the depth range.
 			 * If a difference larger than the result is found between two depth values, a split will be performed.
 			 */
-			DepthSplitFunction(Util::Reference<Util::PixelAccessor> depthAccessor, float depthDisruption);
+			RENDERINGAPI DepthSplitFunction(Util::Reference<Util::PixelAccessor> depthAccessor, float depthDisruption);
 
 			/**
 			 * Determine whether the specified quad tree node shall be split.
@@ -170,7 +170,7 @@ public:
 			 * @param node Quad tree node that is to be analyzed
 			 * @return @c true if the specified quad tree node should be split, @c false otherwise
 			 */
-			bool operator()(QuadTree * node);
+			RENDERINGAPI bool operator()(QuadTree * node);
 
 		private:
 			//! Access to the depth values.
@@ -189,7 +189,7 @@ public:
 			/**
 			 * @param colorAccessor Access to the color values
 			 */
-			ColorSplitFunction(Util::Reference<Util::PixelAccessor> colorAccessor);
+			RENDERINGAPI ColorSplitFunction(Util::Reference<Util::PixelAccessor> colorAccessor);
 
 			/**
 			 * Determine whether the specified quad tree node shall be split.
@@ -198,7 +198,7 @@ public:
 			 * @param node Quad tree node that is to be analyzed
 			 * @return @c true if the specified quad tree node should be split, @c false otherwise
 			 */
-			bool operator()(QuadTree * node);
+			RENDERINGAPI bool operator()(QuadTree * node);
 
 		private:
 			//! Access to the color values.
@@ -211,7 +211,7 @@ public:
 			/**
 			 * @param stencilAccessor Access to the stencil values
 			 */
-			StencilSplitFunction(Util::Reference<Util::PixelAccessor> stencilAccessor);
+			RENDERINGAPI StencilSplitFunction(Util::Reference<Util::PixelAccessor> stencilAccessor);
 
 			/**
 			 * Determine whether the specified quad tree node shall be split.
@@ -220,7 +220,7 @@ public:
 			 * @param node Quad tree node that is to be analyzed
 			 * @return @c true if the specified quad tree node should be split, @c false otherwise
 			 */
-			bool operator()(QuadTree * node);
+			RENDERINGAPI bool operator()(QuadTree * node);
 
 		private:
 			//! Access to the stencil values.
@@ -271,7 +271,7 @@ public:
 	 * @param function split function determines whether a quad-tree node requires a split
 	 * @return created mesh
 	 */
-	static Mesh * createMesh(const VertexDescription & vd,
+	RENDERINGAPI static Mesh * createMesh(const VertexDescription & vd,
 							 Util::WeakPointer<Util::PixelAccessor> depthTexture,
 							 Util::WeakPointer<Util::PixelAccessor> colorTexture,
 							 Util::WeakPointer<Util::PixelAccessor> normalTexture,
@@ -283,7 +283,7 @@ private:
 	~QuadtreeMeshBuilder() {}
 
 #ifndef NDEBUG
-	static void createDebugOutput(const std::deque<QuadtreeMeshBuilder::QuadTree *> & leaves, Util::PixelAccessor * depth, Util::PixelAccessor * color);
+	RENDERINGAPI static void createDebugOutput(const std::deque<QuadtreeMeshBuilder::QuadTree *> & leaves, Util::PixelAccessor * depth, Util::PixelAccessor * color);
 #endif
 };
 

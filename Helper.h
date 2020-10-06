@@ -24,9 +24,9 @@ namespace Rendering {
  * @{
  */
  
-void enableGLErrorChecking();
-void disableGLErrorChecking();
-void checkGLError(const char * file, int line);
+RENDERINGAPI void enableGLErrorChecking();
+RENDERINGAPI void disableGLErrorChecking();
+RENDERINGAPI void checkGLError(const char * file, int line);
 
 /**
  * Return a human-readable description for the given OpenGL type.
@@ -34,7 +34,7 @@ void checkGLError(const char * file, int line);
  * @param type Valid values are GL_BOOL, GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, GL_SHORT, GL_UNSIGNED_INT, GL_INT, GL_FLOAT, and GL_DOUBLE.
  * @return String description of the type, or an empty string if the type is invalid.
  */
-const char * getGLTypeString(uint32_t type);
+RENDERINGAPI const char * getGLTypeString(uint32_t type);
 
 /**
  * Return the size of the given OpenGL type.
@@ -42,7 +42,7 @@ const char * getGLTypeString(uint32_t type);
  * @param type Valid values are GL_BOOL, GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, GL_SHORT, GL_UNSIGNED_INT, GL_INT, GL_FLOAT, and GL_DOUBLE.
  * @return Size in bytes, or zero if the type is invalid.
  */
-uint32_t getGLTypeSize(uint32_t type);
+RENDERINGAPI uint32_t getGLTypeSize(uint32_t type);
 
 /**
  * Returns the OpenGL type for the given resource attribute type.
@@ -50,7 +50,7 @@ uint32_t getGLTypeSize(uint32_t type);
  * @param type the attribute type (e.g., TypeConstant).
  * @return The corresponding OpenGL type constant.
  */
-uint32_t getGLType(Util::TypeConstant type);
+RENDERINGAPI uint32_t getGLType(Util::TypeConstant type);
 
 /**
  * Returns the resource attribute type for the given OpenGL type.
@@ -58,7 +58,7 @@ uint32_t getGLType(Util::TypeConstant type);
  * @param type the OpenGL type.
  * @return The corresponding attribute type.
  */
-Util::TypeConstant getAttributeType(uint32_t glType);
+RENDERINGAPI Util::TypeConstant getAttributeType(uint32_t glType);
 
 /**
  * Write information about the current OpenGL context to the given stream.
@@ -66,7 +66,7 @@ Util::TypeConstant getAttributeType(uint32_t glType);
  * @param output Output stream that the data is written to
  * @see @c glGetString
  */
-void outputGLInformation(std::ostream & output);
+RENDERINGAPI void outputGLInformation(std::ostream & output);
 
 /**
  * Return the supported graphics language version.
@@ -75,7 +75,7 @@ void outputGLInformation(std::ostream & output);
  * @see constant @c GL_VERSION of function @c glGetString
  * @see @c glewIsSupported
  */
-const char * getGraphicsLanguageVersion();
+RENDERINGAPI const char * getGraphicsLanguageVersion();
 
 /**
  * Return the supported shading language version.
@@ -83,7 +83,7 @@ const char * getGraphicsLanguageVersion();
  * @return Null-terminated string containing the supported shading language version
  * @see constant @c GL_SHADING_LANGUAGE_VERSION of function @c glGetString
  */
-const char * getShadingLanguageVersion();
+RENDERINGAPI const char * getShadingLanguageVersion();
 
 /**
  * Check for support of a specific OpenGL extension.
@@ -92,28 +92,28 @@ const char * getShadingLanguageVersion();
  * @return @c true if the requested extension is supported, @c false otherwise.
  * @see @c glewIsSupported
  */
-bool isExtensionSupported(const char * extension);
+RENDERINGAPI bool isExtensionSupported(const char * extension);
 
 /**
  * Read a single value from the depth buffer.
  * 
  * @see @c glReadPixels
  */
-float readDepthValue(int32_t x, int32_t y);
+RENDERINGAPI float readDepthValue(int32_t x, int32_t y);
 
 /**
  * Enable debug output that can be used to find errors or performance problems.
  * 
  * @see OpenGL extension @c GL_ARB_debug_output
  */
-void enableDebugOutput();
+RENDERINGAPI void enableDebugOutput();
 
 /**
  * Disable the debug output again.
  * 
  * @see enableDebugOutput()
  */
-void disableDebugOutput();
+RENDERINGAPI void disableDebugOutput();
 
 /**
  * Push a named debug group into the command stream
@@ -121,31 +121,31 @@ void disableDebugOutput();
  * @param name Name of the debug group
  * @see @c glPushDebugGroup
  */
-void pushDebugGroup(const std::string& name);
+RENDERINGAPI void pushDebugGroup(const std::string& name);
 
 /**
  * Pop the active debug group
  * @see @c glPopDebugGroup
  */
-void popDebugGroup();
+RENDERINGAPI void popDebugGroup();
 
 /**
  * Triggers a capture of the current GL state in RenderDoc.
  * @note Requires RenderDoc
  */
-void triggerCapture();
+RENDERINGAPI void triggerCapture();
 
 /**
  * Starts capturing of the GL state in RenderDoc.
  * @note Requires RenderDoc
  */
-void startCapture();
+RENDERINGAPI void startCapture();
 
 /**
  * Ends the active capture.
  * @note Requires RenderDoc
  */
-void endCapture();
+RENDERINGAPI void endCapture();
 
 //! @}
 }

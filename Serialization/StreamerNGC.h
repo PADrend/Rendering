@@ -49,11 +49,11 @@ class StreamerNGC : public AbstractRenderingStreamer {
 		virtual ~StreamerNGC() {
 		}
 
-		Util::GenericAttributeList * loadGeneric(std::istream & input) override;
-		Mesh * loadMesh(std::istream & input) override;
+		RENDERINGAPI Util::GenericAttributeList * loadGeneric(std::istream & input) override;
+		RENDERINGAPI Mesh * loadMesh(std::istream & input) override;
 
-		static uint8_t queryCapabilities(const std::string & extension);
-		static const char * const fileExtension;
+		RENDERINGAPI static uint8_t queryCapabilities(const std::string & extension);
+		RENDERINGAPI static const char * const fileExtension;
 };
 
 }

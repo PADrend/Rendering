@@ -33,62 +33,62 @@ class VertexDescription {
 				are not re-located in memory when appending additional attributes. (references may be stored) */
 		typedef std::deque<VertexAttribute> attributeContainer_t;
 
-		VertexDescription();
+		RENDERINGAPI VertexDescription();
 
 		/*! Create and add a new attribute to the vertexDescription.
 			\return the new attribute
 			\note the owner of the attribute is the vertexDescription
 			\note Before using this function, check a default method can be used instead (e.g. append appendPosition3D) */
-		const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType, bool normalize, bool convertToFloat=true);
-		const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType);
-		const VertexAttribute & appendAttribute(const std::string & name, uint8_t numValues, uint32_t glType, bool normalize, bool convertToFloat=true);
+		RENDERINGAPI const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType, bool normalize, bool convertToFloat=true);
+		RENDERINGAPI const VertexAttribute & appendAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, uint32_t glType);
+		RENDERINGAPI const VertexAttribute & appendAttribute(const std::string & name, uint8_t numValues, uint32_t glType, bool normalize, bool convertToFloat=true);
 
 		//! Add an attribute with the given name and the given number of float values.
-		const VertexAttribute & appendFloatAttribute(const Util::StringIdentifier & nameId, uint8_t numValues);
+		RENDERINGAPI const VertexAttribute & appendFloatAttribute(const Util::StringIdentifier & nameId, uint8_t numValues);
 
 		//! Add an attribute with the given name and the given number of unsigned int values.
-		const VertexAttribute & appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, bool convertToFloat=true);
+		RENDERINGAPI const VertexAttribute & appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, bool convertToFloat=true);
 
 		//! Add an RGBA color attribute. It is stored as four unsigned byte values.
-		const VertexAttribute & appendColorRGBAByte();
+		RENDERINGAPI const VertexAttribute & appendColorRGBAByte();
 
 		//! Add an RGB color attribute. It is stored as three float values.
-		const VertexAttribute & appendColorRGBFloat();
+		RENDERINGAPI const VertexAttribute & appendColorRGBFloat();
 
 		//! Add an RGBA color attribute. It is stored as four float values.
-		const VertexAttribute & appendColorRGBAFloat();
+		RENDERINGAPI const VertexAttribute & appendColorRGBAFloat();
 
 		//! Add a three-dimensional normal attribute. It is stored as four byte values.
-		const VertexAttribute & appendNormalByte();
+		RENDERINGAPI const VertexAttribute & appendNormalByte();
 
 		//! Add a three-dimensional normal attribute. It is stored as three float values.
-		const VertexAttribute & appendNormalFloat();
+		RENDERINGAPI const VertexAttribute & appendNormalFloat();
 
 		//! Add a two-dimensional position attribute. It is stored as two float values.
-		const VertexAttribute & appendPosition2D();
+		RENDERINGAPI const VertexAttribute & appendPosition2D();
 
 		//! Add a three-dimensional position attribute. It is stored as three float values.
-		const VertexAttribute & appendPosition3D();
+		RENDERINGAPI const VertexAttribute & appendPosition3D();
 
 		//! Add a three-dimensional position attribute. It is stored as four float values.
-		const VertexAttribute & appendPosition4D();
+		RENDERINGAPI const VertexAttribute & appendPosition4D();
 		
 		//! Add a three-dimensional position attribute. It is stored as four half float values.
-		const VertexAttribute & appendPosition4DHalf();
+		RENDERINGAPI const VertexAttribute & appendPosition4DHalf();
 
 		//! Add a texture coordinate attribute. It is stored as two float values.
-		const VertexAttribute & appendTexCoord(uint_fast8_t textureUnit = 0);
+		RENDERINGAPI const VertexAttribute & appendTexCoord(uint_fast8_t textureUnit = 0);
 
 		/*! Get a reference to the attribute with the corresponding name.
 			\return Always returns an attribute.
 					If the attribute is not present in the vertex description, it is empty.
 			\note The owner of the attribute is the vertexDescription, so be careful if the
 					vertexDescription is deleted or reassigned.*/
-		const VertexAttribute & getAttribute(const Util::StringIdentifier & nameId)const;
-		const VertexAttribute & getAttribute(const std::string & name)const;
+		RENDERINGAPI const VertexAttribute & getAttribute(const Util::StringIdentifier & nameId)const;
+		RENDERINGAPI const VertexAttribute & getAttribute(const std::string & name)const;
 
-		bool hasAttribute(const Util::StringIdentifier & nameId)const;
-		bool hasAttribute(const std::string & name)const;
+		RENDERINGAPI bool hasAttribute(const Util::StringIdentifier & nameId)const;
+		RENDERINGAPI bool hasAttribute(const std::string & name)const;
 
 		/**
 		 * Update an existing attribute of or append a new attribute to the VertexDescription.
@@ -96,15 +96,15 @@ class VertexDescription {
 		 * @param attr Attribute that contains the new data.
 		 * @note The offsets of all attributes may be recalculated and therefore old values may become invalid.
 		 */
-		void updateAttribute(const VertexAttribute & attr);
+		RENDERINGAPI void updateAttribute(const VertexAttribute & attr);
 
 		size_t getVertexSize()const							{	return vertexSize;	}
 		size_t getNumAttributes()const						{	return attributes.size();	}
 		const attributeContainer_t & getAttributes()const	{	return attributes;	}
-		bool operator==(const VertexDescription & other)const;
-		bool operator<(const VertexDescription & other)const;
+		RENDERINGAPI bool operator==(const VertexDescription & other)const;
+		RENDERINGAPI bool operator<(const VertexDescription & other)const;
 
-		std::string toString()const;
+		RENDERINGAPI std::string toString()const;
 
 	private:
 		attributeContainer_t attributes;

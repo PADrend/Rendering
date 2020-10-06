@@ -47,12 +47,12 @@ class Mesh;
 class VertexAccessor : public Util::ResourceAccessor {
 private:
 	MeshVertexData& vData;
-	VertexAccessor(MeshVertexData& _vData, uint8_t* ptr);
+	RENDERINGAPI VertexAccessor(MeshVertexData& _vData, uint8_t* ptr);
 public:	
-	virtual ~VertexAccessor();
+	RENDERINGAPI virtual ~VertexAccessor();
 	
-	static Util::Reference<VertexAccessor> create(MeshVertexData& _vData);
-	static Util::Reference<VertexAccessor> create(Mesh* mesh);
+	RENDERINGAPI static Util::Reference<VertexAccessor> create(MeshVertexData& _vData);
+	RENDERINGAPI static Util::Reference<VertexAccessor> create(Mesh* mesh);
 		
 	Geometry::Vec3 getPosition(uint32_t index, Util::StringIdentifier name=VertexAttributeIds::POSITION) const {
 		Geometry::Vec3 v;

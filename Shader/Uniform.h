@@ -61,7 +61,7 @@ namespace Rendering {
  */
 class Uniform {
 		//! dataType_t ---> bytes per value
-		static const size_t dataSizeIndex[];
+		RENDERINGAPI static const size_t dataSizeIndex[];
 
 	public:
 		//! \note if something is changed here, make sure that the dataSize-index is also updated.
@@ -73,7 +73,7 @@ class Uniform {
 		};
 
 		//! returns the size in bytes of a value of the given type
-		static size_t getValueSize(const dataType_t t){		return dataSizeIndex[t];	}
+		RENDERINGAPI static size_t getValueSize(const dataType_t t){		return dataSizeIndex[t];	}
 
 
 		class UniformName{
@@ -88,73 +88,73 @@ class Uniform {
 				Util::StringIdentifier getStringId()const				{	return id;	}
 				bool operator==(const UniformName & other)const	{	return id==other.id;	}
 		};
-		static const Uniform nullUniform;
+		RENDERINGAPI static const Uniform nullUniform;
 
-		Uniform();
-		Uniform(UniformName _name, dataType_t _type, size_t arraySize);
-		Uniform(UniformName _name, dataType_t _type, size_t arraySize,std::vector<uint8_t> data);
+		RENDERINGAPI Uniform();
+		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, size_t arraySize);
+		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, size_t arraySize,std::vector<uint8_t> data);
 
 		/*! Generic bool-constructor (use another contructor whenever possible)
 			\throw may throw an invalid_argument-exception	*/
-		Uniform(UniformName _name, dataType_t _type, const std::deque<bool> & values);
+		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, const std::deque<bool> & values);
 		/*! Generic float-constructor (use another contructor whenever possible)
 			\throw may throw an invalid_argument-exception	*/
-		Uniform(UniformName _name, dataType_t _type, const std::vector<float> & values);
+		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, const std::vector<float> & values);
 		/*! Generic int-constructor (use another contructor whenever possible)
 			\throw may throw an invalid_argument-exception	*/
-		Uniform(UniformName _name, dataType_t _type, const std::vector<int32_t> & values);
+		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, const std::vector<int32_t> & values);
 
 		//! UNIFORM_BOOL
-		Uniform(UniformName _name, bool value);
-		Uniform(UniformName _name, const std::deque<bool> & values);
+		RENDERINGAPI Uniform(UniformName _name, bool value);
+		RENDERINGAPI Uniform(UniformName _name, const std::deque<bool> & values);
 
 		//! UNIFORM_FLOAT
-		Uniform(UniformName _name, float value);
-		Uniform(UniformName _name, const std::vector<float> & values);
+		RENDERINGAPI Uniform(UniformName _name, float value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<float> & values);
 
 		//! UNIFORM_VEC2F
-		Uniform(UniformName _name, const Geometry::Vec2 & value);
-		Uniform(UniformName _name, const std::vector<Geometry::Vec2> & values);
+		RENDERINGAPI Uniform(UniformName _name, const Geometry::Vec2 & value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<Geometry::Vec2> & values);
 
 		//! UNIFORM_VEC3F
-		Uniform(UniformName _name, const Geometry::Vec3 & value);
-		Uniform(UniformName _name, const std::vector<Geometry::Vec3> & values);
+		RENDERINGAPI Uniform(UniformName _name, const Geometry::Vec3 & value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<Geometry::Vec3> & values);
 
 		//! UNIFORM_VEC4F
-		Uniform(UniformName _name, const Geometry::Vec4 & value);
-		Uniform(UniformName _name, const std::vector<Geometry::Vec4> & values);
-		Uniform(UniformName _name, const Util::Color4f & color);
+		RENDERINGAPI Uniform(UniformName _name, const Geometry::Vec4 & value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<Geometry::Vec4> & values);
+		RENDERINGAPI Uniform(UniformName _name, const Util::Color4f & color);
 
 		//! UNIFORM_INT
-		Uniform(UniformName _name, int32_t value);
-		Uniform(UniformName _name, const std::vector<int32_t> & values);
+		RENDERINGAPI Uniform(UniformName _name, int32_t value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<int32_t> & values);
 
 		//! UNIFORM_VEC2I
-		Uniform(UniformName _name, const Geometry::Vec2i & value);
-		Uniform(UniformName _name, const std::vector<Geometry::Vec2i> & values);
+		RENDERINGAPI Uniform(UniformName _name, const Geometry::Vec2i & value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<Geometry::Vec2i> & values);
 
 		//! UNIFORM_VEC3I
-		Uniform(UniformName _name, const Geometry::Vec3i & value);
-		Uniform(UniformName _name, const std::vector<Geometry::Vec3i> & values);
+		RENDERINGAPI Uniform(UniformName _name, const Geometry::Vec3i & value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<Geometry::Vec3i> & values);
 
 		//! UNIFORM_VEC4I
-		Uniform(UniformName _name, const Geometry::Vec4i & value);
-		Uniform(UniformName _name, const std::vector<Geometry::Vec4i> & values);
+		RENDERINGAPI Uniform(UniformName _name, const Geometry::Vec4i & value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<Geometry::Vec4i> & values);
 
 		/**
 		 * Create a uniform containing a matrix.
 		 * \note The matrix is transposed and stored in the uniform data.
 		 */
 		//! UNIFORM_MATRIX_3X3F
-		Uniform(UniformName _name, const Geometry::Matrix3x3 & value);
-		Uniform(UniformName _name, const std::vector<Geometry::Matrix3x3> & values);
+		RENDERINGAPI Uniform(UniformName _name, const Geometry::Matrix3x3 & value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<Geometry::Matrix3x3> & values);
 
 		//! UNIFORM_MATRIX_4X4F
-		Uniform(UniformName _name, const Geometry::Matrix4x4 & value);
-		Uniform(UniformName _name, const std::vector<Geometry::Matrix4x4> & values);
+		RENDERINGAPI Uniform(UniformName _name, const Geometry::Matrix4x4 & value);
+		RENDERINGAPI Uniform(UniformName _name, const std::vector<Geometry::Matrix4x4> & values);
 
 
-		std::string toString() const;
+		RENDERINGAPI std::string toString() const;
 		const std::string getName() const 			{	return name.getString();	}
 		Util::StringIdentifier getNameId() const 			{	return name.getStringId();	}
 		dataType_t getType() const 					{	return type;	}

@@ -59,28 +59,28 @@ class Texture;
 */
 class FBO : public Util::ReferenceCounter<FBO> {
 	public:
-		FBO();
-		~FBO();
+		RENDERINGAPI FBO();
+		RENDERINGAPI ~FBO();
 
 		//! \note is called by RenderingContext and should not be called directy
-		static void _disable();
+		RENDERINGAPI static void _disable();
 
 		//! \note is called by RenderingContext and should not be called directy
-		void _enable();
+		RENDERINGAPI void _enable();
 
-		bool isComplete(RenderingContext & context);
+		RENDERINGAPI bool isComplete(RenderingContext & context);
 
-		const char * getStatusMessage(RenderingContext & context);
+		RENDERINGAPI const char * getStatusMessage(RenderingContext & context);
 
-		void attachTexture(RenderingContext & context, uint32_t attachmentPoint, Texture * t, uint32_t level, int32_t layer=-1);
+		RENDERINGAPI void attachTexture(RenderingContext & context, uint32_t attachmentPoint, Texture * t, uint32_t level, int32_t layer=-1);
 		void detachTexture(RenderingContext & context, uint32_t attachmentPoint) { attachTexture(context,attachmentPoint,nullptr,0,-1); }
 
-		void attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId = 0, uint32_t level=0, int32_t layer=-1);
-		void detachColorTexture(RenderingContext & context, uint32_t colorBufferId = 0);
-		void attachDepthStencilTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
-		void detachDepthStencilTexture(RenderingContext & context);
-		void attachDepthTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
-		void detachDepthTexture(RenderingContext & context);
+		RENDERINGAPI void attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId = 0, uint32_t level=0, int32_t layer=-1);
+		RENDERINGAPI void detachColorTexture(RenderingContext & context, uint32_t colorBufferId = 0);
+		RENDERINGAPI void attachDepthStencilTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
+		RENDERINGAPI void detachDepthStencilTexture(RenderingContext & context);
+		RENDERINGAPI void attachDepthTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
+		RENDERINGAPI void detachDepthTexture(RenderingContext & context);
 
 		/**
 		 * Activate the given number of draw buffers.
@@ -90,10 +90,10 @@ class FBO : public Util::ReferenceCounter<FBO> {
 		 * @throw std::logic_error if the GL implementation does not support this functionality.
 		 * @see function @c glDrawBuffers
 		 */
-		void setDrawBuffers(RenderingContext & context, uint32_t number);
+		RENDERINGAPI void setDrawBuffers(RenderingContext & context, uint32_t number);
 
 		//! copy a block of pixels from this framebuffer to the screen
-		void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect);
+		RENDERINGAPI void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect);
 	private:
 		uint32_t glId;
 };

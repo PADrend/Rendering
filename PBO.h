@@ -39,7 +39,7 @@ class PBO : public Util::ReferenceCounter<PBO> {
 		uint32_t height;
 
 		//! Instruct OpenGL to allocate the data.
-		void allocateBufferData(uint32_t newWidth, uint32_t newHeight);
+		RENDERINGAPI void allocateBufferData(uint32_t newWidth, uint32_t newHeight);
 	public:
 		PBO();
 
@@ -62,7 +62,7 @@ class PBO : public Util::ReferenceCounter<PBO> {
 		 * @param width Horizontal dimension of the rectangle to read.
 		 * @param height Vertical dimension of the rectangle to read.
 		 */
-		void asynchronousReadPixels(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+		RENDERINGAPI void asynchronousReadPixels(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 
 		/**
 		 * Copy the data of this pixel buffer object into the given texture.
@@ -73,7 +73,7 @@ class PBO : public Util::ReferenceCounter<PBO> {
 		 * The format has to be @c GL_BGRA and the type has to be @c GL_UNSIGNED_BYTE.
 		 * @return @c true if the data was copied successfully, @c false if the size or data format of the texture did not match or there is no data.
 		 */
-		bool fillTexture(Texture * texture) const;
+		RENDERINGAPI bool fillTexture(Texture * texture) const;
 };
 }
 

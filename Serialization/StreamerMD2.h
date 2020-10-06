@@ -94,12 +94,12 @@ class StreamerMD2 : public AbstractRenderingStreamer {
 		typedef Util::WrapperAttribute<std::map<std::string, std::vector<int> > > animationDataWrapper;
 
 		//additional descriptions
-		static const char * const DESCRIPTION_TYPE_KEYFRAME_ANIMATION;
-		static const Util::StringIdentifier DESCRIPTION_TEXTURE_FILES;
-		static const Util::StringIdentifier DESCRIPTION_MESH_INDEX_DATA;
-		static const Util::StringIdentifier DESCRIPTION_KEYFRAMES_DATA;
+		RENDERINGAPI static const char * const DESCRIPTION_TYPE_KEYFRAME_ANIMATION;
+		RENDERINGAPI static const Util::StringIdentifier DESCRIPTION_TEXTURE_FILES;
+		RENDERINGAPI static const Util::StringIdentifier DESCRIPTION_MESH_INDEX_DATA;
+		RENDERINGAPI static const Util::StringIdentifier DESCRIPTION_KEYFRAMES_DATA;
 
-		static const Util::StringIdentifier DESCRIPTION_ANIMATIONS;
+		RENDERINGAPI static const Util::StringIdentifier DESCRIPTION_ANIMATIONS;
 		/*
 		static const char * const DESCRIPTION_ANIMATION_NAME;
 		static const char * const DESCRIPTION_ANIMATION_START_FRAME_INDEX;
@@ -107,7 +107,7 @@ class StreamerMD2 : public AbstractRenderingStreamer {
 		static const char * const DESCRIPTION_ANIMATION_FPS;
 		*/
 
-		static const float normals[162][3];
+		RENDERINGAPI static const float normals[162][3];
 
 		//typedef int indexData[];
 
@@ -126,15 +126,15 @@ class StreamerMD2 : public AbstractRenderingStreamer {
 
 		*/
 
-		Util::GenericAttributeList * loadGeneric(std::istream & input) override;
+		RENDERINGAPI Util::GenericAttributeList * loadGeneric(std::istream & input) override;
 
-		static uint8_t queryCapabilities(const std::string & extension);
-		static const char * const fileExtension;
+		RENDERINGAPI static uint8_t queryCapabilities(const std::string & extension);
+		RENDERINGAPI static const char * const fileExtension;
 
 	protected:
 	private:
-		std::map<std::string, std::vector<int> > extractAnimationData(MD2Header * md2Header, MD2Frame * md2Frames);
-		int getFpsByAnimationName(const std::string & name);
+		RENDERINGAPI std::map<std::string, std::vector<int> > extractAnimationData(MD2Header * md2Header, MD2Frame * md2Frames);
+		RENDERINGAPI int getFpsByAnimationName(const std::string & name);
 		std::map<std::string, int> standardAnimationFps;
 
 

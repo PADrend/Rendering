@@ -19,21 +19,21 @@ namespace Rendering {
 //! @ingroup mesh
 namespace VertexAttributeIds{
 
-extern const Util::StringIdentifier 	POSITION;
-extern const Util::StringIdentifier 	NORMAL;
-extern const Util::StringIdentifier 	COLOR;
-extern const Util::StringIdentifier 	TANGENT;
-extern const Util::StringIdentifier 	TEXCOORD0;
-extern const Util::StringIdentifier 	TEXCOORD1;
-extern const Util::StringIdentifier 	TEXCOORD2;
-extern const Util::StringIdentifier 	TEXCOORD3;
-extern const Util::StringIdentifier 	TEXCOORD4;
-extern const Util::StringIdentifier 	TEXCOORD5;
-extern const Util::StringIdentifier 	TEXCOORD6;
-extern const Util::StringIdentifier 	TEXCOORD7;
+RENDERINGAPI extern const Util::StringIdentifier 	POSITION;
+RENDERINGAPI extern const Util::StringIdentifier 	NORMAL;
+RENDERINGAPI extern const Util::StringIdentifier 	COLOR;
+RENDERINGAPI extern const Util::StringIdentifier 	TANGENT;
+RENDERINGAPI extern const Util::StringIdentifier 	TEXCOORD0;
+RENDERINGAPI extern const Util::StringIdentifier 	TEXCOORD1;
+RENDERINGAPI extern const Util::StringIdentifier 	TEXCOORD2;
+RENDERINGAPI extern const Util::StringIdentifier 	TEXCOORD3;
+RENDERINGAPI extern const Util::StringIdentifier 	TEXCOORD4;
+RENDERINGAPI extern const Util::StringIdentifier 	TEXCOORD5;
+RENDERINGAPI extern const Util::StringIdentifier 	TEXCOORD6;
+RENDERINGAPI extern const Util::StringIdentifier 	TEXCOORD7;
 
 //! Helper function to access the texture coordinate identifiers TEXCOORD0 to TEXCOORD7 by a variable.
-extern Util::StringIdentifier getTextureCoordinateIdentifier(uint_fast8_t textureUnit);
+RENDERINGAPI extern Util::StringIdentifier getTextureCoordinateIdentifier(uint_fast8_t textureUnit);
 
 }
 

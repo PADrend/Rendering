@@ -30,30 +30,30 @@ namespace Rendering {
  */
 class BufferObject {
 	public:		
-		static const uint32_t TARGET_ARRAY_BUFFER;
-		static const uint32_t TARGET_ATOMIC_COUNTER_BUFFER;
-		static const uint32_t TARGET_COPY_READ_BUFFER;
-		static const uint32_t TARGET_COPY_WRITE_BUFFER;
-		static const uint32_t TARGET_DISPATCH_INDIRECT_BUFFER;
-		static const uint32_t TARGET_DRAW_INDIRECT_BUFFER;
-		static const uint32_t TARGET_ELEMENT_ARRAY_BUFFER;
-		static const uint32_t TARGET_PIXEL_PACK_BUFFER;
-		static const uint32_t TARGET_PIXEL_UNPACK_BUFFER;
-		static const uint32_t TARGET_QUERY_BUFFER;
-		static const uint32_t TARGET_SHADER_STORAGE_BUFFER;
-		static const uint32_t TARGET_TEXTURE_BUFFER;
-		static const uint32_t TARGET_TRANSFORM_FEEDBACK_BUFFER;
-		static const uint32_t TARGET_UNIFORM_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_ARRAY_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_ATOMIC_COUNTER_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_COPY_READ_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_COPY_WRITE_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_DISPATCH_INDIRECT_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_DRAW_INDIRECT_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_ELEMENT_ARRAY_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_PIXEL_PACK_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_PIXEL_UNPACK_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_QUERY_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_SHADER_STORAGE_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_TEXTURE_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_TRANSFORM_FEEDBACK_BUFFER;
+		RENDERINGAPI static const uint32_t TARGET_UNIFORM_BUFFER;
 		
-		static const uint32_t USAGE_STREAM_DRAW;
-		static const uint32_t USAGE_STREAM_READ;
-		static const uint32_t USAGE_STREAM_COPY;
-		static const uint32_t USAGE_STATIC_DRAW;
-		static const uint32_t USAGE_STATIC_READ;
-		static const uint32_t USAGE_STATIC_COPY;
-		static const uint32_t USAGE_DYNAMIC_DRAW;
-		static const uint32_t USAGE_DYNAMIC_READ;
-		static const uint32_t USAGE_DYNAMIC_COPY;
+		RENDERINGAPI static const uint32_t USAGE_STREAM_DRAW;
+		RENDERINGAPI static const uint32_t USAGE_STREAM_READ;
+		RENDERINGAPI static const uint32_t USAGE_STREAM_COPY;
+		RENDERINGAPI static const uint32_t USAGE_STATIC_DRAW;
+		RENDERINGAPI static const uint32_t USAGE_STATIC_READ;
+		RENDERINGAPI static const uint32_t USAGE_STATIC_COPY;
+		RENDERINGAPI static const uint32_t USAGE_DYNAMIC_DRAW;
+		RENDERINGAPI static const uint32_t USAGE_DYNAMIC_READ;
+		RENDERINGAPI static const uint32_t USAGE_DYNAMIC_COPY;
 		
 		enum class AccessFlag : uint8_t {
 			NO_ACCESS = 0,
@@ -68,39 +68,39 @@ class BufferObject {
 
 	public:
 		//! Create an invalid buffer object for the given target.
-		BufferObject();
+		RENDERINGAPI BufferObject();
 
 		//! Data of an buffer object should not be copied.
 		BufferObject(const BufferObject &) = delete;
 
 		//! Take ownership of the data of the other buffer object.
-		BufferObject(BufferObject && other);
+		RENDERINGAPI BufferObject(BufferObject && other);
 
 		//! Free the data of the buffer object.
-		~BufferObject();
+		RENDERINGAPI ~BufferObject();
 
 		//! Data of an buffer object should not be copied.
 		BufferObject & operator=(const BufferObject &) = delete;
 
 		//! Take ownership of the data of the other buffer object.
-		BufferObject & operator=(BufferObject && other);
+		RENDERINGAPI BufferObject & operator=(BufferObject && other);
 
 		//! Swap the gl buffer with another BufferObject
-		void swap(BufferObject & other);
+		RENDERINGAPI void swap(BufferObject & other);
 
 		//! Request a new handle from OpenGL for this buffer object.
-		void prepare();
+		RENDERINGAPI void prepare();
 
 		//! Free the handle of this buffer object.
-		void destroy();
+		RENDERINGAPI void destroy();
 
 		//! Bind the buffer object to the given target.
-		void bind(uint32_t bufferTarget) const;
-		void bind(uint32_t bufferTarget, uint32_t location) const;
+		RENDERINGAPI void bind(uint32_t bufferTarget) const;
+		RENDERINGAPI void bind(uint32_t bufferTarget, uint32_t location) const;
 
 		//! Remove any binding of the given target.
-		void unbind(uint32_t bufferTarget) const;
-		void unbind(uint32_t bufferTarget, uint32_t location) const;
+		RENDERINGAPI void unbind(uint32_t bufferTarget) const;
+		RENDERINGAPI void unbind(uint32_t bufferTarget, uint32_t location) const;
 
 		/**
 		 * @brief Allocate buffer data
@@ -121,7 +121,7 @@ class BufferObject {
 		 */
 		template<typename T>
 		void uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint);
-		void uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint);
+		RENDERINGAPI void uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint);
 		
 		/**
 		 * @brief Copy data to the buffer object
@@ -132,7 +132,7 @@ class BufferObject {
 		 */
 		template<typename T>
 		void uploadSubData(uint32_t bufferTarget, const std::vector<T> & data, size_t offset=0);
-		void uploadSubData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, size_t offset=0);
+		RENDERINGAPI void uploadSubData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, size_t offset=0);
 		
 		/**
 		 * @brief Retrieve data from the buffer object
@@ -150,10 +150,10 @@ class BufferObject {
 		}
 		uint32_t getGLId()const{	return bufferId;	}
 		
-		void clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
-		void clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
+		RENDERINGAPI void clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
+		RENDERINGAPI void clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data=nullptr);
     
-    void copy(const BufferObject& source, uint32_t sourceOffset, uint32_t targetOffset, uint32_t size);
+    RENDERINGAPI void copy(const BufferObject& source, uint32_t sourceOffset, uint32_t targetOffset, uint32_t size);
 		
 		/** 
 		 * Map all or part of a buffer object's data store into the client's address space
@@ -165,12 +165,12 @@ class BufferObject {
 		 * @param allowRead Indicates that the returned pointer may be used to read buffer object data.
 		 * @return The mapped data pointer, or <tt>nullptr</tt> if the mapping failed.
 		 */
-		uint8_t* map(uint32_t offset=0, uint32_t size=0, AccessFlag access=AccessFlag::READ_WRITE);
+		RENDERINGAPI uint8_t* map(uint32_t offset=0, uint32_t size=0, AccessFlag access=AccessFlag::READ_WRITE);
 		
 		/** 
 		 * Unmaps a previously mapped buffer.
 		 */
-		void unmap();
+		RENDERINGAPI void unmap();
 };
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
