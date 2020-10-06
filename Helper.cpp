@@ -213,17 +213,21 @@ float readDepthValue(int32_t x, int32_t y) {
 	return z;
 }
 
-#define STDCALL 
-
 #if defined(LIB_GLEW) && defined(LIB_GL) && defined(GL_ARB_debug_output)
 #if defined(_WIN32)
+#if defined(_MSC_VER)
+#define STDCALL __stdcall
+#else
 #define STDCALL __attribute__((__stdcall__))
 #endif
+#else
+#define STDCALL 
+#endif
 
-static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, const void * ) STDCALL;
+static void STDCALL debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, const void * );
 // the following alias function is required as different versions of glew define GLDEBUGPROCARB differently:
 //   with void*userParam OR const void*userParam
-static void debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, void * ) STDCALL;
+static void STDCALL debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, void * );
 
 static void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char *message, void *userParam ){
 	debugCallback(source,type,id,severity,length,message,static_cast<const void*>(userParam));
