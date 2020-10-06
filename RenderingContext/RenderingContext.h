@@ -18,6 +18,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
+#include <string>
 
 namespace Geometry {
 template<typename _T> class _Matrix4x4;

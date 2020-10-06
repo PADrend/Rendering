@@ -73,6 +73,17 @@ add_library(Rendering SHARED
 	TextRenderer.cpp
 )
 
+if(MSVC)
+	target_compile_definitions(Rendering PRIVATE "RENDERINGAPI=__declspec(dllexport)")
+	target_compile_definitions(Rendering INTERFACE "RENDERINGAPI=__declspec(dllimport)")
+	target_compile_definitions(Rendering PUBLIC "RENDERING_DEPRECATED=__declspec(deprecated)")
+	target_compile_definitions(Rendering PRIVATE NOMINMAX)
+else()
+	target_compile_definitions(Rendering PRIVATE "RENDERINGAPI=")
+	target_compile_definitions(Rendering INTERFACE "RENDERINGAPI=")
+	target_compile_definitions(Rendering PUBLIC "RENDERING_DEPRECATED=__attribute__((deprecated))")
+endif()
+
 # Dependency to Geometry
 if(NOT TARGET Geometry)
 	find_package(Geometry 0.3.0 REQUIRED NO_MODULE)
