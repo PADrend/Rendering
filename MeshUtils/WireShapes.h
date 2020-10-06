@@ -46,10 +46,10 @@ namespace WireShapes {
  * @param box Geometric specification of the box
  * @return Mesh of the box
  */
-Mesh* createWireBox(const VertexDescription& vd, const Geometry::Box& box);
+RENDERINGAPI Mesh* createWireBox(const VertexDescription& vd, const Geometry::Box& box);
   
 //! Adds a wireframe box to the given meshBuilder. \see createWireBox(...)
-void addWireBox(MeshBuilder& mb, const Geometry::Box& box);
+RENDERINGAPI void addWireBox(MeshBuilder& mb, const Geometry::Box& box);
 
 /**
  * Returns a wireframe rectangle (oriented in x-y-plane)
@@ -58,10 +58,10 @@ void addWireBox(MeshBuilder& mb, const Geometry::Box& box);
  * @param rect the rectangle
  * @return Rectangle Mesh
  */
-Mesh* createWireRectangle(const VertexDescription& vd, const Geometry::Rect& rect);
+RENDERINGAPI Mesh* createWireRectangle(const VertexDescription& vd, const Geometry::Rect& rect);
 
 //! Adds an rectangle to the given meshBuilder. \see createWireRectangle(...)
-void addWireRectangle(MeshBuilder& mb, const Geometry::Rect& rect);
+RENDERINGAPI void addWireRectangle(MeshBuilder& mb, const Geometry::Rect& rect);
 
 /**
  * Return a wireframe sphere, consisting of 3 axis-aligned circles.
@@ -72,10 +72,10 @@ void addWireRectangle(MeshBuilder& mb, const Geometry::Rect& rect);
  * @param numSegments Number of segments for each circle
  * @return Sphere Mesh
  */
-Mesh* createWireSphere(const VertexDescription& vd, const Geometry::Sphere& sphere, uint8_t numSegments);
+RENDERINGAPI Mesh* createWireSphere(const VertexDescription& vd, const Geometry::Sphere& sphere, uint8_t numSegments);
 
 //! Adds a shere to the given meshBuilder. \see createWireSphere(...)
-void addWireSphere(MeshBuilder& mb, const Geometry::Sphere& sphere, uint8_t numSegments);
+RENDERINGAPI void addWireSphere(MeshBuilder& mb, const Geometry::Sphere& sphere, uint8_t numSegments);
 
  /**
  * Return a wireframe circle (oriented in x-y-plane).
@@ -85,10 +85,10 @@ void addWireSphere(MeshBuilder& mb, const Geometry::Sphere& sphere, uint8_t numS
  * @param numSegments Number of segments for the circle
  * @return Circle Mesh
  */
-Mesh* createWireCircle(const VertexDescription& vd, float radius, uint8_t numSegments);
+RENDERINGAPI Mesh* createWireCircle(const VertexDescription& vd, float radius, uint8_t numSegments);
 
 //! Adds a wireframe circle to the given meshBuilder. \see createWireCircle(...)
-void addWireCircle(MeshBuilder& mb, float radius, uint8_t numSegments);
+RENDERINGAPI void addWireCircle(MeshBuilder& mb, float radius, uint8_t numSegments);
 
 /**
  * Return a wireframe frustum.
@@ -97,10 +97,10 @@ void addWireCircle(MeshBuilder& mb, float radius, uint8_t numSegments);
  * @param frustum the frustum
  * @return frustum Mesh
  */
-Mesh* createWireFrustum(const VertexDescription& vd, const Geometry::Frustum& frustum);
+RENDERINGAPI Mesh* createWireFrustum(const VertexDescription& vd, const Geometry::Frustum& frustum);
 
 //! Adds a wireframe frustum to the given meshBuilder. \see createWireFrustum(...)
-void addWireFrustum(MeshBuilder& mb, const Geometry::Frustum& frustum);
+RENDERINGAPI void addWireFrustum(MeshBuilder& mb, const Geometry::Frustum& frustum);
 
 /**
  * Returns an line mesh.
@@ -110,10 +110,10 @@ void addWireFrustum(MeshBuilder& mb, const Geometry::Frustum& frustum);
  * @param end end of the line
  * @return Line Mesh
  */
-Mesh* createLine(const VertexDescription& vd, const Geometry::Vec3& start, const Geometry::Vec3& end);
+RENDERINGAPI Mesh* createLine(const VertexDescription& vd, const Geometry::Vec3& start, const Geometry::Vec3& end);
 
 //! Adds a line to the given meshBuilder. \see createLine(...)
-void addLine(MeshBuilder& mb, const Geometry::Vec3& start, const Geometry::Vec3& end);
+RENDERINGAPI void addLine(MeshBuilder& mb, const Geometry::Vec3& start, const Geometry::Vec3& end);
 
 } /* WireShapes */
 } /* MeshUtils */

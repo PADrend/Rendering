@@ -26,14 +26,14 @@ namespace Serialization {
 	\note Texture-Serialization may be added here when needed.
 	\note The return value is always true and can be used for static initialization.
 */
-bool initGenericAttributeSerialization();
+RENDERINGAPI bool initGenericAttributeSerialization();
 
 typedef Util::ReferenceAttribute<Mesh> MeshAttribute_t;
-const std::string GATypeNameMesh("Mesh");
-const std::string embeddedMeshPrefix("$[mmf_b64]");
-std::pair<std::string, std::string> serializeGAMesh(const std::pair<const Util::GenericAttribute *,
+RENDERINGAPI const std::string GATypeNameMesh("Mesh");
+RENDERINGAPI const std::string embeddedMeshPrefix("$[mmf_b64]");
+RENDERINGAPI std::pair<std::string, std::string> serializeGAMesh(const std::pair<const Util::GenericAttribute *,
 																	const Util::GenericAttributeMap *> & attributeAndContext);
-MeshAttribute_t * unserializeGAMesh(const std::pair<std::string,
+RENDERINGAPI MeshAttribute_t * unserializeGAMesh(const std::pair<std::string,
 													const Util::GenericAttributeMap *> & contentAndContext);
 
 }

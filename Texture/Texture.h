@@ -66,7 +66,7 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		 ** Texture::Format
 		 **/
 		struct Format {
-			Format();
+			RENDERINGAPI Format();
 			uint32_t sizeX, sizeY, numLayers;		//!< width, height, depth (3d-texture)/num Layers(array texture)
 			uint32_t glTextureType;					//!< GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_
 
@@ -78,7 +78,7 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 			
 			uint32_t numSamples = 4; //!< GL_TEXTURE_2D_MULTISAMPLE
 			
-			uint32_t getPixelSize() const;
+			RENDERINGAPI uint32_t getPixelSize() const;
 			uint32_t getDataSize() const 	{	return pixelFormat.compressed ? compressedImageSize : getPixelSize() * sizeX * sizeY * numLayers;}
 			uint32_t getRowSize() const		{	return pixelFormat.compressed ? 0 : getPixelSize() * sizeX;	}
 			
@@ -97,8 +97,8 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		};
 		// ---------------------------------------
 
-		Texture(Format format);
-		~Texture();
+		RENDERINGAPI Texture(Format format);
+		RENDERINGAPI ~Texture();
 
 		uint32_t getDataSize() const						{	return format.getDataSize();	}
 		const Format & getFormat() const					{	return format;	}
@@ -111,20 +111,20 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		bool getUseLinearMinFilter() const					{	return format.linearMinFilter;	}
 		bool getUseLinearMagFilter() const					{	return format.linearMagFilter;	}
 
-		void _createGLID(RenderingContext & context);
-		void _uploadGLTexture(RenderingContext & context, int level=0);
-		void downloadGLTexture(RenderingContext & context);
-		void removeGLData();
-		void clearGLData(const Util::Color4f& color={});
+		RENDERINGAPI void _createGLID(RenderingContext & context);
+		RENDERINGAPI void _uploadGLTexture(RenderingContext & context, int level=0);
+		RENDERINGAPI void downloadGLTexture(RenderingContext & context);
+		RENDERINGAPI void removeGLData();
+		RENDERINGAPI void clearGLData(const Util::Color4f& color={});
 
-		void allocateLocalData();
+		RENDERINGAPI void allocateLocalData();
 
 		/*! Returns a pointer to the local data.
 			\note if the texture has no local data, it is downloaded automatically */
-		uint8_t * openLocalData(RenderingContext & context);
+		RENDERINGAPI uint8_t * openLocalData(RenderingContext & context);
 
-		uint8_t * getLocalData();
-		const uint8_t * getLocalData() const;
+		RENDERINGAPI uint8_t * getLocalData();
+		RENDERINGAPI const uint8_t * getLocalData() const;
 		
 		void dataChanged()									{	dataHasChanged = true;	}
 
@@ -137,15 +137,15 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 			return glId;
 		}
 
-		bool isGLTextureValid()const;
-		bool isGLTextureResident()const;
+		RENDERINGAPI bool isGLTextureValid()const;
+		RENDERINGAPI bool isGLTextureResident()const;
 
 		Util::Bitmap* getLocalBitmap()const					{	return localBitmap.get();	}
 
 	/*!	@name Mipmaps */
 	// @{
 		void planMipmapCreation()							{	mipmapCreationIsPlanned = true;	}
-		void createMipmaps(RenderingContext & context);
+		RENDERINGAPI void createMipmaps(RenderingContext & context);
 		bool getHasMipmaps() const							{	return hasMipmaps;	}
 	// @}
 		
@@ -171,9 +171,9 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 	/*! (internal) sets the glId of the texture. Used for creating textures from existing gl textures. 
 	 * WARNING: The format is not updated and needs to fit the gl texture. 
 	 */
-	void _setGLId(uint32_t glId);
+	RENDERINGAPI void _setGLId(uint32_t glId);
 	
-	void enableComparision(RenderingContext & context, Comparison::function_t func);
+	RENDERINGAPI void enableComparision(RenderingContext & context, Comparison::function_t func);
 
 	private:
 		TextureType tType;

@@ -59,17 +59,17 @@ class MeshBuilder;
  * @param box Geometric specification of the box
  * @return Mesh of the box
  */
-Mesh* createBox(const VertexDescription& vd, const Geometry::Box& box);
+RENDERINGAPI Mesh* createBox(const VertexDescription& vd, const Geometry::Box& box);
   
 //! Adds a box to the given meshBuilder. \see createBox(...)
-void addBox(MeshBuilder& mb, const Geometry::Box& box);
+RENDERINGAPI void addBox(MeshBuilder& mb, const Geometry::Box& box);
 
 /*! Creates a mesh for a sky dome with texture coordinates.
   \note adapted from [alc] http://irrlicht.sourceforge.net/phpBB2/viewtopic.php?t=13887&sid=25788d2b93c73294fd7abe76db6fab1e */
-Mesh* createDome(const VertexDescription& vd, const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0);
+RENDERINGAPI Mesh* createDome(const VertexDescription& vd, const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0);
 
 //! Adds a dome to the given meshBuilder. \see createDome(...)
-void addDome(MeshBuilder& mb, const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0);
+RENDERINGAPI void addDome(MeshBuilder& mb, const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0);
 
  
 /**
@@ -84,10 +84,10 @@ void addDome(MeshBuilder& mb, const double radius = 100.0, const int horiRes = 4
  * @param azimuthSegments Number of subdivisions of the azimuth angle
  * @return Sphere Mesh
  */
-Mesh* createSphere(const VertexDescription& vd, const Geometry::Sphere_f& sphere, uint32_t inclinationSegments, uint32_t azimuthSegments);
+RENDERINGAPI Mesh* createSphere(const VertexDescription& vd, const Geometry::Sphere_f& sphere, uint32_t inclinationSegments, uint32_t azimuthSegments);
 
 //! Adds a shere to the given meshBuilder. \see createSphere(...)
-void addSphere(MeshBuilder& mb, const Geometry::Sphere_f& sphere, uint32_t inclinationSegments, uint32_t azimuthSegments);
+RENDERINGAPI void addSphere(MeshBuilder& mb, const Geometry::Sphere_f& sphere, uint32_t inclinationSegments, uint32_t azimuthSegments);
 
 /**
  * Return a sector of a disc.
@@ -101,10 +101,10 @@ void addSphere(MeshBuilder& mb, const Geometry::Sphere_f& sphere, uint32_t incli
  * @param angle Central angle of the sector in degrees
  * @return Disc Mesh or @c nullptr if the number of segments is smaller than two.
  */
-Mesh* createDiscSector(const VertexDescription& vd, float radius, uint8_t numSegments, float angle = 360.0f);
+RENDERINGAPI Mesh* createDiscSector(const VertexDescription& vd, float radius, uint8_t numSegments, float angle = 360.0f);
 
 //! Adds a disc sector to the given meshBuilder. \see createDiscSector(...)
-void addDiscSector(MeshBuilder& mb, float radius, uint8_t numSegments, float angle = 360.0f);
+RENDERINGAPI void addDiscSector(MeshBuilder& mb, float radius, uint8_t numSegments, float angle = 360.0f);
 
  /**
  * Return a sector of a ring.
@@ -119,10 +119,10 @@ void addDiscSector(MeshBuilder& mb, float radius, uint8_t numSegments, float ang
  * @param angle Central angle of the sector in degrees
  * @return Disc Mesh or @c nullptr if the number of segments is smaller than two or innerRadius >= outerRadius
  */
-Mesh* createRingSector(const VertexDescription& vd, float innerRadius, float outerRadius, uint8_t numSegments, float angle = 360.0f);
+RENDERINGAPI Mesh* createRingSector(const VertexDescription& vd, float innerRadius, float outerRadius, uint8_t numSegments, float angle = 360.0f);
 
 //! Adds a ring sector to the given meshBuilder. \see createRingSector(...)
-void addRingSector(MeshBuilder& mb, float innerRadius, float outerRadius, uint8_t numSegments, float angle = 360.0f);
+RENDERINGAPI void addRingSector(MeshBuilder& mb, float innerRadius, float outerRadius, uint8_t numSegments, float angle = 360.0f);
 
 /**
  * Return a cone with the radius given.
@@ -138,10 +138,10 @@ void addRingSector(MeshBuilder& mb, float innerRadius, float outerRadius, uint8_
  * @return Cone Mesh or @c nullptr if the number of segments is smaller than two
  * @see createDisc() for creation of a cap end
  */
-Mesh* createCone(const VertexDescription& vd, float radius, float height, uint8_t numSegments);
+RENDERINGAPI Mesh* createCone(const VertexDescription& vd, float radius, float height, uint8_t numSegments);
 
 //! Adds a cone to the given meshBuilder. \see createCone(...)
-void addCone(MeshBuilder& mb, float radius, float height, uint8_t numSegments);
+RENDERINGAPI void addCone(MeshBuilder& mb, float radius, float height, uint8_t numSegments);
 
 /**
  * Return a conical frustum with the radii given.
@@ -159,10 +159,10 @@ void addCone(MeshBuilder& mb, float radius, float height, uint8_t numSegments);
  * @return Conical frustum Mesh or @c nullptr if the number of segments is smaller than two
  * @see createDisc() for creation of cap ends
  */
-Mesh* createConicalFrustum(const VertexDescription& vd, float radiusBottom, float radiusTop, float height, uint8_t numSegments);
+RENDERINGAPI Mesh* createConicalFrustum(const VertexDescription& vd, float radiusBottom, float radiusTop, float height, uint8_t numSegments);
 
 //! Adds a conical frustum to the given meshBuilder. \see createConicalFrustum(...)
-void addConicalFrustum(MeshBuilder& mb, float radiusBottom, float radiusTop, float height, uint8_t numSegments);
+RENDERINGAPI void addConicalFrustum(MeshBuilder& mb, float radiusBottom, float radiusTop, float height, uint8_t numSegments);
 
 /**
  * Returns an arrow which consists of a ConicalFrustum and 2 Cones at one end.
@@ -172,10 +172,10 @@ void addConicalFrustum(MeshBuilder& mb, float radiusBottom, float radiusTop, flo
  * @param length Overall length of the arrow
  * @return Arrow Mesh
  */
-Mesh* createArrow(const VertexDescription& vd, float radius, float length);
+RENDERINGAPI Mesh* createArrow(const VertexDescription& vd, float radius, float length);
 
 //! Adds an arrow to the given meshBuilder. \see createArrow(...)
-void addArrow(MeshBuilder& mb, float radius, float length);
+RENDERINGAPI void addArrow(MeshBuilder& mb, float radius, float length);
 
 /**
  * Returns a Rectangle consisting of 2 triangles (oriented in x-y-plane)
@@ -184,7 +184,7 @@ void addArrow(MeshBuilder& mb, float radius, float length);
  * @param rect the rectangle
  * @return Rectangle Mesh
  */
-Mesh* createRectangle(const VertexDescription& vd, const Geometry::Rect_f& rect);
+RENDERINGAPI Mesh* createRectangle(const VertexDescription& vd, const Geometry::Rect_f& rect);
 
 /**
  * Returns a Rectangle consisting of 2 triangles with origin in the center (oriented in x-y-plane)
@@ -199,7 +199,7 @@ inline Mesh* createRectangle(const VertexDescription& vd, float width, float hei
 }
 
 //! Adds an rectangle to the given meshBuilder. \see createRectangle(...)
-void addRectangle(MeshBuilder& mb, const Geometry::Rect_f& rect);
+RENDERINGAPI void addRectangle(MeshBuilder& mb, const Geometry::Rect_f& rect);
 //! Adds an rectangle to the given meshBuilder. \see createRectangle(...)
 inline void addRectangle(MeshBuilder& mb, float width, float height) {
   addRectangle(mb, Geometry::Rect_f{0,0,width,height});
@@ -214,10 +214,10 @@ inline void addRectangle(MeshBuilder& mb, float width, float height) {
  * @param rows number of rows 
  * @param columns number of columns 
  */              
-Mesh* createGrid(const VertexDescription& vd, float width, float height, uint32_t rows, uint32_t columns);
+RENDERINGAPI Mesh* createGrid(const VertexDescription& vd, float width, float height, uint32_t rows, uint32_t columns);
 
 //! Adds a rectangular grid to the given meshBuilder. \see createGrid(...)
-void addGrid(MeshBuilder& mb, float width, float height, uint32_t rows, uint32_t columns);
+RENDERINGAPI void addGrid(MeshBuilder& mb, float width, float height, uint32_t rows, uint32_t columns);
 
 /**
  * Creates a hexagonal grid in the x-z-plane.
@@ -228,10 +228,10 @@ void addGrid(MeshBuilder& mb, float width, float height, uint32_t rows, uint32_t
  * @param rows number of rows. Needs to be at least 3
  * @param columns number of columns. Needs to be at least 4
  */              
-Mesh* createHexGrid(const VertexDescription& vd, float width, float height, uint32_t rows, uint32_t columns);
+RENDERINGAPI Mesh* createHexGrid(const VertexDescription& vd, float width, float height, uint32_t rows, uint32_t columns);
 
 //! Adds a hexagonal grid to the given meshBuilder. \see createHexGrid(...)
-void addHexGrid(MeshBuilder& mb, float width, float height, uint32_t rows, uint32_t columns);
+RENDERINGAPI void addHexGrid(MeshBuilder& mb, float width, float height, uint32_t rows, uint32_t columns);
 
 /**
  * Creates a mesh from a voxel bitmap as exported from a 3D Texture.
@@ -245,10 +245,10 @@ void addHexGrid(MeshBuilder& mb, float width, float height, uint32_t rows, uint3
  * @param colorAcc the bitmap that defines the voxel grid. Every pixel with non-zero alpha value defines a voxel.
  * @param the depth of the voxel grid. The height of the bitmap should be divisible by this value
  */
-Mesh* createVoxelMesh(const VertexDescription& vd, const Util::PixelAccessor& colorAcc, uint32_t depth);
+RENDERINGAPI Mesh* createVoxelMesh(const VertexDescription& vd, const Util::PixelAccessor& colorAcc, uint32_t depth);
 
 //! Adds a voxel mesh to the given meshBuilder. \see createHexGrid(...)
-void addVoxelMesh(MeshBuilder& mb, const Util::PixelAccessor& colorAcc, uint32_t depth);
+RENDERINGAPI void addVoxelMesh(MeshBuilder& mb, const Util::PixelAccessor& colorAcc, uint32_t depth);
 
  /**
  * Creates a torus mesh.
@@ -262,10 +262,10 @@ void addVoxelMesh(MeshBuilder& mb, const Util::PixelAccessor& colorAcc, uint32_t
  * @param minorSegments Number of minor segments. Minimum is 3.
  * @return The mesh
  */
-Mesh* createTorus(const VertexDescription& vd, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);
+RENDERINGAPI Mesh* createTorus(const VertexDescription& vd, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);
 
 //! Adds a torus to the MeshBuilder. \see addTorus(...)
-void addTorus(MeshBuilder& mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);
+RENDERINGAPI void addTorus(MeshBuilder& mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);
 
   
 /**
@@ -277,10 +277,10 @@ void addTorus(MeshBuilder& mb, float innerRadius, float outerRadius, uint32_t ma
 * @param normals Bitmap with normals.
 * @return The mesh
 */
-Mesh* createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::PixelAccessor> depth, Util::Reference<Util::PixelAccessor> color = nullptr, Util::Reference<Util::PixelAccessor> normals = nullptr);
+RENDERINGAPI Mesh* createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::PixelAccessor> depth, Util::Reference<Util::PixelAccessor> color = nullptr, Util::Reference<Util::PixelAccessor> normals = nullptr);
   
 //! Adds a mesh from bitmap to the given meshBuilder. \see createMeshFromBitmaps(...)
-void addMeshFromBitmaps(MeshBuilder& mb, Util::Reference<Util::PixelAccessor> depth, Util::Reference<Util::PixelAccessor> color = nullptr, Util::Reference<Util::PixelAccessor> normals = nullptr);
+RENDERINGAPI void addMeshFromBitmaps(MeshBuilder& mb, Util::Reference<Util::PixelAccessor> depth, Util::Reference<Util::PixelAccessor> color = nullptr, Util::Reference<Util::PixelAccessor> normals = nullptr);
 
 //! @}
 }

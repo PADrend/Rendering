@@ -40,26 +40,26 @@ class QueryObject {
 		/*!	Check if the result of the last query is already available.
 		 *	@return @c true if the test is finished, false otherwise.
 		 */
-		bool isResultAvailable() const;
+		RENDERINGAPI bool isResultAvailable() const;
 
 		/*!	Return the result of the query.
 		 *	@return result value (e.g. sample count	)
 		 */
-		uint32_t getResult() const;
+		RENDERINGAPI uint32_t getResult() const;
 		
 		/*! Returns the result as 64bit value.
 		 *	If the used open gl driver does not support 'GL_ARB_timer_query', a warning is shown once 
 		 *	and getResult() is returned instead.	*/
-		uint64_t getResult64()const;
+		RENDERINGAPI uint64_t getResult64()const;
 
 		//!	Start the query. @a end() has to be called after the rendering was done.
-		void begin() const;
+		RENDERINGAPI void begin() const;
 
 		//!	Stop the query.
-		void end() const;
+		RENDERINGAPI void end() const;
 		
 		//! Record the GL time; only used with GL_TIMESTAMP
-		void queryCounter() const;
+		RENDERINGAPI void queryCounter() const;
 
 		bool isValid()const	{	return id!=0;	}
 		
@@ -73,12 +73,12 @@ class QueryObject {
 		/*!	Request the next free query identifier.
 		 *	@return Occlusion query identifier
 		 */
-		static uint32_t getFreeId();
+		RENDERINGAPI static uint32_t getFreeId();
 
 		/*!	Mark the given query identifier as free.
 		 * @param id Occlusion query identifier
 		 */
-		static void freeId(uint32_t id);
+		RENDERINGAPI static void freeId(uint32_t id);
 
 };
 }

@@ -29,18 +29,18 @@ class StreamerXYZ : public AbstractRenderingStreamer {
 		Mesh * loadMesh(std::istream & input) override {
 			return loadMesh(input, 0);
 		}
-		Mesh * loadMesh(std::istream & input, std::size_t numPoints);
-		Util::GenericAttributeList * loadGeneric(std::istream & input) override;
+		RENDERINGAPI Mesh * loadMesh(std::istream & input, std::size_t numPoints);
+		RENDERINGAPI Util::GenericAttributeList * loadGeneric(std::istream & input) override;
 		
 		
 		/*! Distributes the points in the given xyz-input file into @p numberOfClusters many .xyz-files
 			in the same directory (having a number postfix).
 			This function should handle files of arbitrary size.	*/		
-		static void clusterPoints( const Util::FileName & inputFile, size_t numberOfClusters );
-		static void clusterPoints( std::istream & input, std::vector<std::ostream*> & outputs );
+		RENDERINGAPI static void clusterPoints( const Util::FileName & inputFile, size_t numberOfClusters );
+		RENDERINGAPI static void clusterPoints( std::istream & input, std::vector<std::ostream*> & outputs );
 
-		static uint8_t queryCapabilities(const std::string & extension);
-		static const char * const fileExtension;
+		RENDERINGAPI static uint8_t queryCapabilities(const std::string & extension);
+		RENDERINGAPI static const char * const fileExtension;
 };
 
 }

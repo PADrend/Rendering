@@ -19,7 +19,7 @@ class Shader;
 namespace ShaderUtils {
 
 //! Create a shader that writes the pixel normal into the color buffer.
-Util::Reference<Shader> createNormalToColorShader();
+RENDERINGAPI Util::Reference<Shader> createNormalToColorShader();
 
 //! Create a simple shader without any effects.
 Util::Reference<Shader> createDefaultShader();

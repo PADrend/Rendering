@@ -24,10 +24,10 @@ class StreamerOBJ : public AbstractRenderingStreamer {
 		virtual ~StreamerOBJ() {
 		}
 
-		Util::GenericAttributeList * loadGeneric(std::istream & input) override;
+		RENDERINGAPI Util::GenericAttributeList * loadGeneric(std::istream & input) override;
 
-		static uint8_t queryCapabilities(const std::string & extension);
-		static const char * const fileExtension;
+		RENDERINGAPI static uint8_t queryCapabilities(const std::string & extension);
+		RENDERINGAPI static const char * const fileExtension;
 };
 }
 }

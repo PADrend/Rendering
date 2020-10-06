@@ -24,7 +24,7 @@ class RenderingContext;
  */
 class StatisticsQuery : public QueryObject {
 	private:
-		StatisticsQuery(uint32_t statisticsType);
+		RENDERINGAPI StatisticsQuery(uint32_t statisticsType);
 	public:
 		StatisticsQuery(StatisticsQuery &&) = default;
 
@@ -33,70 +33,70 @@ class StatisticsQuery : public QueryObject {
 		 * 
 		 * @see @c GL_VERTICES_SUBMITTED_ARB
 		 */
-		static StatisticsQuery createVerticesSubmittedQuery();
+		RENDERINGAPI static StatisticsQuery createVerticesSubmittedQuery();
 
 		/**
 		 * Create a statistics query to count the number of primitives transferred to the GL.
 		 * 
 		 * @see @c GL_PRIMITIVES_SUBMITTED_ARB
 		 */
-		static StatisticsQuery createPrimitivesSubmittedQuery();
+		RENDERINGAPI static StatisticsQuery createPrimitivesSubmittedQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the vertex shader has been invoked.
 		 * 
 		 * @see @c GL_VERTEX_SHADER_INVOCATIONS_ARB
 		 */
-		static StatisticsQuery createVertexShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createVertexShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of patches processed by the tessellation control shader stage.
 		 * 
 		 * @see @c GL_TESS_CONTROL_SHADER_PATCHES_ARB
 		 */
-		static StatisticsQuery createTessControlShaderPatchesQuery();
+		RENDERINGAPI static StatisticsQuery createTessControlShaderPatchesQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the tessellation evaluation shader has been invoked.
 		 * 
 		 * @see @c GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB
 		 */
-		static StatisticsQuery createTessEvaluationShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createTessEvaluationShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the geometry shader has been invoked.
 		 * 
 		 * @see @c GL_GEOMETRY_SHADER_INVOCATIONS
 		 */
-		static StatisticsQuery createGeometryShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createGeometryShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of primitives emitted by the geometry shader.
 		 * 
 		 * @see @c GL_GEOMETRY_SHADER_PRIMITIVES_EMITTED_ARB
 		 */
-		static StatisticsQuery createGeometryShaderPrimitivesEmittedQuery();
+		RENDERINGAPI static StatisticsQuery createGeometryShaderPrimitivesEmittedQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the fragment shader has been invoked.
 		 * 
 		 * @see @c GL_FRAGMENT_SHADER_INVOCATIONS_ARB
 		 */
-		static StatisticsQuery createFragmentShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createFragmentShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the compute shader has been invoked.
 		 * 
 		 * @see @c GL_COMPUTE_SHADER_INVOCATIONS_ARB
 		 */
-		static StatisticsQuery createComputeShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createComputeShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of primitives that were processed in the primitive clipping stage.
 		 * 
 		 * @see @c GL_CLIPPING_INPUT_PRIMITIVES_ARB
 		 */
-		static StatisticsQuery createClippingInputPrimitivesQuery();
+		RENDERINGAPI static StatisticsQuery createClippingInputPrimitivesQuery();
 
 		/**
 		 * Create a statistics query to count the number of primitives that were output by the primitive clipping stage 
@@ -104,21 +104,21 @@ class StatisticsQuery : public QueryObject {
 		 * 
 		 * @see @c GL_CLIPPING_OUTPUT_PRIMITIVES_ARB
 		 */
-		static StatisticsQuery createClippingOutputPrimitivesQuery();
+		RENDERINGAPI static StatisticsQuery createClippingOutputPrimitivesQuery();
 
 		/**
 		 * Create a statistics query to measure the time between GPU commands
 		 * 
 		 * @see @c GL_TIME_ELAPSED
 		 */
-		static StatisticsQuery createTimeElapsedQuery();
+		RENDERINGAPI static StatisticsQuery createTimeElapsedQuery();
 
 		/**
 		 * Create a statistics query to measure the current GL time
 		 * 
 		 * @see @c GL_TIME_ELAPSED
 		 */
-		static StatisticsQuery createTimestampQuery();
+		RENDERINGAPI static StatisticsQuery createTimestampQuery();
 };
 }
 

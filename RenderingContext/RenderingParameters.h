@@ -55,11 +55,11 @@ enum function_t {
 	GEQUAL,
 	ALWAYS
 };
-std::string functionToString(function_t function);
-function_t stringToFunction(const std::string & str);
+RENDERINGAPI std::string functionToString(function_t function);
+RENDERINGAPI function_t stringToFunction(const std::string & str);
 
-uint32_t functionToGL(function_t function);
-function_t glToFunction(uint32_t value);
+RENDERINGAPI uint32_t functionToGL(function_t function);
+RENDERINGAPI function_t glToFunction(uint32_t value);
 }
 
 /**
@@ -141,11 +141,11 @@ class BlendingParameters {
 			ONE_MINUS_CONSTANT_ALPHA
 		};
 
-		static std::string functionToString(function_t function);
-		static function_t stringToFunction(const std::string & str);
+		RENDERINGAPI static std::string functionToString(function_t function);
+		RENDERINGAPI static function_t stringToFunction(const std::string & str);
 
-		static uint32_t functionToGL(function_t function);
-		static function_t glToFunction(uint32_t value);
+		RENDERINGAPI static uint32_t functionToGL(function_t function);
+		RENDERINGAPI static function_t glToFunction(uint32_t value);
 
 		/**
 		 * @brief Type of blending equation
@@ -159,11 +159,11 @@ class BlendingParameters {
 			FUNC_REVERSE_SUBTRACT
 		};
 
-		static std::string equationToString(equation_t equation);
-		static equation_t stringToEquation(const std::string & str);
+		RENDERINGAPI static std::string equationToString(equation_t equation);
+		RENDERINGAPI static equation_t stringToEquation(const std::string & str);
 
-		static uint32_t equationToGL(equation_t equation);
-		static equation_t glToEquation(uint32_t value);
+		RENDERINGAPI static uint32_t equationToGL(equation_t equation);
+		RENDERINGAPI static equation_t glToEquation(uint32_t value);
 	private:
 		bool enabled;
 		function_t blendFuncSrcRGB;
@@ -499,9 +499,9 @@ class ImageBindParameters {
 		bool  multiLayer,readOperations,writeOperations;
 	
 	public:
-		ImageBindParameters();
-		ImageBindParameters(Texture*t);
-		~ImageBindParameters();
+		RENDERINGAPI ImageBindParameters();
+		RENDERINGAPI ImageBindParameters(Texture*t);
+		RENDERINGAPI ~ImageBindParameters();
 		
 		uint32_t getLayer()const			{	return layer;	}
 		void setLayer(uint32_t i)			{	layer = i;	}
@@ -519,7 +519,7 @@ class ImageBindParameters {
 		void setWriteOperations(bool b)		{	writeOperations = b;	}
 		
 		Texture* getTexture()const			{	return texture.get();	}
-		void setTexture(Texture* t);
+		RENDERINGAPI void setTexture(Texture* t);
 		
 		bool operator==(const ImageBindParameters & other) const {
 			return texture == other.texture&&layer==other.layer&&level==other.level&&multiLayer==other.multiLayer&&
@@ -759,11 +759,11 @@ class PolygonModeParameters {
 	public:
 		enum polygonModeMode_t { POINT = 1, LINE = 2, FILL = 3 };
 
-		static std::string modeToString(polygonModeMode_t mode);
-		static polygonModeMode_t stringToMode(const std::string & str);
+		RENDERINGAPI static std::string modeToString(polygonModeMode_t mode);
+		RENDERINGAPI static polygonModeMode_t stringToMode(const std::string & str);
 
-		static uint32_t modeToGL(polygonModeMode_t mode);
-		static polygonModeMode_t glToMode(uint32_t value);
+		RENDERINGAPI static uint32_t modeToGL(polygonModeMode_t mode);
+		RENDERINGAPI static polygonModeMode_t glToMode(uint32_t value);
 	private:
 		polygonModeMode_t mode;
 	public:

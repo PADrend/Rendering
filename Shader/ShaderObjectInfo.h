@@ -32,14 +32,14 @@ namespace Rendering {
  */
 class ShaderObjectInfo {
 	public:
-		static const uint32_t SHADER_STAGE_VERTEX;
-		static const uint32_t SHADER_STAGE_FRAGMENT;
-		static const uint32_t SHADER_STAGE_GEOMETRY;
-		static const uint32_t SHADER_STAGE_TESS_CONTROL;
-		static const uint32_t SHADER_STAGE_TESS_EVALUATION;
-		static const uint32_t SHADER_STAGE_COMPUTE;
-		static const uint32_t SHADER_STAGE_TASK;
-		static const uint32_t SHADER_STAGE_MESH;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_VERTEX;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_FRAGMENT;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_GEOMETRY;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_TESS_CONTROL;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_TESS_EVALUATION;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_COMPUTE;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_TASK;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_MESH;
 	private:
 		uint32_t type;
 		std::string code;
@@ -68,67 +68,67 @@ class ShaderObjectInfo {
 		 * @return Handle of the compiled GL shader, or @c 0 in case of an
 		 * error
 		 */
-		uint32_t compile() const;
+		RENDERINGAPI uint32_t compile() const;
 
 		/**
 		 * Create a VertexShaderObject from the given code
 		 * 
 		 * @note Inserts "#define SG_VERTEX_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createVertex(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createVertex(const std::string & code);
 
 		/**
 		 * Create a FragmentShaderObject from the given code
 		 * 
 		 * @note Inserts "#define SG_FRAGMENT_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createFragment(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createFragment(const std::string & code);
 
 		/**
 		 * Create a GeometryShaderObject from the given code
 		 * 
 		 * @note Inserts "#define SG_GEOMETRY_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createGeometry(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createGeometry(const std::string & code);
 
 		/**
 		 * Create a ComputeShaderObject from the given code
 		 * 
 		 * @note Inserts "#define SG_COMPUTE_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createCompute(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createCompute(const std::string & code);
 
 		/**
 		 * Create a MeshShaderObject from the given code
 		 * 
 		 * @note Inserts "#define SG_MESH_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createMesh(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createMesh(const std::string & code);
 
 		/**
 		 * Create a TaskShaderObject from the given code
 		 * 
 		 * @note Inserts "#define SG_TASK_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createTask(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createTask(const std::string & code);
 
 		//! Load a VertexShaderObject from the given file.
-		static ShaderObjectInfo loadVertex(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadVertex(const Util::FileName & file);
 
 		//! Load a FragmentShaderObject from the given file.
-		static ShaderObjectInfo loadFragment(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadFragment(const Util::FileName & file);
 
 		//! Load a GeometryShaderObject from the given file.
-		static ShaderObjectInfo loadGeometry(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadGeometry(const Util::FileName & file);
 
 		//! Load a ComputeShaderObject from the given file.
-		static ShaderObjectInfo loadCompute(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadCompute(const Util::FileName & file);
 
 		//! Load a MeshShaderObject from the given file.
-		static ShaderObjectInfo loadMesh(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadMesh(const Util::FileName & file);
 
 		//! Load a TaskShaderObject from the given file.
-		static ShaderObjectInfo loadTask(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadTask(const Util::FileName & file);
 	
 		const Util::FileName & getFileName() const { return filename; }
 	private:

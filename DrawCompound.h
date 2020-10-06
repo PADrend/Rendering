@@ -34,14 +34,14 @@ namespace Rendering {
  */
  
 //! Draw a symbolized camera using the given rendering context, and color.
-void drawCamera(RenderingContext & rc, const Util::Color4f & color);
+RENDERINGAPI void drawCamera(RenderingContext & rc, const Util::Color4f & color);
 
-void drawCoordSys(RenderingContext & rc, float scale = 1.0f);
+RENDERINGAPI void drawCoordSys(RenderingContext & rc, float scale = 1.0f);
 
 //! Draw the given frustum as lines using the given rendering context, color, and line width.
-void drawFrustum(RenderingContext & rc, const Geometry::Frustum & frustum, const Util::Color4f & color, float lineWidth);
+RENDERINGAPI void drawFrustum(RenderingContext & rc, const Geometry::Frustum & frustum, const Util::Color4f & color, float lineWidth);
 
-void drawGrid(RenderingContext & rc, float scale = 1.0f);
+RENDERINGAPI void drawGrid(RenderingContext & rc, float scale = 1.0f);
 
 //! @}
 }

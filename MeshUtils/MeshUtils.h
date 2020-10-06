@@ -60,19 +60,19 @@ class VertexDescription;
 namespace MeshUtils {
 
 //! Compute a tight bounding sphere for the vertex positions of the given mesh.
-Geometry::Sphere_f calculateBoundingSphere(Mesh * mesh);
+RENDERINGAPI Geometry::Sphere_f calculateBoundingSphere(Mesh * mesh);
 
 /**
  * Compute a tight bounding sphere for the vertex positions of the given meshes
  * after applying the corresponding transformations to the positions.
  */
-Geometry::Sphere_f calculateBoundingSphere(const std::vector<std::pair<Mesh *, Geometry::Matrix4x4>> & meshesAndTransformations);
+RENDERINGAPI Geometry::Sphere_f calculateBoundingSphere(const std::vector<std::pair<Mesh *, Geometry::Matrix4x4>> & meshesAndTransformations);
 
 //! Calculate a hash value for the given mesh.
-uint32_t calculateHash(Mesh * mesh);
+RENDERINGAPI uint32_t calculateHash(Mesh * mesh);
 
 //! Calculate a hash value for the given vertex description.
-uint32_t calculateHash(const VertexDescription & vd);
+RENDERINGAPI uint32_t calculateHash(const VertexDescription & vd);
 
 /**
  * calulates vertex normals for a given mesh calculation is done by
@@ -82,7 +82,7 @@ uint32_t calculateHash(const VertexDescription & vd);
  * @param m the mesh to be modified
  * @author Ralf Petring
  */
-void calculateNormals(Mesh * m);
+RENDERINGAPI void calculateNormals(Mesh * m);
 
 /**
  * Calculate and add tangent space vectors from the normals and uv-coordinates of the given mesh.
@@ -91,12 +91,12 @@ void calculateNormals(Mesh * m);
  * The bitangent can be calculated in the shader by:
  * float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
  */
-void calculateTangentVectors(	Mesh * mesh, const Util::StringIdentifier uvName,
+RENDERINGAPI void calculateTangentVectors(	Mesh * mesh, const Util::StringIdentifier uvName,
 const Util::StringIdentifier tangentVecName);
 
 
 //! Create texture coordinates by projecting the vertices with the given projection matrix.
-void calculateTextureCoordinates_projection( Mesh * mesh, Util::StringIdentifier attribName, const Geometry::Matrix4x4 & projection);
+RENDERINGAPI void calculateTextureCoordinates_projection( Mesh * mesh, Util::StringIdentifier attribName, const Geometry::Matrix4x4 & projection);
 
 /**
  * Combine several meshes into a single mesh.
@@ -106,8 +106,8 @@ void calculateTextureCoordinates_projection( Mesh * mesh, Util::StringIdentifier
  * @author Stefan Arens
  * @author Paul Justus
  */
-Mesh * combineMeshes(const std::deque<Mesh *> & meshArray);
-Mesh * combineMeshes(const std::deque<Mesh *> & meshArray, const std::deque<Geometry::Matrix4x4> & transformations);
+RENDERINGAPI Mesh * combineMeshes(const std::deque<Mesh *> & meshArray);
+RENDERINGAPI Mesh * combineMeshes(const std::deque<Mesh *> & meshArray, const std::deque<Geometry::Matrix4x4> & transformations);
 
 /**
  * Splits the vertex data of a given mesh into multiple blocks of vertex data each containing @a chunkSize many vertices.
@@ -115,7 +115,7 @@ Mesh * combineMeshes(const std::deque<Mesh *> & meshArray, const std::deque<Geom
  * @note The last block only contains MeshVertexCount % chunkSize many vertices.
  * @author Sascha Brauer
  */
-std::deque<MeshVertexData> splitVertexData(Mesh * mesh, uint32_t chunkSize);
+RENDERINGAPI std::deque<MeshVertexData> splitVertexData(Mesh * mesh, uint32_t chunkSize);
 
 /**
  * Extracts a range of vertices from the given mesh.
@@ -126,10 +126,10 @@ std::deque<MeshVertexData> splitVertexData(Mesh * mesh, uint32_t chunkSize);
  *
  * @author Sascha Brauer
  */
-MeshVertexData * extractVertexData(Mesh * mesh, uint32_t begin, uint32_t length);
+RENDERINGAPI MeshVertexData * extractVertexData(Mesh * mesh, uint32_t begin, uint32_t length);
 
 //! Return @c true iff the given two meshes contain the same data - only the glIds and the filenames are not compared.
-bool compareMeshes( Mesh * mesh1,Mesh * mesh2 );
+RENDERINGAPI bool compareMeshes( Mesh * mesh1,Mesh * mesh2 );
 
 /**
  * allocates the memory for storing old vertices in new format and copies the old values to the correct position in the new memory
@@ -137,11 +137,11 @@ bool compareMeshes( Mesh * mesh1,Mesh * mesh2 );
  * @note values which do not fit into the new format get lost
  * @author Ralf Petring
  */
-MeshVertexData * convertVertices(	const MeshVertexData & vertices,
+RENDERINGAPI MeshVertexData * convertVertices(	const MeshVertexData & vertices,
 const VertexDescription & newVertexDescription);
 
  //! Copy data from one vertex attribute to another. Create, or modify the target attribute.
-void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringIdentifier to);
+RENDERINGAPI void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringIdentifier to);
 
 
 /**
@@ -154,20 +154,20 @@ void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringI
  *
  * @author Benjamin Eikel
  */
-void eliminateDuplicateVertices(Mesh * mesh);
+RENDERINGAPI void eliminateDuplicateVertices(Mesh * mesh);
 
 /**
  * Clone the given mesh but remove all vertices which are
  * never referenced.
  */
-Mesh * eliminateUnusedVertices(Mesh * mesh);
+RENDERINGAPI Mesh * eliminateUnusedVertices(Mesh * mesh);
 
 /**
  * Deletes long triangles (whose ratio between the longest side and
  * the corresponding height is > ratio).
  * \note Calls eliminateUnusedVertices to remove unused vertices.
  */
-Mesh * eliminateLongTriangles(Mesh * mesh, float ratio);
+RENDERINGAPI Mesh * eliminateLongTriangles(Mesh * mesh, float ratio);
 
 /**
  * Delete triangles that have at least one vertex lying behind the given plane.
@@ -176,7 +176,7 @@ Mesh * eliminateLongTriangles(Mesh * mesh, float ratio);
  * @param plane Plane that is used for cutting off vertices.
  * @return New mesh
  */
-Mesh * eliminateTrianglesBehindPlane(Mesh * mesh, const Geometry::Plane & plane);
+RENDERINGAPI Mesh * eliminateTrianglesBehindPlane(Mesh * mesh, const Geometry::Plane & plane);
 
 /**
  * Delete triangles that have (nearly) zero area.
@@ -184,13 +184,13 @@ Mesh * eliminateTrianglesBehindPlane(Mesh * mesh, const Geometry::Plane & plane)
  * @param mesh Source mesh. The mesh is not changed.
  * @return New mesh
  */
-Mesh * eliminateZeroAreaTriangles(Mesh * m);
+RENDERINGAPI Mesh * eliminateZeroAreaTriangles(Mesh * m);
 
 /**
  *Estimate the max. side length of the polygon in the mesh m
 */
 
-float getLongestSideLength(Mesh * m);
+RENDERINGAPI float getLongestSideLength(Mesh * m);
 
 /**
  * Take the given mesh and optimize the indices stored there for
@@ -206,14 +206,14 @@ float getLongestSideLength(Mesh * m);
  * @see http://doi.acm.org/10.1145/1276377.1276489
  * @author Benjamin Eikel
  */
-void optimizeIndices(Mesh * mesh, const uint_fast8_t cacheSize =	24);
+RENDERINGAPI void optimizeIndices(Mesh * mesh, const uint_fast8_t cacheSize =	24);
 
 /**
  * removes the color information from a mesh
  * @param m the mesh to be modified
  * @author Ralf Petring
  */
-void removeColorData(Mesh * m);
+RENDERINGAPI void removeColorData(Mesh * m);
 
 /**
  * Identify triangles that span large depth ranges by calculating their normals.
@@ -227,7 +227,7 @@ void removeColorData(Mesh * m);
  * @return New mesh
  * @note maxNormalZ = 0.6f and coveringMovement = 0.1f are good starting points.
  */
-Mesh * removeSkinsWithHoleCovering(Mesh * mesh, float maxNormalZ, float coveringMovement);
+RENDERINGAPI Mesh * removeSkinsWithHoleCovering(Mesh * mesh, float maxNormalZ, float coveringMovement);
 
 /**
  * Change the order of the vertices of each triangle.
@@ -237,7 +237,7 @@ Mesh * removeSkinsWithHoleCovering(Mesh * mesh, float maxNormalZ, float covering
  * uses another mode, then the mesh is not changed.
  * @author Benjamin Eikel
  */
-void reverseWinding(Mesh * mesh);
+RENDERINGAPI void reverseWinding(Mesh * mesh);
 
 /**
  * splits all triangles in the mesh which have at least one side longer than specified
@@ -246,7 +246,7 @@ void reverseWinding(Mesh * mesh);
  * @return the modified mesh
  * @author Ralf Petring
  */
-void splitLargeTriangles(Mesh * m, float maxSideLength);
+RENDERINGAPI void splitLargeTriangles(Mesh * m, float maxSideLength);
 
 /**
  * Apply color information to each vertex of the mesh
@@ -254,7 +254,7 @@ void splitLargeTriangles(Mesh * m, float maxSideLength);
  * @param color the color to be set
  * @author Ralf Petring
  */
-void setColor(Mesh * mesh, const Util::Color4f & color);
+RENDERINGAPI void setColor(Mesh * mesh, const Util::Color4f & color);
 
 /**
  * Apply material information to each vertex of the mesh
@@ -265,7 +265,7 @@ void setColor(Mesh * mesh, const Util::Color4f & color);
  * @param shininess the shininess value to be set
  * @author Ralf Petring
  */
-void setMaterial(Mesh * mesh, const Util::Color4f & ambient, const Util::Color4f & diffuse, const Util::Color4f & specular, float shininess);
+RENDERINGAPI void setMaterial(Mesh * mesh, const Util::Color4f & ambient, const Util::Color4f & diffuse, const Util::Color4f & specular, float shininess);
 
 
 /**
@@ -276,7 +276,7 @@ void setMaterial(Mesh * mesh, const Util::Color4f & ambient, const Util::Color4f
  * @param
  * @author Ralf Petring
  */
-void shrinkMesh(Mesh * m, bool shrinkPosition=false);
+RENDERINGAPI void shrinkMesh(Mesh * m, bool shrinkPosition=false);
 
 
 /**
@@ -285,11 +285,11 @@ void shrinkMesh(Mesh * m, bool shrinkPosition=false);
  * @param transMat the matrix to be used for transformation
  * @author Claudius Jaehn
  */
-void transform(MeshVertexData & vd, const Geometry::Matrix4x4 & transMat);
+RENDERINGAPI void transform(MeshVertexData & vd, const Geometry::Matrix4x4 & transMat);
 
 //!	Transforms one specific vertexAttribute of the vertexData according to the given matrix.
-void transformCoordinates(MeshVertexData & vd, Util::StringIdentifier attrName , const Geometry::Matrix4x4 & transMat,uint32_t begin,uint32_t numVerts);
-void transformNormals(MeshVertexData & vd, Util::StringIdentifier attrName , const Geometry::Matrix4x4 & transMat,uint32_t begin,uint32_t numVerts);
+RENDERINGAPI void transformCoordinates(MeshVertexData & vd, Util::StringIdentifier attrName , const Geometry::Matrix4x4 & transMat,uint32_t begin,uint32_t numVerts);
+RENDERINGAPI void transformNormals(MeshVertexData & vd, Util::StringIdentifier attrName , const Geometry::Matrix4x4 & transMat,uint32_t begin,uint32_t numVerts);
 
 /**
  * Return a new VertexDescription that contains the union of all VertexAttributes of the given VertexDescriptions.
@@ -298,7 +298,7 @@ void transformNormals(MeshVertexData & vd, Util::StringIdentifier attrName , con
  * @return New VertexDescription that is able to hold all VertexAttributes.
  * @author Benjamin Eikel
  */
-VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & vertexDescs);
+RENDERINGAPI VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & vertexDescs);
 
 /**
  * Cuts the given mesh along the given plane.
@@ -309,7 +309,7 @@ VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & 
  * @param tolerance if a vertex lies on the plane with the given tolerance, no new vertex is created
  * @author Sascha Brandt
  */
-void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices={}, float tolerance=std::numeric_limits<float>::epsilon());
+RENDERINGAPI void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIndices={}, float tolerance=std::numeric_limits<float>::epsilon());
 
 /**
  * Extrudes the specified triangles of the given mesh.
@@ -319,7 +319,7 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIn
  * @param tIndices set of triangle indices to extrude
  * @author Sascha Brandt
  */
-void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_t> tIndices);
+RENDERINGAPI void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_t> tIndices);
 
 /**
  * Slow method for finding the first triangle in a mesh that intersects the given ray.
@@ -328,7 +328,7 @@ void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_
  * @return -1 if no intersecting triangle was found, the triangle index otherwise.
  * @author Sascha Brandt
  */
-int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray);
+RENDERINGAPI int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray);
 
 /**
  * Remove vertices which are close to each other from the mesh and
@@ -340,7 +340,7 @@ int32_t getFirstTriangleIntersectingRay(Mesh* m, const Geometry::Ray3& ray);
  * @return number of merged vertices
  * @author Sascha Brandt
  */
-uint32_t mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<float>::epsilon());
+RENDERINGAPI uint32_t mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<float>::epsilon());
 
 /**
  * Splits a mesh into its connected components.
@@ -350,7 +350,7 @@ uint32_t mergeCloseVertices(Mesh * mesh, float tolerance=std::numeric_limits<flo
  * @return connected components of the mesh
  * @author Sascha Brandt
  */
-std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.001);
+RENDERINGAPI std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.001);
 
 /**
  * Moves every vertex along their normal according to the given texture (using its u,v coordinates).
@@ -361,7 +361,7 @@ std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance=0.0
  * @param clampToEdge clamp to texture borders (true) or wrap around (false)
  * @author Sascha Brandt
  */
-void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale=1.0, bool clampToEdge=false);
+RENDERINGAPI void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float scale=1.0, bool clampToEdge=false);
 
 
 /**
@@ -373,7 +373,7 @@ void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float sc
  * @param transform transformation matrix applied on each position
  * @author Sascha Brandt
  */
-void applyNoise(Mesh* mesh, float noiseScale=1.0, const Geometry::Matrix4x4& transform={}, uint32_t seed=0);
+RENDERINGAPI void applyNoise(Mesh* mesh, float noiseScale=1.0, const Geometry::Matrix4x4& transform={}, uint32_t seed=0);
 
 /**
  * Sets the y-coordinates of all vertices in a radius around a given 3d position to it's y-coordinate (with cubic bezier falloff) 
@@ -384,7 +384,7 @@ void applyNoise(Mesh* mesh, float noiseScale=1.0, const Geometry::Matrix4x4& tra
  * @param falloff blend falloff for vertices beyond the radius
  * @author Sascha Brandt
  */
-void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float falloff);
+RENDERINGAPI void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float falloff);
 
 /**
  * Computes the combined surface area of all triangles in a mesh 
@@ -393,7 +393,7 @@ void flattenMesh(Mesh* mesh, const Geometry::Vec3& pos, float radius, float fall
  * @return the surface area
  * @author Sascha Brandt
  */
-float computeSurfaceArea(Mesh* mesh);
+RENDERINGAPI float computeSurfaceArea(Mesh* mesh);
 
 /**
  * Extracts the vertices of a mesh with corresponding indices and moves them to a new mesh 
@@ -403,7 +403,7 @@ float computeSurfaceArea(Mesh* mesh);
  * @return new mesh
  * @author Sascha Brandt
  */
-Rendering::MeshVertexData* extractVertices(Rendering::Mesh* mesh, const std::vector<uint32_t>& indices);
+RENDERINGAPI Rendering::MeshVertexData* extractVertices(Rendering::Mesh* mesh, const std::vector<uint32_t>& indices);
 
 /**
  * Copies vertices from one mesh to another. 
@@ -416,7 +416,7 @@ Rendering::MeshVertexData* extractVertices(Rendering::Mesh* mesh, const std::vec
  * @param count number of vertices to copy
  * @author Sascha Brandt
  */
-void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sourceOffset, uint32_t targetOffset, uint32_t count);
+RENDERINGAPI void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sourceOffset, uint32_t targetOffset, uint32_t count);
 
 }
 }
