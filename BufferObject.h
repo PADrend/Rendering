@@ -110,7 +110,9 @@ class BufferObject {
 		 * and unbind the buffer object.
 		 */
 		template<typename T>
-		void allocateData(uint32_t bufferTarget, std::size_t numberOfElements, uint32_t usageHint);
+		void allocateData(uint32_t bufferTarget, std::size_t numberOfElements, uint32_t usageHint) {
+			uploadData(bufferTarget, nullptr, numberOfElements * sizeof(T), usageHint);
+		}
 
 		/**
 		 * @brief Copy data to the buffer object
@@ -120,7 +122,9 @@ class BufferObject {
 		 * and unbind the buffer object.
 		 */
 		template<typename T>
-		void uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint);
+		void uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint) {
+			uploadData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),static_cast<GLsizeiptr>(data.size() * sizeof(T)),usageHint);
+		}
 		RENDERINGAPI void uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint);
 		
 		/**
@@ -131,7 +135,9 @@ class BufferObject {
 		 * and unbind the buffer object.
 		 */
 		template<typename T>
-		void uploadSubData(uint32_t bufferTarget, const std::vector<T> & data, size_t offset=0);
+		void uploadSubData(uint32_t bufferTarget, const std::vector<T> & data, size_t offset=0) {
+			uploadSubData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),data.size() * sizeof(T),offset);
+		}
 		RENDERINGAPI void uploadSubData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, size_t offset=0);
 		
 		/**
@@ -142,8 +148,12 @@ class BufferObject {
 		 * and unbind the buffer object.
 		 */
 		template<typename T>
-		std::vector<T> downloadData(uint32_t bufferTarget, size_t numberOfElements, size_t offset=0) const;
-
+		std::vector<T> downloadData(uint32_t bufferTarget, size_t numberOfElements, size_t offset=0) const {
+			std::vector<uint8_t> v = downloadData(bufferTarget, numberOfElements * sizeof(T), offset);
+			return std::vector<T>(v.begin(), v.end());
+		}
+		RENDERINGAPI std::vector<uint8_t> downloadData(uint32_t bufferTarget, size_t numBytes, size_t offset=0) const;
+		
 		//! @c true if and only if prepare() was executed at least once without an execution of destroy() afterwards. 
 		bool isValid() const {
 			return bufferId != 0;
