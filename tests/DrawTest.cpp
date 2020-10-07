@@ -10,9 +10,9 @@
 
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
-#include <Rendering/RenderingContext/RenderingContext.h>
-#include <Rendering/Draw.h>
-#include <Rendering/Helper.h>
+#include "../RenderingContext/RenderingContext.h"
+#include "../Draw.h"
+#include "../Helper.h"
 #include <Util/Timer.h>
 #include <cstdint>
 #include <iostream>

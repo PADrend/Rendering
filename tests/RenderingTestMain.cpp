@@ -7,8 +7,8 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "TestUtils.h"
-#include <Rendering/RenderingContext/RenderingContext.h>
-#include <Rendering/Helper.h>
+#include "../RenderingContext/RenderingContext.h"
+#include "../Helper.h"
 #include <Util/UI/UI.h>
 #include <Util/UI/Window.h>
 #include <Util/Util.h>
