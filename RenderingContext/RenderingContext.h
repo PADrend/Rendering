@@ -72,7 +72,7 @@ private:
 	std::unique_ptr<InternalData> internalData;
 
 	bool immediate;
-	static bool compabilityMode;
+	RENDERINGAPI static bool compabilityMode;
 
 public:
 

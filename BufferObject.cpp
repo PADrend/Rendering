@@ -119,38 +119,21 @@ void BufferObject::uploadSubData(uint32_t bufferTarget, const uint8_t* data, siz
 	unbind(bufferTarget);
 }
 
-template<typename T>
-void BufferObject::allocateData(uint32_t bufferTarget, std::size_t numberOfElements, uint32_t usageHint) {
-	uploadData(bufferTarget, nullptr, static_cast<GLsizeiptr>(numberOfElements * sizeof(T)), usageHint);
-}
-
-template<typename T>
-void BufferObject::uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint) {
-	uploadData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),static_cast<GLsizeiptr>(data.size() * sizeof(T)),usageHint);
-}
-
-template<typename T>
-void BufferObject::uploadSubData(uint32_t bufferTarget, const std::vector<T> & data, size_t offset) {
-	uploadSubData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),static_cast<GLsizeiptr>(data.size() * sizeof(T)),offset);
-}
-
 #if defined(LIB_GL)
-template<typename T>
-std::vector<T> BufferObject::downloadData(uint32_t bufferTarget, std::size_t numberOfElements, size_t offset) const {
+std::vector<uint8_t> BufferObject::downloadData(uint32_t bufferTarget, std::size_t numBytes, size_t offset) const {
 	if(bufferId == 0) {
-		return std::vector<T>();
+		return std::vector<uint8_t>();
 	}
 	bind(bufferTarget);
-	const T * bufferData = reinterpret_cast<const T *>(glMapBuffer(bufferTarget, GL_READ_ONLY));
-	const std::vector<T> result(bufferData + offset, bufferData + offset + numberOfElements);
+	const uint8_t* bufferData = reinterpret_cast<const uint8_t*>(glMapBuffer(bufferTarget, GL_READ_ONLY));
+	const std::vector<uint8_t> result(bufferData + offset, bufferData + offset + numBytes);
 	glUnmapBuffer(bufferTarget);
 	unbind(bufferTarget);
 	return result;
 }
 #elif defined(LIB_GLESv2)
-template<typename T>
-std::vector<T> BufferObject::downloadData(uint32_t /*bufferTarget*/, std::size_t /*numberOfElements*/, size_t /*offset*/) const {
-	return std::vector<T>();
+std::vector<uint8_t> BufferObject::downloadData(uint32_t /*bufferTarget*/, std::size_t /*numBytes*/, size_t /*offset*/) const {
+	return std::vector<uint8_t>();
 }
 #endif
 
