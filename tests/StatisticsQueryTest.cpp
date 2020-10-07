@@ -10,9 +10,9 @@
 
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
-#include <Rendering/RenderingContext/RenderingContext.h>
-#include <Rendering/Draw.h>
-#include <Rendering/StatisticsQuery.h>
+#include "../RenderingContext/RenderingContext.h"
+#include "../Draw.h"
+#include "../StatisticsQuery.h"
 #define REQUIRE_EQUAL(a,b) REQUIRE((a) == (b))
 
 static const Geometry::Box box(Geometry::Vec3f(2.0f, 2.0f, 2.0f), 3.0f);

@@ -8,7 +8,7 @@
 */
 #include <catch2/catch.hpp>
 
-#include <Rendering/BufferObject.h>
+#include "../BufferObject.h"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
