@@ -57,7 +57,7 @@ static DescriptorPoolHandle createPool(const DeviceRef& device, const ShaderReso
 
 //-----------------
 
-DescriptorPool::DescriptorPool(const DeviceRef& device, uint32_t set, const ShaderResourceLayoutSet& layout) : device(device), set(set), layout(layout) { }
+DescriptorPool::DescriptorPool(const DeviceRef& device, const ShaderResourceLayoutSet& layout) : device(device), layout(layout) { }
 
 //-----------------
 
@@ -104,17 +104,14 @@ DescriptorSetHandle DescriptorPool::request() {
 //-----------------
 
 void DescriptorPool::free(DescriptorSetHandle obj) {
-	if(obj) {
+	if(obj)
 		freeObjects.emplace_back(obj);
-		activeObjects.erase(obj);
-	}
 }
 
 //-----------------
 
 void DescriptorPool::reset() {
 	freeObjects.clear();
-	activeObjects.clear();
 	pools.clear();
 	poolCounter = maxDescriptorCount;
 }

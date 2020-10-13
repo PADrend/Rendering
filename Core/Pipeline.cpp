@@ -21,6 +21,7 @@
 namespace Rendering {
 
 vk::Format getVkFormat(const InternalFormat& format);
+vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
 
 //---------------
 
@@ -194,6 +195,27 @@ static vk::PipelineColorBlendAttachmentState convertColorBlendAttachmentState(co
 		convertBlendFactor(state.srcAlphaBlendFactor), convertBlendFactor(state.dstAlphaBlendFactor), convertBlendOp(state.alphaBlendOp),
 		static_cast<vk::ColorComponentFlags>(state.colorWriteMask)
 	};
+}
+
+//---------------
+
+ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout& layout) {
+	vk::Device vkDevice(device->getApiHandle());
+
+	std::vector<vk::DescriptorSetLayout> layouts;
+	for(auto& set : layout.getLayoutSets()) {
+		layouts.emplace_back(device->getResourceCache()->createDescriptorSetLayout(set.second));
+	}
+
+	std::vector<vk::PushConstantRange> pushConstantRanges;
+	for(auto& range : layout.getPushConstantRanges()) {
+		pushConstantRanges.emplace_back(getVkStageFlags(range.stages), range.offset, range.size);
+	}
+
+	return PipelineLayoutHandle::create(vkDevice.createPipelineLayout({{},
+		static_cast<uint32_t>(layouts.size()), layouts.data(),
+		static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data(),
+	}), vkDevice).get();
 }
 
 //---------------

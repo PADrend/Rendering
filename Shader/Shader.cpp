@@ -241,7 +241,7 @@ bool Shader::linkProgram() {
 
 	// Create descriptor set pools
 	for(auto& res : layoutSets) {
-		DescriptorPool::Ref pool = new DescriptorPool(device, res.first, res.second);
+		DescriptorPool::Ref pool = new DescriptorPool(device, res.second);
 		if(pool->init())
 			descriptorPools.emplace(res.first, pool);
 	}

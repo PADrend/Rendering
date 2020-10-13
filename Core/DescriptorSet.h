@@ -36,13 +36,16 @@ public:
 
 	bool update(const BindingSet& bindings);
 
-	const DescriptorSetHandle& getApiHandle() const;
+	const DescriptorSetHandle& getApiHandle() const { return handle; }
 private:
 	friend class DescriptorPool;
-	DescriptorSet(const DescriptorPoolRef& pool);
+	DescriptorSet(const DescriptorPoolRef& pool, const BindingSet& bindings);
 	bool init();
+	
 	const DescriptorPoolRef pool;
+	BindingSet bindings;
 	DescriptorSetHandle handle;
+	DescriptorPoolHandle poolHandle;
 	DescriptorSetLayoutHandle layoutHandle;
 };
 

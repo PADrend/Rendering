@@ -9,6 +9,7 @@
 
 #include "DescriptorSet.h"
 #include "DescriptorPool.h"
+#include "ResourceCache.h"
 #include "Device.h"
 #include "Sampler.h"
 #include "ImageView.h"
@@ -85,35 +86,8 @@ ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderR
 
 //---------------
 
-ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout& layout) {
-	vk::Device vkDevice(device->getApiHandle());
-
-	for(auto& set : layout.getLayoutSets()) {
-
-	}
-	// Separate resources by set index
-	std::vector<vk::PushConstantRange> pushConstantRanges;
-	/*for(auto& res : resources) {
-		setResources[res.second.set].emplace_back(res.second);
-		if(res.second.layout.type == ShaderResourceType::PushConstant) {
-			pushConstantRanges.emplace_back(getVkStageFlags(res.second.layout.stages), res.second.offset, res.second.size);
-		}
-	}*/
-
-	std::vector<vk::DescriptorSetLayout> layouts;
-	/*for(auto& res : descriptorPools)
-		layouts.emplace_back(res.second->getLayout()->getApiHandle());*/
-
-	return PipelineLayoutHandle::create(vkDevice.createPipelineLayout({{},
-		static_cast<uint32_t>(layouts.size()), layouts.data(),
-		static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data(),
-	}), vkDevice).get();
-}
-
-//---------------
-
 DescriptorSet::Ref DescriptorSet::create(const DescriptorPoolRef& pool, const BindingSet& bindings) {
-	Ref obj = new DescriptorSet(pool);
+	Ref obj = new DescriptorSet(pool, bindings);
 	if(!obj->init())
 		return nullptr;
 	obj->update(bindings);
@@ -122,7 +96,7 @@ DescriptorSet::Ref DescriptorSet::create(const DescriptorPoolRef& pool, const Bi
 
 //---------------
 
-DescriptorSet::DescriptorSet(const DescriptorPoolRef& pool) : pool(pool) { }
+DescriptorSet::DescriptorSet(const DescriptorPoolRef& pool, const BindingSet& bindings) : pool(pool), bindings(bindings) { }
 
 //---------------
 
@@ -193,7 +167,7 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 		}
 
 		// TODO: handle unbound array elements
-		uint32_t count = static_cast<uint32_t>(std::max(imageBindings.size(), std::max(bufferBindings.size(), texelBufferViews.size())));
+		uint32_t count = std::max<uint32_t>(imageBindings.size(), std::max<uint32_t>(bufferBindings.size(), texelBufferViews.size()));
 		writes.emplace_back(
 			vkDescriptorSet, bIt.first, 
 			0, count, getVkDescriptorType(descriptor.type, descriptor.dynamic), 
@@ -202,12 +176,6 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 	}
 	vkDevice.updateDescriptorSets(writes, {});
 	return true;
-}
-
-//---------------
-
-const DescriptorSetHandle& DescriptorSet::getApiHandle() const {
-	return handle;
 }
 
 //---------------

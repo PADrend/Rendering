@@ -42,12 +42,12 @@ public:
 	using Ref = Util::Reference<Device>;
 
 	struct Configuration {
-		Configuration(std::string n, uint32_t apiMajor=0, uint32_t apiMinor=0, bool debug=false) :
+		Configuration(std::string n, uint32_t apiMajor=1, uint32_t apiMinor=0, bool debug=false) :
 			name(n), apiVersionMajor(apiMajor), apiVersionMinor(apiMinor), debugMode(debug) { }
 		std::string name;
-		uint32_t apiVersionMajor = 0;
-		uint32_t apiVersionMinor = 0;
-		bool debugMode = 0;
+		uint32_t apiVersionMajor;
+		uint32_t apiVersionMinor;
+		bool debugMode;
 	};
 	
 	static Ref create(Util::UI::WindowRef window, const Configuration& config);
