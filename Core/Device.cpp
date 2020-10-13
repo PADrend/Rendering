@@ -31,6 +31,27 @@ namespace Rendering {
 
 static Device* defaultDevice = nullptr;
 
+static uint64_t getDeviceScore(const vk::PhysicalDevice& device) {
+	uint64_t score = 1;
+	auto props = device.getProperties();
+	auto memProps = device.getMemoryProperties();
+	
+	switch(props.deviceType) {
+		case vk::PhysicalDeviceType::eDiscreteGpu: score <<= 63; break; // prefer discrete gpu
+		case vk::PhysicalDeviceType::eIntegratedGpu: score <<= 62; break;
+		default: score <<= 61;
+	}
+
+	uint64_t deviceMemory = 0;
+	for(uint32_t i=0; i<memProps.memoryHeapCount; ++i) {
+		if(memProps.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
+			deviceMemory = memProps.memoryHeaps[i].size;
+			break;
+		}
+	}
+	return score | (deviceMemory >> 3);
+}
+
 //=========================================================================
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -143,25 +164,16 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const D
 		return false;
 	
 	// Select best physical device based on memory
-	vk::DeviceSize bestMemory = 0;
-	for(auto& device : physicalDevices) {
-		auto properties = device.getMemoryProperties();
-		vk::DeviceSize deviceMemory = 0;
-		for(uint32_t i=0; i<properties.memoryHeapCount; ++i) {
-			if(properties.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
-				deviceMemory = properties.memoryHeaps[i].size;
-				break;
-			}
-		}
-		
-		if(!physicalDevice || deviceMemory > bestMemory) {
-			bestMemory = deviceMemory;
-			physicalDevice = device;
-		}
-	}
+	std::sort(physicalDevices.begin(), physicalDevices.end(), [](const vk::PhysicalDevice& d1, const vk::PhysicalDevice& d2) {
+		return getDeviceScore(d1) > getDeviceScore(d2);
+	});
+	physicalDevice = physicalDevices.front();
 	if(!physicalDevice)
 		return false;
+
 	properties = physicalDevice.getProperties();
+	if(config.debugMode)
+		std::cout << "selected device: " << properties.deviceName << std::endl;
 	
 	// check API version
 	uint32_t apiVersion = VK_MAKE_VERSION(config.apiVersionMajor, config.apiVersionMinor, 0);
