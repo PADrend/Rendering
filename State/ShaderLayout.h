@@ -71,7 +71,7 @@ struct ShaderResourceLayout {
 	bool dynamic = false; //! Controls if the shader resource is dynamic.
 
 	bool operator==(const ShaderResourceLayout& o) const {
-		return elementCount == o.elementCount && type == o.type && stages == o.stages && dynamic == o.dynamic;
+		return elementCount == o.elementCount && type == o.type && dynamic == o.dynamic;// && stages == o.stages;
 	}
 };
 

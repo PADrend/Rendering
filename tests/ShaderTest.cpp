@@ -41,6 +41,7 @@ const std::string vertexShader = R"vs(
 
 	layout(push_constant) uniform PushConstants {
 		mat4 sg_matrix_modelToCamera;
+		float testData[8];
 	} test;
 
 	layout(set=0, binding=0) uniform FrameData {
@@ -56,6 +57,11 @@ const std::string vertexShader = R"vs(
 const std::string fragmentShader = R"fs(
 	#version 450
 	
+	layout(push_constant) uniform PushConstants {
+		mat4 sg_matrix_modelToCamera;
+		float testData[8];
+	} test;
+
 	struct sg_LightSourceParameters {
 		int type;
 		vec3 position;
@@ -73,7 +79,7 @@ const std::string fragmentShader = R"fs(
 	layout(location = 0) out vec4 outColor;
 
 	void main() {
-		outColor = vec4(fragColor, 1.0) + sg_LightSource[0].ambient;
+		outColor = vec4(fragColor, 1.0) + sg_LightSource[0].ambient * test.testData[0];
 	}
 )fs";
 

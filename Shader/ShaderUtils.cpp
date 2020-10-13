@@ -25,45 +25,6 @@ namespace Rendering {
 
 namespace ShaderUtils {
 
-static ShaderResource readPushConstant(spirv_cross::Compiler& compiler, spirv_cross::Resource& resource, ShaderStage stage) {
-	ShaderResource result{resource.name, 0, 0, {ShaderResourceType::PushConstant, stage}};
-	const auto& spirvType = compiler.get_type_from_variable(resource.id);
-	result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
-	result.offset = std::numeric_limits<std::uint32_t>::max();
-	for(auto i=0u; i < spirvType.member_types.size(); ++i) 
-		result.offset = std::min(result.offset, compiler.get_member_decoration(spirvType.self, i, spv::DecorationOffset));
-	result.size -= result.offset;
-	return result;
-}
-
-//-------------
-
-static ShaderResource readSpecializationConstant(spirv_cross::Compiler& compiler, spirv_cross::SpecializationConstant& resource, ShaderStage stage) {
-	ShaderResource result{compiler.get_name(resource.id), 0, 0, {ShaderResourceType::SpecializationConstant, stage}};
-	const auto& spirvValue = compiler.get_constant(resource.id);
-	const auto& spirvType = compiler.get_type(spirvValue.constant_type);
-	switch (spirvType.basetype) {
-		case spirv_cross::SPIRType::BaseType::Boolean:
-		case spirv_cross::SPIRType::BaseType::Char:
-		case spirv_cross::SPIRType::BaseType::Int:
-		case spirv_cross::SPIRType::BaseType::UInt:
-		case spirv_cross::SPIRType::BaseType::Float:
-			result.size = 4;
-			break;
-		case spirv_cross::SPIRType::BaseType::Int64:
-		case spirv_cross::SPIRType::BaseType::UInt64:
-		case spirv_cross::SPIRType::BaseType::Double:
-			result.size = 8;
-			break;
-		default:
-			result.size = 0;
-			break;
-	}
-	result.offset = 0;
-	result.constantId = resource.constant_id;
-	return result;
-}
-
 //-------------
 
 static Uniform::dataType_t getUniformType(const spirv_cross::SPIRType& type) {
@@ -138,6 +99,50 @@ static std::vector<ShaderResourceMember> getResourceMembers(spirv_cross::Compile
 			result.emplace_back(std::move(m));
 		}		
 	}
+	return result;
+}
+
+//-------------
+
+static ShaderResource readPushConstant(spirv_cross::Compiler& compiler, spirv_cross::Resource& resource, ShaderStage stage) {
+	ShaderResource result{resource.name, 0, 0, {ShaderResourceType::PushConstant, stage}};
+	const auto& spirvType = compiler.get_type_from_variable(resource.id);
+	result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
+	result.offset = std::numeric_limits<std::uint32_t>::max();
+	for(auto i=0u; i < spirvType.member_types.size(); ++i) 
+		result.offset = std::min(result.offset, compiler.get_member_decoration(spirvType.self, i, spv::DecorationOffset));
+	result.size -= result.offset;
+
+	result.members = getResourceMembers(compiler, compiler.get_type(resource.base_type_id)); // recursively get members of structs
+
+	return result;
+}
+
+//-------------
+
+static ShaderResource readSpecializationConstant(spirv_cross::Compiler& compiler, spirv_cross::SpecializationConstant& resource, ShaderStage stage) {
+	ShaderResource result{compiler.get_name(resource.id), 0, 0, {ShaderResourceType::SpecializationConstant, stage}};
+	const auto& spirvValue = compiler.get_constant(resource.id);
+	const auto& spirvType = compiler.get_type(spirvValue.constant_type);
+	switch (spirvType.basetype) {
+		case spirv_cross::SPIRType::BaseType::Boolean:
+		case spirv_cross::SPIRType::BaseType::Char:
+		case spirv_cross::SPIRType::BaseType::Int:
+		case spirv_cross::SPIRType::BaseType::UInt:
+		case spirv_cross::SPIRType::BaseType::Float:
+			result.size = 4;
+			break;
+		case spirv_cross::SPIRType::BaseType::Int64:
+		case spirv_cross::SPIRType::BaseType::UInt64:
+		case spirv_cross::SPIRType::BaseType::Double:
+			result.size = 8;
+			break;
+		default:
+			result.size = 0;
+			break;
+	}
+	result.offset = 0;
+	result.constantId = resource.constant_id;
 	return result;
 }
 
