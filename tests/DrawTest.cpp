@@ -11,6 +11,7 @@
 
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
+#include <Geometry/Angle.h>
 #include "../RenderingContext/RenderingContext.h"
 #include "../RenderingContext/PipelineState.h"
 #include "../Core/ApiHandles.h"
@@ -37,17 +38,20 @@
 const std::string vertexShader = R"vs(
 	#version 450
 
-	out gl_PerVertex {
-		vec4 gl_Position;
-	};
-
 	layout(location = 0) in vec2 position;
 	layout(location = 1) in vec4 color;
 
 	layout(location = 0) out vec3 fragColor;
 
+	layout(push_constant) uniform PushConstants {
+		float angle;
+	};
+
 	void main() {
-		gl_Position = vec4(position, 0.0, 1.0);
+		float s = sin(angle);
+		float c = cos(angle);
+		mat2 m = mat2(c, -s, s, c);
+		gl_Position = vec4(m * position, 0.0, 1.0);
 		fragColor = color.rgb;
 	}
 )vs";
@@ -115,11 +119,11 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	inputState.setAttribute({0, 0, InternalFormat::RG32Float, 0}, 0);
 	inputState.setAttribute({1, 1, InternalFormat::RGBA32Float, 0}, 1);
 	state.setVertexInputState(inputState);
-	
 	// --------------------------------------------
 	// draw
-	
-	for(uint_fast32_t round = 0; round < 100; ++round) {
+
+	auto angle = Geometry::Angle::deg(0);
+	for(uint_fast32_t round = 0; round < 1000; ++round) {
 		auto& fbo = swapchain->getFBO(swapchain->getCurrentIndex());
 		auto& attachment = fbo->getColorTexture();
 		
@@ -130,16 +134,19 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		cmdBuffer->setFBO(fbo);
 		//cmdBuffer->textureBarrier(attachment, ResourceUsage::RenderTarget);
 
-		cmdBuffer->beginRenderPass({{0,0,0,1}});
+		cmdBuffer->beginRenderPass({{1,1,1,1}});
 		cmdBuffer->bindVertexBuffers(0, {vertexBuffer, vertexBuffer}, {0, positions.size() * sizeof(Geometry::Vec2)});
+		cmdBuffer->pushConstants(angle.deg());
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
 				
 		//cmdBuffer->textureBarrier(attachment, ResourceUsage::Present);
 		cmdBuffer->end();
 
-		graphicsQueue->submit(cmdBuffer);		
+		graphicsQueue->submit(cmdBuffer);
 		graphicsQueue->present();
+
+		angle += Geometry::Angle::deg(1);
 	}
 	vkDevice.waitIdle();
 }

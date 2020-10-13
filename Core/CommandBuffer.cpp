@@ -33,6 +33,7 @@ namespace Rendering {
 vk::AccessFlags getVkAccessMask(const ResourceUsage& usage);
 vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 vk::PipelineStageFlags getVkPipelineStageMask(const ResourceUsage& usage, bool src);
+vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
 
 //-----------------
 
@@ -194,9 +195,9 @@ void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColor
 	vk::RenderPass renderPass(fbo->getRenderPass());
 
 	std::vector<vk::ClearValue> clearValues(fbo->getColorAttachmentCount(), vk::ClearColorValue{});
-	for(uint32_t i=0; i<clearValues.size(); ++i) {
+	for(uint32_t i=0; i<std::min(clearValues.size(), clearColors.size()); ++i) {
 		auto& c = clearColors[i];
-		clearValues[i].color.setFloat32(std::array<float,4>{c.r(), c.g(), c.b(), c.a()});
+		clearValues[i].color.setFloat32({c.r(), c.g(), c.b(), c.a()});
 	}
 
 	vkCmd.beginRenderPass({
@@ -212,6 +213,25 @@ void CommandBuffer::endRenderPass() {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.endRenderPass();
+}
+//-----------------
+
+void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	auto& fbo = getFBO();
+	std::vector<vk::ClearAttachment> clearAttachments(fbo->getColorAttachmentCount(), vk::ClearAttachment{});
+	for(uint32_t i=0; i<std::min(clearAttachments.size(), clearColors.size()); ++i) {
+		auto& c = clearColors[i];
+		clearAttachments[i].clearValue.color.setFloat32({c.r(), c.g(), c.b(), c.a()});
+		clearAttachments[i].colorAttachment = i;
+		clearAttachments[i].aspectMask = vk::ImageAspectFlagBits::eColor;
+	}
+	vk::ClearRect clearRect;
+	clearRect.baseArrayLayer = 0;
+	clearRect.layerCount = 1;
+	clearRect.rect = vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} };
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.clearAttachments(clearAttachments, {clearRect});
 }
 
 //-----------------
@@ -231,10 +251,29 @@ void CommandBuffer::bindTexture(const TextureRef& texture, uint32_t set, uint32_
 void CommandBuffer::bindInputImage(const ImageViewRef& view, uint32_t set, uint32_t binding, uint32_t arrayElement) {
 	bindings.bindInputImage(view, set, binding, arrayElement);
 }
+//-----------------
+
+void CommandBuffer::pushConstants(const std::vector<uint8_t>& data, uint32_t offset) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	vk::CommandBuffer vkCmd(handle);
+	Shader::Ref shader = pipeline->getShader();
+	WARN_AND_RETURN_IF(!shader || !shader->init(), "Cannot set push constants. No bound shader.",);
+	auto& layout = shader->getLayout();
+	vk::PipelineLayout vkLayout(shader->getLayoutHandle());
+	vk::ShaderStageFlags stages{};
+	for(auto& range : layout.getPushConstantRanges()) {
+		if(offset >= range.offset && offset + data.size() <= range.offset + range.size) {
+			stages |= getVkStageFlags(range.stages);
+		}
+	}
+	if(stages)
+		vkCmd.pushConstants(vkLayout, stages, offset, static_cast<uint32_t>(data.size()), data.data());
+}
 
 //-----------------
 
 void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	std::vector<vk::Buffer> vkBuffers;
 	std::vector<vk::DeviceSize> vkOffsets(offsets.begin(), offsets.end());
@@ -248,6 +287,7 @@ void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<B
 //-----------------
 
 void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer, size_t offset) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	vk::Buffer vkBuffer((buffer && buffer->isValid()) ? buffer->getBuffer()->getApiHandle() : nullptr);
 	vkCmd.bindIndexBuffer(vkBuffer, offset, vk::IndexType::eUint32);

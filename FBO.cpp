@@ -195,7 +195,7 @@ void FBO::init() {
 			attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
 				static_cast<vk::Format>(getVkFormat(format.pixelFormat)),
 				static_cast<vk::SampleCountFlagBits>(format.samples),
-				vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
+				vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
 				vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
 				vk::ImageLayout::eUndefined,
 				vk::ImageLayout::ePresentSrcKHR

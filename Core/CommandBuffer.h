@@ -58,12 +58,21 @@ public:
 	void begin();
 	void end();
 
-	void beginRenderPass(const std::vector<Util::Color4f>& clearColors);
+	void beginRenderPass(const std::vector<Util::Color4f>& clearColors={});
 	void endRenderPass();
+
+	void clearColor(const std::vector<Util::Color4f>& clearColors);
 
 	void bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+
+	void pushConstants(const std::vector<uint8_t>& data, uint32_t offset=0);
+
+	template<typename T>
+	void pushConstants(const T& value, uint32_t offset=0) {
+		pushConstants({reinterpret_cast<const uint8_t *>(&value), reinterpret_cast<const uint8_t *>(&value) + sizeof(T)}, offset);
+	}
 
 	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets={});
 	void bindIndexBuffer(const BufferObjectRef& buffer, size_t offset=0);
@@ -75,6 +84,7 @@ public:
 
 	void textureBarrier(const TextureRef& texture, ResourceUsage newUsage);
 	//void bufferBarrier(const BufferObjectRef& buffer, ResourceUsage newUsage);
+
 
 	PipelineState& getPipelineState() { return pipeline->getState(); }
 	void setPipelineState(const PipelineState& value) { pipeline->setState(value); }
