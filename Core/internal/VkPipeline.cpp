@@ -144,8 +144,8 @@ static vk::LogicOp convertLogicOp(const LogicOp& op) {
 		case LogicOp::OrInverted: return vk::LogicOp::eOrInverted;
 		case LogicOp::Nand: return vk::LogicOp::eNand;
 		case LogicOp::Set: return vk::LogicOp::eSet;
+		default: return vk::LogicOp::eNoOp;
 	}
-	return vk::LogicOp::eNoOp;
 }
 
 //---------------
@@ -190,13 +190,13 @@ static vk::BlendOp convertBlendOp(const BlendOp& op) {
 
 //---------------
 
-static vk::PipelineColorBlendAttachmentState convertColorBlendAttachmentState(const ColorBlendAttachmentState& state) {
+static vk::PipelineColorBlendAttachmentState convertColorBlendAttachmentState(const ColorBlendState& state) {
 	vk::ColorComponentFlags mask{};
 	return {
-		state.blendEnable,
-		convertBlendFactor(state.srcColorBlendFactor), convertBlendFactor(state.dstColorBlendFactor), convertBlendOp(state.colorBlendOp),
-		convertBlendFactor(state.srcAlphaBlendFactor), convertBlendFactor(state.dstAlphaBlendFactor), convertBlendOp(state.alphaBlendOp),
-		static_cast<vk::ColorComponentFlags>(state.colorWriteMask)
+		state.isBlendingEnabled(),
+		convertBlendFactor(state.getSrcColorBlendFactor()), convertBlendFactor(state.getDstColorBlendFactor()), convertBlendOp(state.getColorBlendOp()),
+		convertBlendFactor(state.getSrcAlphaBlendFactor()), convertBlendFactor(state.getDstAlphaBlendFactor()), convertBlendOp(state.getAlphaBlendOp()),
+		static_cast<vk::ColorComponentFlags>(state.getColorWriteMask())
 	};
 }
 
@@ -361,10 +361,7 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineSt
 	
 	std::vector<vk::PipelineColorBlendAttachmentState> attachments;	
 	for(uint32_t i=0; i<state.getFramebufferFormat().getColorAttachmentCount(); ++i) {
-		if(i<bs.getAttachmentCount())
-			attachments.emplace_back(convertColorBlendAttachmentState(bs.getAttachment(i)));
-		else
-			attachments.emplace_back(convertColorBlendAttachmentState(bs.getAttachment()));
+		attachments.emplace_back(convertColorBlendAttachmentState(bs));
 	}
 
 	vk::PipelineColorBlendStateCreateInfo colorBlend{{},

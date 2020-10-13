@@ -90,18 +90,14 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		}
 	}
 	Device* device = reinterpret_cast<Device*>(pUserData);
-	if(device->getConfig().throwOnError) {
-		throw std::runtime_error(message.str());
-	} else {
-		std::cerr << message.str() << std::endl;
-	}
+	std::cerr << message.str() << std::endl;
 	return VK_FALSE;
 }
 
 //=========================================================================
 
 struct Device::InternalData {
-	explicit InternalData(Util::UI::WindowRef window) : window(std::move(window)) {}
+	explicit InternalData(Util::UI::WindowRef _window) : window(std::move(_window)), config(window->getProperties()) {}
 	~InternalData() {
 		if(debugMessenger) {
 			vk::Instance ins(instance);
@@ -110,6 +106,7 @@ struct Device::InternalData {
 	}
 	
 	Util::UI::WindowRef window;
+	Util::UI::Window::Properties config;
 	InstanceHandle instance;
 	DeviceHandle apiHandle;
 	SurfaceHandle surface;
@@ -126,36 +123,38 @@ struct Device::InternalData {
 
 	std::map<QueueFamily, int32_t> familyIndices;
 	std::vector<Queue::Ref> queues;
+
 	
-	bool createInstance(const Device::Ref& device, const Device::Configuration& config);
-	bool initPhysicalDevice(const Device::Ref& device, const Device::Configuration& config);
-	bool createLogicalDevice(const Device::Ref& device, const Device::Configuration& config);
-	bool createMemoryAllocator(const Device::Ref& device, const Device::Configuration& config);
-	bool createSwapchain(const Device::Ref& device, const Device::Configuration& config);
-	bool createDescriptorPools(const Device::Ref& device, const Device::Configuration& config);
+	bool createInstance(const Device::Ref& device, std::vector<std::string> validationLayers);
+	bool initPhysicalDevice(const Device::Ref& device);
+	bool createLogicalDevice(const Device::Ref& device);
+	bool createMemoryAllocator(const Device::Ref& device);
+	bool createSwapchain(const Device::Ref& device);
+	bool createDescriptorPools(const Device::Ref& device);
 };
 
 //=========================================================================
 
-bool Device::InternalData::createInstance(const Device::Ref& device, const Device::Configuration& config) {
-	if(config.debugMode)
+bool Device::InternalData::createInstance(const Device::Ref& device, std::vector<std::string> validationLayers) {
+	if(config.debug)
 		std::cout << "Creating Vulkan instance..." << std::endl;
 
 	vk::DynamicLoader dl;
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-
+	
+	uint32_t apiVersion = VK_MAKE_VERSION(config.contextVersionMajor, config.contextVersionMinor, 0);
 	vk::ApplicationInfo appInfo(
-		config.name.c_str(), 1,
+		config.title.c_str(), 1,
 		nullptr, 0,
-		VK_API_VERSION_1_1
+		apiVersion
 	);
 
 	std::vector<const char*> layerNames;
 	std::vector<const char*> requiredExtensions = window->getAPIExtensions();
-	if(config.debugMode) {
+	if(config.debug) {
 		layerNames.emplace_back("VK_LAYER_LUNARG_standard_validation");
-		for(auto& layer : config.validationLayers)
+		for(auto& layer : validationLayers)
 			layerNames.emplace_back(layer.c_str());
 		requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
@@ -225,7 +224,7 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 	
 	
 	// setup debug callback
-	if(config.debugMode) {
+	if(config.debug) {
 		debugMessenger = vkInstance.createDebugUtilsMessengerEXT({ {},
 			//vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
@@ -244,8 +243,8 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 
 //------------
 
-bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const Device::Configuration& config) {
-	if(config.debugMode)
+bool Device::InternalData::initPhysicalDevice(const Device::Ref& device) {
+	if(config.debug)
 		std::cout << "Initializing physical device..." << std::endl;
 	vk::Instance vkInstance(instance);
 
@@ -264,15 +263,15 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const D
 
 	properties = physicalDevice.getProperties();
 	// check API version
-	uint32_t apiVersion = VK_MAKE_VERSION(config.apiVersionMajor, config.apiVersionMinor, 0);
+	uint32_t apiVersion = VK_MAKE_VERSION(config.contextVersionMajor, config.contextVersionMinor, 0);
 	if(apiVersion > 0 && properties.apiVersion < apiVersion) {
-		std::string reqVerStr = std::to_string(config.apiVersionMajor) + "." + std::to_string(config.apiVersionMinor);
+		std::string reqVerStr = std::to_string(config.contextVersionMajor) + "." + std::to_string(config.contextVersionMinor);
 		std::string supportedStr = std::to_string(VK_VERSION_MAJOR(properties.apiVersion)) + "." + std::to_string(VK_VERSION_MINOR(properties.apiVersion));
 		WARN("Device: Requested API version is not supported. Requested version: " + reqVerStr + ", Highest supported: " + supportedStr);
 		return false;
 	}
 
-	if(config.debugMode) {
+	if(config.debug) {
 		std::cout << "Vulkan version: "
 							<< std::to_string(VK_VERSION_MAJOR(properties.apiVersion)) << "."
 							<< std::to_string(VK_VERSION_MINOR(properties.apiVersion)) << "."
@@ -291,8 +290,8 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const D
 
 //------------
 
-bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const Device::Configuration& config) {
-	if(config.debugMode)
+bool Device::InternalData::createLogicalDevice(const Device::Ref& device) {
+	if(config.debug)
 		std::cout << "Creating logical device..." << std::endl;
 	vk::SurfaceKHR vkSurface(surface);
 	vk::Instance vkInstance(instance);
@@ -373,8 +372,8 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 
 //------------
 
-bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, const Device::Configuration& config){
-	if(config.debugMode)
+bool Device::InternalData::createMemoryAllocator(const Device::Ref& device){
+	if(config.debug)
 		std::cout << "Creating memory allocator..." << std::endl;
 	VmaVulkanFunctions vmaVulkanFunc{};
 	vmaVulkanFunc.vkAllocateMemory                    = VULKAN_HPP_DEFAULT_DISPATCHER.vkAllocateMemory;
@@ -416,8 +415,8 @@ bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, cons
 
 //------------
 
-bool Device::InternalData::createSwapchain(const Device::Ref& device, const Device::Configuration& config) {
-	if(config.debugMode)
+bool Device::InternalData::createSwapchain(const Device::Ref& device) {
+	if(config.debug)
 		std::cout << "Creating swapchain..." << std::endl;
 	swapchain = new Swapchain(device, {window->getWidth(), window->getHeight()});
 	if(!swapchain->init()) {
@@ -429,8 +428,8 @@ bool Device::InternalData::createSwapchain(const Device::Ref& device, const Devi
 
 //------------
 
-bool Device::InternalData::createDescriptorPools(const Device::Ref& device, const Device::Configuration& config) {
-	if(config.debugMode)
+bool Device::InternalData::createDescriptorPools(const Device::Ref& device) {
+	if(config.debug)
 		std::cout << "Creating descriptor pools..." << std::endl;
 	
 	// Descriptor counts inspired by Falcor
@@ -448,9 +447,9 @@ bool Device::InternalData::createDescriptorPools(const Device::Ref& device, cons
 
 //=========================================================================
 
-Device::Ref Device::create(Util::UI::WindowRef window, const Configuration& config) {
-	Ref device = new Device(std::move(window), config);
-	if(!device->init(config))
+Device::Ref Device::create(Util::UI::WindowRef window, std::vector<std::string> validationLayers) {
+	Ref device = new Device(std::move(window));
+	if(!device->init(validationLayers))
 		device = nullptr;
 	if(!defaultDevice)
 		defaultDevice = device.get();
@@ -465,7 +464,7 @@ Device::Ref Device::getDefault() {
 
 //------------
 
-Device::Device(Util::UI::WindowRef window, const Configuration& config) : internal(new InternalData(std::move(window))), config(config) { }
+Device::Device(Util::UI::WindowRef window) : internal(new InternalData(std::move(window))) { }
 
 //------------
 
@@ -583,6 +582,12 @@ const DescriptorPoolRef& Device::getDescriptorPool() const {
 
 //------------
 
+bool Device::isDebugModeEnabled() const {
+	return internal->config.debug;
+}
+
+//------------
+
 const InstanceHandle& Device::getInstance() const {
 	return internal->instance;
 }
@@ -595,19 +600,19 @@ const DeviceHandle& Device::getApiHandle() const {
 
 //------------
 
-bool Device::init(const Configuration& config) {
-	
-	if(!internal->createInstance(this, config)) {
+bool Device::init(std::vector<std::string> validationLayers) {
+
+	if(!internal->createInstance(this, validationLayers)) {
 		WARN("Device: Could not create Vulkan instance.");
 		return false;
 	}
 
-	if(!internal->initPhysicalDevice(this, config)) {
+	if(!internal->initPhysicalDevice(this)) {
 		WARN("Device: Could not create Vulkan physical device.");
 		return false;
 	}
 
-	if(config.debugMode)
+	if(internal->config.debug)
 		std::cout << "Acquiring window surface..." << std::endl;
 	vk::SurfaceKHR surface(internal->window->createSurface(internal->instance));
 	if(!surface) {
@@ -616,22 +621,22 @@ bool Device::init(const Configuration& config) {
 	}
 	internal->surface = SurfaceHandle::create(surface, internal->instance);
 
-	if(!internal->createLogicalDevice(this, config)) {
+	if(!internal->createLogicalDevice(this)) {
 		WARN("Device: Could not create Vulkan device.");
 		return false;
 	}	
 	
-	if(!internal->createMemoryAllocator(this, config)) {
+	if(!internal->createMemoryAllocator(this)) {
 		WARN("Device: Could not create memory allocator.");
 		return false;
 	}
 		
-	if(!internal->createSwapchain(this, config)) {
+	if(!internal->createSwapchain(this)) {
 		WARN("Device: Could not create Swapchain.");
 		return false;
 	}
 		
-	if(!internal->createDescriptorPools(this, config)) {
+	if(!internal->createDescriptorPools(this)) {
 		WARN("Device: Could not create descriptor pools.");
 		return false;
 	}

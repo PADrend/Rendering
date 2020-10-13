@@ -55,6 +55,7 @@ public:
 	BindingState bindingState;
 	RenderingState renderingState;
 	CommandBuffer::Ref cmd;
+	uint64_t frameCounter = 0;
 
 	// pipeline state stacks
 	std::stack<VertexInputState> vertexInputStack;
@@ -104,9 +105,10 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->device = device;
 	
 	internal->fallbackShader = ShaderUtils::createDefaultShader(device);
+	internal->fallbackShader->init();
 
 	internal->cmd = CommandBuffer::create(device->getQueue(QueueFamily::Graphics));
-	internal->cmd->setDebugName("RenderingContext primary command buffer.");
+	internal->cmd->setDebugName("Initial Command Buffer");
 
 	// Initialize dummy vertex buffer
 	VertexDescription vd;
@@ -185,7 +187,7 @@ void RenderingContext::flush(bool wait) {
 	internal->cmd->submit(wait);
 
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
-	internal->cmd->setDebugName("RenderingContext primary command buffer.");
+	internal->cmd->setDebugName("RC Commands Frame " + std::to_string(internal->frameCounter) + " (flush)");
 }
 
 void RenderingContext::present() {
@@ -201,7 +203,7 @@ void RenderingContext::present() {
 	internal->device->present();
 
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
-	internal->cmd->setDebugName("RenderingContext primary command buffer.");
+	internal->cmd->setDebugName("RC Commands Frame " + std::to_string(++internal->frameCounter));
 }
 
 
@@ -376,9 +378,7 @@ void RenderingContext::pushBlending() {
 
 void RenderingContext::setBlending(const BlendingParameters& p) {
 	auto state = internal->pipelineState.getColorBlendState();
-	auto attachment = p.toBlendState().getAttachment();
-	attachment.colorWriteMask = state.getAttachment().colorWriteMask;
-	state.setAttachment(attachment);
+	state = p.toBlendState().setColorWriteMask(state.getColorWriteMask());
 	internal->pipelineState.setColorBlendState(state);
 }
 
@@ -394,7 +394,7 @@ const ClipPlaneParameters RenderingContext::getClipPlane(uint8_t index) const { 
 
 // ColorBuffer ************************************************************************************
 const ColorBufferParameters RenderingContext::getColorBufferParameters() const {
-	return ColorBufferParameters(internal->pipelineState.getColorBlendState().getAttachment().colorWriteMask);
+	return ColorBufferParameters(internal->pipelineState.getColorBlendState().getColorWriteMask());
 }
 
 void RenderingContext::popColorBuffer() {
@@ -412,9 +412,7 @@ void RenderingContext::pushAndSetColorBuffer(const ColorBufferParameters& p) {
 
 void RenderingContext::setColorBuffer(const ColorBufferParameters& p) {
 	auto state = internal->pipelineState.getColorBlendState();
-	auto attachment = state.getAttachment();
-	attachment.colorWriteMask = p.getWriteMask();
-	state.setAttachment(attachment);
+	state.setColorWriteMask(p.getWriteMask());
 	internal->pipelineState.setColorBlendState(state);
 }
 
@@ -899,8 +897,9 @@ void RenderingContext::setShader(const ShaderRef& shader) {
 	if(shader && !shader->init()) {
 		WARN("RenderingContext::pushShader: can't enable shader, using fallback instead");
 		internal->activeShader = nullptr;
+	} else {
+		internal->activeShader = shader;
 	}
-	internal->activeShader = shader;
 }
 
 void RenderingContext::pushShader() {

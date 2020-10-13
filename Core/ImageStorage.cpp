@@ -172,7 +172,7 @@ bool ImageStorage::init() {
 //-------------
 
 void ImageStorage::setDebugName(const std::string& name) {
-	if(!device->getConfig().debugMode)
+	if(!device->isDebugModeEnabled())
 		return;
 	vk::Device vkDevice(device->getApiHandle());
 	vkDevice.setDebugUtilsObjectNameEXT({ vk::Image::objectType, handle, name.c_str() });

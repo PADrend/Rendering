@@ -83,7 +83,7 @@ static const char * getGraphicsLanguageVersion() { return ""; }
 static const char * getShadingLanguageVersion() { return ""; }
 
 [[deprecated("Use Device::isExtensionSuported instead.")]]
-static bool isExtensionSupported(const char * extension);
+bool isExtensionSupported(const char * extension);
 
 [[deprecated]]
 static float readDepthValue(int32_t x, int32_t y) { return 0; }

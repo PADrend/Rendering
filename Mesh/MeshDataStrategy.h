@@ -98,10 +98,10 @@ class SimpleMeshDataStrategy : public MeshDataStrategy {
 
 		// --------------------
 
-		static const uint8_t USE_VBOS = 1<<0;
 		static const uint8_t PRESERVE_LOCAL_DATA = 1<<1;
 		static const uint8_t DYNAMIC_VERTICES = 1<<2;
 		static const uint8_t DEBUG_OUTPUT = 1<<3;
+		static const uint8_t LOCAL_MAPPED = 1<<4;
 
 		const uint8_t flags;
 		inline bool getFlag(const uint8_t f)const	{	return flags&f;	}

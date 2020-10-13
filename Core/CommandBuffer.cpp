@@ -224,7 +224,7 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 	}
 	clearValues.emplace_back(vk::ClearDepthStencilValue(clearDepthValue, clearStencilValue));
 
-	beginDebugMarker("Begin render pass");
+	beginDebugMarker("Render Pass");
 	vkCmd.beginRenderPass({
 		vkRenderPass, vkFramebuffer,
 		vk::Rect2D{ {0, 0}, {activeFBO->getWidth(), activeFBO->getHeight()} },
@@ -742,7 +742,7 @@ void CommandBuffer::imageBarrier(const ImageStorageRef& image, ResourceUsage new
 //-----------------
 
 void CommandBuffer::beginDebugMarker(const std::string& name, const Util::Color4f& color) {
-	if(!queue->getDevice()->getConfig().debugMode)
+	if(!queue->getDevice()->isDebugModeEnabled())
 		return;
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);	
 	vk::CommandBuffer vkCmd(handle);
@@ -752,7 +752,7 @@ void CommandBuffer::beginDebugMarker(const std::string& name, const Util::Color4
 //-----------------
 
 void CommandBuffer::insertDebugMarker(const std::string& name, const Util::Color4f& color) {
-	if(!queue->getDevice()->getConfig().debugMode)
+	if(!queue->getDevice()->isDebugModeEnabled())
 		return;
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
@@ -762,7 +762,7 @@ void CommandBuffer::insertDebugMarker(const std::string& name, const Util::Color
 //-----------------
 
 void CommandBuffer::endDebugMarker() {
-	if(!queue->getDevice()->getConfig().debugMode)
+	if(!queue->getDevice()->isDebugModeEnabled())
 		return;
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
@@ -772,7 +772,7 @@ void CommandBuffer::endDebugMarker() {
 //-------------
 
 void CommandBuffer::setDebugName(const std::string& name) {
-	if(!queue->getDevice()->getConfig().debugMode)
+	if(!queue->getDevice()->isDebugModeEnabled())
 		return;
 	vk::Device vkDevice(queue->getDevice()->getApiHandle());
 	vkDevice.setDebugUtilsObjectNameEXT({ vk::CommandBuffer::objectType, handle, name.c_str() });

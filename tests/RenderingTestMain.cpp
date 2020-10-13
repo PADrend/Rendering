@@ -30,14 +30,11 @@ int main( int argc, char* argv[] ) {
 	properties.title = "Rendering Test";
 	properties.compatibilityProfile = true;
 	TestUtils::window = Util::UI::createWindow(properties);
-	Rendering::Device::Configuration config{"Test", 0u, 0u, true};
-	config.validationLayers = {
+	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), {
 		//"VK_LAYER_LUNARG_api_dump"
 		//"VK_LAYER_RENDERDOC_Capture"
 		"VK_LAYER_LUNARG_monitor"
-	};
-	config.throwOnError = true;
-	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), config);
+	});
 	
 	auto result = Catch::Session().run( argc, argv );
 	

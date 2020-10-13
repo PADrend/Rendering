@@ -141,7 +141,7 @@ bool ImageView::init() {
 //-------------
 
 void ImageView::setDebugName(const std::string& name) {
-	if(!image->getDevice()->getConfig().debugMode)
+	if(!image->getDevice()->isDebugModeEnabled())
 		return;
 	vk::Device vkDevice(image->getDevice()->getApiHandle());
 	vkDevice.setDebugUtilsObjectNameEXT({ vk::ImageView::objectType, handle, name.c_str() });

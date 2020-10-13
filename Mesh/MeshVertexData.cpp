@@ -195,8 +195,10 @@ void MeshVertexData::downloadTo(std::vector<uint8_t> & destination) const {
 
 void MeshVertexData::bind(RenderingContext & context) {
 	const VertexDescription & vd = getVertexDescription();
-	if(dataChanged || !isUploaded())
+	if(!isUploaded())
 		upload();
+	else if(dataChanged)
+		upload(bufferObject->getBuffer()->getConfig().access);
 	context.bindVertexBuffer(bufferObject, vd);
 }
 
@@ -213,4 +215,10 @@ void MeshVertexData::draw(RenderingContext & context, uint32_t startIndex, uint3
 
 //-----------------
 
+void MeshVertexData::setDebugName(const std::string& name) {
+	if(bufferObject)
+		bufferObject->setDebugName(name);
+}
+
+//-----------------
 }

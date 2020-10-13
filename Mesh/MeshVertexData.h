@@ -110,6 +110,7 @@ public:
 	void release() { bufferObject->destroy(); }
 
 	const BufferObject::Ref& getBuffer() { return bufferObject; }
+	void setDebugName(const std::string& name);
 	//! @}
 
 	//! @name Deprecated

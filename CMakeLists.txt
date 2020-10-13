@@ -85,10 +85,10 @@ add_library(Rendering SHARED
 	DrawCompound.cpp
 	FBO.cpp
 	Helper.cpp
-	#OcclusionQuery.cpp
-	#QueryObject.cpp
+	OcclusionQuery.cpp
+	QueryObject.cpp
 	RenderingContext.cpp
-	#StatisticsQuery.cpp
+	StatisticsQuery.cpp
 	TextRenderer.cpp
 )
 

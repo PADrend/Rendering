@@ -16,6 +16,7 @@
 class TestUtils {
 public:
 	static Util::Reference<Util::UI::Window> window;
+	static Rendering::Device::Ref device;
 };
 
 #endif /* TESTUTILS_H_ */

@@ -138,7 +138,7 @@ bool BufferStorage::init() {
 //-------------
 
 void BufferStorage::setDebugName(const std::string& name) {
-	if(!device->getConfig().debugMode)
+	if(!device->isDebugModeEnabled())
 		return;
 	vk::Device vkDevice(device->getApiHandle());
 	vkDevice.setDebugUtilsObjectNameEXT({ vk::Buffer::objectType, handle, name.c_str() });

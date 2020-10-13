@@ -35,12 +35,6 @@ void OcclusionQuery::disableTestMode(RenderingContext & renderingContext) {
 }
 
 
-OcclusionQuery::OcclusionQuery() :
-#if defined(LIB_GL)
-	QueryObject(static_cast<uint32_t>(GL_SAMPLES_PASSED)) {
-#elif defined(LIB_GLESv2)
-	QueryObject(0) {
-#endif
-}
+OcclusionQuery::OcclusionQuery() : QueryObject(0) {}
 
 }

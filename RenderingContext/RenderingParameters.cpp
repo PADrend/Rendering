@@ -290,24 +290,26 @@ static BlendOp toBlendOp(BlendingParameters::equation_t op) {
 }
 
 BlendingParameters::BlendingParameters(const ColorBlendState& state) :
-	enabled(state.getAttachment().blendEnable),
-	blendFuncSrcRGB(toFunction(state.getAttachment().srcColorBlendFactor)),
-	blendFuncDstRGB(toFunction(state.getAttachment().dstColorBlendFactor)),
-	blendFuncSrcAlpha(toFunction(state.getAttachment().srcAlphaBlendFactor)),
-	blendFuncDstAlpha(toFunction(state.getAttachment().dstAlphaBlendFactor)),
-	blendEquationRGB(toEquation(state.getAttachment().colorBlendOp)),
-	blendEquationAlpha(toEquation(state.getAttachment().alphaBlendOp)),
+	enabled(state.isBlendingEnabled()),
+	blendFuncSrcRGB(toFunction(state.getSrcColorBlendFactor())),
+	blendFuncDstRGB(toFunction(state.getDstColorBlendFactor())),
+	blendFuncSrcAlpha(toFunction(state.getSrcAlphaBlendFactor())),
+	blendFuncDstAlpha(toFunction(state.getDstAlphaBlendFactor())),
+	blendEquationRGB(toEquation(state.getColorBlendOp())),
+	blendEquationAlpha(toEquation(state.getAlphaBlendOp())),
 	blendColor(state.getConstantColor()) {
 }
 
 ColorBlendState BlendingParameters::toBlendState() const {
-	ColorBlendState s;
-	s.setAttachment({
-		enabled,
-		toBlendFactor(blendFuncSrcRGB), toBlendFactor(blendFuncDstRGB), toBlendOp(blendEquationRGB),
-		toBlendFactor(blendFuncSrcAlpha), toBlendFactor(blendFuncDstAlpha), toBlendOp(blendEquationAlpha)
-	});
-	s.setConstantColor(blendColor);
+	ColorBlendState s{};
+	s.setBlendingEnabled(enabled)
+		.setSrcColorBlendFactor(toBlendFactor(blendFuncSrcRGB))
+		.setDstColorBlendFactor(toBlendFactor(blendFuncDstRGB))
+		.setColorBlendOp(toBlendOp(blendEquationRGB))
+		.setSrcAlphaBlendFactor(toBlendFactor(blendFuncSrcAlpha))
+		.setDstAlphaBlendFactor(toBlendFactor(blendFuncDstAlpha))
+		.setAlphaBlendOp(toBlendOp(blendEquationAlpha))
+		.setConstantColor(blendColor);
 	return s;
 }
 

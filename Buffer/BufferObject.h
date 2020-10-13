@@ -241,6 +241,11 @@ public:
 	BufferHandle getApiHandle() const;
 	// @}
 
+	/*!	@name Debug */
+	// @{
+	void setDebugName(const std::string& name);
+	// @}
+
 private:
 	BufferObject(const DeviceRef& device, const BufferAllocator::Ref allocator=nullptr);
 

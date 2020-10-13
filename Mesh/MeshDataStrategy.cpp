@@ -57,31 +57,31 @@ void MeshDataStrategy::doDisplayMesh(RenderingContext & context, Mesh * m,uint32
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getStaticDrawReleaseLocalStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS );
+	static SimpleMeshDataStrategy strategy( 0 );
 	return &strategy;
 }
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getDebugStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS|DEBUG_OUTPUT );
+	static SimpleMeshDataStrategy strategy( DEBUG_OUTPUT );
 	return &strategy;
 }
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getStaticDrawPreserveLocalStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS|PRESERVE_LOCAL_DATA );
+	static SimpleMeshDataStrategy strategy( PRESERVE_LOCAL_DATA );
 	return &strategy;
 }
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getDynamicVertexStrategy(){
-	static SimpleMeshDataStrategy strategy( USE_VBOS|PRESERVE_LOCAL_DATA|DYNAMIC_VERTICES );
+	static SimpleMeshDataStrategy strategy( PRESERVE_LOCAL_DATA|DYNAMIC_VERTICES );
 	return &strategy;
 }
 
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getPureLocalStrategy(){
-	static SimpleMeshDataStrategy strategy( 0 );
+	static SimpleMeshDataStrategy strategy( PRESERVE_LOCAL_DATA|LOCAL_MAPPED );
 	return &strategy;
 }
 
@@ -118,13 +118,11 @@ void SimpleMeshDataStrategy::assureLocalIndexData(Mesh * m){
 
 //! ---|> MeshDataStrategy
 void SimpleMeshDataStrategy::prepare(Mesh * m){
-	if(!getFlag(USE_VBOS))
-		return;
 
 	MeshIndexData & id=m->_getIndexData();
 	if( id.empty() && id.isUploaded() ){ // "old" VBO present, although data has been removed
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " ~idxBO";
-		id.removeGlBuffer();
+		id.release();
 	} else if( !id.empty() && (id.hasChanged() || !id.isUploaded()) ){ // data has changed or is new
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " +idxBO";
 		id.upload(MemoryUsage::GpuOnly);
@@ -137,10 +135,15 @@ void SimpleMeshDataStrategy::prepare(Mesh * m){
 	MeshVertexData & vd=m->_getVertexData();
 	if( vd.empty() && vd.isUploaded() ){ // "old" VBO present, although data has been removed
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " ~vBO";
-		vd.removeGlBuffer();
+		vd.release();
 	} else if( !vd.empty() && (vd.hasChanged() || !vd.isUploaded()) ){ // data has changed or is new
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " +vBO";
-		vd.upload( getFlag(DYNAMIC_VERTICES) ? MemoryUsage::CpuToGpu : MemoryUsage::GpuOnly );
+		if(getFlag(DYNAMIC_VERTICES))
+			vd.upload( MemoryUsage::CpuToGpu );
+		else if(getFlag(LOCAL_MAPPED))
+			vd.upload( MemoryUsage::CpuOnly );
+		else
+			vd.upload( MemoryUsage::GpuOnly );
 	}
 	if(!getFlag(PRESERVE_LOCAL_DATA) && vd.isUploaded() && vd.hasLocalData()){
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " ~vLD";

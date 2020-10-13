@@ -571,6 +571,7 @@ private:
 // ColorBlendState
 
 enum class LogicOp {
+	Disabled,
 	Clear, //! 0
 	And, //! s ∧ d
 	AndReverse, //! s ∧ ¬ d
@@ -625,71 +626,87 @@ enum class BlendOp {
 
 //-------------
 
-struct ColorBlendAttachmentState {
-	bool blendEnable = false; //! Controls whether blending is enabled for the corresponding color attachment.
-	BlendFactor srcColorBlendFactor = BlendFactor::Zero; //! Selects which blend factor is used to determine the source factors (Sr,Sg,Sb).
-	BlendFactor dstColorBlendFactor = BlendFactor::One; //! Selects which blend factor is used to determine the destination factors (Dr,Dg,Db).
-	BlendOp colorBlendOp = BlendOp::Add; //! Selects which blend operation is used to calculate the RGB values to write to the color attachment.
-	BlendFactor srcAlphaBlendFactor = BlendFactor::Zero; //! Selects which blend factor is used to determine the source factor Sa.
-	BlendFactor dstAlphaBlendFactor = BlendFactor::One; //! Selects which blend factor is used to determine the destination factor Da.
-	BlendOp alphaBlendOp = BlendOp::Add; //! Selects which blend operation is use to calculate the alpha values to write to the color attachment.
-	uint8_t colorWriteMask = 0x0fu; //! A bitmask specifying which of the RGBA components are enabled for writing.
-};
-
-//-------------
-
 //! Blending combines the incoming source (s) fragment's color with the destination (d) color of each sample stored in the framebuffer.
 class ColorBlendState {
 public:
 	ColorBlendState() = default;
-	ColorBlendState(BlendFactor srcFactor, BlendFactor dstFactor) {
-		setAttachment({true, srcFactor, dstFactor, BlendOp::Add, srcFactor, dstFactor, BlendOp::Add});
-	}
-	ColorBlendState(const ColorBlendState& o) : logicOpEnable(o.logicOpEnable), logicOp(o.logicOp), attachments(o.attachments),
-		constantColor(o.constantColor), dynamicBlendConstant(o.dynamicBlendConstant), dirty(true) {}
+	ColorBlendState(BlendFactor srcFactor, BlendFactor dstFactor) : blendEnable(true), srcColorBlendFactor(srcFactor), dstColorBlendFactor(dstFactor),
+		colorBlendOp(BlendOp::Add), srcAlphaBlendFactor(srcFactor), dstAlphaBlendFactor(dstFactor), alphaBlendOp(BlendOp::Add) {}
+	ColorBlendState(const ColorBlendState& o) : blendEnable(o.blendEnable), srcColorBlendFactor(o.srcColorBlendFactor), dstColorBlendFactor(o.dstColorBlendFactor),
+		colorBlendOp(o.colorBlendOp), srcAlphaBlendFactor(o.srcAlphaBlendFactor), dstAlphaBlendFactor(o.dstAlphaBlendFactor), alphaBlendOp(o.alphaBlendOp),
+		logicOp(o.logicOp), constantColor(o.constantColor), dynamicBlendConstant(o.dynamicBlendConstant), dirty(true) {}
 	ColorBlendState& operator=(const ColorBlendState& o) {
-		logicOpEnable = o.logicOpEnable;
+		blendEnable = o.blendEnable;
+		srcColorBlendFactor = o.srcColorBlendFactor;
+		dstColorBlendFactor = o.dstColorBlendFactor;
+		colorBlendOp = o.colorBlendOp;
+		srcAlphaBlendFactor = o.srcAlphaBlendFactor;
+		dstAlphaBlendFactor = o.dstAlphaBlendFactor;
+		alphaBlendOp = o.alphaBlendOp;
 		logicOp = o.logicOp;
-		attachments = o.attachments;
 		constantColor = o.constantColor;
 		dynamicBlendConstant = o.dynamicBlendConstant;
 		dirty = true;
 		return *this;
 	}
-
-	//! Controls whether to apply Logical Operations.
-	ColorBlendState& setLogicOpEnabled(bool value) { logicOpEnable = value; dirty = true; return *this; }
+	
+	//! Controls whether blending is enabled.
+	ColorBlendState& setBlendingEnabled(bool value) { blendEnable = value; dirty = true; return *this; }
+	//! Selects which blend factor is used to determine the source factors (Sr,Sg,Sb).
+	ColorBlendState& setSrcColorBlendFactor(BlendFactor value) { srcColorBlendFactor = value; dirty = true; return *this; }
+	//! Selects which blend factor is used to determine the destination factors (Dr,Dg,Db).
+	ColorBlendState& setDstColorBlendFactor(BlendFactor value) { dstColorBlendFactor = value; dirty = true; return *this; }
+	//! Selects which blend operation is used to calculate the RGB values to write to the color attachment.
+	ColorBlendState& setColorBlendOp(BlendOp value) { colorBlendOp = value; dirty = true; return *this; }
+	//! Selects which blend factor is used to determine the source factor Sa.
+	ColorBlendState& setSrcAlphaBlendFactor(BlendFactor value) { srcAlphaBlendFactor = value; dirty = true; return *this; }
+	//! Selects which blend factor is used to determine the destination factor Da.
+	ColorBlendState& setDstAlphaBlendFactor(BlendFactor value) { dstAlphaBlendFactor = value; dirty = true; return *this; }
+	//! Selects which blend operation is use to calculate the alpha values to write to the color attachment.
+	ColorBlendState& setAlphaBlendOp(BlendOp value) { alphaBlendOp = value; dirty = true; return *this; }
+	//! A bitmask specifying which of the RGBA components are enabled for writing.
+	ColorBlendState& setColorWriteMask(uint8_t value) { colorWriteMask = value; dirty = true; return *this; }
 	//! Selects which logical operation to apply.
 	ColorBlendState& setLogicOp(LogicOp value) { logicOp = value; dirty = true; return *this; }
-	//! Sets the attachment state for the target given by @p index.
-	ColorBlendState& setAttachment(const ColorBlendAttachmentState& value, uint32_t index=0);
-	//! Simultaneously sets all attachments.
-	ColorBlendState& setAttachments(const std::vector<ColorBlendAttachmentState>& values) { attachments = values; dirty = true; return *this; }
-	//! Sets the number of attachments. This value must equal the color attachment count for the subpass in which the pipeline is used.
-	ColorBlendState& setAttachmentCount(uint32_t value) { attachments.resize(value); dirty = true; return *this; }
 	//! Sets the blend constant that is used in blending, depending on the blend factor.
 	ColorBlendState& setConstantColor(const Util::Color4f& value) { constantColor = value; dirty = true; return *this; }
 	//! Controls if the blend constant is dynamic. If it is dynamic, the value in this state is ignored.
 	ColorBlendState& setDynamicConstantColor(bool value) { dynamicBlendConstant = value; dirty = true; return *this; }
 
+	//! @see{setBlendingEnabled()}
+	bool isBlendingEnabled() const { return blendEnable; }
+	//! @see{setSrcColorBlendFactor()}
+	BlendFactor getSrcColorBlendFactor() const { return srcColorBlendFactor; }
+	//! @see{setDstColorBlendFactor()}
+	BlendFactor getDstColorBlendFactor() const { return dstColorBlendFactor; }
+	//! @see{setColorBlendOp()}
+	BlendOp getColorBlendOp() const { return colorBlendOp; }
+	//! @see{setSrcAlphaBlendFactor()}
+	BlendFactor getSrcAlphaBlendFactor() const { return srcAlphaBlendFactor; }
+	//! @see{setDstAlphaBlendFactor()}
+	BlendFactor getDstAlphaBlendFactor() const { return dstAlphaBlendFactor; }
+	//! @see{setAlphaBlendOp()}
+	BlendOp getAlphaBlendOp() const { return alphaBlendOp; }
+	//! @see{setColorWriteMask()}
+	uint8_t getColorWriteMask() const { return colorWriteMask; }
 	//! @see{setLogicOpEnabled()}
-	bool isLogicOpEnabled() const { return logicOpEnable; }
+	bool isLogicOpEnabled() const { return logicOp != LogicOp::Disabled; }
 	//! @see{setLogicOp()}
 	LogicOp getLogicOp() const { return logicOp; }
-	//! @see{setAttachment()}
-	const ColorBlendAttachmentState& getAttachment(uint32_t index=0) const { return attachments[index]; }
-	//! @see{setAttachments()}
-	const std::vector<ColorBlendAttachmentState>& getAttachments() const { return attachments; }
-	//! @see{setAttachmentCount()}
-	uint32_t getAttachmentCount() const { return attachments.size(); }
 	//! @see{setConstantColor()}
 	Util::Color4f getConstantColor() const { return constantColor; }
 	//! @see{setDynamicConstantColor()}
 	bool hasDynamicConstantColor() const { return dynamicBlendConstant; }
 private:
-	bool logicOpEnable = false;
-	LogicOp logicOp = LogicOp::Copy;
-	std::vector<ColorBlendAttachmentState> attachments = {{}};
+	bool blendEnable = false;
+	BlendFactor srcColorBlendFactor = BlendFactor::Zero;
+	BlendFactor dstColorBlendFactor = BlendFactor::One;
+	BlendOp colorBlendOp = BlendOp::Add;
+	BlendFactor srcAlphaBlendFactor = BlendFactor::Zero;
+	BlendFactor dstAlphaBlendFactor = BlendFactor::One;
+	BlendOp alphaBlendOp = BlendOp::Add;
+	uint8_t colorWriteMask = 0x0fu;
+	LogicOp logicOp = LogicOp::Disabled;
 	Util::Color4f constantColor = {0,0,0,0};
 	bool dynamicBlendConstant = false;
 
@@ -1028,39 +1045,25 @@ template <> struct hash<Rendering::DepthStencilState> {
 
 //-------------
 
-template <> struct hash<Rendering::ColorBlendAttachmentState> {
-	std::size_t operator()(const Rendering::ColorBlendAttachmentState& state) const {
-		std::size_t result = 0;
-		if(state.blendEnable) {
-			Util::hash_combine(result, state.srcColorBlendFactor);
-			Util::hash_combine(result, state.dstColorBlendFactor);
-			Util::hash_combine(result, state.colorBlendOp);
-			Util::hash_combine(result, state.srcAlphaBlendFactor);
-			Util::hash_combine(result, state.dstAlphaBlendFactor);
-			Util::hash_combine(result, state.alphaBlendOp);
-			Util::hash_combine(result, state.colorWriteMask);
-		}
-		return result;
-	}
-};
-
-//-------------
-
 template <> struct hash<Rendering::ColorBlendState> {
 	std::size_t operator()(const Rendering::ColorBlendState& state) const {
 		std::size_t result = 0;
-		if(state.isLogicOpEnabled()) {
-			Util::hash_combine(result, state.getLogicOp());
-		} else {
+		if(state.isBlendingEnabled()) {
+			Util::hash_combine(result, state.getSrcColorBlendFactor());
+			Util::hash_combine(result, state.getDstColorBlendFactor());
+			Util::hash_combine(result, state.getColorBlendOp());
+			Util::hash_combine(result, state.getSrcAlphaBlendFactor());
+			Util::hash_combine(result, state.getDstAlphaBlendFactor());
+			Util::hash_combine(result, state.getAlphaBlendOp());
+			Util::hash_combine(result, state.getColorWriteMask());			
+			if(state.isLogicOpEnabled())
+				Util::hash_combine(result, state.getLogicOp());			
 			if(!state.hasDynamicConstantColor()) {
 				Util::hash_combine(result, state.getConstantColor().getR());
 				Util::hash_combine(result, state.getConstantColor().getG());
 				Util::hash_combine(result, state.getConstantColor().getB());
 				Util::hash_combine(result, state.getConstantColor().getA());
 			}
-			Util::hash_combine(result, state.getAttachmentCount());
-			for(auto& a : state.getAttachments())
-				Util::hash_combine(result, a);
 		}
 		return result;
 	}

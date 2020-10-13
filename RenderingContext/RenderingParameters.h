@@ -69,8 +69,8 @@ enum function_t {
 [[deprecated]] std::string functionToString(function_t function);
 [[deprecated]] function_t stringToFunction(const std::string & str);
 
-[[deprecated]] uint32_t functionToGL(function_t function);
-[[deprecated]] function_t glToFunction(uint32_t value);
+[[deprecated]] static uint32_t functionToGL(function_t function) { return 0; }
+[[deprecated]] static function_t glToFunction(uint32_t value) { return LESS; }
 
 ComparisonFunc functionToComparisonFunc(function_t function);
 function_t comparisonFuncToFunction(ComparisonFunc function);

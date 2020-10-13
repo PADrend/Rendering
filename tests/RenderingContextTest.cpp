@@ -141,7 +141,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	// draw
 
 	bool running = true;
-	for(uint_fast32_t round = 0; round < 10000000 && running; ++round) {
+	for(uint_fast32_t round = 0; round < 1000 && running; ++round) {
 
 		REQUIRE_NOTHROW(context.clearScreen({0,0,0,1}));
 

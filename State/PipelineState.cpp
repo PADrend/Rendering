@@ -52,15 +52,6 @@ ViewportState& ViewportState::setScissors(const std::vector<Geometry::Rect_i>& v
 	return *this; 
 }
 
-//-------------
-
-ColorBlendState& ColorBlendState::setAttachment(const ColorBlendAttachmentState& value, uint32_t index) { 
-	WARN_AND_RETURN_IF(attachments.size() <= index, "Invalid attachment index " + std::to_string(index), *this); 
-	attachments[index] = value; 
-	dirty = true;
-	return *this; 
-}
-
 //---------------
 
 FramebufferFormat::FramebufferFormat(const FBORef& fbo) {

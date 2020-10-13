@@ -42,19 +42,8 @@ using DescriptorPoolRef = Util::Reference<DescriptorPool>;
 class Device : public Util::ReferenceCounter<Device> {
 public:
 	using Ref = Util::Reference<Device>;
-
-	struct Configuration {
-		Configuration(std::string n, uint32_t apiMajor=1, uint32_t apiMinor=0, bool debug=false) :
-			name(n), apiVersionMajor(apiMajor), apiVersionMinor(apiMinor), debugMode(debug), throwOnError(false) { }
-		std::string name;
-		uint32_t apiVersionMajor;
-		uint32_t apiVersionMinor;
-		bool debugMode;
-		bool throwOnError;
-		std::vector<std::string> validationLayers;
-	};
 	
-	static Ref create(Util::UI::WindowRef window, const Configuration& config);
+	static Ref create(Util::UI::WindowRef window, std::vector<std::string> validationLayers={});
 	static Ref getDefault();
 	~Device();
 	
@@ -68,7 +57,6 @@ public:
 	uint32_t getMaxPushConstantSize() const;
 	//! @}
 	
-	const Configuration& getConfig() const { return config; }
 	const Util::UI::WindowRef& getWindow() const;	
 	const SwapchainRef& getSwapchain() const;
 	const Queue::Ref& getQueue(QueueFamily family, uint32_t index=0) const;
@@ -77,7 +65,7 @@ public:
 	const PipelineCacheHandle& getPipelineCache() const;
 	const ResourceCacheRef& getResourceCache() const;
 	const DescriptorPoolRef& getDescriptorPool() const;
-	bool isDebugModeEnabled() const { return config.debugMode; }
+	bool isDebugModeEnabled() const;
 	
 	//! @name Internal
 	//! @{	
@@ -87,12 +75,11 @@ public:
 	const DeviceHandle& getApiHandle() const;
 	//! @}
 private:
-	Device(Util::UI::WindowRef window, const Configuration& config);
-	bool init(const Configuration& config);
+	Device(Util::UI::WindowRef window);
+	bool init(std::vector<std::string> validationLayers);
 
 	struct InternalData;
 	std::unique_ptr<InternalData> internal;
-	Configuration config;
 };
 	
 } /* Rendering */

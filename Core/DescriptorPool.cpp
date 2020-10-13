@@ -222,7 +222,7 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 //-------------
 
 void DescriptorPool::setDebugName(const std::string& name) {
-	if(!device->getConfig().debugMode)
+	if(!device->isDebugModeEnabled())
 		return;
 	vk::Device vkDevice(device->getApiHandle());
 	vkDevice.setDebugUtilsObjectNameEXT({ vk::DescriptorPool::objectType, handle, name.c_str() });

@@ -209,4 +209,11 @@ BufferHandle BufferObject::getApiHandle() const {
 }
 
 //----------------
+
+void BufferObject::setDebugName(const std::string& name) {
+	if(buffer)
+		buffer->setDebugName(name);
+}
+
+//----------------
 }
