@@ -15,6 +15,7 @@
 #include "../Core/Device.h"
 #include "../Core/DescriptorPool.h"
 #include "../Core/DescriptorSet.h"
+#include "../Core/DescriptorSetLayout.h"
 #include "../RenderingContext/internal/RenderingStatus.h"
 #include "../Helper.h"
 
@@ -252,14 +253,14 @@ bool Shader::linkProgram() {
 
 	// Create descriptor set layouts
 	for(auto& res : setResources) {
-		DescriptorPool::Ref pool = new DescriptorPool(device, res.second, res.first);
-		if(pool->init())
+		DescriptorPool::Ref pool = new DescriptorPool(device, res.first);
+		if(pool->init(res.second))
 			descriptorPools.emplace(res.first, pool);
 	}
 
 	std::vector<vk::DescriptorSetLayout> layouts;
 	for(auto& res : descriptorPools)
-		layouts.emplace_back(res.second->getLayout());
+		layouts.emplace_back(res.second->getLayout()->getApiHandle());
 
 	pipelineLayout = std::move(PipelineLayoutHandle(vkDevice.createPipelineLayout({{},
 		static_cast<uint32_t>(layouts.size()), layouts.data(),

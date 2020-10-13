@@ -193,6 +193,19 @@ vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dyna
 
 //-----------------
 
+vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages) {
+	vk::ShaderStageFlags flags;
+	if((stages & ShaderStage::Vertex) == ShaderStage::Vertex) flags |= vk::ShaderStageFlagBits::eVertex;
+	if((stages & ShaderStage::TessellationControl) == ShaderStage::TessellationControl) flags |= vk::ShaderStageFlagBits::eTessellationControl;
+	if((stages & ShaderStage::TessellationEvaluation) == ShaderStage::TessellationEvaluation) flags |= vk::ShaderStageFlagBits::eTessellationEvaluation;
+	if((stages & ShaderStage::Geometry) == ShaderStage::Geometry) flags |= vk::ShaderStageFlagBits::eGeometry;
+	if((stages & ShaderStage::Fragment) == ShaderStage::Fragment) flags |= vk::ShaderStageFlagBits::eFragment;
+	if((stages & ShaderStage::Compute) == ShaderStage::Compute) flags |= vk::ShaderStageFlagBits::eCompute;
+	return flags;
+}
+
+//-----------------
+
 std::string toString(ShaderStage stage) {
 	switch(stage) {
 		case ShaderStage::Undefined: return "Undefined";

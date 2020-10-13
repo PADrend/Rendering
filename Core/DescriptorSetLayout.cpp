@@ -19,46 +19,9 @@ namespace Rendering {
 
 //-----------------
 
-static inline vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages) {
-	vk::ShaderStageFlags flags;
-	if((stages & ShaderStage::Vertex) == ShaderStage::Vertex) flags |= vk::ShaderStageFlagBits::eVertex;
-	if((stages & ShaderStage::TessellationControl) == ShaderStage::TessellationControl) flags |= vk::ShaderStageFlagBits::eTessellationControl;
-	if((stages & ShaderStage::TessellationEvaluation) == ShaderStage::TessellationEvaluation) flags |= vk::ShaderStageFlagBits::eTessellationEvaluation;
-	if((stages & ShaderStage::Geometry) == ShaderStage::Geometry) flags |= vk::ShaderStageFlagBits::eGeometry;
-	if((stages & ShaderStage::Fragment) == ShaderStage::Fragment) flags |= vk::ShaderStageFlagBits::eFragment;
-	if((stages & ShaderStage::Compute) == ShaderStage::Compute) flags |= vk::ShaderStageFlagBits::eCompute;
-	return flags;
-}
-
-//-----------------
-
-static inline vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic) {
-	switch (type) {
-		case ShaderResourceType::InputAttachment: return vk::DescriptorType::eInputAttachment;
-		case ShaderResourceType::Image: return vk::DescriptorType::eSampledImage;
-		case ShaderResourceType::ImageSampler: return vk::DescriptorType::eCombinedImageSampler;
-		case ShaderResourceType::ImageStorage: return vk::DescriptorType::eStorageImage;
-		case ShaderResourceType::Sampler: return vk::DescriptorType::eSampler;
-		case ShaderResourceType::BufferUniform: return dynamic ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eUniformBuffer;
-		case ShaderResourceType::BufferStorage: return dynamic ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eStorageBuffer;
-		default: return {};
-	}
-}
-
-//-----------------
-
-static inline bool hasBindingPoint(const ShaderResourceType& type) {
-	switch (type) {
-		case ShaderResourceType::Input:
-		case ShaderResourceType::Output:
-		case ShaderResourceType::PushConstant:
-		case ShaderResourceType::SpecializationConstant:
-		case ShaderResourceType::ResourceTypeCount:
-			return false;
-		default: 
-			return true;
-	}
-}
+vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
+vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
+bool hasBindingPoint(const ShaderResourceType& type);
 
 //---------------
 
@@ -69,17 +32,16 @@ DescriptorSetLayout::Ref DescriptorSetLayout::create(const DeviceRef& device, co
 	}
 	return obj;
 }
-
-//---------------
-
-DescriptorSetLayout::~DescriptorSetLayout() = default;
-
 //---------------
 
 DescriptorSetLayout::DescriptorSetLayout(const DeviceRef& device, const ShaderResourceList& resources) : device(device), resources(resources), hash(0) {
 	for(auto& r : resources)
 		Util::hash_combine(hash, r);
 }
+
+//---------------
+
+DescriptorSetLayout::~DescriptorSetLayout() = default;
 
 //---------------
 

@@ -23,7 +23,7 @@ class DescriptorSetLayout : public Util::ReferenceCounter<DescriptorSetLayout> {
 public:
 	using Ref = Util::Reference<DescriptorSetLayout>;
 	static Ref create(const DeviceRef& device, const ShaderResourceList& resources);
-	~DescriptorSetLayout() = default;
+	~DescriptorSetLayout();
 	DescriptorSetLayout(DescriptorSetLayout&& o) = default;
 	DescriptorSetLayout(const DescriptorSetLayout& o) = delete;
 

@@ -8,6 +8,9 @@
 */
 
 #include "BindingState.h"
+#include "../Texture/Texture.h"
+#include "../BufferObject.h"
+#include "../Core/ImageView.h"
 
 namespace Rendering {
 

@@ -9,6 +9,7 @@
 
 #include "DescriptorSet.h"
 #include "DescriptorPool.h"
+#include "DescriptorSetLayout.h"
 #include "Device.h"
 #include "Sampler.h"
 #include "ImageView.h"
@@ -26,18 +27,7 @@ namespace Rendering {
 
 //-----------------
 
-inline static vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic) {
-	switch (type) {
-		case ShaderResourceType::InputAttachment: return vk::DescriptorType::eInputAttachment;
-		case ShaderResourceType::Image: return vk::DescriptorType::eSampledImage;
-		case ShaderResourceType::ImageSampler: return vk::DescriptorType::eCombinedImageSampler;
-		case ShaderResourceType::ImageStorage: return vk::DescriptorType::eStorageImage;
-		case ShaderResourceType::Sampler: return vk::DescriptorType::eSampler;
-		case ShaderResourceType::BufferUniform: return dynamic ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eUniformBuffer;
-		case ShaderResourceType::BufferStorage: return dynamic ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eStorageBuffer;
-		default: return {};
-	}
-}
+vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
 
 //-----------------
 
@@ -94,20 +84,21 @@ DescriptorSet::~DescriptorSet() {
 //---------------
 
 bool DescriptorSet::update(const BindingSet& bindings) {
-	vk::Device vkDevice(pool->getLayout());
+	auto layout = pool->getLayout();
+	vk::Device vkDevice(layout->getApiHandle());
 	vk::DescriptorSet vkDescriptorSet(pool->getDescriptorHandle(descriptorId));
 	WARN_AND_RETURN_IF(!vkDescriptorSet, "Descriptor set is invalid or has been freed.", false);
 	
 	std::vector<vk::WriteDescriptorSet> writes;
 	for(auto& bIt : bindings.getBindings()) {
 		auto& binding = bIt.second;
-		auto layout = std::find_if(pool->getResources().begin(), pool->getResources().end(), [&](const ShaderResource& res) {
+		auto descriptor = std::find_if(layout->getResources().begin(), layout->getResources().end(), [&](const ShaderResource& res) {
 			return bIt.first == res.binding;
 		});
-		if(layout == pool->getResources().end())
+		if(descriptor == layout->getResources().end())
 			continue;
-		auto usage = getResourceUsage(layout->type);
-		auto vkImageLayout = getVkImageLayout(layout->type);
+		auto usage = getResourceUsage(descriptor->type);
+		auto vkImageLayout = getVkImageLayout(descriptor->type);
 
 		std::vector<vk::DescriptorImageInfo> imageBindings;
 		std::vector<vk::DescriptorBufferInfo> bufferBindings;
@@ -115,7 +106,10 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 
 		for(auto& tex : binding.getTextures()) {
 			if(tex && tex->isValid()) {
-				imageBindings.emplace_back(tex->getSampler()->getApiHandle(), tex->getImageView()->getApiHandle(), vkImageLayout);
+				imageBindings.emplace_back(
+					static_cast<vk::Sampler>(tex->getSampler()->getApiHandle()), 
+					static_cast<vk::ImageView>(tex->getImageView()->getApiHandle()), 
+					vkImageLayout);
 			} else {
 				WARN("Empty texture binding.");
 				imageBindings.emplace_back(nullptr, nullptr, vkImageLayout);
@@ -124,7 +118,7 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 
 		for(auto& view : binding.getInputImages()) {
 			if(view && view->getApiHandle()) {
-				imageBindings.emplace_back(nullptr, view->getApiHandle(), vkImageLayout);
+				imageBindings.emplace_back(nullptr, static_cast<vk::ImageView>(view->getApiHandle()), vkImageLayout);
 			} else {
 				WARN("Empty texture binding.");
 				imageBindings.emplace_back(nullptr, nullptr, vkImageLayout);
@@ -134,7 +128,7 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 		for(auto& buffer : binding.getBuffers()) {
 			if(buffer && buffer->isValid()) {
 				auto b = buffer->getBuffer();
-				bufferBindings.emplace_back(b->getApiHandle(), 0, b->getSize());
+				bufferBindings.emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), 0, b->getSize());
 			} else {
 				WARN("Empty texture binding.");
 				bufferBindings.emplace_back(nullptr, 0, 0);
@@ -145,7 +139,7 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 		uint32_t count = static_cast<uint32_t>(std::max(imageBindings.size(), std::max(bufferBindings.size(), texelBufferViews.size())));
 		writes.emplace_back(
 			vkDescriptorSet, bIt.first, 
-			0, count, getVkDescriptorType(layout->type, layout->dynamic), 
+			0, count, getVkDescriptorType(descriptor->type, descriptor->dynamic), 
 			imageBindings.data(), bufferBindings.data(), texelBufferViews.data()
 		);
 	}

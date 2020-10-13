@@ -28,7 +28,7 @@ using DescriptorSetLayoutRef = Util::Reference<DescriptorSetLayout>;
 class DescriptorPool : public Util::ReferenceCounter<DescriptorPool> {
 public:
 	using Ref = Util::Reference<DescriptorPool>;
-	~DescriptorPool() = default;
+	~DescriptorPool();
 	DescriptorPool(DescriptorPool&& o) = delete;
 	DescriptorPool(const DescriptorPool& o) = delete;
 
@@ -41,8 +41,8 @@ public:
 	const DescriptorSetHandle& getDescriptorHandle(uint32_t id) const;
 private:
 	friend class Shader;
-	explicit DescriptorPool(const DeviceRef& device, const ShaderResourceList& resources, uint32_t set);
-	bool init();
+	explicit DescriptorPool(const DeviceRef& device, uint32_t set);
+	bool init(const ShaderResourceList& resources);
 
 	const DeviceRef device;
 	const uint32_t set = 0;

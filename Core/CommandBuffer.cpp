@@ -230,12 +230,11 @@ void CommandBuffer::textureBarrier(const TextureRef& texture, ResourceUsage newU
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(!texture || !texture->isValid(), "Cannot create texture barrier. Invalid texture.",);
 	auto view = texture->getImageView();
+	auto image = texture->getImage();
 	if(view->getLastUsage() == newUsage)
 		return;
 
 	vk::CommandBuffer vkCmd(handle);
-	auto image = texture->getImage();
-	auto view = texture->getImageView();
 
 	vk::ImageMemoryBarrier barrier{};
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

@@ -15,6 +15,7 @@
 #include "Texture/Texture.h"
 #include "Core/ImageStorage.h"
 #include "Core/ImageView.h"
+#include "Core/Sampler.h"
 #include "GLHeader.h"
 
 #include <Util/Macros.h>

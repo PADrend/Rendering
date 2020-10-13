@@ -81,7 +81,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	auto device = Device::create(TestUtils::window.get(), {"Test", 0u, 0u, true});
 	vk::Device vkDevice(device->getApiHandle());
 	
-	auto graphicsQueue = device->getQueue(Queue::Family::Graphics);
+	auto graphicsQueue = device->getQueue(QueueFamily::Graphics);
 	auto swapchain = device->getSwapchain();
 
 	// --------------------------------------------

@@ -10,6 +10,7 @@
 #include "Device.h"
 #include "Queue.h"
 #include "ImageStorage.h"
+#include "Sampler.h"
 
 #include "../FBO.h"
 #include "../Texture/Texture.h"

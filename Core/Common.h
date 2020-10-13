@@ -20,6 +20,8 @@ using Vec3ui = _Vec3<uint32_t>;
 
 namespace Rendering {
 
+//---------------------------
+
 enum class MemoryUsage {
 	Unknown, //! No intended memory usage specified.
 	CpuOnly, //! Memory will be mappable on host.

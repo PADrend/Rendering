@@ -56,8 +56,6 @@ class Uniform;
 class UniformRegistry;
 enum class TexUnitUsageParameter : uint8_t;
 
-typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;
-
 //! @defgroup context Rendering Context
 
 //! @ingroup context
@@ -488,6 +486,7 @@ public:
 	static bool isTransformFeedbackSupported();
 	static bool requestTransformFeedbackSupport(); //! like isTransformFeedbackSupported(), but once issues a warning on failure.
 	
+	/*
 	CountedBufferObject * getActiveTransformFeedbackBuffer() const;
 	void popTransformFeedbackBufferStatus();
 	void pushTransformFeedbackBufferStatus();
@@ -497,6 +496,7 @@ public:
 	void startTransformFeedback_points();
 	void startTransformFeedback_triangles();
 	void stopTransformFeedback();
+	*/
 	// @}
 
 	// ------

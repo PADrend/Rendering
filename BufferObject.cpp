@@ -68,6 +68,10 @@ BufferObject::BufferObject(const DeviceRef& device) : device(device) { }
 
 //----------------
 
+BufferObject::~BufferObject() = default;
+
+//----------------
+
 void BufferObject::swap(BufferObject& other) {
 	device.swap(other.device);
 	buffer.swap(other.buffer);
@@ -81,7 +85,7 @@ void BufferObject::destroy() {
 
 //----------------
 
-bool BufferObject::allocate(size_t size, ResourceUsage usage = ResourceUsage::General, MemoryUsage access = MemoryUsage::CpuToGpu, bool persistent=false) {
+bool BufferObject::allocate(size_t size, ResourceUsage usage, MemoryUsage access, bool persistent) {
 	BufferStorage::Configuration config{size, access, persistent, usage};
 	if(buffer && config == buffer->getConfig())
 		return true; // already allocated.
@@ -100,7 +104,7 @@ void BufferObject::upload(const uint8_t* data, size_t numBytes) {
 
 //----------------
 
-std::vector<uint8_t> BufferObject::download(size_t range, size_t offset=0) {
+std::vector<uint8_t> BufferObject::download(size_t range, size_t offset) {
 	WARN_AND_RETURN_IF(!isValid(), "BufferObject: Cannot download data. Buffer is not allocated.", {});
 	WARN_AND_RETURN_IF(buffer->getSize() > range+offset, "BufferObject: Cannot download data. Range out of bounds.", {});
 	const uint8_t* ptr = map();

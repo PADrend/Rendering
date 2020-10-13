@@ -85,7 +85,7 @@ public:
 	BufferObject(BufferObject && other) = default;
 
 	//! Free the data of the buffer object.
-	~BufferObject() = default;
+	~BufferObject();
 
 	//! Data of an buffer object should not be copied.
 	BufferObject & operator=(const BufferObject &) = delete;
