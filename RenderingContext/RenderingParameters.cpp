@@ -308,6 +308,7 @@ ColorBlendState BlendingParameters::toBlendState() const {
 		toBlendFactor(blendFuncSrcAlpha), toBlendFactor(blendFuncDstAlpha), toBlendOp(blendEquationAlpha)
 	});
 	s.setConstantColor(blendColor);
+	return s;
 }
 
 
@@ -438,8 +439,8 @@ StencilOpState StencilParameters::getStencilOpState() const {
 		actionToStencilOp(depthTestPassAction),
 		actionToStencilOp(depthTestFailAction),
 		Comparison::functionToComparisonFunc(function),
-		bitMask.to_ulong(),
-		bitMask.to_ulong(),
+		static_cast<uint32_t>(bitMask.to_ulong()),
+		static_cast<uint32_t>(bitMask.to_ulong()),
 		std::max<uint32_t>(referenceValue, 0)
 	};
 }

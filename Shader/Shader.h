@@ -15,7 +15,7 @@
 #include "../Core/Common.h"
 
 #include "ShaderObjectInfo.h"
-#include "../RenderingContext/RenderingContext.h"
+#include "../RenderingContext.h"
 
 #include <Util/ReferenceCounter.h>
 #include <Util/StringIdentifier.h>
@@ -44,8 +44,6 @@ class Device;
 using DeviceRef = Util::Reference<Device>;
 class DescriptorPool;
 using DescriptorPoolRef = Util::Reference<DescriptorPool>;
-class DescriptorSet;
-using DescriptorSetRef = Util::Reference<DescriptorSet>;
 
 //! @defgroup shader Shader
 
@@ -161,10 +159,12 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		
 		const std::map<uint32_t, DescriptorPoolRef>& getDescriptorPools() const { return descriptorPools; }
 		const DescriptorPoolRef& getDescriptorPool(uint32_t set) const { return descriptorPools.at(set); }
+		const ShaderResource& getResource(const Util::StringIdentifier& nameId) const;
+		const std::unordered_map<Util::StringIdentifier, ShaderResource>& getResources() const { return resources; }
 	private:
 		ShaderLayout layout;
 		PipelineLayoutHandle layoutHandle;
-		std::unordered_map<std::string, ShaderResource> resources;
+		std::unordered_map<Util::StringIdentifier, ShaderResource> resources;
 		
 		std::map<uint32_t, DescriptorPoolRef> descriptorPools;
 	// @}
@@ -237,7 +237,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	public:
 		[[deprecated]]
 		void defineVertexAttribute(const std::string & attrName, uint32_t index) {}
-		int32_t getVertexAttributeLocation(Util::StringIdentifier attrName);
+		int32_t getVertexAttributeLocation(const Util::StringIdentifier& attrName);
 	// @}
 
 

@@ -69,12 +69,13 @@ class Uniform {
 			UNIFORM_BOOL = 0, 		UNIFORM_VEC2B = 1,	UNIFORM_VEC3B = 2,	UNIFORM_VEC4B = 3,
 			UNIFORM_FLOAT = 4, 		UNIFORM_VEC2F = 5,	UNIFORM_VEC3F = 6,	UNIFORM_VEC4F = 7,
 			UNIFORM_INT = 8, 		UNIFORM_VEC2I = 9,	UNIFORM_VEC3I = 10,	UNIFORM_VEC4I = 11,
-			UNIFORM_MATRIX_2X2F = 12,	UNIFORM_MATRIX_3X3F = 13, UNIFORM_MATRIX_4X4F = 14
+			UNIFORM_MATRIX_2X2F = 12,	UNIFORM_MATRIX_3X3F = 13, UNIFORM_MATRIX_4X4F = 14,
+	//	UNIFORM_UINT = 15, 	UNIFORM_VEC2UI = 16,		UNIFORM_VEC3UI = 17,		UNIFORM_VEC4UI = 18,
 		};
 
 		//! returns the size in bytes of a value of the given type
 		static size_t getValueSize(const dataType_t t){		return dataSizeIndex[t];	}
-
+		static std::string getTypeString(const dataType_t t);
 
 		class UniformName{
 				Util::StringIdentifier id;

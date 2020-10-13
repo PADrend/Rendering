@@ -200,6 +200,7 @@ bool Shader::linkProgram() {
 
 	resources.clear();
 	descriptorPools.clear();
+	vertexAttributeLocations.clear();
 	
 	// Merge resources from shader objects
 	for(auto& obj : shaderObjects) {
@@ -213,6 +214,11 @@ bool Shader::linkProgram() {
 			// Update name as input and output resources can have the same name
 			if(resource.layout.type == ShaderResourceType::Output || resource.layout.type == ShaderResourceType::Input) {
 				key = toString(resource.layout.stages) + "_" + key;
+			}
+
+			// store vertex input attribute locations
+			if(resource.layout.type == ShaderResourceType::Input && resource.layout.stages == ShaderStage::Vertex) {
+				vertexAttributeLocations.emplace(Util::StringIdentifier(resource.name), static_cast<int32_t>(resource.location));
 			}
 
 			auto it = resources.find(key);
@@ -282,7 +288,15 @@ bool Shader::isActive(RenderingContext & rc) {
 
 //-----------------
 
+const ShaderResource& Shader::getResource(const Util::StringIdentifier& nameId) const {
+	static const ShaderResource nullResource{};
+	const auto& it = resources.find(nameId);
+	if(it == resources.end())
+		return nullResource;
+	return it->second;
+}
 
+//-----------------
 // ----------------------------------------------------------
 // Uniforms
 void Shader::applyUniforms(bool forced) {
@@ -595,15 +609,11 @@ void Shader::setUniform(RenderingContext & rc,const Uniform & uniform, bool warn
 // --------------------------------
 // vertexAttributes
 
-int32_t Shader::getVertexAttributeLocation(Util::StringIdentifier attrName) {
+int32_t Shader::getVertexAttributeLocation(const Util::StringIdentifier& attrName) {
 	if(getStatus()!=LINKED && !init())
 		return -1;
-
-	auto it = resources.find(attrName.toString());
-	if( it != resources.end() && it->second.layout.type == ShaderResourceType::Input ) {
-		return static_cast<int32_t>(it->second.location);
-	}
-	return -1;
+	auto it = vertexAttributeLocations.find(attrName);
+	return it != vertexAttributeLocations.end() ? it->second : -1;
 }
 
 //-----------------

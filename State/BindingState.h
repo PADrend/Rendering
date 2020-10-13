@@ -71,9 +71,8 @@ private:
 
 //------------------
 
-class BindingState : public Util::ReferenceCounter<BindingState> {
+class BindingState {
 public:
-	using Ref = Util::Reference<BindingState>;
 	BindingState() = default;
 	~BindingState() = default;
 	BindingState(BindingState&& o);

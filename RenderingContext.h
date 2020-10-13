@@ -61,7 +61,9 @@ class Shader;
 class Uniform;
 class UniformRegistry;
 class VertexAttribute;
+class VertexDescription;
 enum class TexUnitUsageParameter : uint8_t;
+enum class PrimitiveTopology;
 
 class VertexInputState;
 class InputAssemblyState;
@@ -294,6 +296,17 @@ public:
 	[[deprecated]]
 	void setDepthBuffer(const DepthBufferParameters& depthBufferParameter);
 
+	// @}
+
+	// ------
+
+	//! @name Drawing
+	//	@{
+	void bindVertexBuffer(const BufferObjectRef& buffer, const VertexDescription& vd);
+	void bindIndexBuffer(const BufferObjectRef& buffer);
+	void draw(uint32_t vertexCount, uint32_t firstVertex=0, uint32_t instanceCount=1, uint32_t firstInstance=0);
+	void drawIndexed(uint32_t indexCount, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t instanceCount=1, uint32_t firstInstance=0);
+	void setPrimitiveTopology(PrimitiveTopology topology);
 	// @}
 
 	// ------
@@ -636,11 +649,11 @@ public:
 	 * @param stride Size of a vertex in bytes
 	 */
 	[[deprecated]]
-	void enableVertexAttribArray(const VertexAttribute& attr, const uint8_t * data, int32_t stride);
+	void enableVertexAttribArray(const VertexAttribute& attr, const uint8_t * data, int32_t stride) {}
 
 	//! Disable all vertex attribute array.
 	[[deprecated]]
-	void disableAllVertexAttribArrays();
+	void disableAllVertexAttribArrays() {}
 	// @}
 
 	// ------

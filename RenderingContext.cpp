@@ -25,7 +25,7 @@
 #include "RenderingContext/RenderingParameters.h"
 #include "BufferObject.h"
 #include "Mesh/Mesh.h"
-#include "Mesh/VertexAttribute.h"
+#include "Mesh/VertexDescription.h"
 #include "Shader/Shader.h"
 #include "Shader/UniformRegistry.h"
 #include "Texture/Texture.h"
@@ -36,6 +36,7 @@
 #include <Util/Graphics/Color.h>
 #include <Util/Macros.h>
 #include <Util/References.h>
+#include <Util/UI/Window.h>
 #include <array>
 #include <stdexcept>
 #include <stack>
@@ -110,6 +111,9 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	setPolygonOffset(PolygonOffsetParameters());
 	setStencil(StencilParameters());
 
+	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(device->getWindow()->getWidth()), static_cast<int32_t>(device->getWindow()->getHeight())};
+	setViewport({windowRect}, {windowRect});
+
 	applyChanges();
 }
 
@@ -123,7 +127,6 @@ void RenderingContext::resetDisplayMeshFn() {
 }
 
 void RenderingContext::displayMesh(Mesh * mesh) {
-	applyChanges();
 	displayMeshFn(*this, mesh,0,mesh->isUsingIndexData()? mesh->getIndexCount() : mesh->getVertexCount());
 }
 
@@ -404,6 +407,49 @@ void RenderingContext::setDepthBuffer(const DepthBufferParameters& p) {
 	state.setDepthWriteEnabled(p.isWritingEnabled());
 	state.setDepthCompareOp(p.isTestEnabled() ? Comparison::functionToComparisonFunc(p.getFunction()) : ComparisonFunc::Disabled);
 	internal->pipelineState.setDepthStencilState(state);
+}
+
+// Drawing ************************************************************************************
+
+void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const VertexDescription& vd) {
+	auto shader = internal->activeShader ? internal->activeShader : internal->fallbackShader;
+	WARN_AND_RETURN_IF(!shader, "There is no bound shader.",);
+
+	VertexInputState state;	
+	state.setBinding({0, static_cast<uint32_t>(vd.getVertexSize()), 0});
+	for(auto& attr : vd.getAttributes()) {
+		auto location = shader->getVertexAttributeLocation(attr.getNameId());
+		if(location != -1) {
+			state.setAttribute({static_cast<uint32_t>(location), 0, toInternalFormat(attr), attr.getOffset()});
+		}
+	}
+	internal->pipelineState.setVertexInputState(state);
+
+	internal->cmd->bindVertexBuffers(0, {buffer});
+}
+
+void RenderingContext::bindIndexBuffer(const BufferObjectRef& buffer) {
+	internal->cmd->bindIndexBuffer(buffer);
+}
+
+void RenderingContext::draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount, uint32_t firstInstance) {
+	applyChanges();
+	if(!internal->cmd->isInRenderPass())
+		internal->cmd->beginRenderPass();
+	internal->cmd->draw(vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void RenderingContext::drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount, uint32_t firstInstance) {
+	applyChanges();
+	if(!internal->cmd->isInRenderPass())
+		internal->cmd->beginRenderPass();
+	internal->cmd->drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void RenderingContext::setPrimitiveTopology(PrimitiveTopology topology) {
+	auto state = internal->pipelineState.getInputAssemblyState();
+	state.setTopology(topology);
+	internal->pipelineState.setInputAssemblyState(state);
 }
 
 // FBO ************************************************************************************
@@ -957,22 +1003,6 @@ void RenderingContext::pushAndSetViewport(const ViewportState& viewport) {
 
 void RenderingContext::setWindowClientArea(const Geometry::Rect_i& clientArea) {
 	internal->windowClientArea = clientArea;
-}
-
-// VBO Client States **********************************************************************************
-
-void RenderingContext::enableVertexAttribArray(const VertexAttribute& attr, const uint8_t * data, int32_t stride) {
-	Shader * shader = getActiveShader();
-	auto location = shader->getVertexAttributeLocation(attr.getNameId());
-	if(location != -1) {
-		auto state = internal->pipelineState.getVertexInputState();
-		state.setBinding({0, static_cast<uint32_t>(stride), 0});
-		state.setAttribute({static_cast<uint32_t>(location), 0, toInternalFormat(attr), attr.getOffset()});
-	}
-}
-
-void RenderingContext::disableAllVertexAttribArrays() {
-	internal->pipelineState.setVertexInputState({});
 }
 
 }

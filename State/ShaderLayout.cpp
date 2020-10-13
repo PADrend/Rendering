@@ -9,6 +9,8 @@
 
 #include "ShaderLayout.h"
 
+#include <sstream>
+
 namespace Rendering {
 
 //-------------
@@ -49,20 +51,26 @@ std::string toString(ShaderResourceType type) {
 //-------------
 
 std::string toString(const ShaderResource& resource) {
-	return "ShaderResource(name " + resource.name + ", " 
-		+ "stage " + toString(resource.layout.stages) + ", "
-		+ "type " + toString(resource.layout.type) + ", "
-		+ "set " + std::to_string(resource.set) + ", "
-		+ "binding " + std::to_string(resource.binding) + ", "
-		+ "location " + std::to_string(resource.location) + ", "
-		+ "inputAttachmentIndex " + std::to_string(resource.inputAttachmentIndex) + ", "
-		+ "vecSize " + std::to_string(resource.vecSize) + ", "
-		+ "columns " + std::to_string(resource.columns) + ", "
-		+ "arraySize " + std::to_string(resource.layout.elementCount) + ", "
-		+ "offset " + std::to_string(resource.offset) + ", "
-		+ "size " + std::to_string(resource.size) + ", "
-		+ "constantId " + std::to_string(resource.constantId) + ", "
-		+ "dynamic " + std::to_string(resource.layout.dynamic) + ")";
+	std::stringstream ss;
+	ss << "ShaderResource(" << resource.name << ", ";
+	ss << "stage: " << toString(resource.layout.stages) << ", ";
+	ss << "type: " << toString(resource.layout.type) << ", ";
+	ss << "set: " << resource.set << ", ";
+	ss << "binding: " << resource.binding << ", ";
+	ss << "location: " << resource.location << ", ";
+	ss << "inputAttachmentIndex: " << resource.inputAttachmentIndex << ", ";
+	ss << "vecSize: " << resource.vecSize << ", ";
+	ss << "columns: " << resource.columns << ", ";
+	ss << "arraySize: " << resource.layout.elementCount << ", ";
+	ss << "offset: " << resource.offset << ", ";
+	ss << "size: " << resource.size << ", ";
+	ss << "constantId: " << resource.constantId << ", ";
+	ss << "dynamic: " << resource.layout.dynamic << ", ";
+	if(!resource.members.empty()) ss << "members: " << std::endl;
+	for(auto& m : resource.members)
+		ss << "  " << m.name.getString() << ", off " << m.offset << ", count " << m.count << ", type " << Uniform::getTypeString(m.type) << std::endl;
+	ss << ")";
+	return ss.str();
 }
 
 //-------------

@@ -19,9 +19,6 @@
 #include <vector>
 
 namespace Rendering {
-class Device;
-using DeviceRef = Util::Reference<Device>;
-
 class RenderingContext;
 class VertexDescription;
 
@@ -35,7 +32,6 @@ class VertexDescription;
 	@ingroup mesh
 */
 class MeshVertexData {
-	const DeviceRef device;
 	std::vector<uint8_t> binaryData;
 	const VertexDescription * vertexDescription;
 	uint32_t vertexCount;
@@ -52,7 +48,6 @@ public:
 
 	// main
 	MeshVertexData();
-	MeshVertexData(const DeviceRef& device);
 	/*! Copy all data from @p other.
 		\note If the other data is only available in the graphics card memory, this may
 			only be called from within the gl-thread.	*/
@@ -97,7 +92,7 @@ public:
 
 
 	// vbo
-	inline bool isUploaded() const { return bufferObject->isValid(); }
+	inline bool isUploaded() const { return bufferObject && bufferObject->isValid(); }
 
 	//! Call @a upload() with default usage hint.
 	bool upload() { return upload(MemoryUsage::GpuOnly); }
@@ -109,18 +104,25 @@ public:
 	bool download();
 	void downloadTo(std::vector<uint8_t> & destination) const;
 
+	void bind(RenderingContext & context);
+	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfElements);
+
 	//! @name Deprecated
 	//! @{
 	[[deprecated]]
-	void bind(RenderingContext & context, bool useVBO);
+	void bind(RenderingContext & context, bool useVBO) {
+		bind(context);
+	}
 	[[deprecated]]
-	void unbind(RenderingContext & context, bool useVBO);
+	void unbind(RenderingContext & context, bool useVBO) {}
 	[[deprecated]]
 	bool upload(uint32_t usageHint) { return upload(); }
 	[[deprecated]]
 	void removeGlBuffer() { bufferObject->destroy(); }
 	[[deprecated]]
-	void drawArray(RenderingContext & context,bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements);
+	void drawArray(RenderingContext & context,bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements) {
+		draw(context, startIndex, numberOfElements);
+	}
 	[[deprecated]]
 	void _swapBufferObject(BufferObject & other) { bufferObject->swap(other); }
 	[[deprecated]]

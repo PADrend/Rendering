@@ -12,6 +12,7 @@
 #include "MeshIndexData.h"
 #include "../Core/Device.h"
 #include "../Core/BufferStorage.h"
+#include "../RenderingContext.h"
 #include <Util/Macros.h>
 #include <algorithm>
 #include <limits>
@@ -23,14 +24,9 @@ namespace Rendering {
 //-----------------
 
 /*! (ctor)  */
-MeshIndexData::MeshIndexData() : MeshIndexData(Device::getDefault()) { }
-
-//-----------------
-
-/*! (ctor)  */
-MeshIndexData::MeshIndexData(const DeviceRef& device) :
+MeshIndexData::MeshIndexData() :
 			indexCount(0), minIndex(0), maxIndex(0),
-			bufferObject(BufferObject::create(device)), dataChanged(false) {
+			bufferObject(BufferObject::create(Device::getDefault())), dataChanged(false) {
 }
 
 //-----------------
@@ -40,7 +36,7 @@ MeshIndexData::MeshIndexData(const DeviceRef& device) :
 MeshIndexData::MeshIndexData(const MeshIndexData & other) :
 			indexCount(other.getIndexCount()), 
 			minIndex(other.getMinIndex()), maxIndex(other.getMaxIndex()),
-			bufferObject(), dataChanged(true) {
+			bufferObject(BufferObject::create(Device::getDefault())), dataChanged(true) {
 	if(other.hasLocalData()) {
 		indexArray = other.indexArray;
 	} else if(other.isUploaded()) {
@@ -110,9 +106,9 @@ bool MeshIndexData::upload(MemoryUsage usage) {
 		return false;
 	
 	size_t size = indexCount * sizeof(uint32_t);
-	if(!bufferObject || !bufferObject->isValid() || bufferObject->getSize() != size || bufferObject->getBuffer()->getConfig().access != usage) {
+	if(!bufferObject->isValid() || bufferObject->getSize() != size || bufferObject->getBuffer()->getConfig().access != usage) {
 		// Allocate new buffer
-		bufferObject->allocate(indexArray.size(), ResourceUsage::IndexBuffer, usage);
+		bufferObject->allocate(size, ResourceUsage::IndexBuffer, usage);
 	}
 	// TODO: copy data if only usage has changed
 	bufferObject->upload(indexArray);
@@ -141,10 +137,13 @@ void MeshIndexData::downloadTo(std::vector<uint32_t> & destination) const {
 //-----------------
 
 /*! (internal) */
-void MeshIndexData::drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices){
+void MeshIndexData::draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfIndices) {
 	if(startIndex+numberOfIndices>getIndexCount())
-		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
-	
+		throw std::out_of_range("MeshIndexData::draw: Accessing invalid index.");	
+	if(dataChanged || !isUploaded())
+		upload();
+	context.bindIndexBuffer(bufferObject);
+	context.drawIndexed(numberOfIndices, startIndex);
 }
 
 //-----------------

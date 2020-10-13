@@ -197,6 +197,7 @@ BindingState& BindingState::operator=(BindingState&& o) {
 	bindingSets = std::move(o.bindingSets);
 	dirty = true;
 	o.dirty = true;
+	return *this;
 }
 
 //------------------
@@ -213,6 +214,7 @@ BindingState& BindingState::operator=(const BindingState& o) {
 		}
 	}
 	dirty = true;
+	return *this;
 }
 
 //------------------

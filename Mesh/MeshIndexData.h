@@ -21,8 +21,7 @@
 #include <vector>
 
 namespace Rendering {
-class Device;
-using DeviceRef = Util::Reference<Device>;
+class RenderingContext;
 
 /*! IndexData-Class .
 	Part of the Mesh implementation containing all index specific data of a mesh. 
@@ -31,7 +30,6 @@ using DeviceRef = Util::Reference<Device>;
 class MeshIndexData {
 public:
 	MeshIndexData();
-	MeshIndexData(const DeviceRef& device);
 	//! Copy all data from @p other
 	MeshIndexData(const MeshIndexData & other);
 	MeshIndexData(MeshIndexData &&);
@@ -66,7 +64,7 @@ public:
 	void updateIndexRange();
 
 	// vbo
-	inline bool isUploaded() const { return bufferObject->isValid(); }
+	inline bool isUploaded() const { return bufferObject && bufferObject->isValid(); }
 
 	//! Call @a upload() with default usage hint.
 	bool upload() { return upload(MemoryUsage::GpuOnly); }
@@ -77,6 +75,8 @@ public:
 	bool download();
 	void downloadTo(std::vector<uint32_t> & destination) const;
 
+	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfIndices);
+
 //! @name Deprecated
 //! @{
 	[[deprecated]]
@@ -86,7 +86,7 @@ public:
 	[[deprecated]]
 	void removeGlBuffer() { bufferObject->destroy(); }
 	[[deprecated]]
-	void drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices);
+	void drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices) { }
 //! @}
 private:
 	const DeviceRef device;

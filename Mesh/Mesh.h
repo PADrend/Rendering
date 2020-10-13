@@ -74,6 +74,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	/*!	@name Main */
 	// @{
 	public:
+		using Ref = Util::Reference<Mesh>;
 		Mesh();
 		Mesh(MeshIndexData meshIndexData, MeshVertexData meshVertexData);
 		Mesh(const VertexDescription & desc,uint32_t vertexCount,uint32_t indexCount);

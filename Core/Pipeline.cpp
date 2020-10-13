@@ -189,6 +189,7 @@ static vk::BlendOp convertBlendOp(const BlendOp& op) {
 //---------------
 
 static vk::PipelineColorBlendAttachmentState convertColorBlendAttachmentState(const ColorBlendAttachmentState& state) {
+	vk::ColorComponentFlags mask{};
 	return {
 		state.blendEnable,
 		convertBlendFactor(state.srcColorBlendFactor), convertBlendFactor(state.dstColorBlendFactor), convertBlendOp(state.colorBlendOp),
@@ -327,13 +328,15 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, 
 
 	// Convert blend state
 	auto& bs = state.getColorBlendState();
-	std::vector<vk::PipelineColorBlendAttachmentState> attachments;
+	
+	std::vector<vk::PipelineColorBlendAttachmentState> attachments;	
 	for(uint32_t i=0; i<device->getMaxFramebufferAttachments(); ++i) {
 		if(i<bs.getAttachmentCount())
 			attachments.emplace_back(convertColorBlendAttachmentState(bs.getAttachment(i)));
 		else
-			attachments.emplace_back(convertColorBlendAttachmentState({}));
+			attachments.emplace_back(convertColorBlendAttachmentState(bs.getAttachment()));
 	}
+
 	vk::PipelineColorBlendStateCreateInfo colorBlend{{},
 		bs.isLogicOpEnabled(), convertLogicOp(bs.getLogicOp()),
 		static_cast<uint32_t>(attachments.size()), attachments.data(),

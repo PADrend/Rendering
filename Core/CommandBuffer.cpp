@@ -278,7 +278,7 @@ void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<B
 	for(auto& bo : buffers) {
 		vkBuffers.emplace_back((bo && bo->isValid()) ? bo->getApiHandle() : nullptr);
 	}
-	vkCmd.bindVertexBuffers(firstBinding, vkBuffers, offsets);
+	vkCmd.bindVertexBuffers(firstBinding, vkBuffers, vkOffsets);
 }
 
 //-----------------

@@ -43,12 +43,8 @@ void MeshVertexData::setVertexDescription(const VertexDescription & vd) {
 //-----------------
 
 //! (ctor)
-MeshVertexData::MeshVertexData() : MeshVertexData(Device::getDefault()) { }
-
-//-----------------
-
-MeshVertexData::MeshVertexData(const DeviceRef& device) :
-	device(device), binaryData(), vertexDescription(nullptr), vertexCount(0), bufferObject(), bb(), dataChanged(false) {
+MeshVertexData::MeshVertexData() :
+	binaryData(), vertexDescription(nullptr), vertexCount(0), bufferObject(BufferObject::create(Device::getDefault())), bb(), dataChanged(false) {
 	setVertexDescription(VertexDescription());
 }
 
@@ -56,8 +52,8 @@ MeshVertexData::MeshVertexData(const DeviceRef& device) :
 
 //! (ctor)
 MeshVertexData::MeshVertexData(const MeshVertexData & other) :
-	device(other.device), binaryData(), vertexDescription(other.vertexDescription), vertexCount(other.getVertexCount()), 
-	bufferObject(), bb(other.getBoundingBox()), dataChanged(true) {
+	binaryData(), vertexDescription(other.vertexDescription), vertexCount(other.getVertexCount()), 
+	bufferObject(BufferObject::create(Device::getDefault())), bb(other.getBoundingBox()), dataChanged(true) {
 	if(other.hasLocalData()) {
 		binaryData = other.binaryData;
 	} else if(other.isUploaded()) {
@@ -168,7 +164,7 @@ bool MeshVertexData::upload(MemoryUsage usage) {
 	if(vertexCount == 0 || binaryData.empty() )
 		return false;
 	
-	if(!bufferObject || !bufferObject->isValid() || bufferObject->getSize() != binaryData.size() || bufferObject->getBuffer()->getConfig().access != usage) {
+	if(!bufferObject->isValid() || bufferObject->getSize() != binaryData.size() || bufferObject->getBuffer()->getConfig().access != usage) {
 		// Allocate new buffer
 		bufferObject->allocate(binaryData.size(), ResourceUsage::VertexBuffer, usage);
 	}
@@ -197,41 +193,22 @@ void MeshVertexData::downloadTo(std::vector<uint8_t> & destination) const {
 
 //-----------------
 
-void MeshVertexData::bind(RenderingContext & context, bool useVBO) {
+void MeshVertexData::bind(RenderingContext & context) {
 	const VertexDescription & vd = getVertexDescription();
-	if(dataChanged)
+	if(dataChanged || !isUploaded())
 		upload();
-	
-	/*
-
-	Shader * shader = context.getActiveShader();
-	const GLsizei vSize=vd.getVertexSize();
-
-	if (shader != nullptr && shader->usesSGUniforms()) {
-		for(const auto & attr : vd.getAttributes()) {
-			if(!attr.empty()) {
-				context.enableVertexAttribArray(attr, vertexPosition, vSize);
-			}
-		}
-	}*/
-
+	context.bindVertexBuffer(bufferObject, vd);
 }
 
 //-----------------
 
 /*! (internal) */
-void MeshVertexData::drawArray(RenderingContext & context,bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements) {
+void MeshVertexData::draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfElements) {
 	if(startIndex+numberOfElements>getVertexCount())
 		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
 	
-	//bind(context,useVBO);
-	//glDrawArrays(drawMode, startIndex, numberOfElements);
-	//unbind(context,useVBO);
-}
-
-//-----------------
-
-void MeshVertexData::unbind(RenderingContext & context, bool useVBO) {
+	bind(context);
+	context.draw(numberOfElements, startIndex);
 }
 
 //-----------------

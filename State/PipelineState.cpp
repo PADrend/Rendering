@@ -17,8 +17,8 @@ namespace Rendering {
 
 //-------------
 
-ViewportState& ViewportState::setViewport(const Viewport& value, uint32_t index) { 
-	WARN_AND_RETURN_IF(viewports.size() > index, "Invalid viewport index " + std::to_string(index), *this); 
+ViewportState& ViewportState::setViewport(const Viewport& value, uint32_t index) {
+	WARN_AND_RETURN_IF(viewports.size() <= index, "Invalid viewport index " + std::to_string(index), *this); 
 	viewports[index] = value; 
 	return *this; 
 }
@@ -34,7 +34,7 @@ ViewportState& ViewportState::setViewports(const std::vector<Viewport>& values) 
 //-------------
 
 ViewportState& ViewportState::setScissor(const Geometry::Rect_i& value, uint32_t index) {
-	WARN_AND_RETURN_IF(scissors.size() > index, "Invalid scissor index " + std::to_string(index), *this); 
+	WARN_AND_RETURN_IF(scissors.size() <= index, "Invalid scissor index " + std::to_string(index), *this); 
 	scissors[index] = value; 
 	return *this; 
 }
@@ -50,7 +50,7 @@ ViewportState& ViewportState::setScissors(const std::vector<Geometry::Rect_i>& v
 //-------------
 
 ColorBlendState& ColorBlendState::setAttachment(const ColorBlendAttachmentState& value, uint32_t index) { 
-	WARN_AND_RETURN_IF(attachments.size() > index, "Invalid attachment index " + std::to_string(index), *this); 
+	WARN_AND_RETURN_IF(attachments.size() <= index, "Invalid attachment index " + std::to_string(index), *this); 
 	attachments[index] = value; 
 	return *this; 
 }

@@ -18,6 +18,7 @@ if(RENDERING_BUILD_TESTS)
 		DrawTest.cpp
 		RenderingContextTest.cpp
 		RenderingTestMain.cpp
+		ShaderTest.cpp
 		#StatisticsQueryTest.cpp
 		#VertexAccessorTest.cpp
 	)

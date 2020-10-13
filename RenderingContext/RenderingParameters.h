@@ -421,10 +421,10 @@ class [[deprecated]] ColorBufferParameters {
 
 		uint8_t getWriteMask() const {
 			uint8_t mask = 0;
-			mask |= (enableRedWriting ? (1 << 1) : 0);
-			mask |= (enableGreenWriting ? (1 << 2) : 0);
-			mask |= (enableBlueWriting ? (1 << 3) : 0);
-			mask |= (enableAlphaWriting ? (1 << 4) : 0);
+			mask |= (enableRedWriting ? (1 << 0) : 0);
+			mask |= (enableGreenWriting ? (1 << 1) : 0);
+			mask |= (enableBlueWriting ? (1 << 2) : 0);
+			mask |= (enableAlphaWriting ? (1 << 3) : 0);
 			return mask;
 		}
 };

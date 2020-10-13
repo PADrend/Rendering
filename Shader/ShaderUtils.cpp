@@ -10,7 +10,10 @@
 */
 #include "ShaderUtils.h"
 #include "Shader.h"
+#include "../State/ShaderLayout.h"
 #include <Util/References.h>
+#include <Util/StringUtils.h>
+#include <Util/TypeConstant.h>
 #include <string>
 
 #include <spirv_cross.hpp>
@@ -63,6 +66,83 @@ static ShaderResource readSpecializationConstant(spirv_cross::Compiler& compiler
 
 //-------------
 
+static Uniform::dataType_t getUniformType(const spirv_cross::SPIRType& type) {
+	switch(type.basetype) {
+		case spirv_cross::SPIRType::Boolean:
+			switch(type.vecsize) {
+				case 1: return Uniform::UNIFORM_BOOL;
+				case 2: return Uniform::UNIFORM_VEC2B;
+				case 3: return Uniform::UNIFORM_VEC3B;
+				case 4: return Uniform::UNIFORM_VEC4B;
+				default: return Uniform::UNIFORM_BOOL;
+			}
+		case spirv_cross::SPIRType::Int:
+			switch(type.vecsize) {
+				case 1: return Uniform::UNIFORM_INT;
+				case 2: return Uniform::UNIFORM_VEC2I;
+				case 3: return Uniform::UNIFORM_VEC3I;
+				case 4: return Uniform::UNIFORM_VEC4I;
+				default: return Uniform::UNIFORM_INT;
+			}
+		//case spirv_cross::SPIRType::UInt: return Uniform::UNIFORM_UINT;
+		case spirv_cross::SPIRType::Float:
+			switch(type.vecsize) {
+				case 1: return Uniform::UNIFORM_FLOAT;
+				case 2: return type.columns == 2 ? Uniform::UNIFORM_MATRIX_2X2F : Uniform::UNIFORM_VEC2F;
+				case 3: return type.columns == 3 ? Uniform::UNIFORM_MATRIX_3X3F : Uniform::UNIFORM_VEC3F;
+				case 4: return type.columns == 4 ? Uniform::UNIFORM_MATRIX_4X4F : Uniform::UNIFORM_VEC4F;
+				default: return Uniform::UNIFORM_FLOAT;
+			}			
+		default: return Uniform::UNIFORM_INT;
+	}
+}
+
+//-------------
+
+static std::vector<ShaderResourceMember> getResourceMembers(spirv_cross::Compiler& compiler, const spirv_cross::SPIRType& type) {
+	std::vector<ShaderResourceMember> result;
+	uint32_t member_count = type.member_types.size();
+
+	for (uint32_t i = 0; i < member_count; ++i) {
+		auto &member_type = compiler.get_type(type.member_types[i]);
+		ShaderResourceMember m;
+		m.name = compiler.get_member_name(type.self, i);
+		m.offset = compiler.type_struct_member_offset(type, i);
+		m.count = 1;
+		m.type = getUniformType(member_type);
+		uint32_t array_stride = 0;
+
+		if(!member_type.array.empty()) {
+			array_stride = compiler.type_struct_member_array_stride(type, i);
+			m.count = member_type.array[0];
+		}
+
+		if(member_type.basetype == spirv_cross::SPIRType::Struct) {
+			auto struct_members = getResourceMembers(compiler, member_type);
+			std::vector<ShaderResourceMember> tmp;
+
+			if(m.count > 1) {
+				for(uint32_t j=0; j<m.count; ++j) {
+					for(auto& sm : struct_members) {
+						tmp.emplace_back(m.name.getString() + "[" + Util::StringUtils::toString(j) + "]." + sm.name.getString(), m.offset + j*array_stride + sm.offset, sm.count, sm.type);
+					}
+				}
+			} else {
+				for(auto& sm : struct_members) {
+					tmp.emplace_back(m.name.getString() + "." + sm.name.getString(), m.offset + sm.offset, sm.count, sm.type);
+				}
+			}
+			
+			std::move(tmp.begin(), tmp.end(), std::back_inserter(result));
+		} else {
+			result.emplace_back(std::move(m));
+		}		
+	}
+	return result;
+}
+
+//-------------
+
 static ShaderResource readShaderResource(spirv_cross::Compiler& compiler, spirv_cross::Resource& resource, ShaderStage stage, ShaderResourceType type) {
 	ShaderResource result{resource.name, 0, 0, {type, stage}};
 	const auto& spirvType = compiler.get_type_from_variable(resource.id);
@@ -73,10 +153,11 @@ static ShaderResource readShaderResource(spirv_cross::Compiler& compiler, spirv_
 		case ShaderResourceType::BufferUniform:
 		case ShaderResourceType::BufferStorage:
 			result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
+			result.members = getResourceMembers(compiler, compiler.get_type(resource.base_type_id)); // recursively get members of structs
 			break;
 		default: break;
 	}
-
+	
 	result.location = compiler.get_decoration(resource.id, spv::DecorationLocation);
 	result.set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 	result.binding = compiler.get_decoration(resource.id, spv::DecorationBinding);

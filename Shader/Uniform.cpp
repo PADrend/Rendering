@@ -35,8 +35,31 @@ const size_t Uniform::dataSizeIndex[] = {
 	//	UNIFORM_INT = 8, 	UNIFORM_VEC2I = 9,		UNIFORM_VEC3I = 10,		UNIFORM_VEC4I = 11,
 	sizeof(int32_t) * 1,	sizeof(int32_t) * 2,	sizeof(int32_t) * 3,	sizeof(int32_t) * 4,
 	//	UNIFORM_MATRIX_2X2F = 12,	UNIFORM_MATRIX_3X3F = 13, 	UNIFORM_MATRIX_4X4F = 14
-	sizeof(float) * 4,				sizeof(float) * 9,			sizeof(float) * 16
+	sizeof(float) * 4,				sizeof(float) * 9,			sizeof(float) * 16,
+	//	UNIFORM_UINT = 15, 	UNIFORM_VEC2UI = 16,		UNIFORM_VEC3UI = 17,		UNIFORM_VEC4UI = 18,
+	//sizeof(uint32_t) * 1,	sizeof(uint32_t) * 2,	sizeof(uint32_t) * 3,	sizeof(uint32_t) * 4
 };
+
+std::string Uniform::getTypeString(const dataType_t t) {
+	switch(t) {
+		case UNIFORM_BOOL: return "bool";
+		case UNIFORM_VEC2B: return "vec2b";
+		case UNIFORM_VEC3B: return "vec3b";
+		case UNIFORM_VEC4B: return "vec4b";
+		case UNIFORM_FLOAT: return "float";
+		case UNIFORM_VEC2F: return "vec2f";
+		case UNIFORM_VEC3F: return "vec3f";
+		case UNIFORM_VEC4F: return "vec4f";
+		case UNIFORM_INT: return "int";
+		case UNIFORM_VEC2I: return "vec2i";
+		case UNIFORM_VEC3I: return "vec3i";
+		case UNIFORM_VEC4I: return "vec4i";
+		case UNIFORM_MATRIX_2X2F: return "mat2x2f";
+		case UNIFORM_MATRIX_3X3F: return "mat3x3f";
+		case UNIFORM_MATRIX_4X4F: return "mat4x4f";
+		default: return "unknown";
+	}
+}
 
 // generic ---------------------------------------------------------------
 
