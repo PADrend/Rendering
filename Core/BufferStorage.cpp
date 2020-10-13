@@ -14,6 +14,7 @@
 #include <Util/StringUtils.h>
 
 #include <vk_mem_alloc.h>
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 namespace Rendering {
@@ -132,6 +133,15 @@ bool BufferStorage::init() {
 	handle = BufferHandle::create(vkBuffer, device->getApiHandle());
 	allocation = AllocationHandle::create(vmaAllocation, device->getAllocator());
 	return true;
+}
+
+//-------------
+
+void BufferStorage::setDebugName(const std::string& name) {
+	if(!device->getConfig().debugMode)
+		return;
+	vk::Device vkDevice(device->getApiHandle());
+	vkDevice.setDebugUtilsObjectNameEXT({ vk::Buffer::objectType, handle, name.c_str() });
 }
 
 //-------------

@@ -98,10 +98,15 @@ public:
 	 */
 	const Configuration& getConfig() const { return config; }
 
-	//! @name API Handles
+	//! @name Internal
 	//! @{
 	const BufferHandle& getApiHandle() const { return handle; }
 	const AllocationHandle& getAllocation() const { return allocation; }
+	//! @}
+
+	//! @name Debugging
+	//! @{
+	void setDebugName(const std::string& name);
 	//! @}
 private:
 	explicit BufferStorage(const DeviceRef& device, const Configuration& config);

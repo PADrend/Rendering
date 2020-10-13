@@ -78,6 +78,7 @@ FramebufferFormat::FramebufferFormat(const FBORef& fbo) {
 		else
 			depthAttachment = {InternalFormat::Unknown, 0};
 	}
+	dirty = true;
 }
 
 //---------------
@@ -169,6 +170,8 @@ PipelineState& PipelineState::reset() {
 //-------------
 
 PipelineState& PipelineState::setShader(const ShaderRef& _shader) {
+	if(shader != _shader)
+		markAsChanged();
 	shader = _shader;
 	return *this;
 }
@@ -184,6 +187,7 @@ void PipelineState::markAsChanged() {
 	multisample.markAsChanged();
 	depthStencil.markAsChanged();
 	colorBlend.markAsChanged();
+	attachments.markAsChanged();
 }
 
 //-------------
@@ -196,6 +200,7 @@ void PipelineState::markAsUnchanged() {
 	multisample.markAsUnchanged();
 	depthStencil.markAsUnchanged();
 	colorBlend.markAsUnchanged();
+	attachments.markAsUnchanged();
 	dirty = false;
 }
 
@@ -211,7 +216,8 @@ bool PipelineState::hasChanged() const {
 		rasterization.hasChanged() ||
 		multisample.hasChanged() ||
 		depthStencil.hasChanged() ||
-		colorBlend.hasChanged();
+		colorBlend.hasChanged() ||
+		attachments.hasChanged();
 }
 
 //-------------

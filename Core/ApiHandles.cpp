@@ -20,6 +20,7 @@ template<> ApiHandle<VkSurfaceKHR, VkInstance>::~ApiHandle() { if(handle) vkDest
 template<> ApiHandle<VkSwapchainKHR, VkDevice>::~ApiHandle() { if(handle) vkDestroySwapchainKHR(parent, handle, nullptr); }
 template<> ApiHandle<VkQueue, VkDevice>::~ApiHandle() { }
 template<> ApiHandle<VkFence, VkDevice>::~ApiHandle() { if(handle) vkDestroyFence(parent, handle, nullptr); }
+template<> ApiHandle<VkSemaphore, VkDevice>::~ApiHandle() { if(handle) vkDestroySemaphore(parent, handle, nullptr); }
 template<> ApiHandle<VkImage, VkDevice>::~ApiHandle() { if(handle) vkDestroyImage(parent, handle, nullptr); }
 template<> ApiHandle<VkImageView, VkDevice>::~ApiHandle() { if(handle) vkDestroyImageView(parent, handle, nullptr); }
 template<> ApiHandle<VkFramebuffer, VkDevice>::~ApiHandle() { if(handle) vkDestroyFramebuffer(parent, handle, nullptr); }

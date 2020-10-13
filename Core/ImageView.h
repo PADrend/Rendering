@@ -46,6 +46,11 @@ public:
 	ResourceUsage getLastUsage() const { return lastUsage; }
 	void _setLastUsage(ResourceUsage usage) { lastUsage = usage; }
 	const ImageViewHandle& getApiHandle() const { return handle; }
+	
+	//! @name Debugging
+	//! @{	
+	void setDebugName(const std::string& name);
+	//! @}
 private:
 	ImageView(const ImageStorageRef& image, const Configuration& config);
 	bool init();

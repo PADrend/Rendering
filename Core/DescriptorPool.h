@@ -53,6 +53,8 @@ public:
 	uint32_t getMaxDescriptorCount(ShaderResourceType type) const { return config.counts[static_cast<uint32_t>(type)]; }
 
 	const DescriptorPoolHandle& getApiHandle() const { return handle; }
+
+	void setDebugName(const std::string& name);
 private:
 	friend class DescriptorSet;
 	explicit DescriptorPool(const DeviceRef& device, const Configuration& config);

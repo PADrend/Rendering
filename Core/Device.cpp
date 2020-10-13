@@ -1,6 +1,6 @@
 /*
 	This file is part of the Rendering library.
-  Copyright (C) 2019-2020 Sascha Brandt <sascha@brandt.graphics>
+	Copyright (C) 2019-2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -22,6 +22,7 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 #include <map>
@@ -56,12 +57,39 @@ static uint64_t getDeviceScore(const vk::PhysicalDevice& device) {
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	VkDebugUtilsMessageTypeFlagsEXT messageTypes,
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData) {
-
-	std::cerr << pCallbackData->pMessage << std::endl;
-
+	void* pUserData
+) {
+	std::ostringstream message;
+	message << vk::to_string(static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity)) << ":";
+	message << " <" << pCallbackData->pMessageIdName << ">";
+	message << " " << vk::to_string(static_cast<vk::DebugUtilsMessageTypeFlagsEXT>(messageTypes)) << std::endl;
+	message << "  Message: \"" << pCallbackData->pMessage << "\"" << std::endl;
+	if(pCallbackData->queueLabelCount > 0) {
+		message << "  " << "Queue Labels:" << std::endl;
+		for(uint_fast32_t i = 0; i < pCallbackData->queueLabelCount; ++i) {
+			message << "    " << pCallbackData->pQueueLabels[i].pLabelName << std::endl;
+		}
+	}
+	if(pCallbackData->cmdBufLabelCount > 0) {
+		message << "  " << "CommandBuffer Labels:" << std::endl;
+		for(uint_fast32_t i = 0; i < pCallbackData->cmdBufLabelCount; ++i) {
+			message << "    " << pCallbackData->pCmdBufLabels[i].pLabelName << std::endl;
+		}
+	}
+	if(pCallbackData->objectCount > 0) {
+		message << "  " << "Objects:" << std::endl;
+		for(uint_fast32_t i = 0; i < pCallbackData->objectCount; ++i) {
+			message << "    " << vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType));
+			message << "(" << pCallbackData->pObjects[i].objectHandle << ")";
+			if(pCallbackData->pObjects[i].pObjectName) {
+				message << " \"" << pCallbackData->pObjects[i].pObjectName << "\"";
+			}
+			message << std::endl;
+		}
+	}
+	std::cout << message.str() << std::endl;
 	return VK_FALSE;
 }
 
@@ -72,7 +100,7 @@ struct Device::InternalData {
 	~InternalData() {
 		if(debugMessenger) {
 			vk::Instance ins(instance);
-			ins.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldy);
+			ins.destroyDebugUtilsMessengerEXT(debugMessenger);
 		}
 	}
 	
@@ -86,7 +114,6 @@ struct Device::InternalData {
 	PipelineCacheHandle pipelineCache;
 	DescriptorPool::Ref descriptorPool;
 
-	vk::DispatchLoaderDynamic dldy;
 	vk::PhysicalDevice physicalDevice;
 	vk::DebugUtilsMessengerEXT debugMessenger = nullptr;	
 	vk::PhysicalDeviceProperties properties;
@@ -110,6 +137,10 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 	if(config.debugMode)
 		std::cout << "Creating Vulkan instance..." << std::endl;
 
+	vk::DynamicLoader dl;
+	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+
 	vk::ApplicationInfo appInfo(
 		config.name.c_str(), 1,
 		nullptr, 0,
@@ -117,14 +148,63 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 	);
 
 	std::vector<const char*> layerNames;
+	std::vector<const char*> requiredExtensions = window->getAPIExtensions();
 	if(config.debugMode) {
 		layerNames.emplace_back("VK_LAYER_LUNARG_standard_validation");
 		for(auto& layer : config.validationLayers)
 			layerNames.emplace_back(layer.c_str());
-	}
-	std::vector<const char*> requiredExtensions = window->getAPIExtensions();
-	if(config.debugMode)
 		requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+		// print available and selected layers
+		std::cout << "Validation layers:" << std::endl;
+		auto availableLayers = vk::enumerateInstanceLayerProperties();
+		for(auto& p : availableLayers) {
+			bool found = false;
+			for(auto& layer : layerNames) {
+				if(std::strcmp(layer, p.layerName) == 0) {
+					found = true;
+					break;
+				}
+			}
+			std::cout << "  " << p.layerName << (found ? " - enabled" : " - disabled") << std::endl;
+		}
+		for(auto& layer : layerNames) {
+			bool found = false;
+			for(auto& p : availableLayers) {
+				if(std::strcmp(layer, p.layerName) == 0) {
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+				std::cout << "  " << layer << " - not found" << std::endl;
+		}
+		
+		// print available and selected extensions
+		std::cout << "Extensions:" << std::endl;
+		auto availableExt = vk::enumerateInstanceExtensionProperties();
+		for(auto& p : availableExt) {
+			bool found = false;
+			for(auto& ext : requiredExtensions) {
+				if(std::strcmp(ext, p.extensionName) == 0) {
+					found = true;
+					break;
+				}
+			}
+			std::cout << "  " << p.extensionName << (found ? " - enabled" : " - disabled") << std::endl;
+		}
+		for(auto& ext : requiredExtensions) {
+			bool found = false;
+			for(auto& p : availableExt) {
+				if(std::strcmp(ext, p.extensionName) == 0) {
+					found = true;
+					break;
+				}
+			}
+			if(!found)
+				std::cout << "  " << ext << " - not found" << std::endl;
+		}
+	}
 
 	vk::Instance vkInstance = vk::createInstance({{},
 		&appInfo,
@@ -137,10 +217,10 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 		return false;
 	
 	instance = InstanceHandle::create(vkInstance);
+	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkInstance);
 	
 	// setup debug callback
-	dldy.init(vkInstance, vkGetInstanceProcAddr);
-	if(config.debugMode) {		
+	if(config.debugMode) {
 		debugMessenger = vkInstance.createDebugUtilsMessengerEXT({ {},
 			//vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
@@ -150,7 +230,8 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
 			debugCallback
-		}, nullptr, dldy);
+		});
+		
 	}
 	return true;
 }
@@ -249,13 +330,13 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 		static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(), 
 		0, nullptr, 
 		static_cast<uint32_t>(deviceExtensions.size()), deviceExtensions.data()
-	}, nullptr, dldy);
+	});
 
 	if(!vkDevice)
 		return false;
 	
 	// Create handle
-	dldy.init(vkInstance, vkDevice);
+	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkInstance, vkDevice);
 	apiHandle = DeviceHandle::create(vkDevice, physicalDevice);
 
 	// Create command queues & pools
@@ -285,22 +366,22 @@ bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, cons
 	if(config.debugMode)
 		std::cout << "Creating memory allocator..." << std::endl;
 	VmaVulkanFunctions vmaVulkanFunc{};
-	vmaVulkanFunc.vkAllocateMemory                    = dldy.vkAllocateMemory;
-	vmaVulkanFunc.vkBindBufferMemory                  = dldy.vkBindBufferMemory;
-	vmaVulkanFunc.vkBindImageMemory                   = dldy.vkBindImageMemory;
-	vmaVulkanFunc.vkCreateBuffer                      = dldy.vkCreateBuffer;
-	vmaVulkanFunc.vkCreateImage                       = dldy.vkCreateImage;
-	vmaVulkanFunc.vkDestroyBuffer                     = dldy.vkDestroyBuffer;
-	vmaVulkanFunc.vkDestroyImage                      = dldy.vkDestroyImage;
-	vmaVulkanFunc.vkFlushMappedMemoryRanges           = dldy.vkFlushMappedMemoryRanges;
-	vmaVulkanFunc.vkFreeMemory                        = dldy.vkFreeMemory;
-	vmaVulkanFunc.vkGetBufferMemoryRequirements       = dldy.vkGetBufferMemoryRequirements;
-	vmaVulkanFunc.vkGetImageMemoryRequirements        = dldy.vkGetImageMemoryRequirements;
-	vmaVulkanFunc.vkGetPhysicalDeviceMemoryProperties	= dldy.vkGetPhysicalDeviceMemoryProperties;
-	vmaVulkanFunc.vkGetPhysicalDeviceProperties       = dldy.vkGetPhysicalDeviceProperties;
-	vmaVulkanFunc.vkInvalidateMappedMemoryRanges      = dldy.vkInvalidateMappedMemoryRanges;
-	vmaVulkanFunc.vkMapMemory                         = dldy.vkMapMemory;
-	vmaVulkanFunc.vkUnmapMemory                       = dldy.vkUnmapMemory;
+	vmaVulkanFunc.vkAllocateMemory                    = VULKAN_HPP_DEFAULT_DISPATCHER.vkAllocateMemory;
+	vmaVulkanFunc.vkBindBufferMemory                  = VULKAN_HPP_DEFAULT_DISPATCHER.vkBindBufferMemory;
+	vmaVulkanFunc.vkBindImageMemory                   = VULKAN_HPP_DEFAULT_DISPATCHER.vkBindImageMemory;
+	vmaVulkanFunc.vkCreateBuffer                      = VULKAN_HPP_DEFAULT_DISPATCHER.vkCreateBuffer;
+	vmaVulkanFunc.vkCreateImage                       = VULKAN_HPP_DEFAULT_DISPATCHER.vkCreateImage;
+	vmaVulkanFunc.vkDestroyBuffer                     = VULKAN_HPP_DEFAULT_DISPATCHER.vkDestroyBuffer;
+	vmaVulkanFunc.vkDestroyImage                      = VULKAN_HPP_DEFAULT_DISPATCHER.vkDestroyImage;
+	vmaVulkanFunc.vkFlushMappedMemoryRanges           = VULKAN_HPP_DEFAULT_DISPATCHER.vkFlushMappedMemoryRanges;
+	vmaVulkanFunc.vkFreeMemory                        = VULKAN_HPP_DEFAULT_DISPATCHER.vkFreeMemory;
+	vmaVulkanFunc.vkGetBufferMemoryRequirements       = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetBufferMemoryRequirements;
+	vmaVulkanFunc.vkGetImageMemoryRequirements        = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetImageMemoryRequirements;
+	vmaVulkanFunc.vkGetPhysicalDeviceMemoryProperties	= VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceMemoryProperties;
+	vmaVulkanFunc.vkGetPhysicalDeviceProperties       = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetPhysicalDeviceProperties;
+	vmaVulkanFunc.vkInvalidateMappedMemoryRanges      = VULKAN_HPP_DEFAULT_DISPATCHER.vkInvalidateMappedMemoryRanges;
+	vmaVulkanFunc.vkMapMemory                         = VULKAN_HPP_DEFAULT_DISPATCHER.vkMapMemory;
+	vmaVulkanFunc.vkUnmapMemory                       = VULKAN_HPP_DEFAULT_DISPATCHER.vkUnmapMemory;
 
 	VmaAllocatorCreateInfo allocatorInfo{};
 	allocatorInfo.physicalDevice = device->getApiHandle();
@@ -308,8 +389,8 @@ bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, cons
 
 	if(device->isExtensionSupported("VK_KHR_get_memory_requirements2") && device->isExtensionSupported("VK_KHR_dedicated_allocation")) {
 		allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT;
-		vmaVulkanFunc.vkGetBufferMemoryRequirements2KHR = dldy.vkGetBufferMemoryRequirements2KHR;
-		vmaVulkanFunc.vkGetImageMemoryRequirements2KHR  = dldy.vkGetImageMemoryRequirements2KHR;
+		vmaVulkanFunc.vkGetBufferMemoryRequirements2KHR = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetBufferMemoryRequirements2KHR;
+		vmaVulkanFunc.vkGetImageMemoryRequirements2KHR  = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetImageMemoryRequirements2KHR;
 	}
 
 	allocatorInfo.pVulkanFunctions = &vmaVulkanFunc;
@@ -357,7 +438,7 @@ bool Device::InternalData::createDescriptorPools(const Device::Ref& device, cons
 //=========================================================================
 
 Device::Ref Device::create(Util::UI::WindowRef window, const Configuration& config) {
-	Ref device = new Device(std::move(window));
+	Ref device = new Device(std::move(window), config);
 	if(!device->init(config))
 		device = nullptr;
 	if(!defaultDevice)
@@ -373,7 +454,7 @@ Device::Ref Device::getDefault() {
 
 //------------
 
-Device::Device(Util::UI::WindowRef window) : internal(new InternalData(std::move(window))) { }
+Device::Device(Util::UI::WindowRef window, const Configuration& config) : internal(new InternalData(std::move(window))), config(config) { }
 
 //------------
 
@@ -389,6 +470,13 @@ const SwapchainRef& Device::getSwapchain() const {
 
 void Device::present() {
 	internal->queues[internal->familyIndices[QueueFamily::Present]]->present();
+}
+
+//------------
+
+void Device::waitIdle() {
+	vk::Device device(internal->apiHandle);
+	device.waitIdle();
 }
 
 //------------

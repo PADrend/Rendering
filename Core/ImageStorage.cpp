@@ -14,6 +14,7 @@
 #include <Util/StringUtils.h>
 
 #include <vk_mem_alloc.h>
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 
@@ -160,6 +161,15 @@ bool ImageStorage::init() {
 	handle = ImageHandle::create(vkImage, device->getApiHandle());
 	allocation = AllocationHandle::create(vmaAllocation, device->getAllocator());
 	return true;
+}
+
+//-------------
+
+void ImageStorage::setDebugName(const std::string& name) {
+	if(!device->getConfig().debugMode)
+		return;
+	vk::Device vkDevice(device->getApiHandle());
+	vkDevice.setDebugUtilsObjectNameEXT({ vk::Image::objectType, handle, name.c_str() });
 }
 
 //-------------

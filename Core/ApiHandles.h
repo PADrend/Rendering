@@ -57,6 +57,7 @@ API_HANDLE_DECLARE(Queue);
 API_HANDLE_DECLARE(CommandBuffer);
 API_HANDLE_DECLARE(CommandPool);
 API_HANDLE_DECLARE(Fence);
+API_HANDLE_DECLARE(Semaphore);
 API_HANDLE_DECLARE(Memory);
 API_HANDLE_DECLARE(Image);
 API_HANDLE_DECLARE(ImageView);
@@ -102,6 +103,7 @@ public:
 		static Ref create(const ApiType& handle=nullptr, const ParentApiType& parent = nullptr) { return new BaseType_t(handle, parent); }
 		operator const ApiType() const { return this->get() ? this->get()->handle : nullptr; }
 		operator const ParentApiType() const { return this->get() ? this->get()->parent : nullptr; }
+		operator uint64_t() const { return this->get() ? reinterpret_cast<uint64_t>(this->get()->handle) : 0; }
 	};
 	~ApiHandle() {};
 	ApiHandle(ApiHandle&& rhs) { parent = std::move(rhs.parent); handle = std::move(rhs.handle); rhs.parent = nullptr; rhs.handle = nullptr; };
@@ -112,6 +114,7 @@ public:
 	operator bool() const { return handle; }
 	operator const ParentApiType&() const { return parent; }
 	operator const ApiType&() const { return handle; }
+	operator uint64_t() const { return reinterpret_cast<uint64_t>(handle); }
 private:
 	ApiHandle() = default;
 	ApiHandle(const ApiType& handle, const ParentApiType& parent = nullptr) : parent(parent), handle(handle) {}
@@ -127,6 +130,7 @@ API_HANDLE_KHR(Surface, Instance);
 API_HANDLE_KHR(Swapchain, Device);
 API_HANDLE(Queue, Device);
 API_HANDLE(Fence, Device);
+API_HANDLE(Semaphore, Device);
 API_HANDLE(Memory, Device);
 API_HANDLE(Image, Device);
 API_HANDLE(ImageView, Device);

@@ -17,6 +17,7 @@
 
 #include <Util/Macros.h>
 
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 #include <cstddef>
@@ -149,7 +150,9 @@ uint8_t* BufferObject::map() {
 	
 	// Create & map staging buffer
 	if(!stagingBuffer) {
+		static uint32_t stagingBufferId = 0;
 		stagingBuffer = BufferStorage::create(device, {buffer->getSize(), MemoryUsage::CpuOnly, false, ResourceUsage::CopySource});
+		stagingBuffer->setDebugName("Staging Buffer " + std::to_string(stagingBufferId++));
 		if(!stagingBuffer)
 			return nullptr;
 	}

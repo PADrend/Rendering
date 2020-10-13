@@ -18,6 +18,7 @@
 #include "../RenderingContext.h"
 #include "../DrawCompound.h"
 #include "../Core/Device.h"
+#include "../Core/BufferStorage.h"
 #include "../Core/CommandBuffer.h"
 #include "../Shader/Shader.h"
 #include "../Shader/Uniform.h"
@@ -33,7 +34,6 @@
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross.hpp>
-#include <vulkan/vulkan.hpp>
 
 const std::string vertexShader = R"vs(
 	#version 450
@@ -70,8 +70,8 @@ const std::string fragmentShader = R"fs(
 	};
 
 	void main() {
-		//outColor = vec4(fragColor);
-		outColor = sg_Material.diffuse;
+		outColor = vec4(1.0);
+		//outColor = sg_Material.diffuse;
 	}
 )fs";
 
@@ -81,8 +81,6 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	
 	auto device = TestUtils::device;
 	REQUIRE(device);
-	vk::Device vkDevice(device->getApiHandle());
-	REQUIRE(vkDevice);
 	RenderingContext context(device);
 
 	// --------------------------------------------
@@ -94,6 +92,10 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 
 	Mesh::Ref mesh = MeshUtils::createBox(vd, {-0.5,0.5,-0.5,0.5,-0.5,0.5});
 	REQUIRE(mesh);
+	mesh->_getVertexData().upload();
+	mesh->_getVertexData().getBuffer()->getBuffer()->setDebugName("Vertex Buffer");
+	mesh->_getIndexData().upload();
+	mesh->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer");
 	
 	// compile shaders
 	auto shader = Shader::createShader(device, vertexShader, fragmentShader);
@@ -120,8 +122,8 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	// draw
 
 	bool running = true;
-	for(uint_fast32_t round = 0; round < 1000 && running; ++round) {
-		context.clearScreen({0,0,0,1});
+	for(uint_fast32_t round = 0; round < 10 && running; ++round) {
+		//context.clearScreen({0,0,0,1});
 
 		//mat.translate(-0.5,0,0);
 		//drawCoordSys(context, 2);
@@ -148,5 +150,6 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 				running = false;
 		}
 	}
-	vkDevice.waitIdle();
+	device->waitIdle();
+	
 }

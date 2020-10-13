@@ -30,7 +30,6 @@
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross.hpp>
-#include <vulkan/vulkan.hpp>
 
 const std::string vertexShader = R"vs(
 	#version 450
@@ -103,8 +102,6 @@ TEST_CASE("ShaderTest", "[ShaderTest]") {
 
 	auto device = TestUtils::device;
 	REQUIRE(device);
-	vk::Device vkDevice(device->getApiHandle());
-	REQUIRE(vkDevice);
 	RenderingContext context(device);
 
 	
@@ -161,5 +158,6 @@ TEST_CASE("ShaderTest", "[ShaderTest]") {
 		auto uniform = shader->getUniform({"nonsense"});
 		REQUIRE(uniform.isNull());
 	}
+	device->waitIdle();
 
 }

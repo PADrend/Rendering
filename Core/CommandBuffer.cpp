@@ -22,6 +22,7 @@
 
 #include <Util/Macros.h>
 
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 #include <unordered_set>
@@ -49,14 +50,14 @@ static inline Geometry::Vec3i toVec3i(const Geometry::Vec3ui& v) {
 
 //-----------------
 
-CommandBuffer::Ref CommandBuffer::create(const DeviceRef& device, QueueFamily family, bool primary) {
-	return create(device->getQueue(family));
+CommandBuffer::Ref CommandBuffer::create(const DeviceRef& device, QueueFamily family, bool transient, bool primary) {
+	return create(device->getQueue(family), transient, primary);
 }
 
 //-----------------
 
-CommandBuffer::Ref CommandBuffer::create(const QueueRef& queue, bool primary) {
-	auto buffer = new CommandBuffer(queue, primary);
+CommandBuffer::Ref CommandBuffer::create(const QueueRef& queue, bool transient, bool primary) {
+	auto buffer = new CommandBuffer(queue, primary, transient);
 	if(!buffer->init())
 		return nullptr;
 	return buffer;
@@ -64,7 +65,7 @@ CommandBuffer::Ref CommandBuffer::create(const QueueRef& queue, bool primary) {
 
 //-----------------
 
-CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary) : queue(queue), primary(primary) { }
+CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary, bool transient) : queue(queue), primary(primary), transient(transient) { }
 
 //-----------------
 
@@ -87,13 +88,13 @@ bool CommandBuffer::init() {
 //-----------------
 
 void CommandBuffer::reset() {
+	end();
 	vk::CommandBuffer vkCmd(handle);
-	if(state == State::Recording)
-		end();
 	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 	pipeline.reset();
 	boundDescriptorSets.clear();
 	boundPipelines.clear();
+	usedResources.clear();
 	state = State::Initial;
 }
 
@@ -104,6 +105,7 @@ void CommandBuffer::flush() {
 	vk::CommandBuffer vkCmd(handle);
 	auto device = queue->getDevice();
 	auto shader = pipeline.getShader();
+	WARN_AND_RETURN_IF(!shader, "Cannot flush command buffer. Invalid shader.",);
 	auto layout = shader->getLayout();
 
 	// bind pipeline if it has changed
@@ -116,6 +118,7 @@ void CommandBuffer::flush() {
 
 	if(boundPipelines.empty() || pipeline.hasChanged()) {
 		// pipeline changed
+		insertDebugMarker("Pipeline changed");
 		PipelineHandle pipelineHandle = device->getResourceCache()->createPipeline(pipeline, nullptr);
 		WARN_AND_RETURN_IF(!pipelineHandle, "CommandBuffer: Invalid Pipeline.",);
 
@@ -126,27 +129,28 @@ void CommandBuffer::flush() {
 	}
 
 	// update descriptor sets
-	if(!bindings.isDirty())
-		return; // bindings did not change
-	bindings.clearDirty();
+	if(bindings.isDirty()) {
+		bindings.clearDirty();
+		insertDebugMarker("Bindings changed");
 
-	std::vector<vk::DescriptorSet> bindSets;
-	for(auto& it : bindings.getBindingSets()) {
-		auto set = it.first;
-		auto& bindingSet = it.second;
-		if(!bindingSet.isDirty())
-			continue;
-		bindings.clearDirty(set);
-		if(!layout.hasLayoutSet(set))
-			continue;
-		
-		auto descriptorSet = device->getDescriptorPool()->requestDescriptorSet(layout.getLayoutSet(set), bindingSet);
-		if(descriptorSet) {
-			vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
-			vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, {});
-			boundDescriptorSets.emplace_back(descriptorSet);
-		} else {
-			WARN("Failed to create descriptor set for binding set " + std::to_string(set));
+		std::vector<vk::DescriptorSet> bindSets;
+		for(auto& it : bindings.getBindingSets()) {
+			auto set = it.first;
+			auto& bindingSet = it.second;
+			if(!bindingSet.isDirty())
+				continue;
+			bindings.clearDirty(set);
+			if(!layout.hasLayoutSet(set))
+				continue;
+			
+			auto descriptorSet = device->getDescriptorPool()->requestDescriptorSet(layout.getLayoutSet(set), bindingSet);
+			if(descriptorSet) {
+				vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
+				vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, {});
+				boundDescriptorSets.emplace_back(descriptorSet);
+			} else {
+				WARN("Failed to create descriptor set for binding set " + std::to_string(set));
+			}
 		}
 	}
 }
@@ -159,16 +163,15 @@ void CommandBuffer::begin() {
 	reset();
 	vk::CommandBuffer vkCmd(handle);
 	state = State::Recording;
-	vkCmd.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
+	vkCmd.begin({transient ? vk::CommandBufferUsageFlagBits::eOneTimeSubmit : vk::CommandBufferUsageFlagBits::eSimultaneousUse});
 }
 
 //-----------------
 
 void CommandBuffer::end() {
-	if(!isRecording())
+	if(state != State::Recording)
 		return;
-	if(inRenderPass)
-		endRenderPass();
+	endRenderPass();
 	vk::CommandBuffer vkCmd(handle);
 	state = State::Executable;
 	vkCmd.end();
@@ -177,6 +180,7 @@ void CommandBuffer::end() {
 //-----------------
 
 void CommandBuffer::submit(bool wait) {
+	WARN_AND_RETURN_IF(!primary, "Cannot submit secondary command buffer.",);
 	end();
 	vk::CommandBuffer vkCmd(handle);
 	queue->submit(this, wait);
@@ -184,7 +188,20 @@ void CommandBuffer::submit(bool wait) {
 
 //-----------------
 
-void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, const std::vector<Util::Color4f>& clearColors, float clearDepthValue, uint32_t clearStencilValue) {
+void CommandBuffer::execute(const Ref& buffer) {
+	WARN_AND_RETURN_IF(!buffer || !buffer->getApiHandle(), "Cannot execute secondary command buffer. Invalid command buffer.",);
+	WARN_AND_RETURN_IF(buffer->primary, "Cannot execute primary command buffer as secondary.",);
+	WARN_AND_RETURN_IF(!primary, "Cannot execute command buffer on secondary command buffer.",);
+	buffer->end();
+	flush();
+	vk::CommandBuffer vkCmd(handle);
+	vk::CommandBuffer vkSecondaryCmd(buffer->getApiHandle());
+	vkCmd.executeCommands(vkSecondaryCmd);
+}
+
+//-----------------
+
+void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool clearDepthStencil) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(inRenderPass, "Command buffer is already in a render pass. Call endRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
@@ -192,7 +209,7 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 	activeFBO = fbo ? fbo : device->getSwapchain()->getCurrentFBO();
 	pipeline.setFramebufferFormat(activeFBO);
 
-	auto renderPass = device->getResourceCache()->createRenderPass(activeFBO, clearColor, clearDepth);
+	auto renderPass = device->getResourceCache()->createRenderPass(activeFBO, clearColor, clearDepthStencil);
 	auto framebuffer = device->getResourceCache()->createFramebuffer(activeFBO, renderPass);
 	WARN_AND_RETURN_IF(!framebuffer, "Failed to start render pass. Invalid framebuffer.",);
 
@@ -206,6 +223,7 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 	}
 	clearValues.emplace_back(vk::ClearDepthStencilValue(clearDepthValue, clearStencilValue));
 
+	beginDebugMarker("Begin render pass");
 	vkCmd.beginRenderPass({
 		vkRenderPass, vkFramebuffer,
 		vk::Rect2D{ {0, 0}, {activeFBO->getWidth(), activeFBO->getHeight()} },
@@ -217,7 +235,8 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 //-----------------
 
 void CommandBuffer::endRenderPass() {
-	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
+	if(!inRenderPass)
+		return;
 	vk::CommandBuffer vkCmd(handle);
 	for(uint32_t i=0; i<activeFBO->getColorAttachmentCount(); ++i) {
 		const auto& attachment = activeFBO->getColorAttachment(i);
@@ -230,11 +249,13 @@ void CommandBuffer::endRenderPass() {
 
 	vkCmd.endRenderPass();
 	inRenderPass = false;
+	endDebugMarker();
 }
 
 //-----------------
 
 void CommandBuffer::prepareForPresent() {
+	endRenderPass();
 	// TODO: We cannot guarantee that this command buffer uses the same FBO
 	auto& fbo = queue->getDevice()->getSwapchain()->getCurrentFBO();
 	auto att = fbo->getColorAttachment(0);
@@ -305,18 +326,34 @@ void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer, size_t offset
 
 //-----------------
 
-void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors, const Geometry::Rect_i& rect) {
+void CommandBuffer::clear(bool clearColor, bool clearDepth, bool clearStencil, const Geometry::Rect_i& rect) {
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
-	WARN_AND_RETURN_IF(!activeFBO || !activeFBO->isValid(), "Cannot clear color. Invalid FBO.",);
-	std::vector<vk::ClearAttachment> clearAttachments(clearColors.size(), vk::ClearAttachment{});
-	for(uint32_t i=0; i<std::min<size_t>(clearAttachments.size(), clearColors.size()); ++i) {
-		auto& c = clearColors[i];
-		clearAttachments[i].clearValue.color.setFloat32({c.r(), c.g(), c.b(), c.a()});
-		clearAttachments[i].colorAttachment = i;
-		clearAttachments[i].aspectMask = vk::ImageAspectFlagBits::eColor;
+	WARN_AND_RETURN_IF(!activeFBO || !activeFBO->isValid(), "Cannot clear attachments. Invalid FBO.",);
+
+	std::vector<vk::ClearAttachment> clearAttachments;
+	if(clearColor) {
+		for(uint32_t i=0; i<activeFBO->getColorAttachmentCount(); ++i) {
+			auto c = i < clearColors.size() ? clearColors[i] : Util::Color4f(0,0,0,0);
+			vk::ClearAttachment att{};
+			att.clearValue.color.setFloat32({c.r(), c.g(), c.b(), c.a()});
+			att.colorAttachment = i;
+			att.aspectMask = vk::ImageAspectFlagBits::eColor;
+			clearAttachments.emplace_back(att);
+		}
 	}
-	vk::ClearRect clearRect;
-	
+
+	if(clearDepth || clearStencil) {
+		vk::ClearAttachment att{};
+		if(clearDepth)
+			att.aspectMask |= vk::ImageAspectFlagBits::eDepth;
+		if(clearStencil)
+			att.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+		att.clearValue.depthStencil.depth = clearDepthValue;
+		att.clearValue.depthStencil.stencil = clearStencilValue;
+		clearAttachments.emplace_back(att);
+	}
+
+	vk::ClearRect clearRect;	
 	clearRect.baseArrayLayer = 0;
 	clearRect.layerCount = 1;
 	clearRect.rect = vk::Rect2D{
@@ -332,30 +369,50 @@ void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors, co
 
 //-----------------
 
-void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect, bool clearDepth, bool clearStencil) {
-	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
-	WARN_AND_RETURN_IF(!activeFBO || !activeFBO->isValid(), "Cannot clear depth stencil. Invalid FBO.",);
-	if(!activeFBO->getDepthStencilAttachment())
-		return;
-	vk::ClearAttachment clearAttachment;
-	if(clearDepth)
-		clearAttachment.aspectMask |= vk::ImageAspectFlagBits::eDepth;
-	if(clearStencil)
-		clearAttachment.aspectMask |= vk::ImageAspectFlagBits::eStencil;
-	clearAttachment.clearValue.depthStencil.depth = depth;
-	clearAttachment.clearValue.depthStencil.stencil = stencil;
-	vk::ClearRect clearRect;
-	clearRect.baseArrayLayer = 0;
-	clearRect.layerCount = 1;
-	clearRect.rect = vk::Rect2D{
-		{rect.getX(), rect.getY()},
-		{
-			rect.getWidth() > 0 ? rect.getWidth() : activeFBO->getWidth(),
-			rect.getHeight() > 0 ? rect.getHeight() : activeFBO->getHeight(),
-		}
-	};
-	vk::CommandBuffer vkCmd(handle);
-	vkCmd.clearAttachments({clearAttachment}, {clearRect});
+void CommandBuffer::setClearColor(const std::vector<Util::Color4f>& colors) {
+	clearColors = colors;
+}
+
+//-----------------
+
+void CommandBuffer::setClearDepthValue(float depth) {
+	clearDepthValue = depth;
+}
+
+//-----------------
+
+void CommandBuffer::setClearStencilValue(uint32_t stencil) {
+	clearStencilValue = stencil;
+}
+
+//-----------------
+
+void CommandBuffer::clearColor(const std::vector<Util::Color4f>& colors, const Geometry::Rect_i& rect) {
+	setClearColor(colors);
+	clear(true,false,false,rect);
+}
+
+//-----------------
+
+void CommandBuffer::clearDepth(float depth, const Geometry::Rect_i& rect) {
+	setClearDepthValue(depth);
+	clear(false,true,false,rect);
+}
+
+//-----------------
+
+void CommandBuffer::clearStencil(uint32_t stencil, const Geometry::Rect_i& rect) {
+	setClearStencilValue(stencil);
+	clear(false,false,true,rect);
+}
+
+
+//-----------------
+
+void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect) {
+	setClearDepthValue(depth);
+	setClearStencilValue(stencil);
+	clear(false,true,true,rect);
 }
 
 //-----------------
@@ -600,4 +657,42 @@ void CommandBuffer::imageBarrier(const ImageStorageRef& image, ResourceUsage new
 
 //-----------------
 
+void CommandBuffer::beginDebugMarker(const std::string& name, const Util::Color4f& color) {
+	if(!queue->getDevice()->getConfig().debugMode)
+		return;
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);	
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.beginDebugUtilsLabelEXT({name.c_str(), {color.r(), color.g(), color.b(), color.a()}});
+}
+
+//-----------------
+
+void CommandBuffer::insertDebugMarker(const std::string& name, const Util::Color4f& color) {
+	if(!queue->getDevice()->getConfig().debugMode)
+		return;
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.insertDebugUtilsLabelEXT({name.c_str(), {color.r(), color.g(), color.b(), color.a()}});
+}
+
+//-----------------
+
+void CommandBuffer::endDebugMarker() {
+	if(!queue->getDevice()->getConfig().debugMode)
+		return;
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.endDebugUtilsLabelEXT();
+}
+
+//-------------
+
+void CommandBuffer::setDebugName(const std::string& name) {
+	if(!queue->getDevice()->getConfig().debugMode)
+		return;
+	vk::Device vkDevice(queue->getDevice()->getApiHandle());
+	vkDevice.setDebugUtilsObjectNameEXT({ vk::CommandBuffer::objectType, handle, name.c_str() });
+}
+
+//-----------------
 } // namespace Rendering

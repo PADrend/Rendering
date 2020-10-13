@@ -60,6 +60,15 @@ struct VertexInputAttribute {
 //! Configures the mapping between mesh vertex attributes to the corresponding shader resource.
 class VertexInputState {
 public:
+	VertexInputState() = default;
+	VertexInputState(const VertexInputState& o) : bindings(o.bindings), attributes(o.attributes), dirty(true) {}
+	VertexInputState& operator=(const VertexInputState& o) {
+		bindings = o.bindings;
+		attributes = o.attributes;
+		dirty = true;
+		return *this;
+	}
+
 	//! Sets the vertex binding description of the binding given by @p index.
 	VertexInputState& setBinding(const VertexInputBinding& value) { bindings[value.binding] = value; dirty=true; return *this; }
 	//! Simultaneously sets all vertex binding descriptions.
@@ -124,6 +133,15 @@ enum class PrimitiveTopology {
 //! Configures how vertices form the geometry to draw.
 class InputAssemblyState {
 public:
+	InputAssemblyState(PrimitiveTopology topology = PrimitiveTopology::TriangleList, bool primitiveRestart = false) : topology(topology), primitiveRestartEnabled(primitiveRestart) {}
+	InputAssemblyState(const InputAssemblyState& o) : topology(o.topology), primitiveRestartEnabled(o.primitiveRestartEnabled), dirty(true) {}
+	InputAssemblyState& operator=(const InputAssemblyState& o) {
+		topology = o.topology;
+		primitiveRestartEnabled = o.primitiveRestartEnabled;
+		dirty = true;
+		return *this;
+	}
+
 	//! Defines how consecutive vertices are organized into primitives.
 	InputAssemblyState& setTopology(PrimitiveTopology value) { topology = value; dirty = true; return *this; }
 	//! Controls whether a special vertex index value is treated as restarting the assembly of primitives (0xffffffff for 32bit indices or 0xffff for 16bit indices).
@@ -169,6 +187,15 @@ public:
 	ViewportState() = default;
 	ViewportState(const Viewport& viewport) : viewports({viewport}) {}
 	ViewportState(const Viewport& viewport, const Geometry::Rect_i& scissor) : viewports({viewport}), scissors({scissor}) {}
+	ViewportState(const ViewportState& o) : viewports(o.viewports), scissors(o.scissors), dynamicViewports(o.dynamicViewports), dynamicScissors(o.dynamicScissors), dirty(true) {}
+	ViewportState& operator=(const ViewportState& o) {
+		viewports = o.viewports;
+		scissors = o.scissors;
+		dynamicViewports = o.dynamicViewports;
+		dynamicScissors = o.dynamicScissors;
+		dirty = true;
+		return *this;
+	}
 
 	//! Sets the viewport transform of the viewport given by @p index.
 	ViewportState& setViewport(const Viewport& value, uint32_t index=0);
@@ -249,6 +276,27 @@ enum class FrontFace {
 //! Configures the rasterization operations in the GPU.
 class RasterizationState {
 public:
+	RasterizationState() = default;
+	RasterizationState(const RasterizationState& o) : depthClampEnable(o.depthClampEnable), rasterizerDiscardEnable(o.rasterizerDiscardEnable), polygonMode(o.polygonMode),
+		cullMode(o.cullMode), frontFace(o.frontFace), depthBiasEnable(o.depthBiasEnable), depthBiasConstantFactor(o.depthBiasConstantFactor), depthBiasClamp(o.depthBiasClamp),
+		depthBiasSlopeFactor(o.depthBiasSlopeFactor), lineWidth(o.lineWidth), dynamicLineWidth(o.dynamicLineWidth), dynamicDepthBias(o.dynamicDepthBias), dirty(true) {}
+	RasterizationState& operator=(const RasterizationState& o) {
+		depthClampEnable = o.depthClampEnable;
+		rasterizerDiscardEnable = o.rasterizerDiscardEnable;
+		polygonMode = o.polygonMode;
+		cullMode = o.cullMode;
+		frontFace = o.frontFace;
+		depthBiasEnable = o.depthBiasEnable;
+		depthBiasConstantFactor = o.depthBiasConstantFactor;
+		depthBiasClamp = o.depthBiasClamp;
+		depthBiasSlopeFactor = o.depthBiasSlopeFactor;
+		lineWidth = o.lineWidth;
+		dynamicLineWidth = o.dynamicLineWidth;
+		dynamicDepthBias = o.dynamicDepthBias;
+		dirty = true;
+		return *this;
+	}
+
 	//! Controls whether to clamp the fragment’s depth values. Enabling depth clamp will also disable clipping primitives to the z planes of the frustrum.
 	RasterizationState& setDepthClampEnabled(bool value) { depthClampEnable = value; dirty = true; return *this; }
 	//! Controls whether primitives are discarded immediately before the rasterization stage.
@@ -329,6 +377,20 @@ private:
 //! Configures multisampling on the GPU.
 class MultisampleState {
 public:
+	MultisampleState() = default;
+	MultisampleState(const MultisampleState& o) : sampleCount(o.sampleCount), sampleShadingEnable(o.sampleShadingEnable), minSampleShading(o.minSampleShading),
+		sampleMask(o.sampleMask), alphaToCoverageEnable(o.alphaToCoverageEnable), alphaToOneEnable(o.alphaToOneEnable), dirty(true) {}
+	MultisampleState& operator=(const MultisampleState& o) {
+		sampleCount = o.sampleCount;
+		sampleShadingEnable = o.sampleShadingEnable;
+		minSampleShading = o.minSampleShading;
+		sampleMask = o.sampleMask;
+		alphaToCoverageEnable = o.alphaToCoverageEnable;
+		alphaToOneEnable = o.alphaToOneEnable;
+		dirty = true;
+		return *this;
+	}
+
 	//! Sets the number of samples used in rasterization.
 	MultisampleState& setSampleCount(uint32_t value) { sampleCount = value; dirty = true; return *this; };
 	//! Enables or disables Sample Shading.
@@ -403,59 +465,82 @@ struct StencilOpState {
 //! Pipeline state controlling the depth bounds tests, stencil test, and depth test.
 class DepthStencilState {
 public:
-//! Controls whether depth testing is enabled.
-DepthStencilState& setDepthTestEnabled(bool value) { depthTestEnable = value; dirty = true; return *this; }
-//! Controls whether depth writes are enabled when depth testing is enabled.
-DepthStencilState& setDepthWriteEnabled(bool value) { depthWriteEnable = value; dirty = true; return *this; }
-//! Sets the comparison operator used in the depth test.
-DepthStencilState& setDepthCompareOp(ComparisonFunc value) { depthCompareOp = value; dirty = true; return *this; }
-//! Controls whether depth bounds testing is enabled.
-DepthStencilState& setDepthBoundsTestEnabled(bool value) { depthBoundsTestEnable = value; dirty = true; return *this; }
-//! Controls whether stencil testing is enabled.
-DepthStencilState& setStencilTestEnabled(bool value) { stencilTestEnable = value; dirty = true; return *this; }
-//! Controls the front parameters of the stencil test.
-DepthStencilState& setFront(StencilOpState value) { front = value; dirty = true; return *this; }
-//! Controls the back parameters of the stencil test.
-DepthStencilState& setBack(StencilOpState value) { back = value; dirty = true; return *this; }
-//! Defines the min. value used in the depth bounds test.
-DepthStencilState& setMinDepthBounds(float value) { minDepthBounds = value; dirty = true; return *this; }
-//! Defines the max. value used in the depth bounds test.
-DepthStencilState& setMaxDepthBounds(float value) { maxDepthBounds = value; dirty = true; return *this; }
-//! Controls if the depth bounds are dynamic. If they are dynamic, the corresponding values in this state are ignored.
-DepthStencilState& setDynamicDepthBounds(bool value) { dynamicDepthBounds = value; dirty = true; return *this; }
-//! Controls if the stencil compare mask for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-DepthStencilState& setDynamicCompareMask(bool value) { dynamicCompareMask = value; dirty = true; return *this; }
-//! Controls if the stencil write mask for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-DepthStencilState& setDynamicWriteMask(bool value) { dynamicWriteMask = value; dirty = true; return *this; }
-//! Controls if the stencil reference for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-DepthStencilState& setDynamicReference(bool value) { dynamicReference = value; dirty = true; return *this; }
+	DepthStencilState() = default;
+	DepthStencilState(const DepthStencilState& o) : depthTestEnable(o.depthTestEnable), depthWriteEnable(o.depthWriteEnable), depthCompareOp(o.depthCompareOp),
+		depthBoundsTestEnable(o.depthBoundsTestEnable), stencilTestEnable(o.stencilTestEnable), front(o.front), back(o.back), minDepthBounds(o.minDepthBounds),
+		maxDepthBounds(o.maxDepthBounds), dynamicDepthBounds(o.dynamicDepthBounds), dynamicCompareMask(o.dynamicCompareMask), dynamicWriteMask(o.dynamicWriteMask),
+		dynamicReference(o.dynamicReference), dirty(true) {}
+	DepthStencilState& operator=(const DepthStencilState& o) {
+		depthTestEnable = o.depthTestEnable;
+		depthWriteEnable = o.depthWriteEnable;
+		depthCompareOp = o.depthCompareOp;
+		depthBoundsTestEnable = o.depthBoundsTestEnable;
+		stencilTestEnable = o.stencilTestEnable;
+		front = o.front;
+		back = o.back;
+		minDepthBounds = o.minDepthBounds;
+		maxDepthBounds = o.maxDepthBounds;
+		dynamicDepthBounds = o.dynamicDepthBounds;
+		dynamicCompareMask = o.dynamicCompareMask;
+		dynamicWriteMask = o.dynamicWriteMask;
+		dynamicReference = o.dynamicReference;
+		dirty = true;
+		return *this;
+	}
+		
+	//! Controls whether depth testing is enabled.
+	DepthStencilState& setDepthTestEnabled(bool value) { depthTestEnable = value; dirty = true; return *this; }
+	//! Controls whether depth writes are enabled when depth testing is enabled.
+	DepthStencilState& setDepthWriteEnabled(bool value) { depthWriteEnable = value; dirty = true; return *this; }
+	//! Sets the comparison operator used in the depth test.
+	DepthStencilState& setDepthCompareOp(ComparisonFunc value) { depthCompareOp = value; dirty = true; return *this; }
+	//! Controls whether depth bounds testing is enabled.
+	DepthStencilState& setDepthBoundsTestEnabled(bool value) { depthBoundsTestEnable = value; dirty = true; return *this; }
+	//! Controls whether stencil testing is enabled.
+	DepthStencilState& setStencilTestEnabled(bool value) { stencilTestEnable = value; dirty = true; return *this; }
+	//! Controls the front parameters of the stencil test.
+	DepthStencilState& setFront(StencilOpState value) { front = value; dirty = true; return *this; }
+	//! Controls the back parameters of the stencil test.
+	DepthStencilState& setBack(StencilOpState value) { back = value; dirty = true; return *this; }
+	//! Defines the min. value used in the depth bounds test.
+	DepthStencilState& setMinDepthBounds(float value) { minDepthBounds = value; dirty = true; return *this; }
+	//! Defines the max. value used in the depth bounds test.
+	DepthStencilState& setMaxDepthBounds(float value) { maxDepthBounds = value; dirty = true; return *this; }
+	//! Controls if the depth bounds are dynamic. If they are dynamic, the corresponding values in this state are ignored.
+	DepthStencilState& setDynamicDepthBounds(bool value) { dynamicDepthBounds = value; dirty = true; return *this; }
+	//! Controls if the stencil compare mask for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
+	DepthStencilState& setDynamicCompareMask(bool value) { dynamicCompareMask = value; dirty = true; return *this; }
+	//! Controls if the stencil write mask for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
+	DepthStencilState& setDynamicWriteMask(bool value) { dynamicWriteMask = value; dirty = true; return *this; }
+	//! Controls if the stencil reference for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
+	DepthStencilState& setDynamicReference(bool value) { dynamicReference = value; dirty = true; return *this; }
 
-//! @see{setDepthTestEnabled()}
-bool isDepthTestEnabled() const { return depthTestEnable; }
-//! @see{setDepthWriteEnabled()}
-bool isDepthWriteEnabled() const { return depthWriteEnable; }
-//! @see{setDepthCompareOp()}
-ComparisonFunc getDepthCompareOp() const { return depthCompareOp; }
-//! @see{setDepthBoundsTestEnabled()}
-bool isDepthBoundsTestEnabled() const { return depthBoundsTestEnable; }
-//! @see{setStencilTestEnabled()}
-bool isStencilTestEnabled() const { return stencilTestEnable; }
-//! @see{setFront()}
-StencilOpState getFront() const { return front; }
-//! @see{setBack()}
-StencilOpState getBack() const { return back; }
-//! @see{setMinDepthBounds()}
-float getMinDepthBounds() const { return minDepthBounds; }
-//! @see{setMaxDepthBounds()}
-float getMaxDepthBounds() const { return maxDepthBounds; }
-//! @see{setDynamicDepthBounds()}
-bool hasDynamicDepthBounds() const { return dynamicDepthBounds; }
-//! @see{setDynamicCompareMask()}
-bool hasDynamicCompareMask() const { return dynamicCompareMask; }
-//! @see{setDynamicWriteMask()}
-bool hasDynamicWriteMask() const { return dynamicWriteMask; }
-//! @see{setDynamicReference()}
-bool hasDynamicReference() const { return dynamicReference; }
+	//! @see{setDepthTestEnabled()}
+	bool isDepthTestEnabled() const { return depthTestEnable; }
+	//! @see{setDepthWriteEnabled()}
+	bool isDepthWriteEnabled() const { return depthWriteEnable; }
+	//! @see{setDepthCompareOp()}
+	ComparisonFunc getDepthCompareOp() const { return depthCompareOp; }
+	//! @see{setDepthBoundsTestEnabled()}
+	bool isDepthBoundsTestEnabled() const { return depthBoundsTestEnable; }
+	//! @see{setStencilTestEnabled()}
+	bool isStencilTestEnabled() const { return stencilTestEnable; }
+	//! @see{setFront()}
+	StencilOpState getFront() const { return front; }
+	//! @see{setBack()}
+	StencilOpState getBack() const { return back; }
+	//! @see{setMinDepthBounds()}
+	float getMinDepthBounds() const { return minDepthBounds; }
+	//! @see{setMaxDepthBounds()}
+	float getMaxDepthBounds() const { return maxDepthBounds; }
+	//! @see{setDynamicDepthBounds()}
+	bool hasDynamicDepthBounds() const { return dynamicDepthBounds; }
+	//! @see{setDynamicCompareMask()}
+	bool hasDynamicCompareMask() const { return dynamicCompareMask; }
+	//! @see{setDynamicWriteMask()}
+	bool hasDynamicWriteMask() const { return dynamicWriteMask; }
+	//! @see{setDynamicReference()}
+	bool hasDynamicReference() const { return dynamicReference; }
 
 private:
 	bool depthTestEnable = false;
@@ -556,6 +641,19 @@ struct ColorBlendAttachmentState {
 //! Blending combines the incoming source (s) fragment's color with the destination (d) color of each sample stored in the framebuffer.
 class ColorBlendState {
 public:
+	ColorBlendState() = default;
+	ColorBlendState(const ColorBlendState& o) : logicOpEnable(o.logicOpEnable), logicOp(o.logicOp), attachments(o.attachments),
+		constantColor(o.constantColor), dynamicBlendConstant(o.dynamicBlendConstant), dirty(true) {}
+	ColorBlendState& operator=(const ColorBlendState& o) {
+		logicOpEnable = o.logicOpEnable;
+		logicOp = o.logicOp;
+		attachments = o.attachments;
+		constantColor = o.constantColor;
+		dynamicBlendConstant = o.dynamicBlendConstant;
+		dirty = true;
+		return *this;
+	}
+
 	//! Controls whether to apply Logical Operations.
 	ColorBlendState& setLogicOpEnabled(bool value) { logicOpEnable = value; dirty = true; return *this; }
 	//! Selects which logical operation to apply.
@@ -615,6 +713,13 @@ class FramebufferFormat {
 public:
 	FramebufferFormat() {}
 	FramebufferFormat(const FBORef& fbo);
+	FramebufferFormat(const FramebufferFormat& o) : colorAttachments(o.colorAttachments), depthAttachment(o.depthAttachment), dirty(true) {}
+	FramebufferFormat& operator=(const FramebufferFormat& o) {
+		colorAttachments = o.colorAttachments;
+		depthAttachment = o.depthAttachment;
+		dirty = true;
+		return *this;
+	}
 
 	//! Sets the color attachment format for the framebuffer attachment given by @p index.
 	FramebufferFormat& setColorAttachment(const AttachmentFormat& value, uint32_t index=0) { colorAttachments[index] = value; dirty = true; return *this; }
@@ -670,17 +775,17 @@ public:
 
 	PipelineState& reset();
 	
-	inline PipelineState& setType(PipelineType value) { type = value; dirty = true; return *this; }
-	inline PipelineState& setVertexInputState(const VertexInputState& state) { vertexInput = state; vertexInput.markAsDirty(); dirty = true; return *this; }
-	inline PipelineState& setInputAssemblyState(const InputAssemblyState& state) { inputAssembly = state; inputAssembly.markAsDirty(); dirty = true; return *this; }
-	inline PipelineState& setViewportState(const ViewportState& state) { viewport = state; viewport.markAsDirty(); dirty = true; return *this; }
-	inline PipelineState& setRasterizationState(const RasterizationState& state) { rasterization = state; rasterization.markAsDirty(); dirty = true; return *this; }
-	inline PipelineState& setMultisampleState(const MultisampleState& state) { multisample = state; multisample.markAsDirty(); dirty = true; return *this; }
-	inline PipelineState& setDepthStencilState(const DepthStencilState& state) { depthStencil = state; depthStencil.markAsDirty(); dirty = true; return *this; }
-	inline PipelineState& setColorBlendState(const ColorBlendState& state) { colorBlend = state; colorBlend.markAsDirty(); dirty = true; return *this; }
-	inline PipelineState& setFramebufferFormat(const FramebufferFormat& state) { attachments = state; attachments.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setType(PipelineType value) { if(type != value) markAsChanged(); type = value; return *this; }
+	inline PipelineState& setVertexInputState(const VertexInputState& state) { vertexInput = state; dirty = true; return *this; }
+	inline PipelineState& setInputAssemblyState(const InputAssemblyState& state) { inputAssembly = state; dirty = true; return *this; }
+	inline PipelineState& setViewportState(const ViewportState& state) { viewport = state; dirty = true; return *this; }
+	inline PipelineState& setRasterizationState(const RasterizationState& state) { rasterization = state; dirty = true; return *this; }
+	inline PipelineState& setMultisampleState(const MultisampleState& state) { multisample = state; dirty = true; return *this; }
+	inline PipelineState& setDepthStencilState(const DepthStencilState& state) { depthStencil = state; dirty = true; return *this; }
+	inline PipelineState& setColorBlendState(const ColorBlendState& state) { colorBlend = state; dirty = true; return *this; }
+	inline PipelineState& setFramebufferFormat(const FramebufferFormat& state) { attachments = state; dirty = true; return *this; }
 	inline PipelineState& setFramebufferFormat(const FBORef& fbo) { attachments = fbo; dirty = true; return *this; }
-	inline PipelineState& setEntryPoint(const std::string& value) { entrypoint = value; dirty = true; return *this; }
+	inline PipelineState& setEntryPoint(const std::string& value) { if(entrypoint != value) markAsChanged(); entrypoint = value; return *this; }
 	PipelineState& setShader(const ShaderRef& value);
 
 	PipelineType getType() const { return type; }

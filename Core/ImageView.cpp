@@ -13,6 +13,7 @@
 
 #include <Util/Macros.h>
 
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 namespace Rendering {
@@ -135,6 +136,15 @@ bool ImageView::init() {
 
 	handle = ImageViewHandle::create(view, vkDevice);	
 	return true;
+}
+
+//-------------
+
+void ImageView::setDebugName(const std::string& name) {
+	if(!image->getDevice()->getConfig().debugMode)
+		return;
+	vk::Device vkDevice(image->getDevice()->getApiHandle());
+	vkDevice.setDebugUtilsObjectNameEXT({ vk::ImageView::objectType, handle, name.c_str() });
 }
 
 //---------------

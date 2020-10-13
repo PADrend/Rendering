@@ -16,20 +16,16 @@
 #include <cstdint>
 #include <iostream>
 
-#include <vulkan/vulkan.hpp>
-#include <shaderc/shaderc.hpp>
-
 TEST_CASE("DeviceTest_test", "[DeviceTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
 	
 	auto device = TestUtils::device;
 	REQUIRE(device);
-	vk::Device vkDevice(device->getApiHandle());
-	REQUIRE(vkDevice);
+	REQUIRE(device->getApiHandle());
 	std::cout << "Max. push constant size: " << device->getMaxPushConstantSize() << std::endl;
 	REQUIRE(device->getMaxPushConstantSize() >= 128);
 	std::cout << "Max. framebuffer attachments: " << device->getMaxFramebufferAttachments() << std::endl;
 	REQUIRE(device->getMaxFramebufferAttachments() >= 1);
-	vkDevice.waitIdle();
+	device->waitIdle();
 }

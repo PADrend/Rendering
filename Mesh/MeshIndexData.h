@@ -77,6 +77,8 @@ public:
 
 	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfIndices);
 
+	const BufferObject::Ref& getBuffer() { return bufferObject; }
+	
 //! @name Deprecated
 //! @{
 	[[deprecated]]

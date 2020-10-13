@@ -17,6 +17,7 @@
 #include <Util/Macros.h>
 #include <Util/StringUtils.h>
 
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 namespace Rendering {
@@ -32,7 +33,10 @@ Queue::~Queue() = default;
 //-------------
 
 bool Queue::submit(const CommandBufferRef& commands, bool wait) {
-	WARN_AND_RETURN_IF(!commands || !commands->isExecutable(), "Queue: command buffer is not executable.", false);
+	WARN_AND_RETURN_IF(!commands, "Queue: invalid command buffer.", false);
+	if(commands->isRecording())
+		commands->end();
+	WARN_AND_RETURN_IF(!commands->isExecutable(), "Queue: command buffer is not executable.", false);
 	clearPending();
 	vk::Device vkDevice(handle);
 	vk::Queue vkQueue(handle);

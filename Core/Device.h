@@ -58,6 +58,7 @@ public:
 	~Device();
 	
 	void present();
+	void waitIdle();
 	
 	//! @name Extensions & limits
 	//! @{
@@ -66,6 +67,7 @@ public:
 	uint32_t getMaxPushConstantSize() const;
 	//! @}
 	
+	const Configuration& getConfig() const { return config; }
 	const Util::UI::WindowRef& getWindow() const;	
 	const SwapchainRef& getSwapchain() const;
 	const Queue::Ref& getQueue(QueueFamily family, uint32_t index=0) const;
@@ -75,21 +77,20 @@ public:
 	const ResourceCacheRef& getResourceCache() const;
 	const DescriptorPoolRef& getDescriptorPool() const;
 	
-	//! @name API Handles
-	//! @{
-	
+	//! @name Internal
+	//! @{	
 	const SurfaceHandle& getSurface() const;
 	const InstanceHandle& getInstance() const;
 	const AllocatorHandle& getAllocator() const;
 	const DeviceHandle& getApiHandle() const;
-	
 	//! @}
 private:
-	Device(Util::UI::WindowRef window);
+	Device(Util::UI::WindowRef window, const Configuration& config);
 	bool init(const Configuration& config);
-	
+
 	struct InternalData;
 	std::unique_ptr<InternalData> internal;
+	Configuration config;
 };
 	
 } /* Rendering */

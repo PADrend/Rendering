@@ -75,13 +75,18 @@ public:
 	const Configuration& getConfig() const { return config; }
 
 	//! @name Internal
-	//! @{	
+	//! @{
 	ResourceUsage getLastUsage() const { return lastUsage; }
 	void _setLastUsage(ResourceUsage usage) { lastUsage = usage; }
 
 	const ImageHandle& getApiHandle() const { return handle; }
 	const AllocationHandle& getAllocation() const { return allocation; }
 	const DeviceRef& getDevice() const { return device; }
+	//! @}
+	
+	//! @name Debugging
+	//! @{	
+	void setDebugName(const std::string& name);
 	//! @}
 private:
 	explicit ImageStorage(const DeviceRef& device, const Configuration& config);

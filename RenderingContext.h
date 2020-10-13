@@ -3,7 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	Copyright (C) 2014-2018 Sascha Brandt <sascha@brandt.graphics>
+	Copyright (C) 2014-2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -155,7 +155,7 @@ public:
 	//	@{
 	void clearColor(const Util::Color4f& color);
 	void clearDepth(float clearValue);
-	void clearStencil(int32_t clearValue);
+	void clearStencil(uint32_t clearValue);
 	void clearScreen(const Util::Color4f& color);
 	void clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool clearDepth=true);
 	// @}

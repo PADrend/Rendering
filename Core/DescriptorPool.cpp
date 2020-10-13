@@ -20,6 +20,7 @@
 
 #include <Util/Macros.h>
 
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 #include <numeric>
@@ -212,6 +213,15 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 		);
 	}
 	vkDevice.updateDescriptorSets(writes, {});
+}
+
+//-------------
+
+void DescriptorPool::setDebugName(const std::string& name) {
+	if(!device->getConfig().debugMode)
+		return;
+	vk::Device vkDevice(device->getApiHandle());
+	vkDevice.setDebugUtilsObjectNameEXT({ vk::DescriptorPool::objectType, handle, name.c_str() });
 }
 
 //-----------------

@@ -15,6 +15,7 @@
 #include "../RenderingContext.h"
 #include "../State/PipelineState.h"
 #include "../Core/ApiHandles.h"
+#include "../Core/BufferStorage.h"
 #include "../Core/CommandBuffer.h"
 #include "../Core/Device.h"
 #include "../Core/Queue.h"
@@ -32,6 +33,7 @@
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross.hpp>
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 const std::string vertexShader = R"vs(
@@ -72,8 +74,6 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	
 	auto device = TestUtils::device;
 	REQUIRE(device);
-	vk::Device vkDevice(device->getApiHandle());
-	REQUIRE(vkDevice);
 	
 	auto graphicsQueue = device->getQueue(QueueFamily::Graphics);
 	REQUIRE(graphicsQueue->supports(QueueFamily::Present));
@@ -96,6 +96,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 
 	auto vertexBuffer = BufferObject::create(device);
 	vertexBuffer->allocate(positions.size() * sizeof(Geometry::Vec2) + colors.size() * sizeof(Util::Color4f), ResourceUsage::VertexBuffer);
+	vertexBuffer->getBuffer()->setDebugName("Vertex Buffer");
 	vertexBuffer->upload(positions);
 	vertexBuffer->upload(colors, positions.size() * sizeof(Geometry::Vec2));
 
@@ -127,7 +128,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
 		cmdBuffer->setPipeline(state);
 
-		cmdBuffer->beginRenderPass(nullptr, true, true, {{1,1,1,1}});
+		cmdBuffer->beginRenderPass();
 		cmdBuffer->bindVertexBuffers(0, {vertexBuffer, vertexBuffer}, {0, positions.size() * sizeof(Geometry::Vec2)});
 		cmdBuffer->pushConstants(angle.deg());
 		cmdBuffer->draw(3);
@@ -139,5 +140,5 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 
 		angle += Geometry::Angle::deg(1);
 	}
-	vkDevice.waitIdle();
+	device->waitIdle();
 }

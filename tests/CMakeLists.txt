@@ -15,11 +15,12 @@ if(RENDERING_BUILD_TESTS)
 	add_executable(RenderingTest 
 		BufferObjectTest.cpp
 		DeviceTest.cpp
-		FramebufferTest.cpp
 		DrawTest.cpp
+		FramebufferTest.cpp
 		RenderingContextTest.cpp
 		RenderingTestMain.cpp
 		ShaderTest.cpp
+		StateTest.cpp
 		#StatisticsQueryTest.cpp
 		#VertexAccessorTest.cpp
 	)

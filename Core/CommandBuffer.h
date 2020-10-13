@@ -41,6 +41,8 @@ using QueueRef = Util::Reference<Queue>;
 //-------------------------------------------------------
 
 class CommandBuffer : public Util::ReferenceCounter<CommandBuffer> {
+private:
+	explicit CommandBuffer(const QueueRef& queue, bool primary=true, bool transient=true);
 public:
 	using Ref = Util::Reference<CommandBuffer>;
 	enum State {
@@ -50,8 +52,8 @@ public:
 		Executable,
 	};
 
-	static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool primary=true);
-	static Ref create(const QueueRef& queue, bool primary=true);
+	static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool transient=true, bool primary=true);
+	static Ref create(const QueueRef& queue, bool transient=false, bool primary=true);
 	
 	~CommandBuffer();
 	
@@ -60,8 +62,9 @@ public:
 	void reset();
 	void flush();
 	void submit(bool wait=false);
+	void execute(const Ref& buffer);
 
-	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, const std::vector<Util::Color4f>& clearColors={}, float clearDepthValue=0, uint32_t clearStencilValue=0);
+	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepthStencil=true);
 	void endRenderPass();
 	void prepareForPresent();
 	//! @}
@@ -88,11 +91,20 @@ public:
 	}
 	//! @}
 
+	//! @name Clear commands
+	//! @{
+	void clear(bool clearColor=true, bool clearDepth=true, bool clearStencil=true, const Geometry::Rect_i& rect={});
+	void setClearColor(const std::vector<Util::Color4f>& colors);
+	void setClearDepthValue(float depth);
+	void setClearStencilValue(uint32_t stencil);
+	void clearColor(const std::vector<Util::Color4f>& colors, const Geometry::Rect_i& rect={});
+	void clearDepth(float depth, const Geometry::Rect_i& rect={});
+	void clearStencil(uint32_t stencil, const Geometry::Rect_i& rect={});
+	void clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect={});
+	//! @}
 
 	//! @name Draw commands
 	//! @{
-	void clearColor(const std::vector<Util::Color4f>& clearColors, const Geometry::Rect_i& rect={});
-	void clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect={}, bool clearDepth=true, bool clearStencil=true);
 	void draw(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0);
 	void drawIndexed(uint32_t indexCount, uint32_t instanceCount=1, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t firstInstance=0);
 	void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);
@@ -158,19 +170,27 @@ public:
 	const FBORef& getActiveFBO() const { return activeFBO; }
 	//! @}
 
+	//! @name Debugging
+	//! @{
+	void beginDebugMarker(const std::string& name, const Util::Color4f& color={});
+	void insertDebugMarker(const std::string& name, const Util::Color4f& color={});
+	void endDebugMarker();
+	void setDebugName(const std::string& name);
+	//! @}
+
 	//! @name Internal
 	//! @{
 	const CommandBufferHandle& getApiHandle() const { return handle; };
 	//! @}
 private:
 	friend class Queue;
-	explicit CommandBuffer(const QueueRef& queue, bool primary=true);
 	bool init();
 	void begin();
 	void end();
 
 	Util::WeakPointer<Queue> queue;
 	bool primary;
+	bool transient;
 	CommandBufferHandle handle;
 	State state = Invalid;
 	bool inRenderPass=false;
@@ -178,7 +198,12 @@ private:
 	PipelineState pipeline;
 	BindingState bindings;
 
+	std::vector<Util::Color4f> clearColors;
+	float clearDepthValue=0;
+	uint32_t clearStencilValue=0;
+
 	// Keep as long as command buffer is used
+	std::vector<ApiBaseHandle::Ref> usedResources;
 	std::vector<PipelineHandle> boundPipelines;
 	std::vector<DescriptorSetRef> boundDescriptorSets;
 };

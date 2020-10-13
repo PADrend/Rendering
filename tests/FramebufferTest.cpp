@@ -32,7 +32,6 @@
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross.hpp>
-#include <vulkan/vulkan.hpp>
 
 const std::string shaderSrc = R"vs(
 	#version 450
@@ -64,8 +63,6 @@ TEST_CASE("FramebufferTest_testDraw", "[FramebufferTest]") {
 	
 	auto device = TestUtils::device;
 	REQUIRE(device);
-	vk::Device vkDevice(device->getApiHandle());
-	REQUIRE(vkDevice);
 	
 	auto graphicsQueue = device->getQueue(QueueFamily::Graphics);
 	REQUIRE(graphicsQueue->supports(QueueFamily::Present));
@@ -87,10 +84,11 @@ TEST_CASE("FramebufferTest_testDraw", "[FramebufferTest]") {
 	// --------------------------------------------
 	// draw
 
-	for(uint_fast32_t round = 0; round < 100; ++round) {		
-		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
+	for(uint_fast32_t round = 0; round < 100; ++round) {
+		auto cmdBuffer = CommandBuffer::create(graphicsQueue, true);
+		cmdBuffer->setPipeline(state);
 
-		cmdBuffer->beginRenderPass(nullptr, true, true, {{1,1,1,1}});
+		cmdBuffer->beginRenderPass();
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
 		
@@ -99,5 +97,5 @@ TEST_CASE("FramebufferTest_testDraw", "[FramebufferTest]") {
 		graphicsQueue->submit(cmdBuffer);
 		graphicsQueue->present();
 	}
-	vkDevice.waitIdle();
+	device->waitIdle();
 }

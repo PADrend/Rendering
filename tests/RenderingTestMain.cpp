@@ -33,6 +33,7 @@ int main( int argc, char* argv[] ) {
 	Rendering::Device::Configuration config{"Test", 0u, 0u, true};
 	config.validationLayers = {
 		//"VK_LAYER_LUNARG_api_dump"
+		"VK_LAYER_RENDERDOC_Capture"
 	};
 	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), config);
 	

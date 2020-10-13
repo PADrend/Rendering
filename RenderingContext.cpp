@@ -3,7 +3,7 @@
 	Copyright (C) 2007-2013 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2013 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
-	Copyright (C) 2014-2018 Sascha Brandt <sascha@brandt.graphics>
+	Copyright (C) 2014-2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -106,6 +106,7 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->dummyVertexBuffer->allocate(16 * sizeof(float), ResourceUsage::VertexBuffer, MemoryUsage::GpuOnly);
 
 	internal->cmd = CommandBuffer::create(device->getQueue(QueueFamily::Graphics));
+	internal->cmd->setDebugName("RenderingContext primary command buffer.");
 
 	setBlending(BlendingParameters());
 	setColorBuffer(ColorBufferParameters());
@@ -119,6 +120,7 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	setPointParameters(PointParameters());
 	setPolygonOffset(PolygonOffsetParameters());
 	setStencil(StencilParameters());
+	setFBO(nullptr);
 
 	MaterialData tmp;
 	tmp.setShadingModel(ShadingModel::Shadeless);
@@ -143,7 +145,6 @@ void RenderingContext::displayMesh(Mesh * mesh) {
 	displayMeshFn(*this, mesh,0,mesh->isUsingIndexData()? mesh->getIndexCount() : mesh->getVertexCount());
 }
 
-
 CommandBufferRef RenderingContext::getCommandBuffer() const {
 	return internal->cmd;
 }
@@ -154,21 +155,23 @@ void RenderingContext::flush(bool wait) {
 	applyChanges();
 	internal->cmd->submit(wait);
 
-	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics));
+	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
+	internal->cmd->setDebugName("RenderingContext primary command buffer.");
 }
 
 void RenderingContext::present() {
 	applyChanges();
 	internal->cmd->prepareForPresent();
-	internal->cmd->submit();
+	internal->cmd->submit(true);
 
 	// clear lights
 	// TODO: do explicit clearing?
 	internal->renderingState.getLights().clear();
 
-	internal->device->getQueue(QueueFamily::Present)->present();
+	internal->device->present();
 
-	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics));
+	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
+	internal->cmd->setDebugName("RenderingContext primary command buffer.");
 }
 
 
@@ -186,13 +189,10 @@ void RenderingContext::applyChanges(bool forced) {
 		internal->activeFBO.isNotNull() && 
 		internal->cmd->getActiveFBO() != internal->device->getSwapchain()->getCurrentFBO()
 	) {
+		internal->cmd->insertDebugMarker("FBO changed");
 		// FBO has changed: end the active render pass
 		internal->cmd->endRenderPass();
 	}
-
-	// Update state
-	internal->cmd->setPipeline(internal->pipelineState);
-	internal->cmd->setBindings(internal->bindingState);
 
 	// Set the shader
 	Shader::Ref shader;
@@ -203,14 +203,18 @@ void RenderingContext::applyChanges(bool forced) {
 		shader = internal->activeShader;
 	}
 
-	if(shader != internal->cmd->getShader()) {
-		internal->cmd->setShader(shader);
+	if(shader != internal->pipelineState.getShader()) {
 		// Shader changed: force apply
 		internal->renderingState.apply(shader, true);
 	} else {
 		// apply rendering state
 		internal->renderingState.apply(shader, forced);
 	}
+	internal->pipelineState.setShader(shader);
+
+	// Update state
+	internal->cmd->setPipeline(internal->pipelineState);
+	internal->cmd->setBindings(internal->bindingState);
 
 
 	// transfer updated global uniforms to the shader
@@ -232,49 +236,51 @@ void RenderingContext::applyChanges(bool forced) {
 
 void RenderingContext::clearColor(const Util::Color4f& color) {
 	applyChanges();
+	internal->cmd->setClearColor({color});
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, false, {color});
+		internal->cmd->beginRenderPass(internal->activeFBO, true, false);
 	} else {
-		internal->cmd->clearColor({color});
+		internal->cmd->clear(true, false, false);
 	}
 }
 
 void RenderingContext::clearScreen(const Util::Color4f& color) {
 	applyChanges();
+	internal->cmd->setClearColor({color});
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, true, {color});
+		internal->cmd->beginRenderPass(internal->activeFBO, true, true);
 	} else {
-		internal->cmd->clearColor({color});
-		internal->cmd->clearDepthStencil(1, 0);
+		internal->cmd->clear(true, true, true);
 	}
 }
 
 void RenderingContext::clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool _clearDepth) {
 	applyChanges();
+	internal->cmd->setClearColor({color});
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, _clearDepth, {color});
+		internal->cmd->beginRenderPass(internal->activeFBO, true, _clearDepth);
 	} else {
-		internal->cmd->clearColor({color}, rect);
-		if(_clearDepth)
-			internal->cmd->clearDepthStencil(1, 0, rect);
+		internal->cmd->clear(true, _clearDepth, _clearDepth, rect);
 	}
 }
 
 void RenderingContext::clearDepth(float clearValue) {
 	applyChanges();
+	internal->cmd->setClearDepthValue(clearValue);
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, false, true, {}, clearValue);
+		internal->cmd->beginRenderPass(internal->activeFBO, false, true);
 	} else {
-		internal->cmd->clearDepthStencil(clearValue, 0, {}, true, false);
+		internal->cmd->clear(false, true, false);
 	}
 }
 
-void RenderingContext::clearStencil(int32_t clearValue) {
+void RenderingContext::clearStencil(uint32_t clearValue) {
 	applyChanges();
+	internal->cmd->setClearStencilValue(clearValue);
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, false, true, {}, 0, clearValue);
+		internal->cmd->beginRenderPass(internal->activeFBO, false, true);
 	} else {
-		internal->cmd->clearDepthStencil(1, clearValue, {}, false, true);
+		internal->cmd->clear(false, false, true);
 	}
 }
 
@@ -552,7 +558,7 @@ void RenderingContext::pushAndSetFBO(const FBORef& fbo) {
 }
 
 void RenderingContext::setFBO(const FBORef& fbo) {
-	internal->pipelineState.setFramebufferFormat(fbo);
+	internal->pipelineState.setFramebufferFormat(fbo ? fbo : internal->device->getSwapchain()->getCurrentFBO());
 	internal->activeFBO = fbo;
 }
 

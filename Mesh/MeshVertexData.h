@@ -82,6 +82,9 @@ public:
 	void updateBoundingBox();
 	const Geometry::Box & getBoundingBox() const { return bb; }
 
+	//! @name Internal
+	//! @{
+
 	/**
 	 * Set a new bounding box.
 	 *
@@ -96,11 +99,9 @@ public:
 
 	//! Call @a upload() with default usage hint.
 	bool upload() { return upload(MemoryUsage::GpuOnly); }
-	/*! (internal) Create or update a VBO if hasChanged is set to true.
-		hasChanged is set to false.	*/
+	//! (internal) Create or update a VBO if hasChanged is set to true. hasChanged is set to false.
 	bool upload(MemoryUsage usage);
 	
-	/*! (internal) */
 	bool download();
 	void downloadTo(std::vector<uint8_t> & destination) const;
 
@@ -108,6 +109,7 @@ public:
 	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfElements);
 
 	const BufferObject::Ref& getBuffer() { return bufferObject; }
+	//! @}
 
 	//! @name Deprecated
 	//! @{
