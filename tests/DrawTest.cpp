@@ -91,8 +91,10 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		{ {}, vk::ShaderStageFlagBits::eFragment, vk::ShaderModule(fragmentShaderModule), "main" }
 	};
 	
-	vso.reflect();
-	fso.reflect();
+	for(auto& res : vso.reflect())
+		std::cout << res.toString() << std::endl;
+	for(auto& res : fso.reflect())
+		std::cout << res.toString() << std::endl;
 	
 	// vertex input
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;

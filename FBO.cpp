@@ -275,6 +275,9 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 		attachColorTexture(context, texture, attachmentPoint, level, layer);
 	}
 }
+void FBO::detachTexture(RenderingContext & context, uint32_t attachmentPoint) { 
+	attachTexture(context,attachmentPoint,nullptr,0,-1); 
+}
 void FBO::attachColorTexture(RenderingContext & context, Texture * texture, uint32_t colorBufferId,uint32_t level,int32_t layer) {
 	if(!texture) {
 		detachColorTexture(colorBufferId);

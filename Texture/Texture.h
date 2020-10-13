@@ -131,13 +131,7 @@ public:
 	[[deprecated]]
 	Texture(Format format);
 	[[deprecated]]
-	uint32_t _prepareForBinding(RenderingContext & context){
-		if(!glId || dataHasChanged)
-			_uploadGLTexture(context);
-		if(mipmapCreationIsPlanned)
-			createMipmaps(context);
-		return glId;
-	}
+	uint32_t _prepareForBinding(RenderingContext & context);
 	[[deprecated]]
 	bool isGLTextureValid()const { return isValid(); }
 	[[deprecated]]

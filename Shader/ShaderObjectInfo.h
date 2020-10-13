@@ -29,17 +29,58 @@ namespace Rendering {
 class Device;
 using DeviceRef = Util::Reference<Device>;
 
-enum ShaderStage {
-	Vertex = 1,
-	TesselationControl = 2,
-	TesselationEvaluation = 4,
-	Geometry = 8,
-	Fragment = 16,
-	Compute = 32,
+enum class ShaderStage : uint8_t {
+	Undefined = 0,
+	Vertex = 1 << 0,
+	TesselationControl = 1 << 1,
+	TesselationEvaluation = 1 << 2,
+	Geometry = 1 << 3,
+	Fragment = 1 << 4,
+	Compute = 1 << 5,
+};
+
+inline ShaderStage operator|(ShaderStage a, ShaderStage b) {
+	return static_cast<ShaderStage>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+}
+
+inline ShaderStage operator&(ShaderStage a, ShaderStage b) {
+	return static_cast<ShaderStage>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+}
+
+enum class ShaderResourceType {
+	Input,
+	InputAttachment,
+	Output,
+	Image,
+	ImageSampler,
+	ImageStorage,
+	Sampler,
+	BufferUniform,
+	BufferStorage,
+	PushConstant,
+	SpecializationConstant
+};
+
+struct ShaderResource {
+	std::string name;
+	ShaderStage stages;
+	ShaderResourceType type;
+	uint32_t set;
+	uint32_t binding;
+	uint32_t location;
+	uint32_t input_attachment_index;
+	uint32_t vec_size;
+	uint32_t columns;
+	uint32_t array_size;
+	uint32_t offset;
+	uint32_t size;
+	uint32_t constant_id;
+	bool dynamic;
+	std::string toString() const;
 };
 
 /**
- * Storage for shader type and shader code. There is no GL handle stored in
+ * Storage for shader type and shader code. There is no handle stored in
  * here. When compiling an object, the handle is returned and has to be stored
  * by the caller.
  * @ingroup shader
@@ -57,7 +98,7 @@ class ShaderObjectInfo {
 			std::string key;
 			std::string value;
 		};
-		const ShaderStage type;
+		const ShaderStage stage;
 		std::string code;
 		std::vector<Define> defines;
 		std::vector<uint32_t> spirv;
@@ -71,7 +112,7 @@ class ShaderObjectInfo {
 			return code;
 		}
 		ShaderStage getType() const {
-			return type;
+			return stage;
 		}
 		ShaderObjectInfo& addDefine(const std::string& key, const std::string& value="") {
 			defines.emplace_back(Define{key, value});
@@ -91,7 +132,7 @@ class ShaderObjectInfo {
 		 * 
 		 * @return Handle of the compiled shader.
 		 */
-		void reflect();
+		std::vector<ShaderResource> reflect();
 
 		/**
 		 * Create a VertexShaderObject from the given spir-v code

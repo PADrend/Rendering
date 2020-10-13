@@ -223,6 +223,16 @@ const ImageStorageRef& Texture::getImage() const {
 
 //---------------
 
+uint32_t Texture::_prepareForBinding(RenderingContext & context){
+	if(!glId || dataHasChanged)
+		_uploadGLTexture(context);
+	if(mipmapCreationIsPlanned)
+		createMipmaps(context);
+	return glId;
+}
+
+//---------------
+
 void Texture::_setGLId(uint32_t _glId) {
 	throw std::runtime_error("Texture::_setGLId: unsupported.");
 }

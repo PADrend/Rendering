@@ -131,7 +131,7 @@ public:
 	void attachTexture(RenderingContext & context, uint32_t attachmentPoint, Texture * t, uint32_t level, int32_t layer=-1);
 
 	[[deprecated]]
-	void detachTexture(RenderingContext & context, uint32_t attachmentPoint) { attachTexture(context,attachmentPoint,nullptr,0,-1); }
+	void detachTexture(RenderingContext & context, uint32_t attachmentPoint);
 	
 	[[deprecated]]
 	void attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId = 0, uint32_t level=0, int32_t layer=-1);

@@ -16,7 +16,6 @@
 #include <Geometry/Vec4.h>
 #include <Geometry/Plane.h>
 #include <Util/Graphics/Color.h>
-#include <Util/Macros.h>
 #include <Util/References.h>
 #include <algorithm>
 #include <bitset>
@@ -709,9 +708,9 @@ class MaterialParameters {
 			return shininess;
 		}
 		void setShininess(float newShininess) {
-			if(newShininess < 0.0f || newShininess > 128.0f) {
-				WARN("shininess out of range [0, 128].");
-			}
+			//if(newShininess < 0.0f || newShininess > 128.0f) {
+			//	WARN("shininess out of range [0, 128].");
+			//}
 			shininess = std::min(std::max(newShininess, 0.0f), 128.0f);
 		}
 };
