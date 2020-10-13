@@ -11,7 +11,7 @@
 #define RENDERING_CORE_PIPELINE_H_
 
 #include "Common.h"
-#include "../RenderingContext/PipelineState.h"
+#include "../State/PipelineState.h"
 
 #include <Util/ReferenceCounter.h>
 

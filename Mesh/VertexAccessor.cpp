@@ -31,7 +31,6 @@ Util::Reference<VertexAccessor> VertexAccessor::create(MeshVertexData& vData) {
 	uint8_t* ptr = vData.isUploaded() ? vData._getBufferObject().map() : vData.data();
 	if(!ptr) {
 		WARN("VertexAccessor: could not map vertex data.");
-		GET_GL_ERROR();
 		return nullptr;
 	}
 	return new VertexAccessor(vData, ptr);

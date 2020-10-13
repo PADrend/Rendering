@@ -67,7 +67,7 @@ const std::string fragmentShader = R"fs(
 	}
 )fs";
 
-TEST_CASE("DrawTest_testBox", "[DrawTest]") {
+TEST_CASE("RenderingContext", "[RenderingContext]") {
 	using namespace Rendering;
 	std::cout << std::endl;
 	

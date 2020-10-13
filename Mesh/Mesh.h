@@ -3,14 +3,16 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#ifndef Mesh_H
-#define Mesh_H
+#ifndef RENDERING_MESH_MESH_H_
+#define RENDERING_MESH_MESH_H_
 
+#include "../State/PipelineState.h"
 #include "MeshIndexData.h"
 #include "MeshVertexData.h"
 #include <Util/ReferenceCounter.h>
@@ -77,8 +79,9 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		Mesh(const VertexDescription & desc,uint32_t vertexCount,uint32_t indexCount);
 		Mesh(const Mesh &) = default;
 		Mesh(Mesh &&) = default;
+		~Mesh();
 
-		Mesh* clone()const;
+		Mesh* clone() const;
 
 		void swap(Mesh & m);
 
@@ -99,7 +102,7 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		size_t getGraphicsMemoryUsage() const;
 
 		/*! Returns true if no data is set. */
-		bool empty()const										{	return useIndexData ? (vertexData.empty() || indexData.empty()) : vertexData.empty();	}
+		bool empty() const { return useIndexData ? (vertexData.empty() || indexData.empty()) : vertexData.empty(); }
 
 		/*! Display the mesh as VBO or VertexArray (determined by current data strategy).
 			- If the mesh uses indices (isUsingIndexData()==true), @p firstElement and @p elementCount are the first 
@@ -135,8 +138,8 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	public:
 		/*! Returns a reference to the indexData member.
 			\note In most cases: openIndexData() is what you want (that why the _ is in the name...)*/
-		MeshIndexData & _getIndexData()							{	return indexData;	}
-		const MeshIndexData & _getIndexData()const				{	return indexData;	}
+		MeshIndexData & _getIndexData() { return indexData; }
+		const MeshIndexData & _getIndexData() const { return indexData; }
 
 		/*! Returns a reference to the indexData member and assures that if the mesh contains
 			index data, this data can be accessed via MeshIndexData.data()	*/
@@ -147,8 +150,8 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		}
 
 		//! If useIndexData is false, the mesh's indexData
-		bool isUsingIndexData()const							{	return useIndexData;	}
-		void setUseIndexData(const bool b)						{	useIndexData  = b;	}
+		bool isUsingIndexData() const { return useIndexData; }
+		void setUseIndexData(const bool b) { useIndexData  = b; }
 
 	private:
 		MeshIndexData indexData;
@@ -157,8 +160,8 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	/*!	@name Filename */
 	// @{
 	public:
-		const Util::FileName & getFileName() const				{	return fileName;	}
-		void setFileName(const Util::FileName & f)				{	fileName=f;			}
+		const Util::FileName & getFileName() const { return fileName; }
+		void setFileName(const Util::FileName & f) { fileName=f; }
 
 	private:
 		Util::FileName fileName;
@@ -169,16 +172,16 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	public:
 		/*! Returns a reference to the vertexData member.
 			\note In most cases: openVertexData() is what you want (that why the _ is in the name...)	*/
-		MeshVertexData & _getVertexData()							{	return vertexData;	}
-		const MeshVertexData & _getVertexData()const				{	return vertexData;	}
+		MeshVertexData & _getVertexData() { return vertexData; }
+		const MeshVertexData & _getVertexData() const { return vertexData; }
 
 		/*! Returns a reference to the vertexData member and assures that if the mesh contains
 			vertex data, this data can be accessed via MeshVertexData.data()	*/
 		MeshVertexData & openVertexData();
 
-		uint32_t getVertexCount()const   						{   return vertexData.getVertexCount(); }
-		const VertexDescription & getVertexDescription()const	{   return vertexData.getVertexDescription();	}
-		const Geometry::Box & getBoundingBox()const          	{   return vertexData.getBoundingBox();	}
+		uint32_t getVertexCount() const { return vertexData.getVertexCount(); }
+		const VertexDescription & getVertexDescription() const { return vertexData.getVertexDescription(); }
+		const Geometry::Box & getBoundingBox() const { return vertexData.getBoundingBox(); }
 
 	private:
 		MeshVertexData vertexData;
@@ -201,63 +204,36 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 
 
 
-	/*!	@name DrawMode */
+	/*!	@name Topology */
 	// @{
 	public:
-		/**
-		 * Enumeration of draw modes
-		 * 
-		 * @see parameter @c mode of function @c glDrawElements
-		 */
 		enum draw_mode_t : uint8_t {
-			//! Corresponds to @c GL_POINTS
 			DRAW_POINTS,
-			//! Corresponds to @c GL_LINE_STRIP
 			DRAW_LINE_STRIP,
-			//! Corresponds to @c GL_LINE_LOOP
 			DRAW_LINE_LOOP,
-			//! Corresponds to @c GL_LINES
 			DRAW_LINES,
-			//! Corresponds to @c GL_TRIANGLES
 			DRAW_TRIANGLES
 		};
 	private:
-		draw_mode_t drawMode;
+		PrimitiveTopology topology;
 	public:
-		draw_mode_t getDrawMode() const {
-			return drawMode;
-		}
-		void setDrawMode(draw_mode_t newMode) {
-			drawMode = newMode;
-		}
-		/**
-		 * Convert the draw mode to an OpenGL constant.
-		 * 
-		 * @retval @c GL_POINTS if @a drawMode is @c DRAW_POINTS
-		 * @retval @c GL_LINE_STRIP if @a drawMode is @c DRAW_LINE_STRIP
-		 * @retval @c GL_LINE_LOOP if @a drawMode is @c DRAW_LINE_LOOP
-		 * @retval @c GL_LINES if @a drawMode is @c DRAW_LINES
-		 * @retval @c GL_TRIANGLES if @a drawMode is @c DRAW_TRIANGLES
-		 * @retval @c GL_INVALID_ENUM otherwise
-		 */
-		uint32_t getGLDrawMode() const;
-		/**
-		 * Convert an OpenGL constant to the draw mode.
-		 * Set @a drawMode to
-		 * - @c DRAW_POINTS if @p glDrawMode is @c GL_POINTS
-		 * - @c DRAW_LINE_STRIP if @p glDrawMode is @c GL_LINE_STRIP
-		 * - @c DRAW_LINE_LOOP if @p glDrawMode is @c GL_LINE_LOOP
-		 * - @c DRAW_LINES if @p glDrawMode is @c GL_LINES
-		 * - @c DRAW_TRIANGLES otherwise
-		 */
-		void setGLDrawMode(uint32_t glDrawMode);
+		PrimitiveTopology getTopology() const { return topology; }
+		void setTopology(PrimitiveTopology value) { topology = value; }
+
+		[[deprecated]]
+		draw_mode_t getDrawMode() const;
+		[[deprecated]]
+		void setDrawMode(draw_mode_t newMode);
+		[[deprecated]]
+		uint32_t getGLDrawMode() const { return 0; }
+		[[deprecated]]
+		void setGLDrawMode(uint32_t glDrawMode) {}
 	// @}
-	
-	
+		
 	private:
 		bool useIndexData; //! (located at this position to save memory due to padding)
 
 };
 
 }
-#endif // Mesh_H
+#endif // RENDERING_MESH_MESH_H_

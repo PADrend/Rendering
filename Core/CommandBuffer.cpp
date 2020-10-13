@@ -198,6 +198,7 @@ void CommandBuffer::submit(bool wait) {
 
 void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColors) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(inRenderPass, "Command buffer is already in a render pass. Call endRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	auto& fbo = getFBO();
 	WARN_AND_RETURN_IF(!fbo || !fbo->validate(), "Cannot begin render pass. Invalid FBO.",);
@@ -216,14 +217,16 @@ void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColor
 		vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} },
 		static_cast<uint32_t>(clearValues.size()), clearValues.data()
 	}, vk::SubpassContents::eInline);
+	inRenderPass = true;
 }
 
 //-----------------
 
 void CommandBuffer::endRenderPass() {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.endRenderPass();
+	inRenderPass = false;
 }
 
 //-----------------
@@ -287,9 +290,10 @@ void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer, size_t offset
 
 //-----------------
 
-void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors, const Geometry::Rect_i& rect) {
+	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	auto& fbo = getFBO();
+	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Cannot clear color. Invalid FBO.",);
 	std::vector<vk::ClearAttachment> clearAttachments(clearColors.size(), vk::ClearAttachment{});
 	for(uint32_t i=0; i<std::min(clearAttachments.size(), clearColors.size()); ++i) {
 		auto& c = clearColors[i];
@@ -298,17 +302,47 @@ void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors) {
 		clearAttachments[i].aspectMask = vk::ImageAspectFlagBits::eColor;
 	}
 	vk::ClearRect clearRect;
+	
 	clearRect.baseArrayLayer = 0;
 	clearRect.layerCount = 1;
-	clearRect.rect = vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} };
+	clearRect.rect = vk::Rect2D{
+		{rect.getX(), rect.getY()},
+		{
+			rect.getWidth() > 0 ? rect.getWidth() : fbo->getWidth(),
+			rect.getHeight() > 0 ? rect.getHeight() : fbo->getHeight(),
+		}
+	};
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.clearAttachments(clearAttachments, {clearRect});
 }
 
 //-----------------
 
+void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect) {
+	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
+	auto& fbo = getFBO();
+	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Cannot clear depth stencil. Invalid FBO.",);
+	vk::ClearAttachment clearAttachment{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0};
+	clearAttachment.clearValue.depthStencil.depth = depth;
+	clearAttachment.clearValue.depthStencil.stencil = stencil;
+	vk::ClearRect clearRect;
+	clearRect.baseArrayLayer = 0;
+	clearRect.layerCount = 1;
+	clearRect.rect = vk::Rect2D{
+		{rect.getX(), rect.getY()},
+		{
+			rect.getWidth() > 0 ? rect.getWidth() : fbo->getWidth(),
+			rect.getHeight() > 0 ? rect.getHeight() : fbo->getHeight(),
+		}
+	};
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.clearAttachments({clearAttachment}, {clearRect});
+}
+
+//-----------------
+
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	if(instanceCount==0) return;
 	vk::CommandBuffer vkCmd(handle);
 	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
@@ -319,7 +353,7 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
 //-----------------
 
 void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	if(instanceCount==0) return;
 	vk::CommandBuffer vkCmd(handle);
 	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
@@ -330,7 +364,7 @@ void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uin
 //-----------------
 
 void CommandBuffer::drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride, size_t offset) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	WARN_AND_RETURN_IF(!buffer->isValid(), "Cannot perform indirect draw. Buffer is not valid.",);
 	vk::CommandBuffer vkCmd(handle);
 	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
@@ -342,7 +376,7 @@ void CommandBuffer::drawIndirect(const BufferObjectRef& buffer, uint32_t drawCou
 //-----------------
 
 void CommandBuffer::drawIndexedIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride, size_t offset) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	WARN_AND_RETURN_IF(!buffer->isValid(), "Cannot perform indirect draw. Buffer is not valid.",);
 	vk::CommandBuffer vkCmd(handle);
 	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline

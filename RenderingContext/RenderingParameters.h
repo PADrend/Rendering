@@ -3,14 +3,16 @@
 	Copyright (C) 2007-2013 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2013 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+  Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#ifndef PARAMETERSTRUCTS_H
-#define PARAMETERSTRUCTS_H
+#ifndef RENDERING_PARAMETERSTRUCTS_H
+#define RENDERING_PARAMETERSTRUCTS_H
 
+#include "../Core/Common.h"
 #include <Geometry/Convert.h>
 #include <Geometry/Rect.h>
 #include <Geometry/Vec4.h>
@@ -25,6 +27,14 @@
 
 namespace Rendering {
 class Texture;
+class VertexInputState;
+class InputAssemblyState;
+class ViewportState;
+class RasterizationState;
+class MultisampleState;
+class DepthStencilState;
+class ColorBlendState;
+enum class CullMode;
 
 
 /** @addtogroup context
@@ -59,6 +69,10 @@ enum function_t {
 
 [[deprecated]] uint32_t functionToGL(function_t function);
 [[deprecated]] function_t glToFunction(uint32_t value);
+
+ComparisonFunc functionToComparisonFunc(function_t function);
+Comparison::function_t Comparison::comparisonFuncToFunction(ComparisonFunc function);
+
 }
 
 /**
@@ -116,6 +130,8 @@ class [[deprecated]] AlphaTestParameters {
 
 class [[deprecated]] BlendingParameters {
 	public:
+
+
 		/**
 		 * @brief Type of blending function
 		 * @see function @c glBlendFuncSeparate
@@ -143,8 +159,8 @@ class [[deprecated]] BlendingParameters {
 		static std::string functionToString(function_t function);
 		static function_t stringToFunction(const std::string & str);
 
-		static uint32_t functionToGL(function_t function);
-		static function_t glToFunction(uint32_t value);
+		static uint32_t functionToGL(function_t function) { return 0; }
+		static function_t glToFunction(uint32_t value) { return ZERO; }
 
 		/**
 		 * @brief Type of blending equation
@@ -161,8 +177,8 @@ class [[deprecated]] BlendingParameters {
 		static std::string equationToString(equation_t equation);
 		static equation_t stringToEquation(const std::string & str);
 
-		static uint32_t equationToGL(equation_t equation);
-		static equation_t glToEquation(uint32_t value);
+		static uint32_t equationToGL(equation_t equation) { return 0; }
+		static equation_t glToEquation(uint32_t value) { return FUNC_ADD; }
 	private:
 		bool enabled;
 		function_t blendFuncSrcRGB;
@@ -196,6 +212,8 @@ class [[deprecated]] BlendingParameters {
 			blendEquationAlpha(FUNC_ADD),
 			blendColor(Util::Color4f(0.0f, 0.0f, 0.0f, 0.0f)) {
 		}
+
+		explicit BlendingParameters(const ColorBlendState& state); 
 
 		bool operator!=(const BlendingParameters & other) const {
 			return enabled != other.enabled ||
@@ -282,7 +300,12 @@ class [[deprecated]] BlendingParameters {
 		const Util::Color4f & getBlendColor() const {
 			return blendColor;
 		}
+
+		ColorBlendState toBlendState() const;
 };
+
+
+
 
 // -------------------------------------------
 
@@ -345,6 +368,13 @@ class [[deprecated]] ColorBufferParameters {
 			enableBlueWriting(true),
 			enableAlphaWriting(true) {
 		}
+
+		explicit ColorBufferParameters(uint8_t mask) :
+			enableRedWriting(mask & (1 << 1)),
+			enableGreenWriting(mask & (1 << 2)),
+			enableBlueWriting(mask & (1 << 3)),
+			enableAlphaWriting(mask & (1 << 4)) {
+		}
 		//! Create ColorBufferParameters with the given values.
 		explicit ColorBufferParameters(bool redWritingEnabled,
 									   bool greenWritingEnabled,
@@ -386,6 +416,15 @@ class [[deprecated]] ColorBufferParameters {
 		bool isAnyWritingEnabled() const {
 			return isRedWritingEnabled()||isGreenWritingEnabled()||isBlueWritingEnabled()||isAlphaWritingEnabled();
 		}
+
+		uint8_t getWriteMask() const {
+			uint8_t mask = 0;
+			mask |= (enableRedWriting ? (1 << 1) : 0);
+			mask |= (enableGreenWriting ? (1 << 2) : 0);
+			mask |= (enableBlueWriting ? (1 << 3) : 0);
+			mask |= (enableAlphaWriting ? (1 << 4) : 0);
+			return mask;
+		}
 };
 
 // -------------------------------------------
@@ -414,6 +453,9 @@ class [[deprecated]] CullFaceParameters {
 		CullFaceParameters() : enabled(false), mode(CULL_BACK) {}
 		//! Create CullFaceParameters with the given values.
 		CullFaceParameters(cullFaceMode_t m) : enabled(true), mode(m) {}
+
+		CullFaceParameters(CullMode m);
+
 		bool operator!=(const CullFaceParameters & other) const {
 			return enabled != other.enabled || mode != other.mode;
 		}
@@ -435,6 +477,7 @@ class [[deprecated]] CullFaceParameters {
 		void setMode(cullFaceMode_t _mode) {
 			mode = _mode;
 		}
+		CullMode getCullMode() const;
 };
 
 // -------------------------------------------
@@ -1082,4 +1125,4 @@ static const uint8_t MAX_TEXTURES = 8;
 //! @}
 }
 
-#endif // PARAMETERSTRUCTS_H
+#endif // RENDERING_PARAMETERSTRUCTS_H

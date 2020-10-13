@@ -3,14 +3,15 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "MeshIndexData.h"
-#include "../GLHeader.h"
-#include "../Helper.h"
+#include "../Core/Device.h"
+#include "../Core/BufferStorage.h"
 #include <Util/Macros.h>
 #include <algorithm>
 #include <limits>
@@ -19,11 +20,21 @@
 
 namespace Rendering {
 
+//-----------------
+
 /*! (ctor)  */
-MeshIndexData::MeshIndexData() :
+MeshIndexData::MeshIndexData() : MeshIndexData(Device::getDefault()) { }
+
+//-----------------
+
+/*! (ctor)  */
+MeshIndexData::MeshIndexData(const DeviceRef& device) :
 			indexCount(0), minIndex(0), maxIndex(0),
-			bufferObject(), dataChanged(false) {
+			bufferObject(BufferObject::create(device)), dataChanged(false) {
 }
+
+//-----------------
+
 
 /*! (ctor)  */
 MeshIndexData::MeshIndexData(const MeshIndexData & other) :
@@ -39,11 +50,23 @@ MeshIndexData::MeshIndexData(const MeshIndexData & other) :
 	}
 }
 
+//-----------------
+
+MeshIndexData::MeshIndexData(MeshIndexData &&) = default;
+
+//-----------------
+
+MeshIndexData::~MeshIndexData() = default;
+
+//-----------------
+
 //!(internal)
 void MeshIndexData::releaseLocalData(){
 	indexArray.clear();
 	indexArray.shrink_to_fit();
 }
+
+//-----------------
 
 void MeshIndexData::swap(MeshIndexData & other){
 	if(this == &other)
@@ -58,12 +81,16 @@ void MeshIndexData::swap(MeshIndexData & other){
 	swap(indexArray, other.indexArray);
 }
 
+//-----------------
+
 void MeshIndexData::allocate(uint32_t count) {
 	indexCount = count;
 	indexArray.resize(indexCount, std::numeric_limits<uint32_t>::max());
 	indexArray.shrink_to_fit();
 	markAsChanged();
 }
+
+//-----------------
 
 void MeshIndexData::updateIndexRange() {
 	if(indexArray.empty()) {
@@ -76,30 +103,24 @@ void MeshIndexData::updateIndexRange() {
 	}
 }
 
-bool MeshIndexData::upload() {
-	return upload(GL_STATIC_DRAW);
-}
+//-----------------
 
-//!	(internal)
-bool MeshIndexData::upload(uint32_t usageHint){
-	if( isUploaded() )
-		removeGlBuffer();
-
+bool MeshIndexData::upload(MemoryUsage usage) {
 	if(indexCount == 0 || indexArray.empty() )
 		return false;
-
-	try {
-		bufferObject.uploadData(GL_ELEMENT_ARRAY_BUFFER, indexArray, usageHint);
-		GET_GL_ERROR()
+	
+	size_t size = indexCount * sizeof(uint32_t);
+	if(!bufferObject || !bufferObject->isValid() || bufferObject->getSize() != size || bufferObject->getBuffer()->getConfig().access != usage) {
+		// Allocate new buffer
+		bufferObject->allocate(indexArray.size(), ResourceUsage::IndexBuffer, usage);
 	}
-	catch (...) {
-		WARN("VBO: upload failed");
-		removeGlBuffer();
-		return false;
-	}
+	// TODO: copy data if only usage has changed
+	bufferObject->upload(indexArray);
 	dataChanged = false;
 	return true;
 }
+
+//-----------------
 
 //!	(internal)
 bool MeshIndexData::download(){
@@ -110,44 +131,22 @@ bool MeshIndexData::download(){
 	return true;
 }
 
-//!	(internal)
-#ifdef LIB_GL
-void MeshIndexData::downloadTo(std::vector<uint32_t> & destination) const {
-	destination = bufferObject.downloadData<uint32_t>(GL_ELEMENT_ARRAY_BUFFER, getIndexCount());
-}
-#else
-void MeshIndexData::downloadTo(std::vector<uint32_t> & /*destination*/) const {
-	WARN("downloadTo not supported.");
-}
-#endif
+//-----------------
 
 //!	(internal)
-void MeshIndexData::removeGlBuffer(){
-	bufferObject.destroy();
+void MeshIndexData::downloadTo(std::vector<uint32_t> & destination) const {
+	destination = bufferObject->download<uint32_t>(getIndexCount());
 }
+
+//-----------------
 
 /*! (internal) */
 void MeshIndexData::drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices){
 	if(startIndex+numberOfIndices>getIndexCount())
 		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
 	
-#ifdef LIB_GL
-	if(useVBO && isUploaded()) { // VBO
-		bufferObject.bind(GL_ELEMENT_ARRAY_BUFFER);
-		glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*startIndex));
-		bufferObject.unbind(GL_ELEMENT_ARRAY_BUFFER);
-	} else if(hasLocalData()) { // VertexArray
-		glDrawRangeElements(drawMode, getMinIndex(), getMaxIndex(), numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(data()+startIndex));
-	}
-#else
-	if (useVBO && isUploaded()) { // VBO
-		bufferObject.bind(GL_ELEMENT_ARRAY_BUFFER);
-		glDrawElements(drawMode, numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*startIndex));
-		bufferObject.unbind(GL_ELEMENT_ARRAY_BUFFER);
-	} else if (hasLocalData()) { // VertexArray
-		glDrawElements(drawMode, numberOfIndices, GL_UNSIGNED_INT, reinterpret_cast<void*>(data()+startIndex));
-	}
-#endif
 }
+
+//-----------------
 
 }

@@ -11,8 +11,8 @@
 #define RENDERING_CORE_RESOURCECACHE_H_
 
 #include "Common.h"
-#include "../RenderingContext/PipelineState.h"
-#include "../Shader/ShaderUtils.h"
+#include "../State/PipelineState.h"
+#include "../State/ShaderLayout.h"
 
 #include <Util/StringIdentifier.h>
 #include <Util/Factory/ObjectCache.h>

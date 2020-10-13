@@ -11,10 +11,12 @@
 
 #include "Common.h"
 #include "Pipeline.h"
-#include "../RenderingContext/BindingState.h"
+#include "../State/BindingState.h"
 
 #include <Util/ReferenceCounter.h>
 #include <Util/Graphics/Color.h>
+
+#include <Geometry/Rect.h>
 
 #include <vector>
 #include <deque>
@@ -88,7 +90,8 @@ public:
 
 	//! @name Draw commands
 	//! @{
-	void clearColor(const std::vector<Util::Color4f>& clearColors);
+	void clearColor(const std::vector<Util::Color4f>& clearColors, const Geometry::Rect_i& rect={});
+	void clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect={});
 	void draw(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0);
 	void drawIndexed(uint32_t indexCount, uint32_t instanceCount=1, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t firstInstance=0);
 	void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);
@@ -146,6 +149,7 @@ public:
 	//! @{
 	bool isRecording() const { return state == State::Recording; }
 	bool isExecutable() const { return state == State::Executable; }
+	bool isInRenderPass() const { return inRenderPass; }
 	bool isPrimary() const { return primary; }
 	State getState() const { return state; }
 	//! @}
@@ -163,6 +167,7 @@ private:
 	bool primary;
 	CommandBufferHandle handle;
 	State state = Invalid;
+	bool inRenderPass=false;
 	Pipeline::Ref pipeline;
 	PipelineHandle boundPipeline;
 	std::map<uint32_t, DescriptorSetRef> descriptorSets;

@@ -34,34 +34,31 @@ add_library(Rendering SHARED
 	Core/ResourceCache.cpp
 	Core/Sampler.cpp
 	Core/Swapchain.cpp
-	#Mesh/Mesh.cpp
-	#Mesh/MeshDataStrategy.cpp
-	#Mesh/MeshIndexData.cpp
-	#Mesh/MeshVertexData.cpp
-	#Mesh/VertexAccessor.cpp
-	#Mesh/VertexAttribute.cpp
-	#Mesh/VertexAttributeAccessors.cpp
-	#Mesh/VertexAttributeIds.cpp
-	#Mesh/VertexDescription.cpp
-	#MeshUtils/ConnectivityAccessor.cpp
-	#MeshUtils/LocalMeshDataHolder.cpp
-	#MeshUtils/MarchingCubesMeshBuilder.cpp
-	#MeshUtils/MeshBuilder.cpp
-	#MeshUtils/MeshUtils.cpp
-	#MeshUtils/PlatonicSolids.cpp
-	#MeshUtils/PrimitiveShapes.cpp
-	#MeshUtils/QuadtreeMeshBuilder.cpp
-	#MeshUtils/QuadtreeMeshBuilderDebug.cpp
-	#MeshUtils/Simplification.cpp
-	#MeshUtils/TriangleAccessor.cpp
-	#MeshUtils/WireShapes.cpp
+	Mesh/Mesh.cpp
+	Mesh/MeshDataStrategy.cpp
+	Mesh/MeshIndexData.cpp
+	Mesh/MeshVertexData.cpp
+	Mesh/VertexAccessor.cpp
+	Mesh/VertexAttribute.cpp
+	Mesh/VertexAttributeAccessors.cpp
+	Mesh/VertexAttributeIds.cpp
+	Mesh/VertexDescription.cpp
+	MeshUtils/ConnectivityAccessor.cpp
+	MeshUtils/LocalMeshDataHolder.cpp
+	MeshUtils/MarchingCubesMeshBuilder.cpp
+	MeshUtils/MeshBuilder.cpp
+	MeshUtils/MeshUtils.cpp
+	MeshUtils/PlatonicSolids.cpp
+	MeshUtils/PrimitiveShapes.cpp
+	MeshUtils/QuadtreeMeshBuilder.cpp
+	MeshUtils/QuadtreeMeshBuilderDebug.cpp
+	MeshUtils/Simplification.cpp
+	MeshUtils/TriangleAccessor.cpp
+	MeshUtils/WireShapes.cpp
 	#RenderingContext/internal/StatusHandler_glCompatibility.cpp
 	#RenderingContext/internal/StatusHandler_glCore.cpp
 	#RenderingContext/internal/StatusHandler_sgUniforms.cpp
-	RenderingContext/BindingState.cpp
-	RenderingContext/PipelineState.cpp
-	#RenderingContext/RenderingContext.cpp
-	#RenderingContext/RenderingParameters.cpp
+	RenderingContext/RenderingParameters.cpp
 	#Serialization/GenericAttributeSerialization.cpp
 	#Serialization/Serialization.cpp
 	#Serialization/StreamerMD2.cpp
@@ -78,6 +75,9 @@ add_library(Rendering SHARED
 	Shader/ShaderUtils.cpp
 	Shader/Uniform.cpp
 	Shader/UniformRegistry.cpp
+	State/BindingState.cpp
+	State/PipelineState.cpp
+	State/ShaderLayout.cpp
 	Texture/Texture.cpp
 	Texture/TextureType.cpp
 	#Texture/TextureUtils.cpp
@@ -89,6 +89,7 @@ add_library(Rendering SHARED
 	#OcclusionQuery.cpp
 	#PBO.cpp
 	#QueryObject.cpp
+	RenderingContext.cpp
 	#StatisticsQuery.cpp
 	#TextRenderer.cpp
 )

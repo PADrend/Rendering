@@ -16,6 +16,7 @@ if(RENDERING_BUILD_TESTS)
 		BufferObjectTest.cpp
 		DeviceTest.cpp
 		DrawTest.cpp
+		RenderingContextTest.cpp
 		RenderingTestMain.cpp
 		#StatisticsQueryTest.cpp
 		#VertexAccessorTest.cpp

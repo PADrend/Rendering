@@ -9,13 +9,47 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "RenderingParameters.h"
-#include "../GLHeader.h"
 #include "../Texture/Texture.h"
+#include "../State/PipelineState.h"
 #include <Util/StringIdentifier.h>
+#include <Util/Macros.h>
 #include <stdexcept>
 #include <string>
 
 namespace Rendering {
+
+ComparisonFunc Comparison::functionToComparisonFunc(Comparison::function_t function) {
+	switch(function) {
+		case Comparison::NEVER: return ComparisonFunc::Never;
+		case Comparison::LESS: return ComparisonFunc::Less;
+		case Comparison::EQUAL: return ComparisonFunc::Equal;
+		case Comparison::LEQUAL: return ComparisonFunc::LessOrEqual;
+		case Comparison::GREATER: return ComparisonFunc::Greater;
+		case Comparison::NOTEQUAL: return ComparisonFunc::NotEqual;
+		case Comparison::GEQUAL: return ComparisonFunc::GreaterOrEqual;
+		case Comparison::ALWAYS: return ComparisonFunc::Always;
+		default:
+			break;
+	}
+	throw std::invalid_argument("Invalid Comparison::function_t enumerator");
+}
+
+Comparison::function_t Comparison::comparisonFuncToFunction(ComparisonFunc function) {
+	switch(function) {
+		case ComparisonFunc::Never: return Comparison::NEVER;
+		case ComparisonFunc::Less: return Comparison::LESS;
+		case ComparisonFunc::Equal: return Comparison::EQUAL;
+		case ComparisonFunc::LessOrEqual: return Comparison::LEQUAL;
+		case ComparisonFunc::Greater: return Comparison::GREATER;
+		case ComparisonFunc::NotEqual: return Comparison::NOTEQUAL;
+		case ComparisonFunc::GreaterOrEqual: return Comparison::GEQUAL;
+		case ComparisonFunc::Always: return Comparison::ALWAYS;
+		default:
+			break;
+	}
+	return Comparison::ALWAYS;
+}
+
 
 std::string Comparison::functionToString(Comparison::function_t function) {
 	switch(function) {
@@ -70,54 +104,6 @@ Comparison::function_t Comparison::stringToFunction(const std::string & str) {
 		return ALWAYS;
 	}
 	throw std::invalid_argument("Invalid string representation of Comparison::function_t enumerator");
-}
-
-uint32_t Comparison::functionToGL(Comparison::function_t function) {
-	switch(function) {
-		case NEVER:
-			return GL_NEVER;
-		case LESS:
-			return GL_LESS;
-		case EQUAL:
-			return GL_EQUAL;
-		case LEQUAL:
-			return GL_LEQUAL;
-		case GREATER:
-			return GL_GREATER;
-		case NOTEQUAL:
-			return GL_NOTEQUAL;
-		case GEQUAL:
-			return GL_GEQUAL;
-		case ALWAYS:
-			return GL_ALWAYS;
-		default:
-			break;
-	}
-	throw std::invalid_argument("Invalid Comparison::function_t enumerator");
-}
-
-Comparison::function_t Comparison::glToFunction(uint32_t value) {
-	switch(value) {
-		case GL_NEVER:
-			return NEVER;
-		case GL_LESS:
-			return LESS;
-		case GL_EQUAL:
-			return EQUAL;
-		case GL_LEQUAL:
-			return LEQUAL;
-		case GL_GREATER:
-			return GREATER;
-		case GL_NOTEQUAL:
-			return NOTEQUAL;
-		case GL_GEQUAL:
-			return GEQUAL;
-		case GL_ALWAYS:
-			return ALWAYS;
-		default:
-			break;
-	}
-	throw std::invalid_argument("Invalid GLenum value for Comparison::function_t enumerator");
 }
 
 std::string BlendingParameters::functionToString(BlendingParameters::function_t function) {
@@ -210,82 +196,6 @@ BlendingParameters::function_t BlendingParameters::stringToFunction(const std::s
 	throw std::invalid_argument("Invalid string representation of BlendingParameters::function_t enumerator");
 }
 
-uint32_t BlendingParameters::functionToGL(BlendingParameters::function_t function) {
-	switch(function) {
-		case ZERO:
-			return GL_ZERO;
-		case ONE:
-			return GL_ONE;
-		case SRC_COLOR:
-			return GL_SRC_COLOR;
-		case ONE_MINUS_SRC_COLOR:
-			return GL_ONE_MINUS_SRC_COLOR;
-		case SRC_ALPHA:
-			return GL_SRC_ALPHA;
-		case ONE_MINUS_SRC_ALPHA:
-			return GL_ONE_MINUS_SRC_ALPHA;
-		case DST_ALPHA:
-			return GL_DST_ALPHA;
-		case ONE_MINUS_DST_ALPHA:
-			return GL_ONE_MINUS_DST_ALPHA;
-		case DST_COLOR:
-			return GL_DST_COLOR;
-		case ONE_MINUS_DST_COLOR:
-			return GL_ONE_MINUS_DST_COLOR;
-		case SRC_ALPHA_SATURATE:
-			return GL_SRC_ALPHA_SATURATE;
-		case CONSTANT_COLOR:
-			return GL_CONSTANT_COLOR;
-		case ONE_MINUS_CONSTANT_COLOR:
-			return GL_ONE_MINUS_CONSTANT_COLOR;
-		case CONSTANT_ALPHA:
-			return GL_CONSTANT_ALPHA;
-		case ONE_MINUS_CONSTANT_ALPHA:
-			return GL_ONE_MINUS_CONSTANT_ALPHA;
-		default:
-			break;
-	}
-	throw std::invalid_argument("Invalid BlendingParameters::function_t enumerator");
-}
-
-BlendingParameters::function_t BlendingParameters::glToFunction(uint32_t value) {
-	switch(value) {
-		case GL_ZERO:
-			return ZERO;
-		case GL_ONE:
-			return ONE;
-		case GL_SRC_COLOR:
-			return SRC_COLOR;
-		case GL_ONE_MINUS_SRC_COLOR:
-			return ONE_MINUS_SRC_COLOR;
-		case GL_SRC_ALPHA:
-			return SRC_ALPHA;
-		case GL_ONE_MINUS_SRC_ALPHA:
-			return ONE_MINUS_SRC_ALPHA;
-		case GL_DST_ALPHA:
-			return DST_ALPHA;
-		case GL_ONE_MINUS_DST_ALPHA:
-			return ONE_MINUS_DST_ALPHA;
-		case GL_DST_COLOR:
-			return DST_COLOR;
-		case GL_ONE_MINUS_DST_COLOR:
-			return ONE_MINUS_DST_COLOR;
-		case GL_SRC_ALPHA_SATURATE:
-			return SRC_ALPHA_SATURATE;
-		case GL_CONSTANT_COLOR:
-			return CONSTANT_COLOR;
-		case GL_ONE_MINUS_CONSTANT_COLOR:
-			return ONE_MINUS_CONSTANT_COLOR;
-		case GL_CONSTANT_ALPHA:
-			return CONSTANT_ALPHA;
-		case GL_ONE_MINUS_CONSTANT_ALPHA:
-			return ONE_MINUS_CONSTANT_ALPHA;
-		default:
-			break;
-	}
-	throw std::invalid_argument("Invalid GLenum value for BlendingParameters::function_t enumerator");
-}
-
 std::string BlendingParameters::equationToString(BlendingParameters::equation_t equation) {
 	switch(equation) {
 		case FUNC_ADD:
@@ -316,33 +226,113 @@ BlendingParameters::equation_t BlendingParameters::stringToEquation(const std::s
 	throw std::invalid_argument("Invalid string representation of BlendingParameters::equation_t enumerator");
 }
 
-uint32_t BlendingParameters::equationToGL(BlendingParameters::equation_t equation) {
-	switch(equation) {
-		case FUNC_ADD:
-			return GL_FUNC_ADD;
-		case FUNC_SUBTRACT:
-			return GL_FUNC_SUBTRACT;
-		case FUNC_REVERSE_SUBTRACT:
-			return GL_FUNC_REVERSE_SUBTRACT;
+static BlendingParameters::function_t toFunction(BlendFactor f) {
+	switch(f) {
+		case BlendFactor::Zero: return BlendingParameters::ZERO;
+		case BlendFactor::One: return BlendingParameters::ONE;
+		case BlendFactor::SrcColor: return BlendingParameters::SRC_COLOR;
+		case BlendFactor::OneMinusSrcColor: return BlendingParameters::ONE_MINUS_SRC_COLOR;
+		case BlendFactor::DstColor: return BlendingParameters::DST_COLOR;
+		case BlendFactor::OneMinusDstColor: return BlendingParameters::ONE_MINUS_DST_COLOR;
+		case BlendFactor::SrcAlpha: return BlendingParameters::SRC_ALPHA;
+		case BlendFactor::OneMinusSrcAlpha: return BlendingParameters::ONE_MINUS_SRC_ALPHA;
+		case BlendFactor::DstAlpha: return BlendingParameters::DST_ALPHA;
+		case BlendFactor::OneMinusDstAlpha: return BlendingParameters::ONE_MINUS_DST_ALPHA;
+		case BlendFactor::ConstantColor: return BlendingParameters::CONSTANT_COLOR;
+		case BlendFactor::OneMinusConstantColor: return BlendingParameters::ONE_MINUS_CONSTANT_COLOR;
+		case BlendFactor::ConstantAlpha: return BlendingParameters::CONSTANT_ALPHA;
+		case BlendFactor::OneMinusConstantAlpha: return BlendingParameters::ONE_MINUS_CONSTANT_ALPHA;
+		case BlendFactor::SrcAlphaSaturate: return BlendingParameters::SRC_ALPHA_SATURATE;
 		default:
-			break;
+			WARN("Unsupported blend function");
+			return BlendingParameters::ZERO;
 	}
-	throw std::invalid_argument("Invalid BlendingParameters::equation_t enumerator");
 }
 
-BlendingParameters::equation_t BlendingParameters::glToEquation(uint32_t value) {
-	switch(value) {
-		case GL_FUNC_ADD:
-			return FUNC_ADD;
-		case GL_FUNC_SUBTRACT:
-			return FUNC_SUBTRACT;
-		case GL_FUNC_REVERSE_SUBTRACT:
-			return FUNC_REVERSE_SUBTRACT;
-		default:
-			break;
+
+static BlendFactor toBlendFactor(BlendingParameters::function_t f) {
+	switch(f) {
+		case BlendingParameters::ZERO: return BlendFactor::Zero;
+		case BlendingParameters::ONE: return BlendFactor::One;
+		case BlendingParameters::SRC_COLOR: return BlendFactor::SrcColor;
+		case BlendingParameters::ONE_MINUS_SRC_COLOR: return BlendFactor::OneMinusSrcColor;
+		case BlendingParameters::DST_COLOR: return BlendFactor::DstColor;
+		case BlendingParameters::ONE_MINUS_DST_COLOR: return BlendFactor::OneMinusDstColor;
+		case BlendingParameters::SRC_ALPHA: return BlendFactor::SrcAlpha;
+		case BlendingParameters::ONE_MINUS_SRC_ALPHA: return BlendFactor::OneMinusSrcAlpha;
+		case BlendingParameters::DST_ALPHA: return BlendFactor::DstAlpha;
+		case BlendingParameters::ONE_MINUS_DST_ALPHA: return BlendFactor::OneMinusDstAlpha;
+		case BlendingParameters::CONSTANT_COLOR: return BlendFactor::ConstantColor;
+		case BlendingParameters::ONE_MINUS_CONSTANT_COLOR: return BlendFactor::OneMinusConstantColor;
+		case BlendingParameters::CONSTANT_ALPHA: return BlendFactor::ConstantAlpha;
+		case BlendingParameters::ONE_MINUS_CONSTANT_ALPHA: return BlendFactor::OneMinusConstantAlpha;
+		case BlendingParameters::SRC_ALPHA_SATURATE: return BlendFactor::SrcAlphaSaturate;
 	}
-	throw std::invalid_argument("Invalid GLenum value for BlendingParameters::equation_t enumerator");
 }
+
+static BlendingParameters::equation_t toEquation(BlendOp op) {
+	switch(op) {
+		case BlendOp::Add: return BlendingParameters::FUNC_ADD;
+		case BlendOp::Subtract: return BlendingParameters::FUNC_SUBTRACT;
+		case BlendOp::ReverseSubtract: return BlendingParameters::FUNC_REVERSE_SUBTRACT;
+		default:
+			WARN("Unsupported blend equation");
+			return BlendingParameters::FUNC_ADD;
+	}
+}
+
+static BlendOp toBlendOp(BlendingParameters::equation_t op) {
+	switch(op) {
+		case BlendingParameters::FUNC_ADD: return BlendOp::Add;
+		case BlendingParameters::FUNC_SUBTRACT: return BlendOp::Subtract;
+		case BlendingParameters::FUNC_REVERSE_SUBTRACT: return BlendOp::ReverseSubtract;
+	}
+}
+
+BlendingParameters::BlendingParameters(const ColorBlendState& state) :
+	enabled(state.getAttachment().blendEnable),
+	blendFuncSrcRGB(toFunction(state.getAttachment().srcColorBlendFactor)),
+	blendFuncDstRGB(toFunction(state.getAttachment().dstColorBlendFactor)),
+	blendFuncSrcAlpha(toFunction(state.getAttachment().srcAlphaBlendFactor)),
+	blendFuncDstAlpha(toFunction(state.getAttachment().dstAlphaBlendFactor)),
+	blendEquationRGB(toEquation(state.getAttachment().colorBlendOp)),
+	blendEquationAlpha(toEquation(state.getAttachment().alphaBlendOp)),
+	blendColor(state.getConstantColor()) {
+}
+
+ColorBlendState BlendingParameters::toBlendState() const {
+	ColorBlendState s;
+	s.setAttachment({
+		enabled,
+		toBlendFactor(blendFuncSrcRGB), toBlendFactor(blendFuncDstRGB), toBlendOp(blendEquationRGB),
+		toBlendFactor(blendFuncSrcAlpha), toBlendFactor(blendFuncDstAlpha), toBlendOp(blendEquationAlpha)
+	});
+	s.setConstantColor(blendColor);
+}
+
+
+CullFaceParameters::CullFaceParameters(CullMode m) : enabled(true) {
+	switch(m) {
+		case CullMode::None: enabled = false; break;
+		case CullMode::Front: mode = CULL_FRONT; break;
+		case CullMode::Back: mode = CULL_BACK; break;
+		case CullMode::FrontAndBack: mode = CULL_FRONT_AND_BACK; break;
+	}
+}
+
+CullMode CullFaceParameters::getCullMode() const {
+	if(!enabled) return CullMode::None;	
+	switch(mode) {
+		case CULL_FRONT: return CullMode::Front;
+		case CULL_BACK: return CullMode::Back;
+		case CULL_FRONT_AND_BACK: return CullMode::FrontAndBack;
+		default: return CullMode::None;
+	}
+}
+
+
+//==============================================================================================================================
+
 
 // declare here to allow forward declaration of Texture
 ImageBindParameters::ImageBindParameters(Texture*t) : texture(t),layer(0),level(0),multiLayer(false),readOperations(true),writeOperations(true) {}

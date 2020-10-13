@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -12,8 +13,8 @@
 #include "Mesh.h"
 #include "MeshIndexData.h"
 #include "MeshVertexData.h"
-#include "../GLHeader.h"
-#include "../RenderingContext/RenderingContext.h"
+#include "../RenderingContext.h"
+#include "../Core/Common.h"
 #include <Util/Macros.h>
 #include <iostream>
 
@@ -81,7 +82,7 @@ SimpleMeshDataStrategy * SimpleMeshDataStrategy::getDynamicVertexStrategy(){
 //! (static)
 SimpleMeshDataStrategy * SimpleMeshDataStrategy::getPureLocalStrategy(){
 	static SimpleMeshDataStrategy strategy( 0 );
-	return RenderingContext::getCompabilityMode() ? &strategy : getDynamicVertexStrategy();
+	return &strategy;
 }
 
 // ----
@@ -126,7 +127,7 @@ void SimpleMeshDataStrategy::prepare(Mesh * m){
 		id.removeGlBuffer();
 	} else if( !id.empty() && (id.hasChanged() || !id.isUploaded()) ){ // data has changed or is new
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " +idxBO";
-		id.upload(GL_STATIC_DRAW);
+		id.upload(MemoryUsage::GpuOnly);
 	}
 	if(!getFlag(PRESERVE_LOCAL_DATA) && id.isUploaded() && id.hasLocalData()){
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " ~idxLD";
@@ -139,7 +140,7 @@ void SimpleMeshDataStrategy::prepare(Mesh * m){
 		vd.removeGlBuffer();
 	} else if( !vd.empty() && (vd.hasChanged() || !vd.isUploaded()) ){ // data has changed or is new
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " +vBO";
-		vd.upload( getFlag(DYNAMIC_VERTICES) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW );
+		vd.upload( getFlag(DYNAMIC_VERTICES) ? MemoryUsage::CpuToGpu : MemoryUsage::GpuOnly );
 	}
 	if(!getFlag(PRESERVE_LOCAL_DATA) && vd.isUploaded() && vd.hasLocalData()){
 		if(getFlag(DEBUG_OUTPUT))	std::cout << " ~vLD";

@@ -10,7 +10,6 @@
 */
 #include "ShaderUtils.h"
 #include "Shader.h"
-#include "../Core/Common.h"
 #include <Util/References.h>
 #include <string>
 
@@ -18,58 +17,6 @@
 #include <vulkan/vulkan.hpp>
 
 namespace Rendering {
-
-std::string toString(ShaderStage stage) {
-	switch(stage) {
-		case ShaderStage::Undefined: return "Undefined";
-		case ShaderStage::Vertex: return "Vertex";
-		case ShaderStage::TessellationControl: return "TessellationControl";
-		case ShaderStage::TessellationEvaluation: return "TessellationEvaluation";
-		case ShaderStage::Geometry: return "Geometry";
-		case ShaderStage::Fragment: return "Fragment";
-		case ShaderStage::Compute: return "Compute";
-		case ShaderStage::All: return "All";
-		default: return "";
-	}
-}
-
-//-------------
-
-std::string toString(ShaderResourceType type) {
-	switch(type) {
-		case ShaderResourceType::Input: return "Input";
-		case ShaderResourceType::InputAttachment: return "InputAttachment";
-		case ShaderResourceType::Output: return "Output";
-		case ShaderResourceType::Image: return "Image";
-		case ShaderResourceType::ImageSampler: return "ImageSampler";
-		case ShaderResourceType::ImageStorage: return "ImageStorage";
-		case ShaderResourceType::Sampler: return "Sampler";
-		case ShaderResourceType::BufferUniform: return "BufferUniform";
-		case ShaderResourceType::BufferStorage: return "BufferStorage";
-		case ShaderResourceType::PushConstant: return "PushConstant";
-		case ShaderResourceType::SpecializationConstant: return "SpecializationConstant";
-		default: return "";
-	}
-}
-
-//-------------
-
-std::string toString(const ShaderResource& resource) {
-	return "ShaderResource(name " + resource.name + ", " 
-		+ "stage " + toString(resource.layout.stages) + ", "
-		+ "type " + toString(resource.layout.type) + ", "
-		+ "set " + std::to_string(resource.set) + ", "
-		+ "binding " + std::to_string(resource.binding) + ", "
-		+ "location " + std::to_string(resource.location) + ", "
-		+ "inputAttachmentIndex " + std::to_string(resource.inputAttachmentIndex) + ", "
-		+ "vecSize " + std::to_string(resource.vecSize) + ", "
-		+ "columns " + std::to_string(resource.columns) + ", "
-		+ "arraySize " + std::to_string(resource.layout.elementCount) + ", "
-		+ "offset " + std::to_string(resource.offset) + ", "
-		+ "size " + std::to_string(resource.size) + ", "
-		+ "constantId " + std::to_string(resource.constantId) + ", "
-		+ "dynamic " + std::to_string(resource.layout.dynamic) + ")";
-}
 
 //-------------
 
@@ -172,7 +119,32 @@ ShaderResourceList reflect(ShaderStage stage, const std::vector<uint32_t>& code)
 
 //-------------
 
-Util::Reference<Shader> createNormalToColorShader() {
+ShaderRef createDefaultShader(const DeviceRef& device) {
+	const std::string vertexShader = R"vs(
+		#version 450
+		layout(location = 0) in vec3 sg_Position;
+		layout(location = 1) in vec4 sg_Color;
+		layout(location = 0) out vec4 fragColor;
+		void main() {
+			gl_Position = vec4(sg_Position, 1.0);
+			fragColor = sg_Color;
+		}
+	)vs";
+
+	const std::string fragmentShader = R"fs(
+		#version 450
+		layout(location = 0) in vec4 fragColor;
+		layout(location = 0) out vec4 outColor;
+		void main() {
+			outColor = fragColor;
+		}
+	)fs";
+	return Shader::createShader(device, vertexShader, fragmentShader);
+}
+
+//-------------
+
+ShaderRef createNormalToColorShader() {
 	const std::string vertexProgram(
 R"***(#version 110
 uniform mat4 sg_matrix_cameraToWorld;

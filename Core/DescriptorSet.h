@@ -11,7 +11,7 @@
 #define RENDERING_CORE_DESCRIPTORSET_H_
 
 #include "Common.h"
-#include "../RenderingContext/BindingState.h"
+#include "../State/BindingState.h"
 #include "../Shader/ShaderUtils.h"
 
 #include <Util/ReferenceCounter.h>

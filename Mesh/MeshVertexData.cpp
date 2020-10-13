@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -12,10 +13,10 @@
 #include "VertexAttributeIds.h"
 #include "VertexDescription.h"
 #include "VertexAttributeAccessors.h"
+#include "../Core/Device.h"
+#include "../Core/BufferStorage.h"
 #include "../Shader/Shader.h"
 #include "../RenderingContext/RenderingContext.h"
-#include "../GLHeader.h"
-#include "../Helper.h"
 #include <Util/Macros.h>
 #include <algorithm>
 #include <cstdint>
@@ -25,11 +26,12 @@
 #include <vector>
 #include <utility>
 
-namespace Rendering{
+namespace Rendering {
 
+//-----------------
 
 //! (internal)
-void MeshVertexData::setVertexDescription(const VertexDescription & vd){
+void MeshVertexData::setVertexDescription(const VertexDescription & vd) {
 	static std::mutex mutex;
 	std::lock_guard<std::mutex> lock(mutex);
 
@@ -38,17 +40,24 @@ void MeshVertexData::setVertexDescription(const VertexDescription & vd){
 	vertexDescription = &*(result.first);
 }
 
-// ---------------------------
+//-----------------
 
 //! (ctor)
-MeshVertexData::MeshVertexData() :
-	binaryData(), vertexDescription(nullptr), vertexCount(0), bufferObject(), bb(), dataChanged(false) {
+MeshVertexData::MeshVertexData() : MeshVertexData(Device::getDefault()) { }
+
+//-----------------
+
+MeshVertexData::MeshVertexData(const DeviceRef& device) :
+	device(device), binaryData(), vertexDescription(nullptr), vertexCount(0), bufferObject(), bb(), dataChanged(false) {
 	setVertexDescription(VertexDescription());
 }
 
+//-----------------
+
 //! (ctor)
 MeshVertexData::MeshVertexData(const MeshVertexData & other) :
-	binaryData(), vertexDescription(other.vertexDescription), vertexCount(other.getVertexCount()), bufferObject(), bb(other.getBoundingBox()), dataChanged(true) {
+	device(other.device), binaryData(), vertexDescription(other.vertexDescription), vertexCount(other.getVertexCount()), 
+	bufferObject(), bb(other.getBoundingBox()), dataChanged(true) {
 	if(other.hasLocalData()) {
 		binaryData = other.binaryData;
 	} else if(other.isUploaded()) {
@@ -58,12 +67,24 @@ MeshVertexData::MeshVertexData(const MeshVertexData & other) :
 	}
 }
 
-void MeshVertexData::releaseLocalData(){
+//-----------------
+
+MeshVertexData::MeshVertexData(MeshVertexData &&) = default;
+
+//-----------------
+
+MeshVertexData::~MeshVertexData() = default;
+
+//-----------------
+
+void MeshVertexData::releaseLocalData() {
 	binaryData.resize(0);
 	binaryData.shrink_to_fit();
 }
 
-void MeshVertexData::swap(MeshVertexData & other){
+//-----------------
+
+void MeshVertexData::swap(MeshVertexData & other) {
 	if(this == &other)
 		return;
 
@@ -76,7 +97,9 @@ void MeshVertexData::swap(MeshVertexData & other){
 	swap(binaryData, other.binaryData);
 }
 
-void MeshVertexData::allocate(uint32_t count, const VertexDescription & vd){
+//-----------------
+
+void MeshVertexData::allocate(uint32_t count, const VertexDescription & vd) {
 	setVertexDescription(vd);
 	vertexCount = count;
 	binaryData.resize(vd.getVertexSize() * count);
@@ -84,14 +107,20 @@ void MeshVertexData::allocate(uint32_t count, const VertexDescription & vd){
 	markAsChanged();
 }
 
+//-----------------
+
 const uint8_t * MeshVertexData::operator[](uint32_t index) const {
 	return binaryData.data() + index * vertexDescription->getVertexSize();
 
 }
 
+//-----------------
+
 uint8_t * MeshVertexData::operator[](uint32_t index) {
 	return binaryData.data() + index * vertexDescription->getVertexSize();
 }
+
+//-----------------
 
 void MeshVertexData::updateBoundingBox() {
 	if (vertexCount == 0) {
@@ -133,31 +162,25 @@ void MeshVertexData::updateBoundingBox() {
 	}
 }
 
-bool MeshVertexData::upload() {
-	return upload(GL_STATIC_DRAW);
-}
+//-----------------
 
-bool MeshVertexData::upload(uint32_t usageHint){
+bool MeshVertexData::upload(MemoryUsage usage) {
 	if(vertexCount == 0 || binaryData.empty() )
 		return false;
-		
-	if( isUploaded() )
-		removeGlBuffer();
-
-	try {
-		bufferObject.uploadData(GL_ARRAY_BUFFER, binaryData, usageHint);
-		GET_GL_ERROR()
+	
+	if(!bufferObject || !bufferObject->isValid() || bufferObject->getSize() != binaryData.size() || bufferObject->getBuffer()->getConfig().access != usage) {
+		// Allocate new buffer
+		bufferObject->allocate(binaryData.size(), ResourceUsage::VertexBuffer, usage);
 	}
-	catch (...) {
-		WARN("VBO: upload failed");
-		removeGlBuffer();
-		return false;
-	}
+	// TODO: copy data if only usage has changed
+	bufferObject->upload(binaryData);
 	dataChanged = false;
 	return true;
 }
 
-bool MeshVertexData::download(){
+//-----------------
+
+bool MeshVertexData::download() {
 	if(!isUploaded() || vertexCount==0)
 		return false;
 	downloadTo(binaryData);
@@ -165,117 +188,52 @@ bool MeshVertexData::download(){
 	return true;
 }
 
-#ifdef LIB_GL
+//-----------------
+
 void MeshVertexData::downloadTo(std::vector<uint8_t> & destination) const {
 	const std::size_t numBytes = getVertexDescription().getVertexSize() * getVertexCount();
-	destination = bufferObject.downloadData<uint8_t>(GL_ARRAY_BUFFER, numBytes);
+	destination = bufferObject->download(numBytes);
 }
-#else
-void MeshVertexData::downloadTo(std::vector<uint8_t> & /*destination*/) const {
-	WARN("downloadTo not supported.");
-}
-#endif
 
-void MeshVertexData::removeGlBuffer(){
-	bufferObject.destroy();
-}
+//-----------------
 
 void MeshVertexData::bind(RenderingContext & context, bool useVBO) {
 	const VertexDescription & vd = getVertexDescription();
-
-	const uint8_t * vertexPosition = nullptr;
-	if (useVBO && isUploaded()) { // use VBO
-		bufferObject.bind(GL_ARRAY_BUFFER);
-	} else { // use Vertex array
-		vertexPosition = data();
-	}
+	if(dataChanged)
+		upload();
+	
+	/*
 
 	Shader * shader = context.getActiveShader();
 	const GLsizei vSize=vd.getVertexSize();
-#ifdef LIB_GL
-	if (RenderingContext::getCompabilityMode() && (shader == nullptr || shader->usesClassicOpenGL())) {
 
-		for(const auto & attr : vd.getAttributes()) {
-			if(attr.empty())
-				continue;
-			const Util::StringIdentifier nameId=attr.getNameId();
-			const GLenum dataType = getGLType(attr.getDataType());
-
-			if(nameId==VertexAttributeIds::POSITION) {
-				context.enableClientState(GL_VERTEX_ARRAY);
-				glVertexPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::NORMAL) {
-				context.enableClientState(GL_NORMAL_ARRAY);
-				glNormalPointer(dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::COLOR) {
-				context.enableClientState(GL_COLOR_ARRAY);
-				glColorPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD0) {
-				context.enableTextureClientState(GL_TEXTURE0);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD1) {
-				context.enableTextureClientState(GL_TEXTURE1);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD2) {
-				context.enableTextureClientState(GL_TEXTURE2);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD3) {
-				context.enableTextureClientState(GL_TEXTURE3);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD4) {
-				context.enableTextureClientState(GL_TEXTURE4);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD5) {
-				context.enableTextureClientState(GL_TEXTURE5);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD6) {
-				context.enableTextureClientState(GL_TEXTURE6);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(nameId==VertexAttributeIds::TEXCOORD7) {
-				context.enableTextureClientState(GL_TEXTURE7);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
-			} else if(shader != nullptr) { // ????????does this work?????
-				context.enableVertexAttribArray(attr, vertexPosition, vSize);
-			}
-		}
-	}else if( shader != nullptr && context.useAMDAttrBugWorkaround() ){
-		for(const auto & attr : vd.getAttributes()) {
-			if(attr.empty())
-				continue;
-			if(attr.getNameId()==VertexAttributeIds::POSITION) {
-				context.enableClientState(GL_VERTEX_ARRAY);
-				glVertexPointer(attr.getNumValues(), getGLType(attr.getDataType()), vSize, vertexPosition + attr.getOffset());
-				break;
-			}
-		}
-	}
-#endif /* LIB_GL */
 	if (shader != nullptr && shader->usesSGUniforms()) {
 		for(const auto & attr : vd.getAttributes()) {
 			if(!attr.empty()) {
 				context.enableVertexAttribArray(attr, vertexPosition, vSize);
 			}
 		}
-	}
+	}*/
+
 }
 
+//-----------------
+
 /*! (internal) */
-void MeshVertexData::drawArray(RenderingContext & context,bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements){
+void MeshVertexData::drawArray(RenderingContext & context,bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements) {
 	if(startIndex+numberOfElements>getVertexCount())
 		throw std::out_of_range("MeshIndexData::drawElements: Accessing invalid index.");
 	
-	bind(context,useVBO);
-	glDrawArrays(drawMode, startIndex, numberOfElements);
-	unbind(context,useVBO);
+	//bind(context,useVBO);
+	//glDrawArrays(drawMode, startIndex, numberOfElements);
+	//unbind(context,useVBO);
 }
 
+//-----------------
+
 void MeshVertexData::unbind(RenderingContext & context, bool useVBO) {
-	if (useVBO && isUploaded()) { // unbind vertex VBO
-		bufferObject.unbind(GL_ARRAY_BUFFER);
-	}
-	context.disableAllClientStates();
-	context.disableAllTextureClientStates();
-	context.disableAllVertexAttribArrays();
 }
+
+//-----------------
 
 }

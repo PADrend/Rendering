@@ -8,6 +8,7 @@
 */
 
 #include "Common.h"
+#include "../State/ShaderLayout.h"
 
 #include <vulkan/vulkan.hpp>
 

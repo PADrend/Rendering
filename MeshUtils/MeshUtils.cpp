@@ -742,8 +742,8 @@ VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & 
 			if (resultAttr.empty()) {
 				result.appendAttribute(attr.getNameId(), attr.getDataType(), attr.getNumValues(), attr.isNormalized());
 			} else if (!(attr == resultAttr)) {
-				uint8_t attrTypeSize = getGLTypeSize(getGLType(attr.getDataType()));
-				uint8_t resultAttrTypeSize = getGLTypeSize(getGLType(resultAttr.getDataType()));
+				uint8_t attrTypeSize = Util::getNumBytes(attr.getDataType());
+				uint8_t resultAttrTypeSize = Util::getNumBytes(resultAttr.getDataType());
 				result.updateAttribute(
 						VertexAttribute(attr.getNameId(), attrTypeSize > resultAttrTypeSize ? attr.getDataType() : resultAttr.getDataType(), 
 							std::max(attr.getNumValues(), resultAttr.getNumValues()), attr.isNormalized()&&resultAttr.isNormalized() ));

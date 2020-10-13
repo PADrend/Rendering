@@ -11,10 +11,12 @@
 #define RENDERING_CORE_COMMON_H_
 
 #include "ApiHandles.h"
-#include <Geometry/Vec3.h>
 #include <Util/Utils.h>
 
 namespace Geometry {
+template<typename _T> class _Rect;
+using Rect_i = _Rect<int>;
+template<typename _T> class _Vec3;
 using Vec3ui = _Vec3<uint32_t>;
 } /* Geometry */
 
@@ -209,48 +211,6 @@ struct ImageRegion {
 	uint32_t mipLevel = 0;
 	uint32_t baseLayer = 0;
 	uint32_t layerCount = 1;
-};
-
-//---------------------------
-
-enum class ShaderStage : uint8_t {
-	Undefined = 0,
-	Vertex = 1 << 0,
-	TessellationControl = 1 << 1,
-	TessellationEvaluation = 1 << 2,
-	Geometry = 1 << 3,
-	Fragment = 1 << 4,
-	Compute = 1 << 5,
-	All = 0xffu,
-};
-
-//-------------
-
-inline ShaderStage operator|(ShaderStage a, ShaderStage b) {
-	return static_cast<ShaderStage>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-}
-
-//-------------
-
-inline ShaderStage operator&(ShaderStage a, ShaderStage b) {
-	return static_cast<ShaderStage>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
-}
-
-//---------------------------
-
-enum class ShaderResourceType {
-	Input = 0,
-	InputAttachment,
-	Output,
-	Image,
-	ImageSampler,
-	ImageStorage,
-	Sampler,
-	BufferUniform,
-	BufferStorage,
-	PushConstant,
-	SpecializationConstant,
-	ResourceTypeCount
 };
 
 //---------------------------

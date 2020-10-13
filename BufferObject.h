@@ -75,7 +75,6 @@ public:
 	static Ref create(const DeviceRef& device);
 
 	//! Create an invalid buffer object for the given target.
-	[[deprecated]]
 	BufferObject();
 
 	//! Data of an buffer object should not be copied.
