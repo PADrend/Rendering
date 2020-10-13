@@ -48,6 +48,7 @@
 #include <Util/Profiling/Logger.h>
 
 INIT_PROFILING_TIME(std::cout);
+#define PROFILING_CONDITION internal->frameCounter == 1000
 
 namespace Rendering {
 
@@ -192,7 +193,7 @@ const RenderingState& RenderingContext::getRenderingState() const{
 // helper ***************************************************************************
 
 void RenderingContext::flush(bool wait) {
-	SCOPED_PROFILING_COND(RenderingContext::flush, internal->frameCounter == 1000);
+	SCOPED_PROFILING_COND(RenderingContext::flush, PROFILING_CONDITION);
 	internal->cmd->submit(wait);
 
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
@@ -201,7 +202,7 @@ void RenderingContext::flush(bool wait) {
 }
 
 void RenderingContext::present() {
-	SCOPED_PROFILING_COND(RenderingContext::present, internal->frameCounter == 1000);
+	SCOPED_PROFILING_COND(RenderingContext::present, PROFILING_CONDITION);
 	internal->cmd->endRenderPass();
 	auto& fbo = internal->device->getSwapchain()->getCurrentFBO();
 	internal->cmd->imageBarrier(fbo->getColorAttachment(0), ResourceUsage::Present);
@@ -213,10 +214,10 @@ void RenderingContext::present() {
 	internal->renderingState.getLights().clear();
 	internal->renderingState.getInstance().markDirty();
 
-	END_PROFILING_COND(RenderingContext, internal->frameCounter == 1000);
+	END_PROFILING_COND(RenderingContext, PROFILING_CONDITION);
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
 	internal->cmd->setDebugName("RC Commands Frame " + std::to_string(++internal->frameCounter));
-	BEGIN_PROFILING_COND(RenderingContext, internal->frameCounter == 1000);
+	BEGIN_PROFILING_COND(RenderingContext, PROFILING_CONDITION);
 	applyChanges();
 }
 
@@ -230,7 +231,7 @@ void RenderingContext::barrier(uint32_t flags) {
 // Applying changes ***************************************************************************
 
 void RenderingContext::applyChanges(bool forced) {
-	SCOPED_PROFILING_COND(RenderingContext::applyChanges, internal->frameCounter == 1000);
+	SCOPED_PROFILING_COND(RenderingContext::applyChanges, PROFILING_CONDITION);
 	if(internal->cmd->isInRenderPass() && 
 		internal->cmd->getActiveFBO() != internal->activeFBO &&
 		internal->activeFBO.isNotNull() && 
@@ -392,9 +393,8 @@ void RenderingContext::pushBlending() {
 }
 
 void RenderingContext::setBlending(const BlendingParameters& p) {
-	auto state = internal->pipelineState.getColorBlendState();
+	auto& state = internal->pipelineState.getColorBlendState();
 	state = p.toBlendState().setColorWriteMask(state.getColorWriteMask());
-	internal->pipelineState.setColorBlendState(state);
 }
 
 void RenderingContext::setBlending(const ColorBlendState& s) {
@@ -426,9 +426,7 @@ void RenderingContext::pushAndSetColorBuffer(const ColorBufferParameters& p) {
 }
 
 void RenderingContext::setColorBuffer(const ColorBufferParameters& p) {
-	auto state = internal->pipelineState.getColorBlendState();
-	state.setColorWriteMask(p.getWriteMask());
-	internal->pipelineState.setColorBlendState(state);
+	internal->pipelineState.getColorBlendState().setColorWriteMask(p.getWriteMask());
 }
 
 // Compute ************************************************************************************
@@ -469,9 +467,7 @@ void RenderingContext::pushAndSetCullFace(const CullFaceParameters& p) {
 }
 
 void RenderingContext::setCullFace(const CullFaceParameters& p) {
-	auto state = internal->pipelineState.getRasterizationState();
-	state.setCullMode(p.getCullMode());
-	internal->pipelineState.setRasterizationState(state);
+	internal->pipelineState.getRasterizationState().setCullMode(p.getCullMode());
 }
 
 
@@ -519,11 +515,10 @@ void RenderingContext::pushAndSetDepthBuffer(const DepthBufferParameters& p) {
 }
 
 void RenderingContext::setDepthBuffer(const DepthBufferParameters& p) {
-	auto state = internal->pipelineState.getDepthStencilState();
+	auto& state = internal->pipelineState.getDepthStencilState();
 	state.setDepthTestEnabled(p.isTestEnabled());
 	state.setDepthWriteEnabled(p.isWritingEnabled());
 	state.setDepthCompareOp(p.isTestEnabled() ? Comparison::functionToComparisonFunc(p.getFunction()) : ComparisonFunc::Disabled);
-	internal->pipelineState.setDepthStencilState(state);
 }
 
 // Drawing ************************************************************************************
@@ -534,7 +529,7 @@ void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const Ver
 
 
 void RenderingContext::bindVertexBuffers(const std::vector<BufferObjectRef>& buffers, const std::vector<VertexDescription>& vds, const std::vector<uint32_t> rates) {
-	SCOPED_PROFILING_COND(RenderingContext::bindVertexBuffers, internal->frameCounter == 1000);
+	SCOPED_PROFILING_COND(RenderingContext::bindVertexBuffers, PROFILING_CONDITION);
 	auto shader = internal->activeShader ? internal->activeShader : internal->fallbackShader;
 	WARN_AND_RETURN_IF(!shader, "bindVertexBuffers: There is no bound shader.",);
 	WARN_AND_RETURN_IF(buffers.size() != vds.size(), "bindVertexBuffers: Number of vertex descriptions does not match number of buffers.",);
@@ -564,7 +559,7 @@ void RenderingContext::bindVertexBuffers(const std::vector<BufferObjectRef>& buf
 			if(fallbackAttr.empty())
 				fallbackAttr = fallbackVD.getAttribute(DUMMY_VERTEX_ATTR);
 			state.setAttribute({static_cast<uint32_t>(location.second), bindingCount, toInternalFormat(fallbackAttr), fallbackAttr.getOffset()});
-			hasUnusedAttributes = true;			
+			hasUnusedAttributes = true;
 		}
 	}
 
@@ -605,9 +600,7 @@ void RenderingContext::drawIndirect(const BufferObjectRef& buffer, uint32_t draw
 }
 
 void RenderingContext::setPrimitiveTopology(PrimitiveTopology topology) {
-	auto state = internal->pipelineState.getInputAssemblyState();
-	state.setTopology(topology);
-	internal->pipelineState.setInputAssemblyState(state);
+	internal->pipelineState.getInputAssemblyState().setTopology(topology);
 }
 
 // FBO ************************************************************************************
@@ -738,9 +731,7 @@ void RenderingContext::pushAndSetLine(const LineParameters& p) {
 }
 
 void RenderingContext::setLine(const LineParameters& p) {
-	auto state = internal->pipelineState.getRasterizationState();
-	state.setLineWidth(p.getWidth());
-	internal->pipelineState.setRasterizationState(state);
+	internal->pipelineState.getRasterizationState().setLineWidth(p.getWidth());
 }
 
 // Point ************************************************************************************
@@ -813,9 +804,10 @@ void RenderingContext::pushAndSetPolygonOffset(const PolygonOffsetParameters& p)
 }
 
 void RenderingContext::setPolygonOffset(const PolygonOffsetParameters& p) {
-	auto state = internal->pipelineState.getRasterizationState();
-	state.setDepthBiasEnabled(p.isEnabled()).setDepthBiasConstantFactor(p.getUnits()).setDepthBiasSlopeFactor(p.getFactor());
-	internal->pipelineState.setRasterizationState(state);
+	internal->pipelineState.getRasterizationState()
+		.setDepthBiasEnabled(p.isEnabled())
+		.setDepthBiasConstantFactor(p.getUnits())
+		.setDepthBiasSlopeFactor(p.getFactor());
 }
 
 // PrimitiveRestart ************************************************************************************
@@ -841,9 +833,7 @@ void RenderingContext::pushAndSetPrimitiveRestart(const PrimitiveRestartParamete
 }
 
 void RenderingContext::setPrimitiveRestart(const PrimitiveRestartParameters& p) {
-	auto state = internal->pipelineState.getInputAssemblyState();
-	state.setPrimitiveRestartEnabled(p.isEnabled());
-	internal->pipelineState.setInputAssemblyState(state);
+	internal->pipelineState.getInputAssemblyState().setPrimitiveRestartEnabled(p.isEnabled());
 }
 
 // Rasterization ************************************************************************************
@@ -919,11 +909,10 @@ void RenderingContext::pushStencil() {
 }
 
 void RenderingContext::setStencil(const StencilParameters& p) {
-	auto state = internal->pipelineState.getDepthStencilState();
-	state.setStencilTestEnabled(p.isEnabled());
-	state.setFront(p.getStencilOpState());
-	state.setBack(p.getStencilOpState());
-	internal->pipelineState.setDepthStencilState(state);
+	internal->pipelineState.getDepthStencilState()
+		.setStencilTestEnabled(p.isEnabled())
+		.setFront(p.getStencilOpState())
+		.setBack(p.getStencilOpState());
 }
 
 // GLOBAL UNIFORMS ***************************************************************************
@@ -1175,20 +1164,12 @@ void RenderingContext::pushViewport() {
 }
 
 void RenderingContext::setViewport(const Geometry::Rect_i& viewport) {
-	auto state = internal->pipelineState.getViewportState();
-	auto vp = state.getViewport();
-	vp.rect = viewport;
-	state.setViewport(vp);
-	internal->pipelineState.setViewportState(state);
+	internal->pipelineState.getViewportState().setViewport(viewport);
 }
 
 void RenderingContext::setViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor) {
-	auto state = internal->pipelineState.getViewportState();
-	auto vp = state.getViewport();
-	vp.rect = viewport;
-	state.setViewport(vp);
-	state.setScissor(scissor);
-	internal->pipelineState.setViewportState(state);
+	 internal->pipelineState.getViewportState().setViewport(viewport);
+	 internal->pipelineState.getViewportState().setScissor(scissor);
 }
 
 void RenderingContext::setViewport(const ViewportState& viewport) {
