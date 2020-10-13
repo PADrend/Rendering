@@ -34,6 +34,7 @@ enum class MemoryUsage {
 	CpuToGpu, //! Memory that is both mappable on host and preferably fast to access by GPU.
 	GpuToCpu //! Memory mappable on host and cached.
 };
+std::string toString(MemoryUsage usage);
 
 //---------------------------
 
@@ -127,6 +128,7 @@ enum class InternalFormat : std::uint8_t {
 	BC7UnormSrgb,
 	ETC2RGB8Unorm,
 };
+std::string toString(InternalFormat format);
 
 //---------------------------
 
@@ -161,12 +163,13 @@ enum class ResourceUsage {
 	VertexBuffer,
 	IndirectBuffer,
 };
+std::string toString(ResourceUsage usage);
 
 //---------------------------
 
 enum ImageFilter {
 	Nearest,
-	Linear,		
+	Linear,
 };
 
 //---------------------------
@@ -191,7 +194,9 @@ struct ImageFormat {
 		return pixelFormat == o.pixelFormat && extent == o.extent && mipLevels == o.mipLevels && layers == o.layers && samples == o.samples;
 	}
 	bool operator!=(const ImageFormat& o) const { return !(*this == o); }
+
 };
+std::string toString(const ImageFormat& format);
 
 //---------------------------
 

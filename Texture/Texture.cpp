@@ -124,11 +124,6 @@ void Texture::upload(ResourceUsage usage) {
 	if(imageView && !dataHasChanged)
 		return;
 	
-	if(localBitmap.isNull()) {
-		WARN("Texture::upload: Data has not been allocated.");
-		return;
-	}
-	
 	if(!imageView) {
 		// allocate new image storage & create view
 		auto image = ImageStorage::create(device, {format, MemoryUsage::GpuOnly, usage});
@@ -143,7 +138,7 @@ void Texture::upload(ResourceUsage usage) {
 		}
 	}
 
-	if(dataHasChanged) {
+	if(dataHasChanged && localBitmap.isNotNull()) {
 		auto stagingBuffer = BufferStorage::create(device, {getDataSize(), MemoryUsage::CpuOnly, false, ResourceUsage::CopySource});
 		stagingBuffer->upload(localBitmap->data(), localBitmap->getDataSize());
 		CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));

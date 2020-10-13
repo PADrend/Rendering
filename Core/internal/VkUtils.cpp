@@ -222,19 +222,26 @@ vk::BufferUsageFlags getVkBufferUsage(const ResourceUsage& usage) {
 
 //-----------------
 
-vk::ImageUsageFlags getVkImageUsage(const ResourceUsage& usage) {
+vk::ImageUsageFlags getVkImageUsage(const InternalFormat& format, const ResourceUsage& usage) {
 	vk::ImageUsageFlags flags = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 	switch(usage) {
-		case ResourceUsage::ShaderResource: flags |= vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment; break;
-		case ResourceUsage::ShaderWrite: flags |= vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eInputAttachment; break;
+		case ResourceUsage::ShaderResource:
+			flags |= vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
+			break;
+		case ResourceUsage::ShaderWrite:
+			flags |= vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eInputAttachment;
+			break;
 		case ResourceUsage::Present:
-		case ResourceUsage::RenderTarget: flags |= vk::ImageUsageFlagBits::eColorAttachment; break;
-		case ResourceUsage::DepthStencil: flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment; break;
-		case ResourceUsage::General: flags |= vk::ImageUsageFlagBits::eColorAttachment |
-			vk::ImageUsageFlagBits::eDepthStencilAttachment |
-			vk::ImageUsageFlagBits::eInputAttachment |
-			vk::ImageUsageFlagBits::eSampled |
-			vk::ImageUsageFlagBits::eStorage;
+		case ResourceUsage::RenderTarget:
+			flags |= (isDepthStencilFormat(format) ? vk::ImageUsageFlagBits::eDepthStencilAttachment : vk::ImageUsageFlagBits::eColorAttachment);
+			break;
+		case ResourceUsage::DepthStencil:
+			flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+			break;
+		case ResourceUsage::General:
+			flags |= vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
+			flags |= isDepthStencilFormat(format) ? vk::ImageUsageFlagBits::eDepthStencilAttachment : (vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage);
+			break;
 		default: break;
 	}
 	

@@ -62,16 +62,16 @@ static void disableGLErrorChecking() {}
 static void checkGLError(const char * file, int line) {}
 
 [[deprecated]]
-static const char * getGLTypeString(uint32_t type) { return ""; }
+uint32_t getGLTypeSize(uint32_t type);
 
 [[deprecated]]
-static uint32_t getGLTypeSize(uint32_t type) { return 0; }
+uint32_t getGLType(Util::TypeConstant type);
 
 [[deprecated]]
-static uint32_t getGLType(Util::TypeConstant type) { return 0; }
+Util::TypeConstant getAttributeType(uint32_t glType);
 
 [[deprecated]]
-static Util::TypeConstant getAttributeType(uint32_t glType) { return Util::TypeConstant::UINT8; }
+static const char * getGLTypeString(uint32_t type) { return Util::getTypeString(getAttributeType(type)).c_str(); }
 
 [[deprecated]]
 static void outputGLInformation(std::ostream & output) {}

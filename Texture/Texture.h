@@ -106,7 +106,7 @@ public:
 
 	Util::Bitmap* getLocalBitmap() const { return localBitmap.get(); }
 	
-	void upload(ResourceUsage usage=ResourceUsage::ShaderResource);
+	void upload(ResourceUsage usage=ResourceUsage::General);
 	void download();
 	void clear(const Util::Color4f& color={});
 	void release();

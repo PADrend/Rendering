@@ -77,13 +77,13 @@ Texture::Ref createDepthStencilTexture(const Device::Ref& device, uint32_t width
 [[deprecated]]
 static Texture::Ref createDepthStencilTexture(uint32_t width, uint32_t height) { return createDepthStencilTexture(Device::getDefault(), width, height); }
 
-Texture::Ref createDepthTexture(const Device::Ref& device, uint32_t width, uint32_t height, uint32_t layers=0);
+Texture::Ref createDepthTexture(const Device::Ref& device, uint32_t width, uint32_t height, uint32_t layers=1);
 [[deprecated]]
-static Texture::Ref createDepthTexture(uint32_t width, uint32_t height, uint32_t layers=0) { return createDepthTexture(Device::getDefault(), width, height, layers); }
+static Texture::Ref createDepthTexture(uint32_t width, uint32_t height, uint32_t layers=1) { return createDepthTexture(Device::getDefault(), width, height, layers); }
 
-Texture::Ref createHDRDepthTexture(const Device::Ref& device, uint32_t width, uint32_t height, uint32_t layers=0);
+Texture::Ref createHDRDepthTexture(const Device::Ref& device, uint32_t width, uint32_t height, uint32_t layers=1);
 [[deprecated]]
-static Texture::Ref createHDRDepthTexture(uint32_t width, uint32_t height, uint32_t layers=0) { return createHDRDepthTexture(Device::getDefault(), width, height, layers); }
+static Texture::Ref createHDRDepthTexture(uint32_t width, uint32_t height, uint32_t layers=1) { return createHDRDepthTexture(Device::getDefault(), width, height, layers); }
 
 Texture::Ref createMultisampleDepthTexture(const Device::Ref& device, uint32_t width, uint32_t height, uint32_t samples=4);
 [[deprecated]]

@@ -11,7 +11,21 @@
 #include <Util/Resources/AttributeFormat.h>
 #include <Util/Graphics/PixelFormat.h>
 
+#include <sstream>
+
 namespace Rendering {
+
+//-----------------
+
+std::string toString(MemoryUsage usage) {
+	switch(usage) {
+		case MemoryUsage::Unknown: return "Unknown";
+		case MemoryUsage::CpuOnly: return "CpuOnly";
+		case MemoryUsage::GpuOnly: return "GpuOnly";
+		case MemoryUsage::CpuToGpu: return "CpuToGpu";
+		case MemoryUsage::GpuToCpu: return "GpuToCpu";
+	}
+}
 
 //-----------------
 
@@ -158,7 +172,6 @@ bool isDepthStencilFormat(InternalFormat format) {
 	}
 }
 
-
 //-----------------
 
 uint8_t getDataSize(InternalFormat format) {
@@ -240,6 +253,106 @@ uint8_t getDataSize(InternalFormat format) {
 
 //-----------------
 
+std::string toString(InternalFormat format) {
+	switch (format) {
+		case InternalFormat::Unknown: return "Unknown";
+		case InternalFormat::R8Unorm: return "R8Unorm";
+		case InternalFormat::R8Snorm: return "R8Snorm";
+		case InternalFormat::R16Unorm: return "R16Unorm";
+		case InternalFormat::R16Snorm: return "R16Snorm";
+		case InternalFormat::RG8Unorm: return "RG8Unorm";
+		case InternalFormat::RG8Snorm: return "RG8Snorm";
+		case InternalFormat::RG16Unorm: return "RG16Unorm";
+		case InternalFormat::RG16Snorm: return "RG16Snorm";
+		case InternalFormat::RGB16Unorm: return "RGB16Unorm";
+		case InternalFormat::RGB16Snorm: return "RGB16Snorm";
+		case InternalFormat::RGB5A1Unorm: return "RGB5A1Unorm";
+		case InternalFormat::RGBA8Unorm: return "RGBA8Unorm";
+		case InternalFormat::RGBA8Snorm: return "RGBA8Snorm";
+		case InternalFormat::RGB10A2Unorm: return "RGB10A2Unorm";
+		case InternalFormat::RGB10A2Uint: return "RGB10A2Uint";
+		case InternalFormat::RGBA16Unorm: return "RGBA16Unorm";
+		case InternalFormat::RGBA8UnormSrgb: return "RGBA8UnormSrgb";
+		case InternalFormat::R16Float: return "R16Float";
+		case InternalFormat::RG16Float: return "RG16Float";
+		case InternalFormat::RGB16Float: return "RGB16Float";
+		case InternalFormat::RGBA16Float: return "RGBA16Float";
+		case InternalFormat::R32Float: return "R32Float";
+		case InternalFormat::RG32Float: return "RG32Float";
+		case InternalFormat::RGB32Float: return "RGB32Float";
+		case InternalFormat::RGBA32Float: return "RGBA32Float";
+		case InternalFormat::R11G11B10Float: return "R11G11B10Float";
+		case InternalFormat::RGB9E5Float: return "RGB9E5Float";
+		case InternalFormat::R8Int: return "R8Int";
+		case InternalFormat::R8Uint: return "R8Uint";
+		case InternalFormat::R16Int: return "R16Int";
+		case InternalFormat::R16Uint: return "R16Uint";
+		case InternalFormat::R32Int: return "R32Int";
+		case InternalFormat::R32Uint: return "R32Uint";
+		case InternalFormat::RG8Int: return "RG8Int";
+		case InternalFormat::RG8Uint: return "RG8Uint";
+		case InternalFormat::RG16Int: return "RG16Int";
+		case InternalFormat::RG16Uint: return "RG16Uint";
+		case InternalFormat::RG32Int: return "RG32Int";
+		case InternalFormat::RG32Uint: return "RG32Uint";
+		case InternalFormat::RGB16Int: return "RGB16Int";
+		case InternalFormat::RGB16Uint: return "RGB16Uint";
+		case InternalFormat::RGB32Int: return "RGB32Int";
+		case InternalFormat::RGB32Uint: return "RGB32Uint";
+		case InternalFormat::RGBA8Int: return "RGBA8Int";
+		case InternalFormat::RGBA8Uint: return "RGBA8Uint";
+		case InternalFormat::RGBA16Int: return "RGBA16Int";
+		case InternalFormat::RGBA16Uint: return "RGBA16Uint";
+		case InternalFormat::RGBA32Int: return "RGBA32Int";
+		case InternalFormat::RGBA32Uint: return "RGBA32Uint";
+		case InternalFormat::BGRA8Unorm: return "BGRA8Unorm";
+		case InternalFormat::BGRA8UnormSrgb: return "BGRA8UnormSrgb";
+		case InternalFormat::R5G6B5Unorm: return "R5G6B5Unorm";
+		case InternalFormat::D32Float: return "D32Float";
+		case InternalFormat::D16Unorm: return "D16Unorm";
+		case InternalFormat::D32FloatS8X24: return "D32FloatS8X24";
+		case InternalFormat::D24UnormS8: return "D24UnormS8";
+		case InternalFormat::BC1Unorm: return "BC1Unorm";
+		case InternalFormat::BC1UnormSrgb: return "BC1UnormSrgb"; 
+		case InternalFormat::BC2Unorm: return "BC2Unorm";
+		case InternalFormat::BC2UnormSrgb: return "BC2UnormSrgb";
+		case InternalFormat::BC3Unorm: return "BC3Unorm";
+		case InternalFormat::BC3UnormSrgb: return "BC3UnormSrgb";
+		case InternalFormat::BC4Unorm: return "BC4Unorm";
+		case InternalFormat::BC4Snorm: return "BC4Snorm";
+		case InternalFormat::BC5Unorm: return "BC5Unorm";
+		case InternalFormat::BC5Snorm: return "BC5Snorm";
+		case InternalFormat::BC6HS16: return "BC6HS16";
+		case InternalFormat::BC6HU16: return "BC6HU16";
+		case InternalFormat::BC7Unorm: return "BC7Unorm";
+		case InternalFormat::BC7UnormSrgb: return "BC7UnormSrgb";
+		case InternalFormat::ETC2RGB8Unorm: return "ETC2RGB8Unorm";
+	}
+}
+
+//-----------------
+
+std::string toString(ResourceUsage usage) {
+	switch(usage) {
+		case ResourceUsage::Undefined: return "Undefined";
+		case ResourceUsage::PreInitialized: return "PreInitialized";
+		case ResourceUsage::General: return "General";
+		case ResourceUsage::RenderTarget: return "RenderTarget";
+		case ResourceUsage::DepthStencil: return "DepthStencil";
+		case ResourceUsage::ShaderResource: return "ShaderResource";
+		case ResourceUsage::CopySource: return "CopySource";
+		case ResourceUsage::CopyDestination: return "CopyDestination";
+		case ResourceUsage::Present: return "Present";
+		case ResourceUsage::ShaderWrite: return "ShaderWrite";
+		case ResourceUsage::IndexBuffer: return "IndexBuffer";
+		case ResourceUsage::VertexBuffer: return "VertexBuffer";
+		case ResourceUsage::IndirectBuffer: return "IndirectBuffer";
+	}
+	return "";
+}
+
+//-----------------
+
 size_t getDataSize(const ImageFormat& format) {
 	size_t baseSize = format.extent.getX() * format.extent.getY() * format.extent.getZ();
 	size_t size = baseSize;
@@ -249,4 +362,14 @@ size_t getDataSize(const ImageFormat& format) {
 }
 
 //-----------------
+
+std::string toString(const ImageFormat& format) {
+	std::stringstream ss;
+	ss << "ImageFormat(" << " * " << format.extent.x() << "x" << format.extent.y() << "x" << format.extent.z()
+			<< " " << toString(format.pixelFormat) << " layers " << format.layers << " mip " << format.mipLevels << " samples " << format.samples << ")";
+	return ss.str();
+}
+
+//-----------------
+
 } /* Rendering */

@@ -185,7 +185,7 @@ void FBO::attachColorTexture(RenderingContext & context, Texture * texture, uint
 		detachColorTexture(colorBufferId);
 		return;
 	} else if(!texture->isValid())
-		texture->upload();
+		texture->upload(ResourceUsage::RenderTarget);
 
 	uint32_t baseLayer = layer < 0 ? 0 : layer;
 	uint32_t layerCount = layer < 0 ? 0 : 1;
@@ -204,7 +204,7 @@ void FBO::attachDepthStencilTexture(RenderingContext & context, Texture * textur
 		detachDepthStencilTexture();
 		return;
 	} else if(!texture->isValid())
-		texture->upload();
+		texture->upload(ResourceUsage::DepthStencil);
 
 	uint32_t baseLayer = layer < 0 ? 0 : layer;
 	uint32_t layerCount = layer < 0 ? 0 : 1;

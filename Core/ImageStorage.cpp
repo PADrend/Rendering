@@ -21,7 +21,7 @@
 namespace Rendering {
 
 vk::Format getVkFormat(const InternalFormat& format);
-vk::ImageUsageFlags getVkImageUsage(const ResourceUsage& usage);
+vk::ImageUsageFlags getVkImageUsage(const InternalFormat& format, const ResourceUsage& usage);
 
 //-------------
 
@@ -73,11 +73,7 @@ static vk::SampleCountFlagBits getSampleCount(uint32_t samples) {
 ImageStorage::Ref ImageStorage::create(const DeviceRef& device, const ImageStorage::Configuration& config) {
 	Ref image(new ImageStorage(device, config));
 	if(!image->init()) {
-		WARN("ImageStorage: failed to allocate image with dimensions (" 
-			+ Util::StringUtils::toString(config.format.extent.x()) + ","
-			+ Util::StringUtils::toString(config.format.extent.y()) + ","
-			+ Util::StringUtils::toString(config.format.extent.z()) + ")."
-		);
+		WARN("ImageStorage: failed to allocate image with " + toString(config.format) + ", access " + toString(config.access) + " and usage " + toString(config.usage));
 		return nullptr;
 	}
 	return std::move(image);
@@ -110,7 +106,7 @@ bool ImageStorage::init() {
 	imageCreateInfo.samples = getSampleCount(config.format.samples);
 	imageCreateInfo.tiling = vk::ImageTiling::eOptimal;
 	imageCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-	imageCreateInfo.usage = getVkImageUsage(config.usage);
+	imageCreateInfo.usage = getVkImageUsage(config.format.pixelFormat, config.usage);
 
 	
 	std::vector<uint32_t> familyIndices;
@@ -128,7 +124,7 @@ bool ImageStorage::init() {
 	}
 
 	if(imageCreateInfo.format == vk::Format::eUndefined) {
-		WARN("ImageStorage: invalid image format.");
+		WARN("ImageStorage: invalid image format " + toString(config.format.pixelFormat));
 		return false;
 	}
 

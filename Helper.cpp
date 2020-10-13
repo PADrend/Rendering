@@ -108,4 +108,66 @@ const Util::FileLocator& getDataLocator() {
 	return locator;
 }
 
+#define GL_BOOL 0x8B56
+#define GL_UNSIGNED_BYTE 0x1401
+#define GL_UNSIGNED_INT 0x1405
+#define GL_BYTE 0x1400
+#define GL_UNSIGNED_SHORT 0x1403
+#define GL_SHORT 0x1402
+#define GL_INT 0x1404
+#define GL_FLOAT 0x1406
+#define GL_INT_2_10_10_10_REV 0x8D9F
+#define GL_DOUBLE 0x140A
+#define GL_UNSIGNED_INT_24_8 0x84FA
+#define GL_HALF_FLOAT 0x140B
+
+unsigned int getGLTypeSize(uint32_t type) {
+	switch (type) {
+		case GL_BOOL: return sizeof(uint8_t);
+		case GL_UNSIGNED_BYTE: return sizeof(uint8_t);
+		case GL_BYTE: return sizeof(int8_t);
+		case GL_UNSIGNED_SHORT: return sizeof(uint16_t);
+		case GL_SHORT: return sizeof(int16_t);
+		case GL_UNSIGNED_INT: return sizeof(uint32_t);
+		case GL_INT: return sizeof(int32_t);
+		case GL_FLOAT: return sizeof(float);
+		case GL_DOUBLE: return sizeof(double);
+		case GL_UNSIGNED_INT_24_8: return sizeof(uint32_t);
+		case GL_HALF_FLOAT: return sizeof(uint16_t);
+		case GL_INT_2_10_10_10_REV: return sizeof(uint32_t);
+		default: return 0;
+	}
+}
+
+uint32_t getGLType(Util::TypeConstant type) {	
+	switch(static_cast<Util::TypeConstant>(type)) {
+		case Util::TypeConstant::UINT8: return GL_UNSIGNED_BYTE;
+		case Util::TypeConstant::UINT16: return GL_UNSIGNED_SHORT;
+		case Util::TypeConstant::UINT32: return GL_UNSIGNED_INT;
+		case Util::TypeConstant::UINT64: return 0; // unsupported
+		case Util::TypeConstant::INT8: return GL_BYTE;
+		case Util::TypeConstant::INT16: return GL_SHORT;
+		case Util::TypeConstant::INT32: return GL_INT;
+		case Util::TypeConstant::INT64: return 0; // unsupported
+		case Util::TypeConstant::FLOAT: return GL_FLOAT;
+		case Util::TypeConstant::DOUBLE: return GL_DOUBLE;
+		case Util::TypeConstant::HALF: return GL_HALF_FLOAT;
+	}
+}
+
+Util::TypeConstant getAttributeType(uint32_t glType) {
+	switch (glType) {
+		case GL_UNSIGNED_BYTE: return Util::TypeConstant::UINT8;
+		case GL_UNSIGNED_SHORT: return Util::TypeConstant::UINT16;
+		case GL_UNSIGNED_INT: return Util::TypeConstant::UINT32;
+		case GL_BYTE: return Util::TypeConstant::INT8;
+		case GL_SHORT: return Util::TypeConstant::INT16;
+		case GL_INT: return Util::TypeConstant::INT32;
+		case GL_FLOAT: return Util::TypeConstant::FLOAT;
+		case GL_DOUBLE: return Util::TypeConstant::DOUBLE;
+		case GL_HALF_FLOAT: return Util::TypeConstant::HALF;
+		default: return Util::TypeConstant::UINT8;
+	}
+}
+
 }

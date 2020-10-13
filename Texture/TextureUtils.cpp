@@ -32,6 +32,7 @@
 #include <Util/IO/FileName.h>
 #include <Util/IO/FileUtils.h>
 #include <Util/Graphics/Bitmap.h>
+#include <Util/Graphics/BitmapUtils.h>
 #include <Util/Graphics/PixelFormat.h>
 #include <Util/Graphics/Color.h>
 #include <Util/Graphics/NoiseGenerator.h>
@@ -98,7 +99,7 @@ static Texture::Ref create(const Device::Ref& device,  TextureType type,uint32_t
 	samplerConfig.addressModeV = clampToEdge ? ImageAddressMode::ClampToEdge : ImageAddressMode::Repeat;
 	samplerConfig.addressModeW = clampToEdge ? ImageAddressMode::ClampToEdge : ImageAddressMode::Repeat;
 
-	auto sampler = Sampler::create(device, samplerConfig);	
+	auto sampler = Sampler::create(device, samplerConfig);
 	return Texture::create(device, format, sampler);
 }
 
@@ -142,12 +143,12 @@ Texture::Ref createDepthStencilTexture(const Device::Ref& device, uint32_t width
 
 //! [static] Factory
 Texture::Ref createDepthTexture(const Device::Ref& device, uint32_t width, uint32_t height, uint32_t layers) {
-	return create(device, TextureType::TEXTURE_2D_ARRAY, width, height, layers, InternalFormat::D24UnormS8, false, true);
+	return create(device, layers > 1 ? TextureType::TEXTURE_2D_ARRAY : TextureType::TEXTURE_2D, width, height, layers, InternalFormat::D24UnormS8, false, true);
 }
 
 //! [static] Factory
 Texture::Ref createHDRDepthTexture(const Device::Ref& device, uint32_t width, uint32_t height, uint32_t layers) {
-	return create(device, TextureType::TEXTURE_2D_ARRAY, width, height, layers, InternalFormat::D32Float, false, true);
+	return create(device, layers > 1 ? TextureType::TEXTURE_2D_ARRAY : TextureType::TEXTURE_2D, width, height, layers, InternalFormat::D32Float, false, true);
 }
 
 
@@ -237,8 +238,20 @@ Texture::Ref createTextureFromBitmap(const Device::Ref& device, const Util::Bitm
 
 	WARN_AND_RETURN_IF(numLayers==0 || numLayers>bHeight || (bHeight%numLayers) != 0, "createTextureFromBitmap: Bitmap height is not dividable into given number of layers.", nullptr);
 
-	auto pixelFormat = toInternalFormat(bitmap.getPixelFormat());
-	WARN_AND_RETURN_IF(pixelFormat == InternalFormat::Unknown, "createTextureFromBitmap: Bitmap has unimplemented pixel format.", nullptr);
+	auto format = bitmap.getPixelFormat();
+	auto pixelFormat = toInternalFormat(format);
+	if(pixelFormat == InternalFormat::Unknown) {
+		// Unknown format. See if we can convert it.
+		if(format.getComponentCount() == 3 && (format.getDataType() == Util::TypeConstant::UINT8 || format.getDataType() == Util::TypeConstant::INT8)) {
+			// Most GPUs doesn't support 24-bit formats. We need to convert them to 32-bit.
+			Util::AttributeFormat newFormat(format.getNameId(), format.getDataType(), 4, format.isNormalized(), format.getInternalType());
+			auto tmpBitmap = Util::BitmapUtils::convertBitmap(bitmap, newFormat);
+			return createTextureFromBitmap(device, *tmpBitmap.get(), type, numLayers, clampToEdge);
+		} else {
+			WARN("createTextureFromBitmap: Bitmap has unimplemented pixel format.");
+			return nullptr;
+		}
+	}
 	
 	auto texture = create(device, type, width, bHeight/numLayers, numLayers, pixelFormat, true, clampToEdge);
 	texture->allocateLocalData();

@@ -123,7 +123,7 @@ public:
 	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
 	ShadingModel model = ShadingModel::Phong;
-	Util::Color4f ambient = {0,0,0,0};
+	Util::Color4f ambient = {0.5,0.5,0.5,0};
 	Util::Color4f diffuse = {1,1,1,1};
 	TextureRef diffuseMap;
 	Util::Color4f specular = {0,0,0,0};

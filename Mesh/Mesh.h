@@ -209,10 +209,10 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 	// @{
 	public:
 		enum draw_mode_t : uint8_t {
-			DRAW_POINTS,
-			DRAW_LINE_STRIP,
-			DRAW_LINE_LOOP,
+			DRAW_POINTS = 0,
 			DRAW_LINES,
+			DRAW_LINE_LOOP,
+			DRAW_LINE_STRIP,
 			DRAW_TRIANGLES
 		};
 	private:
@@ -226,9 +226,9 @@ class Mesh : public Util::ReferenceCounter<Mesh> {
 		[[deprecated]]
 		void setDrawMode(draw_mode_t newMode);
 		[[deprecated]]
-		uint32_t getGLDrawMode() const { return 0; }
+		uint32_t getGLDrawMode() const { return static_cast<uint32_t>(getDrawMode()); }
 		[[deprecated]]
-		void setGLDrawMode(uint32_t glDrawMode) {}
+		void setGLDrawMode(uint32_t glDrawMode) { setDrawMode(static_cast<draw_mode_t>(glDrawMode)); }
 	// @}
 		
 	private:

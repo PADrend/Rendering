@@ -61,7 +61,10 @@
 		for(uint i=0; i<sg_lightCount; ++i) {
 			color.rgb += evalMaterial(surface, sg_Light[i]);
 		}
-		color.rgb += sg_Material.ambient.rgb;
+			
+		vec3 diffuseBrdf = surface.diffuse.rgb * M_PI_INV;
+		color.rgb += diffuseBrdf * sg_Material.ambient.rgb;
+
 		color.rgb += sg_Material.emission.rgb * sg_Material.emission.a;
 		color.a = sg_Material.diffuse.a;
 

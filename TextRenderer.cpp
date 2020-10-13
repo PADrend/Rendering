@@ -48,7 +48,7 @@ void main(void) {
 static const std::string fragmentProgram(R"***(#version 450
 #extension GL_EXT_samplerless_texture_functions : require
 
-layout(set=0, binding=0) uniform utexture2D sg_Texture0;
+layout(set=0, binding=0) uniform texture2D sg_Texture0;
 layout(set=1, binding=0) uniform TextColor {
 	vec4 textColor;
 };

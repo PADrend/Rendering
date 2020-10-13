@@ -111,10 +111,6 @@ bool Swapchain::init() {
 	presentFences.clear();
 	for(uint32_t i=0; i<imageCount; ++i) {
 		presentFences.emplace_back(FenceHandle::create(vkDevice.createFence({vk::FenceCreateFlagBits::eSignaled}), vkDevice));
-		if(device->isDebugModeEnabled()) {
-			std::string name = "Present Fence " + std::to_string(i);
-			vkDevice.setDebugUtilsObjectNameEXT({ vk::Fence::objectType, presentFences.back(), name.c_str() });
-		}
 	}
 	
 	return updateFramebuffers();
