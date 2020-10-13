@@ -23,6 +23,14 @@ namespace Rendering {
 
 //-------------
 
+Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : device(device), familyIndex(familyIndex), index(index) { }
+
+//-------------
+
+Queue::~Queue() = default;
+
+//-------------
+
 bool Queue::submit(const CommandBufferRef& commands, bool wait) {
 	WARN_AND_RETURN_IF(!commands || !commands->isExecutable(), "Queue: command buffer is not executable.", false);
 	clearPending();
@@ -105,10 +113,6 @@ CommandBufferHandle Queue::requestCommandBuffer(bool primary) {
 void Queue::freeCommandBuffer(const CommandBufferHandle& bufferHandle, bool primary) {
 	commandPool.free(static_cast<uint32_t>(primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary), bufferHandle);
 }
-
-//-------------
-
-Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : device(device), familyIndex(familyIndex), index(index) { }
 
 //-------------
 

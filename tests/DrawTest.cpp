@@ -128,14 +128,14 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		cmdBuffer->setPipelineState(state);
 		cmdBuffer->setShader(shader);
 		cmdBuffer->setFBO(fbo);
-		cmdBuffer->textureBarrier(attachment, ResourceUsage::RenderTarget);
+		//cmdBuffer->textureBarrier(attachment, ResourceUsage::RenderTarget);
 
 		cmdBuffer->beginRenderPass({{0,0,0,1}});
 		cmdBuffer->bindVertexBuffers(0, {vertexBuffer, vertexBuffer}, {0, positions.size() * sizeof(Geometry::Vec2)});
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
 				
-		cmdBuffer->textureBarrier(attachment, ResourceUsage::Present);
+		//cmdBuffer->textureBarrier(attachment, ResourceUsage::Present);
 		cmdBuffer->end();
 
 		graphicsQueue->submit(cmdBuffer);		

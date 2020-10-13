@@ -197,8 +197,8 @@ void FBO::init() {
 				static_cast<vk::SampleCountFlagBits>(format.samples),
 				vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 				vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-				vk::ImageLayout::eColorAttachmentOptimal,
-				vk::ImageLayout::eColorAttachmentOptimal
+				vk::ImageLayout::eUndefined,
+				vk::ImageLayout::ePresentSrcKHR
 			);
 			
 			attachmentRefs[i] = {attachmentCount++, vk::ImageLayout::eColorAttachmentOptimal};
@@ -226,7 +226,7 @@ void FBO::init() {
 			static_cast<vk::SampleCountFlagBits>(format.samples),
 			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
-			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+			vk::ImageLayout::eUndefined,
 			vk::ImageLayout::eDepthStencilAttachmentOptimal
 		);
 		attachmentRefs.back() = {attachmentCount++, vk::ImageLayout::eDepthStencilAttachmentOptimal};

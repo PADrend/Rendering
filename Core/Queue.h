@@ -28,7 +28,7 @@ class Queue : public Util::ReferenceCounter<Queue> {
 public:
 	using Ref = Util::Reference<Queue>;
 	
-	~Queue() = default;
+	~Queue();
 	
 	bool submit(const CommandBufferRef& commands, bool wait=false);
 	bool present();

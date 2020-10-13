@@ -98,6 +98,17 @@ bool BufferStorage::init() {
 	bufferCreateInfo.usage = static_cast<VkBufferUsageFlags>(getVkBufferUsage(config.usage));
 	bufferCreateInfo.size = config.size;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	
+	std::vector<uint32_t> familyIndices;
+	auto queues = device->getQueues();
+	for(auto& queue : device->getQueues()) {
+		familyIndices.emplace_back(queue->getFamilyIndex());
+	}
+	if(familyIndices.size() > 1) {
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		bufferCreateInfo.queueFamilyIndexCount = familyIndices.size();
+		bufferCreateInfo.pQueueFamilyIndices = familyIndices.data();
+	}
 
 	VmaAllocationCreateInfo allocCreateInfo{};
 	switch(config.access) {
