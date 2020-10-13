@@ -492,7 +492,7 @@ bool Device::init(const Configuration& config) {
 	}
 
 	if(config.debugMode)
-		std::cout << "Aquirering window surface..." << std::endl;
+		std::cout << "Acquiring window surface..." << std::endl;
 	vk::SurfaceKHR surface(internal->window->createSurface(internal->instance));
 	if(!surface) {
 		WARN("Device: Could not create Vulkan surface.");
