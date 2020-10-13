@@ -20,6 +20,7 @@
 #include "../Core/ImageView.h"
 #include "../FBO.h"
 #include "../Texture/Texture.h"
+#include "../Shader/ShaderObjectInfo.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
 #include <cstdint>
@@ -70,30 +71,6 @@ const std::string fragmentShader = R"fs(
 	}
 )fs";
 
-static std::vector<uint32_t> createShaderModule(vk::Device& device, const std::string& code, const std::string& name, shaderc_shader_kind kind) {
-	static shaderc::Compiler compiler;
-	shaderc::CompileOptions options;
-	options.SetGenerateDebugInfo();
-	options.SetOptimizationLevel(shaderc_optimization_level_performance);
-	shaderc::SpvCompilationResult shaderModule = compiler.CompileGlslToSpv(code, kind, name.c_str(), options);
-	if (shaderModule.GetCompilationStatus() != shaderc_compilation_status_success) {
-		std::cerr << shaderModule.GetErrorMessage();
-	}
-	return std::vector<uint32_t>{ shaderModule.cbegin(), shaderModule.cend() };
-}
-
-static void reflect(const std::vector<uint32_t>& code, const std::string& type) {
-	spirv_cross::Compiler reflect(code);
-	auto resources = reflect.get_shader_resources();	
-	std::cout << type << std::endl;
-	std::cout << "  input" << std::endl;
-	for(auto& res : resources.stage_inputs)
-		std::cout << "    " << res.id << ": " << res.name << std::endl;
-	std::cout << "  output" << std::endl;
-	for(auto& res : resources.stage_outputs)
-		std::cout << "    " << res.id << ": " << res.name << std::endl;
-}
-
 TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
@@ -105,17 +82,17 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	// create graphics pipeline
 	
 	// compile shaders
-	auto vsCode = createShaderModule(vkDevice, vertexShader, "vertex shader", shaderc_glsl_vertex_shader);
-	auto fsCode = createShaderModule(vkDevice, fragmentShader, "fragment shader", shaderc_glsl_fragment_shader);	
-	auto vertexShaderModule = vkDevice.createShaderModuleUnique({ {}, vsCode.size() * sizeof(uint32_t), vsCode.data() });
-	auto fragmentShaderModule = vkDevice.createShaderModuleUnique({ {}, fsCode.size() * sizeof(uint32_t), fsCode.data() });
-	std::vector<vk::PipelineShaderStageCreateInfo> pipelineShaderStages = { 
-		{ {}, vk::ShaderStageFlagBits::eVertex, *vertexShaderModule, "main" },
-		{ {}, vk::ShaderStageFlagBits::eFragment, *fragmentShaderModule, "main" }
+	auto vso = ShaderObjectInfo::createVertex(vertexShader);
+	auto fso = ShaderObjectInfo::createFragment(fragmentShader);
+	auto vertexShaderModule = vso.compile(device);
+	auto fragmentShaderModule = fso.compile(device);
+	std::vector<vk::PipelineShaderStageCreateInfo> pipelineShaderStages = {
+		{ {}, vk::ShaderStageFlagBits::eVertex, vk::ShaderModule(vertexShaderModule), "main" },
+		{ {}, vk::ShaderStageFlagBits::eFragment, vk::ShaderModule(fragmentShaderModule), "main" }
 	};
 	
-	reflect(vsCode, "vs");
-	reflect(fsCode, "fs");
+	vso.reflect();
+	fso.reflect();
 	
 	// vertex input
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
@@ -224,8 +201,6 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		
 		cmdBuffer->end();
 	}
-	vertexShaderModule.reset(nullptr);
-	fragmentShaderModule.reset(nullptr);
 	// --------------------------------------------
 	// draw
 			

@@ -69,7 +69,7 @@ add_library(Rendering SHARED
 	#Serialization/StreamerPLY.cpp
 	#Serialization/StreamerXYZ.cpp
 	#Shader/Shader.cpp
-	#Shader/ShaderObjectInfo.cpp
+	Shader/ShaderObjectInfo.cpp
 	#Shader/ShaderUtils.cpp
 	#Shader/Uniform.cpp
 	#Shader/UniformRegistry.cpp

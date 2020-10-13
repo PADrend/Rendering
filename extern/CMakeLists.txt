@@ -132,6 +132,8 @@ if(NOT spirv-cross_POPULATED)
   add_subdirectory(${spirv-cross_SOURCE_DIR} ${spirv-cross_BINARY_DIR})
 endif()
 target_link_libraries(RenderingExtern INTERFACE spirv-cross-core)
+set_target_properties(spirv-cross-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 
 # ------------------------------------------------------------------------------
 # shaderc (glsl compiler required by vulkan)
@@ -154,7 +156,7 @@ if(NOT shaderc_POPULATED)
 endif()
 target_link_libraries(RenderingExtern INTERFACE shaderc)
 #target_link_libraries(RenderingExtern INTERFACE shaderc_spvc)
-#set_target_properties(shaderc PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(shaderc PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
 # volk - Meta loader for Vulkan API
