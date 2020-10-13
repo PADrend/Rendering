@@ -146,8 +146,8 @@ bool ImageStorage::init() {
 	if(vmaCreateImage(device->getAllocator(), &imageCreateInfo, &allocCreateInfo, &vkImage, &vmaAllocation, &allocationInfo) != VK_SUCCESS)
 		return false;
 	
-	handle = std::move(ImageHandle(vkImage, device->getApiHandle()));
-	allocation = std::move(AllocationHandle(vmaAllocation, device->getAllocator()));
+	handle = ImageHandle::create(vkImage, device->getApiHandle());
+	allocation = AllocationHandle::create(vmaAllocation, device->getAllocator());
 	return true;
 }
 

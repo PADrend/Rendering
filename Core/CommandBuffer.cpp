@@ -50,13 +50,7 @@ CommandBuffer::CommandBuffer(CommandPool* pool, bool primary) : pool(pool), prim
 
 //-----------------
 
-CommandBuffer::~CommandBuffer() {
-	if(!handle) return;
-	vk::Device vkDevice(handle);
-	vk::CommandBuffer vkCmd(handle);
-	vk::CommandPool vkPool(pool->getApiHandle());
-	vkDevice.freeCommandBuffers(vkPool, 1, &vkCmd);
-}
+CommandBuffer::~CommandBuffer() = default;
 
 //-----------------
 
@@ -73,10 +67,10 @@ bool CommandBuffer::init() {
 	if(buffers.empty() || !buffers.front())
 		return false;
 
-	handle = std::move(CommandBufferHandle(buffers.front(), vkDevice));
+	handle = CommandBufferHandle::create(buffers.front(), {vkDevice, vkPool});
 	if(handle)
 		state = Initial;
-	return handle;
+	return handle.isNotNull();
 }
 
 //-----------------

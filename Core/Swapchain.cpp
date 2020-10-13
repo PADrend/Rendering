@@ -100,7 +100,7 @@ bool Swapchain::init() {
 	auto vkSwapchain = vkDevice.createSwapchainKHR(swapchainCreateInfo);
 	if(!vkSwapchain)
 		return false;
-	handle = std::move(SwapchainHandle(vkSwapchain, vkDevice));
+	handle = SwapchainHandle::create(vkSwapchain, vkDevice);
 	
 	auto swapchainImages = vkDevice.getSwapchainImagesKHR(vkSwapchain);
 	imageCount = static_cast<uint32_t>(swapchainImages.size());
@@ -109,7 +109,7 @@ bool Swapchain::init() {
 	currentFence = 0;
 	presentFences.clear();
 	for(uint32_t i=0; i<imageCount; ++i) {
-		presentFences.emplace_back(vkDevice.createFence({vk::FenceCreateFlagBits::eSignaled}), vkDevice);
+		presentFences.emplace_back(FenceHandle::create(vkDevice.createFence({vk::FenceCreateFlagBits::eSignaled}), vkDevice));
 	}
 	
 	return updateFramebuffers();
@@ -128,7 +128,8 @@ bool Swapchain::updateFramebuffers() {
 	// Update FBOs
 	fbos.resize(imageCount);
 	for(uint32_t i=0; i<imageCount; ++i) {
-		ImageHandle imageHandle(swapchainImages[i], vkDevice, false);
+		auto imageHandle = ImageHandle::create(swapchainImages[i], vkDevice);
+		
 		auto image = ImageStorage::createFromHandle(device.get(), {format, MemoryUsage::GpuOnly, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT}, std::move(imageHandle));
 		auto texture = Texture::create(device.get(), image);
 		auto& fbo = fbos[i];

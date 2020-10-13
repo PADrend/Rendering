@@ -11,6 +11,8 @@
 
 #include <utility>
 
+#include <Util/ReferenceCounter.h>
+
 /** @defgroup rendering_core Core
  * Provides a low-level API to the rendering backend (Vulkan).
  */
@@ -31,26 +33,13 @@ struct HandlePair {
 	TypeB second = nullptr;
 };
 
+//----------------
+
 #define API_HANDLE_DECLARE(Handle) typedef struct Vk##Handle##_T* Vk##Handle
 #define API_HANDLE_DECLARE_MA(Handle) typedef struct Vma##Handle##_T* Vma##Handle
 
-#define API_BASE_HANDLE(HandleType, ApiType, ParentApiType) class HandleType##Handle { \
-public: \
-	HandleType##Handle() {} \
-	HandleType##Handle(const ApiType& handle, const ParentApiType& parent = nullptr, bool owner = true) : parent(parent), handle(handle), owner(owner) {} \
-	HandleType##Handle(const HandleType##Handle&) = delete; \
-	HandleType##Handle(HandleType##Handle&& rhs) { parent = std::move(rhs.parent); handle = std::move(rhs.handle); owner = std::move(rhs.owner); rhs.parent = nullptr; rhs.handle = nullptr; } \
-	~HandleType##Handle(); \
-	HandleType##Handle& operator =(const HandleType##Handle&) = delete; \
-	HandleType##Handle& operator =(HandleType##Handle&& rhs) { parent = std::move(rhs.parent); handle = std::move(rhs.handle); owner = std::move(rhs.owner); rhs.parent = nullptr; rhs.handle = nullptr; return *this; } \
-	operator bool() const { return handle; } \
-	operator const ParentApiType&() const { return parent; } \
-	operator const ApiType&() const { return handle; } \
-private: \
-	ParentApiType parent = nullptr; \
-	ApiType handle = nullptr; \
-	bool owner = true; \
-}
+#define API_BASE_HANDLE(HandleType, ApiType, ParentApiType) template<> ApiHandle<ApiType, ParentApiType>::~ApiHandle(); \
+	using HandleType##Handle = ApiHandle<ApiType, ParentApiType>::Ref;
 
 #define API_HANDLE(HandleType, ParentType) API_BASE_HANDLE(HandleType, Vk##HandleType, Vk##ParentType)
 #define API_HANDLE_KHR(HandleType, ParentType) API_BASE_HANDLE(HandleType, Vk##HandleType##KHR, Vk##ParentType)
@@ -91,6 +80,38 @@ namespace Rendering {
  * @{
  */
 
+//----------------
+
+template<class ApiType, class ParentApiType>
+class ApiHandle : public Util::ReferenceCounter<ApiHandle<ApiType,ParentApiType>> {
+public:
+	class Ref : public Util::Reference<ApiHandle<ApiType,ParentApiType>> {
+	public:
+		Ref() = default;
+		Ref(ApiHandle<ApiType,ParentApiType>* handle) : Util::Reference<ApiHandle<ApiType,ParentApiType>>(handle) {}
+		static Ref create(const ApiType& handle=nullptr, const ParentApiType& parent = nullptr) { return new ApiHandle<ApiType,ParentApiType>(handle, parent); }
+		operator const ApiType&() const { return this->get()->handle; }
+		operator const ParentApiType&() const { return this->get()->parent; }
+	};
+	~ApiHandle() {};
+	ApiHandle(ApiHandle&& rhs) { parent = std::move(rhs.parent); handle = std::move(rhs.handle); rhs.parent = nullptr; rhs.handle = nullptr; };
+	ApiHandle(const ApiHandle& rhs) = delete;
+	ApiHandle& operator=(ApiHandle&& rhs) = delete;
+	ApiHandle& operator=(const ApiHandle& rhs) = delete;
+
+	operator bool() const { return handle; }
+	operator const ParentApiType&() const { return parent; }
+	operator const ApiType&() const { return handle; }
+private:
+	ApiHandle() = default;
+	ApiHandle(const ApiType& handle, const ParentApiType& parent = nullptr) : parent(parent), handle(handle) {}
+	ApiType handle = nullptr;
+	ParentApiType parent = nullptr;
+};
+
+//----------------
+
+
 API_HANDLE(Instance, NullHandle);
 API_HANDLE(Device, PhysicalDevice);
 API_HANDLE_KHR(Surface, Instance);
@@ -102,7 +123,7 @@ API_HANDLE(Image, Device);
 API_HANDLE(ImageView, Device);
 API_HANDLE(Buffer, Device);
 API_HANDLE(BufferView, Device);
-API_HANDLE(CommandBuffer, Device);
+API_HANDLE_DUAL_PARENT(CommandBuffer, Device, CommandPool);
 API_HANDLE(CommandPool, Device);
 API_HANDLE(Framebuffer, Device);
 API_HANDLE(RenderPass, Device);

@@ -54,10 +54,10 @@ CommandBuffer::Ref CommandPool::requestCommandBuffer(bool primary) {
 
 CommandPool::CommandPool(const DeviceRef& device, uint32_t queueFamily) : device(device), queueFamily(queueFamily) {
 	vk::Device vkDevice(device->getApiHandle());
-	handle = std::move(CommandPoolHandle(vkDevice.createCommandPool({
+	handle = CommandPoolHandle::create(vkDevice.createCommandPool({
 		vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
 		queueFamily
-	}), vkDevice));
+	}), vkDevice);
 }
 
 //-----------------

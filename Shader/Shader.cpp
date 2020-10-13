@@ -184,8 +184,7 @@ bool Shader::compileProgram() {
 			return false;
 		auto& code = shaderObject.getCode();
 		Util::hash_combine(hash, Util::calcHash(reinterpret_cast<const uint8_t*>(code.data()), code.size() * sizeof(uint32_t)));
-		ShaderModuleHandle handle(vkDevice.createShaderModule({{}, static_cast<uint32_t>(code.size()) * sizeof(uint32_t), code.data()}), vkDevice);
-		shaderModules.emplace(shaderObject.getType(), std::move(handle));
+		shaderModules.emplace(shaderObject.getType(), ShaderModuleHandle::create(vkDevice.createShaderModule({{}, static_cast<uint32_t>(code.size()) * sizeof(uint32_t), code.data()}), vkDevice));
 	}
 	return true;
 }
@@ -262,10 +261,10 @@ bool Shader::linkProgram() {
 	for(auto& res : descriptorPools)
 		layouts.emplace_back(res.second->getLayout()->getApiHandle());
 
-	pipelineLayout = std::move(PipelineLayoutHandle(vkDevice.createPipelineLayout({{},
+	pipelineLayout = PipelineLayoutHandle::create(vkDevice.createPipelineLayout({{},
 		static_cast<uint32_t>(layouts.size()), layouts.data(),
 		static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data(),
-	}), vkDevice));
+	}), vkDevice);
 
 	return true;
 }

@@ -256,7 +256,7 @@ void FBO::init() {
 		static_cast<uint32_t>(attachmentDescs.size()), attachmentDescs.data(),
 		static_cast<uint32_t>(subpassDescs.size()), subpassDescs.data()
 	});
-	renderPass = std::move(RenderPassHandle(pass, vkDevice));
+	renderPass = RenderPassHandle::create(pass, vkDevice);
 
 	// Framebuffer
 	auto frameBuffer = vkDevice.createFramebuffer({{},
@@ -266,7 +266,7 @@ void FBO::init() {
 		attachmentCount ? getHeight() : 1,
 		attachmentCount ? layerCount : 1
 	});
-	handle = std::move(FramebufferHandle(frameBuffer, vkDevice));
+	handle = FramebufferHandle::create(frameBuffer, vkDevice);
 }
 
 //=========================================================================

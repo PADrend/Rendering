@@ -62,8 +62,8 @@ bool DescriptorSetLayout::init() {
 		bindings.emplace_back(binding);
 	}
 
-	handle = std::move(DescriptorSetLayoutHandle(vkDevice.createDescriptorSetLayout({{}, static_cast<uint32_t>(bindings.size()), bindings.data()}), vkDevice));
-	return handle;
+	handle = DescriptorSetLayoutHandle::create(vkDevice.createDescriptorSetLayout({{}, static_cast<uint32_t>(bindings.size()), bindings.data()}), vkDevice);
+	return handle.isNotNull();
 }
 
 //---------------

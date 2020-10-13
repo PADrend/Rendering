@@ -132,7 +132,7 @@ bool ImageView::init() {
 	if(!view)
 		return false;
 
-	handle = std::move(ImageViewHandle(view, vkDevice));	
+	handle = ImageViewHandle::create(view, vkDevice);	
 	return true;
 }
 

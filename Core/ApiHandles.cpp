@@ -12,42 +12,32 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
-#define API_NO_DESTROY(HandleType) HandleType##Handle::~HandleType##Handle() = default;
-#define API_DESTROY(HandleType, destroyFunction, ...) HandleType##Handle::~HandleType##Handle() { \
-	if(handle && owner) destroyFunction(__VA_ARGS__); \
-}
-
-#define API_DEFAULT_DESTROY_NO_PARENT(HandleType) API_DESTROY(HandleType, vkDestroy##HandleType, handle, nullptr)
-#define API_DEFAULT_DESTROY(HandleType) API_DESTROY(HandleType, vkDestroy##HandleType, parent, handle, nullptr)
-#define API_DEFAULT_DESTROY_KHR(HandleType) API_DESTROY(HandleType, vkDestroy##HandleType##KHR, parent, handle, nullptr)
-
 namespace Rendering {
-	
-API_DEFAULT_DESTROY_NO_PARENT(Instance)
-API_DEFAULT_DESTROY_NO_PARENT(Device)
-API_DEFAULT_DESTROY_KHR(Surface)
-API_DEFAULT_DESTROY_KHR(Swapchain)
-API_NO_DESTROY(Queue)
-API_DEFAULT_DESTROY(Fence)
-API_DEFAULT_DESTROY(Image)
-API_DEFAULT_DESTROY(ImageView)
-API_DEFAULT_DESTROY(Framebuffer)
-API_DEFAULT_DESTROY(RenderPass)
-API_DEFAULT_DESTROY(CommandPool)
-API_NO_DESTROY(CommandBuffer)
-API_NO_DESTROY(Memory)
-API_DEFAULT_DESTROY(Buffer)
-API_DEFAULT_DESTROY(BufferView)
-API_DEFAULT_DESTROY(Pipeline)
-API_DEFAULT_DESTROY(PipelineCache)
-API_DEFAULT_DESTROY(PipelineLayout)
-API_DEFAULT_DESTROY(ShaderModule)
-API_DEFAULT_DESTROY(DescriptorSetLayout);
-API_DEFAULT_DESTROY(DescriptorPool);
-API_DEFAULT_DESTROY(Sampler)
 
-API_DESTROY(DescriptorSet, vkFreeDescriptorSets, parent.first, parent.second, 1, &handle);
-API_DESTROY(Allocator, vmaDestroyAllocator, handle);
-API_DESTROY(Allocation, vmaFreeMemory, parent, handle);
+template<> ApiHandle<VkInstance, VkNullHandle>::~ApiHandle() { if(handle) vkDestroyInstance(handle, nullptr); }
+template<> ApiHandle<VkDevice, VkPhysicalDevice>::~ApiHandle() { if(handle) vkDestroyDevice(handle, nullptr); }
+template<> ApiHandle<VkSurfaceKHR, VkInstance>::~ApiHandle() { if(handle) vkDestroySurfaceKHR(parent, handle, nullptr); }
+template<> ApiHandle<VkSwapchainKHR, VkDevice>::~ApiHandle() { if(handle) vkDestroySwapchainKHR(parent, handle, nullptr); }
+template<> ApiHandle<VkQueue, VkDevice>::~ApiHandle() { }
+template<> ApiHandle<VkFence, VkDevice>::~ApiHandle() { if(handle) vkDestroyFence(parent, handle, nullptr); }
+template<> ApiHandle<VkImage, VkDevice>::~ApiHandle() { if(handle) vkDestroyImage(parent, handle, nullptr); }
+template<> ApiHandle<VkImageView, VkDevice>::~ApiHandle() { if(handle) vkDestroyImageView(parent, handle, nullptr); }
+template<> ApiHandle<VkFramebuffer, VkDevice>::~ApiHandle() { if(handle) vkDestroyFramebuffer(parent, handle, nullptr); }
+template<> ApiHandle<VkRenderPass, VkDevice>::~ApiHandle() { if(handle) vkDestroyRenderPass(parent, handle, nullptr); }
+template<> ApiHandle<VkCommandPool, VkDevice>::~ApiHandle() { if(handle) vkDestroyCommandPool(parent, handle, nullptr); }
+template<> ApiHandle<VkCommandBuffer, HandlePair<VkDevice,VkCommandPool>>::~ApiHandle() { if(handle) vkFreeCommandBuffers(parent.first, parent.second, 1, &handle); }
+template<> ApiHandle<VkMemory, VkDevice>::~ApiHandle() { }
+template<> ApiHandle<VkBuffer, VkDevice>::~ApiHandle() { if(handle) vkDestroyBuffer(parent, handle, nullptr); }
+template<> ApiHandle<VkBufferView, VkDevice>::~ApiHandle() { if(handle) vkDestroyBufferView(parent, handle, nullptr); }
+template<> ApiHandle<VkPipeline, VkDevice>::~ApiHandle() { if(handle) vkDestroyPipeline(parent, handle, nullptr); }
+template<> ApiHandle<VkPipelineCache, VkDevice>::~ApiHandle() { if(handle) vkDestroyPipelineCache(parent, handle, nullptr); }
+template<> ApiHandle<VkPipelineLayout, VkDevice>::~ApiHandle() { if(handle) vkDestroyPipelineLayout(parent, handle, nullptr); }
+template<> ApiHandle<VkShaderModule, VkDevice>::~ApiHandle() { if(handle) vkDestroyShaderModule(parent, handle, nullptr); }
+template<> ApiHandle<VkDescriptorSetLayout, VkDevice>::~ApiHandle() { if(handle) vkDestroyDescriptorSetLayout(parent, handle, nullptr); }
+template<> ApiHandle<VkDescriptorPool, VkDevice>::~ApiHandle() { if(handle) vkDestroyDescriptorPool(parent, handle, nullptr); }
+template<> ApiHandle<VkSampler, VkDevice>::~ApiHandle() { if(handle) vkDestroySampler(parent, handle, nullptr); }
+template<> ApiHandle<VkDescriptorSet, HandlePair<VkDevice,VkDescriptorPool>>::~ApiHandle() { if(handle) vkFreeDescriptorSets(parent.first, parent.second, 1, &handle); }
+template<> ApiHandle<VmaAllocator, VkDevice>::~ApiHandle() { if(handle) vmaDestroyAllocator(handle); }
+template<> ApiHandle<VmaAllocation, VmaAllocator>::~ApiHandle() { if(handle) vmaFreeMemory(parent, handle); }
 
 } /* Rendering */

@@ -109,7 +109,7 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 	if(!vkInstance)
 		return false;
 	
-	instance = std::move(InstanceHandle(vkInstance));
+	instance = InstanceHandle::create(vkInstance);
 	
 	// setup debug callback
 	dldy.init(vkInstance, vkGetInstanceProcAddr);
@@ -235,7 +235,7 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 	
 	// Create handle
 	dldy.init(vkInstance, vkDevice);
-	apiHandle = std::move(DeviceHandle(vkDevice, physicalDevice));
+	apiHandle = DeviceHandle::create(vkDevice, physicalDevice);
 
 	// Create command queues & pools
 	queues.clear();
@@ -294,7 +294,7 @@ bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, cons
 	if(vmaCreateAllocator(&allocatorInfo, &vmaAllocator) != VK_SUCCESS)
 		return false;
 
-	allocator = std::move(AllocatorHandle(vmaAllocator, apiHandle));
+	allocator = AllocatorHandle::create(vmaAllocator, apiHandle);
 	return true;
 }
 
@@ -477,7 +477,7 @@ bool Device::init(const Configuration& config) {
 		WARN("Device: Could not create Vulkan surface.");
 		return false;
 	}
-	internal->surface = std::move(SurfaceHandle(surface, internal->instance));
+	internal->surface = SurfaceHandle::create(surface, internal->instance);
 
 	if(!internal->createLogicalDevice(this, config)) {
 		WARN("Device: Could not create Vulkan device.");

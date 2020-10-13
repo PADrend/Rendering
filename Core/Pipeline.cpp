@@ -82,8 +82,8 @@ static vk::CompareOp convertCompareOp(const ComparisonFunc& op) {
 		case ComparisonFunc::NotEqual: return vk::CompareOp::eNotEqual;
 		case ComparisonFunc::GreaterOrEqual: return vk::CompareOp::eGreaterOrEqual;
 		case ComparisonFunc::Always: return vk::CompareOp::eAlways;
+		default: return vk::CompareOp::eNever;
 	}
-	return vk::CompareOp::eNever;
 }
 
 //---------------
@@ -336,9 +336,9 @@ bool Pipeline::initGraphics(const PipelineCacheRef& cache) {
 		info.basePipelineHandle = parent->handle;
 
 	// Create pipeline
-	handle = std::move(PipelineHandle(vkDevice.createGraphicsPipeline(vkCache, info), vkDevice));
+	handle = PipelineHandle::create(vkDevice.createGraphicsPipeline(vkCache, info), vkDevice);
 	
-	return handle;
+	return handle.isNotNull();
 }
 
 //---------------
@@ -377,8 +377,8 @@ bool Pipeline::initCompute(const PipelineCacheRef& cache) {
 		info.basePipelineHandle = parent->handle;
 		
 	// Create pipeline
-	handle = std::move(PipelineHandle(vkDevice.createComputePipeline(vkCache, info), vkDevice));	
-	return handle;
+	handle = PipelineHandle::create(vkDevice.createComputePipeline(vkCache, info), vkDevice);	
+	return handle.isNotNull();
 }
 
 //---------------

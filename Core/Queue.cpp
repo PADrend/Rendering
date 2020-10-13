@@ -75,7 +75,7 @@ Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : de
 	vk::PhysicalDevice physicalDevice(device->getApiHandle());
 	vk::SurfaceKHR surface(device->getSurface());
 
-	handle = QueueHandle(vkDevice.getQueue(familyIndex, index), vkDevice);
+	handle = QueueHandle::create(vkDevice.getQueue(familyIndex, index), vkDevice);
 	auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
 	QueueFamily isPresent = physicalDevice.getSurfaceSupportKHR(familyIndex, surface) ? QueueFamily::Present : QueueFamily::None;
 	QueueFamily isGraphics = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eGraphics) ? QueueFamily::Graphics : QueueFamily::None;

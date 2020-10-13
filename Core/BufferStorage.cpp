@@ -118,8 +118,8 @@ bool BufferStorage::init() {
 	if(config.persistent)
 		mappedPtr = static_cast<uint8_t*>(allocationInfo.pMappedData);
 	
-	handle = std::move(BufferHandle(vkBuffer, device->getApiHandle()));
-	allocation = std::move(AllocationHandle(vmaAllocation, device->getAllocator()));
+	handle = BufferHandle::create(vkBuffer, device->getApiHandle());
+	allocation = AllocationHandle::create(vmaAllocation, device->getAllocator());
 	return true;
 }
 

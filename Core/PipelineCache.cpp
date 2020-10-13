@@ -32,7 +32,7 @@ PipelineCache::PipelineCache(const DeviceRef& device) : device(device) { }
 
 bool PipelineCache::init() {
 	vk::Device vkDevice(device->getApiHandle());
-	handle = std::move(PipelineCacheHandle(vkDevice.createPipelineCache({}), vkDevice));
+	handle = PipelineCacheHandle::create(vkDevice.createPipelineCache({}), vkDevice);
 	return true;
 }
 

@@ -47,11 +47,11 @@ static DescriptorPoolHandle createPool(const DeviceRef& device, const ShaderReso
 		if(it.second > 0)
 			poolSizes.emplace_back(it.first, it.second * maxDescriptorCount);
 
-	return {vkDevice.createDescriptorPool({
+	return DescriptorPoolHandle::create(vkDevice.createDescriptorPool({
 		vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
 		maxDescriptorCount,
 		static_cast<uint32_t>(poolSizes.size()), poolSizes.data()
-	}), vkDevice};
+	}), vkDevice);
 }
 
 //-----------------
@@ -90,11 +90,7 @@ DescriptorSetRef DescriptorPool::request() {
 			vkPool, 1, &vkLayout
 		}).front();
 		freeDescriptorIds.emplace_back(descriptors.size());
-		descriptors.emplace_back(
-			static_cast<VkDescriptorSet>(vkDescriptor), 
-			static_cast<VkDevice>(vkDevice), 
-			static_cast<VkDescriptorPool>(vkPool)
-		);
+		descriptors.emplace_back(DescriptorSetHandle::create(vkDescriptor, {vkDevice, vkPool}));
 		++poolCounter;
 		return request();
 	} else {
@@ -126,8 +122,9 @@ void DescriptorPool::reset() {
 //-----------------
 
 const DescriptorSetHandle& DescriptorPool::getDescriptorHandle(uint32_t id) const {
+	static DescriptorSetHandle nullHandle;
 	if(id < descriptors.size())
-		return nullptr;
+		return nullHandle;
 	return descriptors[id];
 }
 

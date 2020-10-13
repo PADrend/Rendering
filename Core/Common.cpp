@@ -108,6 +108,53 @@ vk::AccessFlags getVkAccessMask(const ResourceUsage& usage) {
 		default: return {};
 	};
 }
+//-----------------
+
+vk::Filter getVkFilter(const ImageFilter& filter) {
+	switch(filter) {
+		case Nearest: return vk::Filter::eNearest;
+		case Linear: return vk::Filter::eLinear;
+		default: return {};
+	}
+};
+
+//-----------------
+
+vk::SamplerMipmapMode getVkMipmapMode(const ImageFilter& filter) {
+	switch(filter) {
+		case Nearest: return vk::SamplerMipmapMode::eNearest;
+		case Linear: return vk::SamplerMipmapMode::eLinear;
+		default: return {};
+	}
+};
+
+//-----------------
+
+vk::SamplerAddressMode getVkAddressMode(const ImageAddressMode& filter) {
+	switch(filter) {
+		case Repeat: return vk::SamplerAddressMode::eRepeat;
+		case MirroredRepeat: return vk::SamplerAddressMode::eMirroredRepeat;
+		case ClampToEdge: return vk::SamplerAddressMode::eClampToEdge;
+		case ClampToBorder: return vk::SamplerAddressMode::eClampToBorder;
+		default: return {};
+	}
+};
+
+//-----------------
+
+vk::CompareOp getVkCompareOp(const ComparisonFunc& op) {
+	switch(op) {
+		case ComparisonFunc::Never: return vk::CompareOp::eNever;
+		case ComparisonFunc::Less: return vk::CompareOp::eLess;
+		case ComparisonFunc::Equal: return vk::CompareOp::eEqual;
+		case ComparisonFunc::LessOrEqual: return vk::CompareOp::eLessOrEqual;
+		case ComparisonFunc::Greater: return vk::CompareOp::eGreater;
+		case ComparisonFunc::NotEqual: return vk::CompareOp::eNotEqual;
+		case ComparisonFunc::GreaterOrEqual: return vk::CompareOp::eGreaterOrEqual;
+		case ComparisonFunc::Always: return vk::CompareOp::eAlways;
+		default: return vk::CompareOp::eNever;
+	}
+}
 
 //-----------------
 
@@ -157,6 +204,7 @@ vk::BufferUsageFlags getVkBufferUsage(const ResourceUsage& usage) {
 		case ResourceUsage::IndirectBuffer: flags |= vk::BufferUsageFlagBits::eIndirectBuffer; break;
 		default: flags |= vk::BufferUsageFlags(VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM);
 	}
+	return flags;
 }
 
 //-----------------
@@ -234,8 +282,8 @@ std::string toString(ShaderResourceType type) {
 		case ShaderResourceType::BufferStorage: return "BufferStorage";
 		case ShaderResourceType::PushConstant: return "PushConstant";
 		case ShaderResourceType::SpecializationConstant: return "SpecializationConstant";
+		default: return "";
 	}
-	return "";
 }
 
 //-----------------

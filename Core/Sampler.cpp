@@ -18,51 +18,10 @@ namespace Rendering {
 
 //---------------
 
-static vk::Filter getVkFilter(ImageFilter filter) {
-	switch(filter) {
-		case Nearest: return vk::Filter::eNearest;
-		case Linear: return vk::Filter::eLinear;
-		default: return {};
-	}
-};
-
-//---------------
-
-static vk::SamplerMipmapMode getVkMipmapMode(ImageFilter filter) {
-	switch(filter) {
-		case Nearest: return vk::SamplerMipmapMode::eNearest;
-		case Linear: return vk::SamplerMipmapMode::eLinear;
-		default: return {};
-	}
-};
-
-//---------------
-
-static vk::SamplerAddressMode getVkAddressMode(ImageAddressMode filter) {
-	switch(filter) {
-		case Repeat: return vk::SamplerAddressMode::eRepeat;
-		case MirroredRepeat: return vk::SamplerAddressMode::eMirroredRepeat;
-		case ClampToEdge: return vk::SamplerAddressMode::eClampToEdge;
-		case ClampToBorder: return vk::SamplerAddressMode::eClampToBorder;
-		default: return {};
-	}
-};
-
-//---------------
-
-static vk::CompareOp getVkCompareOp(const ComparisonFunc& op) {
-	switch(op) {
-		case ComparisonFunc::Never: return vk::CompareOp::eNever;
-		case ComparisonFunc::Less: return vk::CompareOp::eLess;
-		case ComparisonFunc::Equal: return vk::CompareOp::eEqual;
-		case ComparisonFunc::LessOrEqual: return vk::CompareOp::eLessOrEqual;
-		case ComparisonFunc::Greater: return vk::CompareOp::eGreater;
-		case ComparisonFunc::NotEqual: return vk::CompareOp::eNotEqual;
-		case ComparisonFunc::GreaterOrEqual: return vk::CompareOp::eGreaterOrEqual;
-		case ComparisonFunc::Always: return vk::CompareOp::eAlways;
-	}
-	return vk::CompareOp::eNever;
-}
+vk::Filter getVkFilter(const ImageFilter& filter);
+vk::SamplerMipmapMode getVkMipmapMode(const ImageFilter& filter);
+vk::SamplerAddressMode getVkAddressMode(const ImageAddressMode& filter);
+vk::CompareOp getVkCompareOp(const ComparisonFunc& op);
 
 //---------------
 
@@ -83,7 +42,7 @@ Sampler::Sampler(const DeviceRef& device, const Configuration& config) : device(
 
 bool Sampler::init() {
 	vk::Device vkDevice(device->getApiHandle());
-	handle = std::move(SamplerHandle(vkDevice.createSampler({{},
+	handle = SamplerHandle::create(vkDevice.createSampler({{},
 		getVkFilter(config.magFilter), getVkFilter(config.minFilter), getVkMipmapMode(config.mipmapMode),
 		getVkAddressMode(config.addressModeU), getVkAddressMode(config.addressModeV), getVkAddressMode(config.addressModeW),
 		config.mipLodBias,
@@ -91,8 +50,8 @@ bool Sampler::init() {
 		config.compareOp != ComparisonFunc::Disabled, getVkCompareOp(config.compareOp),
 		config.minLod, config.maxLod,
 		vk::BorderColor::eFloatTransparentBlack, false
-	}), vkDevice));
-	return handle;
+	}), vkDevice);
+	return handle.isNotNull();
 }
 
 //---------------
