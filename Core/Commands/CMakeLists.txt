@@ -13,6 +13,7 @@ target_sources(Rendering PRIVATE
 	Core/Commands/CopyCommands.cpp
 	Core/Commands/DrawCommands.cpp
 	Core/Commands/DynamicStateCommands.cpp
+	Core/Commands/QueryCommands.cpp
 )
 
 # Install the header files

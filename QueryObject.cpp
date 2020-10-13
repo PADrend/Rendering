@@ -14,6 +14,7 @@
 #include "Context/RenderingContext.h"
 #include "Core/Device.h"
 #include "Core/CommandBuffer.h"
+#include "Core/Commands/QueryCommands.h"
 
 #include <Util/Macros.h>
 #include <algorithm>
@@ -23,88 +24,29 @@
 
 namespace Rendering {
 
-class QueryCommand : public Command {
-PROVIDES_TYPE_NAME(QueryCommand)
-public:
-	enum Mode {
-		Begin, End
-	};
-	QueryCommand(Mode mode, const Query& query) : mode(mode), query(query) {}
+//---------------------------------------
 
-	bool compile(CompileContext& context) override;
-private:
-	Mode mode;
-	Query query;
-};
-
-//-------------
-
-bool QueryCommand::compile(CompileContext& context) {
-	vk::CommandBuffer vkCmd(context.cmd);
-	vk::QueryPool pool(context.device->getQueryPool()->getPoolHandle(query));
-	switch(mode) {
-		case Mode::Begin:
-			vkCmd.resetQueryPool(pool, query.id, 1);
-			vkCmd.beginQuery(pool, query.id, {});
-			break;
-		case Mode::End:
-			vkCmd.endQuery(pool, query.id);
-			break;
-	}
-	return true;
-}
+QueryObject::QueryObject(QueryType _queryType) : QueryObject(Device::getDefault(), _queryType) {}
 
 //---------------------------------------
 
-class TimeElapsedQueryCommand : public Command {
-PROVIDES_TYPE_NAME(TimeElapsedQueryCommand)
-public:
-	enum Mode {
-		Begin, End, Timestamp
-	};
-	TimeElapsedQueryCommand(Mode mode, const Query& query, const Query& endQuery) : mode(mode), query(query), endQuery(endQuery) {}
-
-	bool compile(CompileContext& context) override;
-private:
-	Mode mode;
-	Query query;
-	Query endQuery;
-};
-
-//-------------
-
-bool TimeElapsedQueryCommand::compile(CompileContext& context) {
-	vk::CommandBuffer vkCmd(context.cmd);
-	vk::QueryPool pool(context.device->getQueryPool()->getPoolHandle(query));
-	switch(mode) {
-		case Mode::Begin:
-		case Mode::Timestamp:
-			vkCmd.resetQueryPool(pool, query.id, 1);
-			vkCmd.resetQueryPool(pool, endQuery.id, 1);
-			vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, query.id);
-			break;
-		case Mode::End:
-			vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, endQuery.id);
-			break;
-	}
-	return true;
-}
-
-//---------------------------------------
-
-QueryObject::QueryObject(QueryType _queryType) {
+QueryObject::QueryObject(const DeviceRef& device, QueryType _queryType) {
 	query.type = _queryType;
-	query = Device::getDefault()->getQueryPool()->request(query.type);
+	query = device->getQueryPool()->request(query.type);
 	if(query.type == QueryType::TimeElapsed)
-		endQuery = Device::getDefault()->getQueryPool()->request(query.type);
+		endQuery = device->getQueryPool()->request(query.type);
 }
+
+//------------------
 
 QueryObject::~QueryObject() {
 	if(isValid())
 		query.pool->free(query);
 }
 
-bool QueryObject::isResultAvailable(RenderingContext& rc) const {
+//------------------
+
+bool QueryObject::isResultAvailable() const {
 	if(!isValid())
 		return false;
 	auto pool = query.pool->getPoolHandle(query);
@@ -114,11 +56,10 @@ bool QueryObject::isResultAvailable(RenderingContext& rc) const {
 	return vkDevice.getQueryPoolResults(vkPool, (query.type == QueryType::TimeElapsed) ? endQuery.id : query.id, 1, sizeof(result), &result, 0, {}) == vk::Result::eSuccess;
 }
 
-uint32_t QueryObject::getResult(RenderingContext& rc) const {
-	if(!isValid())
-		return 0;
-	if(!isResultAvailable(rc))
-		rc.flush();
+//------------------
+
+uint32_t QueryObject::getResult() const {
+	WARN_AND_RETURN_IF(!isValid(), "QueryObject: getResult() Invalid query.", 0);
 	auto pool = query.pool->getPoolHandle(query);
 	vk::Device vkDevice(pool);
 	vk::QueryPool vkPool(pool);
@@ -133,12 +74,19 @@ uint32_t QueryObject::getResult(RenderingContext& rc) const {
 	return result;
 }
 
-uint64_t QueryObject::getResult64(RenderingContext& rc) const {
-	if(!isValid())
-		return 0;
-	if(!isResultAvailable(rc))
+//------------------
+
+uint32_t QueryObject::getResult(RenderingContext& rc) const {
+	if(!isResultAvailable())
 		rc.flush();
-	auto pool = rc.getDevice()->getQueryPool()->getPoolHandle(query);
+	return getResult();
+}
+
+//------------------
+
+uint64_t QueryObject::getResult64() const {
+	WARN_AND_RETURN_IF(!isValid(), "QueryObject: getResult64() Invalid query.", 0);
+	auto pool = query.pool->getPoolHandle(query);
 	vk::Device vkDevice(pool);
 	vk::QueryPool vkPool(pool);
 	vk::QueryResultFlags flags = vk::QueryResultFlagBits::eWait | vk::QueryResultFlagBits::e64;
@@ -152,9 +100,18 @@ uint64_t QueryObject::getResult64(RenderingContext& rc) const {
 	return result;
 }
 
-void QueryObject::begin(RenderingContext& rc) const {
+//------------------
+
+uint64_t QueryObject::getResult64(RenderingContext& rc) const {
+	if(!isResultAvailable())
+		rc.flush();
+	return getResult64();
+}
+
+//------------------
+
+void QueryObject::begin(const CommandBufferRef& cmd) const {
 	WARN_AND_RETURN_IF(query.type == QueryType::Timestamp, "QueryObject: begin() is not allowed for Timestamp queries.",);
-	auto cmd = rc.getCommandBuffer();
 	cmd->endRenderPass();
 	if(query.type == QueryType::TimeElapsed) {
 		cmd->addCommand(new TimeElapsedQueryCommand(TimeElapsedQueryCommand::Begin, query, endQuery));
@@ -163,12 +120,18 @@ void QueryObject::begin(RenderingContext& rc) const {
 	}
 }
 
-void QueryObject::end(RenderingContext& rc) const {
+//------------------
+
+void QueryObject::begin(RenderingContext& rc) const {
+	begin(rc.getCommandBuffer());
+}
+
+//------------------
+
+void QueryObject::end(const CommandBufferRef& cmd) const {
 	WARN_AND_RETURN_IF(query.type == QueryType::Timestamp, "QueryObject: end() is not allowed for Timestamp queries.",);
 	if(!isValid())
 		return;
-	auto cmd = rc.getCommandBuffer();
-	cmd->endRenderPass();
 	if(query.type == QueryType::TimeElapsed) {
 		cmd->addCommand(new TimeElapsedQueryCommand(TimeElapsedQueryCommand::End, query, endQuery));
 	} else {
@@ -176,11 +139,43 @@ void QueryObject::end(RenderingContext& rc) const {
 	}
 }
 
-void QueryObject::queryCounter(RenderingContext& rc) const {
-	WARN_AND_RETURN_IF(query.type != QueryType::Timestamp, "QueryObject: queryCounter() is only allowed for Timestamp queries.",);
-	auto cmd = rc.getCommandBuffer();
+//------------------
+
+void QueryObject::end(RenderingContext& rc) const {
+	end(rc.getCommandBuffer());
+}
+
+//------------------
+
+void QueryObject::reset(const CommandBufferRef& cmd) const {
+	if(!isValid())
+		return;
 	cmd->endRenderPass();
+	cmd->addCommand(new ResetQueryCommand(query));
+	if(query.type == QueryType::TimeElapsed) {
+		cmd->addCommand(new ResetQueryCommand(endQuery));
+	}
+}
+
+//------------------
+
+void QueryObject::reset(RenderingContext& rc) const {
+	reset(rc.getCommandBuffer());
+}
+
+//------------------
+
+void QueryObject::timestamp(const CommandBufferRef& cmd) const {
+	WARN_AND_RETURN_IF(query.type != QueryType::Timestamp, "QueryObject: timestamp() is only allowed for Timestamp queries.",);
 	cmd->addCommand(new TimeElapsedQueryCommand(TimeElapsedQueryCommand::Timestamp, query, endQuery));
 }
+
+//------------------
+
+void QueryObject::timestamp(RenderingContext& rc) const {
+	timestamp(rc.getCommandBuffer());
+}
+
+//------------------
 
 }

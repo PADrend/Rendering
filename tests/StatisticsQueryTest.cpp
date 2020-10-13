@@ -13,9 +13,15 @@
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
 #include <Rendering/Context/RenderingContext.h>
-#include <Rendering/Texture/Texture.h>
 #include <Rendering/Draw.h>
 #include <Rendering/StatisticsQuery.h>
+#include <Rendering/OcclusionQuery.h>
+#include <Rendering/State/PipelineState.h>
+
+#include <Util/Graphics/ColorLibrary.h>
+
+#include <Geometry/Matrix4x4.h>
+#include <Geometry/SRT.h>
 
 #define REQUIRE_EQUAL(a,b) REQUIRE((a) == (b))
 
@@ -26,7 +32,6 @@ using namespace Rendering;
 static void testEmptyStatisticsQuery(StatisticsQuery & query, const uint32_t expectedResult) {
 	SECTION("testEmptyStatisticsQuery") {
 		RenderingContext& context = *TestUtils::context.get();
-		context.setTexture(0, nullptr);
 		REQUIRE(query.isValid());
 		query.begin(context);
 		query.end(context);
@@ -37,7 +42,6 @@ static void testEmptyStatisticsQuery(StatisticsQuery & query, const uint32_t exp
 static void testBoxStatisticsQuery(StatisticsQuery & query, const uint32_t expectedResult) {
 	SECTION("testBoxStatisticsQuery") {
 		RenderingContext& context = *TestUtils::context.get();
-		context.setTexture(0, nullptr);
 		REQUIRE(query.isValid());
 		query.begin(context);
 		drawBox(context, box);
@@ -131,4 +135,28 @@ TEST_CASE("StatisticsQueryTest_testClippingOutputPrimitivesQuery", "[StatisticsQ
 		query.end(context);
 		REQUIRE(4 <= query.getResult(context));
 	}
+}
+
+
+TEST_CASE("StatisticsQueryTest_testOcclusionQuery", "[StatisticsQueryTest]") {
+	RenderingContext& context = *TestUtils::context.get();
+	const Geometry::Box box1(Geometry::Vec3f(0.0f, 0.0f, 0.0f), 1.0f);
+	const Geometry::Box box2(Geometry::Vec3f(0.0f, 0.0f, 0.0f), 0.5f);
+
+	OcclusionQuery query1;
+	OcclusionQuery query2;
+	REQUIRE(query1.isValid());
+	REQUIRE(query2.isValid());
+	
+	context.clearScreen({0,0,0,0});
+	query1.begin(context);
+	drawBox(context, box1);
+	query1.end(context);
+		
+	query2.begin(context);
+	drawBox(context, box2);
+	query2.end(context);		
+		
+	REQUIRE(0 < query1.getResult(context));
+	REQUIRE(0 == query2.getResult(context));
 }

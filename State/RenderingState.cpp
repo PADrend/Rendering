@@ -57,6 +57,9 @@ static const Uniform::UniformName UNIFORM_SG_MATERIAL_DIFFUSE("sg_Material.diffu
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_SPECULAR("sg_Material.specular");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_EMISSION("sg_Material.emission");
 
+// vulkan used right-handed coordinate system with depth-range [-1,1], therefore we need the correction.
+static const Geometry::Matrix4x4 ndcCorrection(1,0,0,0,0,-1,0,0,0,0,0.5,0.5,0,0,0,1);
+
 //----------------
 
 CameraData::CameraData(CameraData&& o) {
@@ -449,10 +452,12 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 	bool cc = false;
 	if (forced || camera.isDirty()) {
 		cc = true;
+		auto corrected = ndcCorrection * camera.getMatrixCameraToClipping();
+		auto correctedInv = corrected.inverse();
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_WORLD_TO_CAMERA, camera.getMatrixWorldToCamera());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_WORLD, camera.getMatrixCameraToWorld());
-		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING, camera.getMatrixCameraToClipping());
-		uniforms.emplace_back(UNIFORM_SG_MATRIX_CLIPPING_TO_CAMERA, camera.getMatrixClippingToCamera());
+		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING, corrected);
+		uniforms.emplace_back(UNIFORM_SG_MATRIX_CLIPPING_TO_CAMERA, correctedInv);
 		camera.clearDirty();
 	}
 

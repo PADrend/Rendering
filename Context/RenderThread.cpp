@@ -49,6 +49,8 @@ uint64_t RenderThread::_addTask(const Task& task) {
 //---------------
 
 void RenderThread::_sync(uint64_t taskId) {
+	if(processedCount >= taskId)
+		return;
 	std::unique_lock<std::mutex> lock(processedMutex);
 	processedCond.wait(lock, [&]{ return processedCount >= taskId || !running; });
 }

@@ -22,10 +22,12 @@
 #include "../Core/Swapchain.h"
 #include "../Core/ImageStorage.h"
 #include "../Core/ImageView.h"
+#include "../Core/Commands/QueryCommands.h"
 #include "../FBO.h"
 #include "../Texture/Texture.h"
 #include "../Shader/Shader.h"
 #include "../BufferObject.h"
+#include "../OcclusionQuery.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
 #include <cstdint>
@@ -126,21 +128,28 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	// --------------------------------------------
 	// draw
 
+	OcclusionQuery query;
+
 	auto angle = Geometry::Angle::deg(0);
 	for(uint_fast32_t round = 0; round < 1000; ++round) {
 		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
 		cmdBuffer->setPipeline(state);
+
+		query.reset(cmdBuffer);
+		query.begin(cmdBuffer);
 
 		cmdBuffer->beginRenderPass();
 		cmdBuffer->bindVertexBuffers(0, {vertexBuffer1, vertexBuffer2});
 		cmdBuffer->pushConstants(angle.deg());
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
-				
+		query.end(cmdBuffer);
+		
 		auto& fbo = device->getSwapchain()->getCurrentFBO();
 		cmdBuffer->prepareForPresent();
 		cmdBuffer->submit();
 		device->present();
+		REQUIRE(query.getResult() > 0);
 
 		angle += Geometry::Angle::deg(0.01);
 	}

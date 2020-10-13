@@ -33,7 +33,6 @@
 		vertex.texCoord = sg_TexCoord0;
 		
 		gl_Position = sg_matrix_cameraToClipping * vec4(vertex.position, 1.0);
-		gl_Position.y = -gl_Position.y; // Vulkan uses right hand NDC
 	}
 #endif
 

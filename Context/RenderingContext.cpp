@@ -152,6 +152,7 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->dummyTexture->allocateLocalData();
 	internal->dummyTexture->clear({1,1,1,1});
 	internal->dummyTexture->upload(ResourceUsage::ShaderResource);
+	setTexture(0, nullptr);
 
 	//// Initially enable the depth test.
 	internal->cmd->getPipeline().getDepthStencilState().setDepthTestEnabled(true);
@@ -168,6 +169,9 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(device->getWindow()->getWidth()), static_cast<int32_t>(device->getWindow()->getHeight())};
 	setViewport({windowRect}, {windowRect});
 	setWindowClientArea(windowRect);
+
+	// set default camera matrix
+	setMatrix_cameraToClipping(Geometry::Matrix4x4::orthographicProjection(-1, 1, -1, 1, -1, 1));
 
 	applyChanges();
 }
@@ -210,8 +214,9 @@ const RenderingState& RenderingContext::getRenderingState() const{
 
 void RenderingContext::flush(bool wait) {
 	SCOPED_PROFILING_COND("flush", PROFILING_CONDITION);
-	internal->activeVBOs.clear();
-	internal->activeIBO = nullptr;
+	if(internal->cmd->getCommandCount() == 0)
+		return;
+
 	auto cmd = internal->cmd;
 	RenderThread::addTask([&,cmd]() {
 		cmd->submit(wait);
@@ -222,6 +227,9 @@ void RenderingContext::flush(bool wait) {
 	newCmd->setPipeline(cmd->getPipeline());
 	newCmd->setFBO(cmd->getFBO());
 	internal->cmd = newCmd;
+
+	internal->activeVBOs.clear();
+	internal->activeIBO = nullptr;
 	applyChanges();
 }
 

@@ -209,19 +209,18 @@ void CommandBuffer::flush() {
 
 void CommandBuffer::submit(bool wait) {
 	WARN_AND_RETURN_IF(!primary, "Cannot submit secondary command buffer.",);
-	auto compileAndSubmit = [&] () {
+	//auto compileAndSubmit = [&] () {
 		if(compile()) {
 			queue->submit(this);
 			if(wait) queue->wait();
 		}
-	};
-	if(RenderThread::isInRenderThread()) {
-		compileAndSubmit();
+	//};
+	/*if(RenderThread::isInRenderThread()) {
 	} else {
 		auto index = RenderThread::addTask(compileAndSubmit);
 		if(wait)
 			RenderThread::sync(index);
-	}
+	}*/
 }
 
 //-----------------

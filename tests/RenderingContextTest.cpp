@@ -88,13 +88,13 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	// matrices
 
 	auto projection = Geometry::Matrix4x4::perspectiveProjection( Geometry::Angle::deg(60), 1, 0.1, 10 );
-	context.setMatrix_cameraToClipping(projection);
+	context.pushAndSetMatrix_cameraToClipping(projection);
 
 	Geometry::SRT camera;
 	camera.setTranslation({1.5,1.5,1.5});
 	camera.setRotation({1,1,1},{0,1,0});
 	context.setMatrix_cameraToWorld(Geometry::Matrix4x4{camera});
-	context.setMatrix_modelToCamera(context.getMatrix_worldToCamera());
+	context.pushMatrix_modelToCamera();
 
 	Geometry::Matrix4x4 mat;
 
@@ -178,6 +178,8 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 				running = false;
 		}
 	}
+	context.popMatrix_cameraToClipping();
+	context.popMatrix_modelToCamera();
 	device->waitIdle();
 	
 }

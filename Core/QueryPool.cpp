@@ -9,6 +9,8 @@
 
 #include "QueryPool.h"
 #include "Device.h"
+#include "CommandBuffer.h"
+#include "Commands/QueryCommands.h"
 
 #include <vulkan/vulkan.hpp>
 
@@ -86,6 +88,10 @@ Query QueryPool::request(QueryType type) {
 	}), vkDevice);
 
 	if(entry.handle) {
+		CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Graphics));
+		cmds->addCommand(new ResetQueryPoolCommand(entry.handle, 0, batchSize));
+		cmds->submit();
+
 		entry.freeIds.resize(batchSize);
 		std::iota(entry.freeIds.begin(), entry.freeIds.end(), 0);
 		query.id = entry.freeIds.front();
