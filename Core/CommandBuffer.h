@@ -10,6 +10,7 @@
 #define RENDERING_CORE_COMMANDBUFFER_H_
 
 #include "Common.h"
+#include "Commands/Command.h"
 #include "../State/PipelineState.h"
 #include "../State/BindingState.h"
 
@@ -22,6 +23,7 @@
 #include <deque>
 #include <map>
 #include <functional>
+#include <atomic>
 
 namespace Rendering {
 class CommandPool;
@@ -47,9 +49,10 @@ public:
 	using Ref = Util::Reference<CommandBuffer>;
 	enum State {
 		Invalid,
-		Initial,
 		Recording,
+		Compiling,
 		Executable,
+		Pending,
 	};
 
 	static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool transient=true, bool primary=true);
@@ -63,6 +66,7 @@ public:
 	void flush();
 	void submit(bool wait=false);
 	void execute(const Ref& buffer);
+	bool compile();
 
 	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, bool clearStencil=true);
 	void endRenderPass();
@@ -72,9 +76,8 @@ public:
 	//! @{
 	void bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	void bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets={});
-	void bindIndexBuffer(const BufferObjectRef& buffer, size_t offset=0);
+	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers);
+	void bindIndexBuffer(const BufferObjectRef& buffer);
 	void setBindings(const BindingState& state) { bindings = state; }
 	//! @}
 
@@ -200,7 +203,9 @@ private:
 	bool primary;
 	bool transient;
 	CommandBufferHandle handle;
-	State state = Invalid;
+	std::deque<Command::Ptr> commands;
+
+	std::atomic<State> state;
 	bool inRenderPass=false;
 	FBORef activeFBO;
 	PipelineState pipeline;
@@ -210,11 +215,6 @@ private:
 	float clearDepthValue=1;
 	uint32_t clearStencilValue=0;
 
-	// Keep as long as command buffer is used
-	std::deque<ApiBaseHandle::Ref> boundResource;
-	std::deque<PipelineHandle> boundPipelines;
-	std::deque<DescriptorSetRef> boundDescriptorSets;
-	std::deque<BufferObjectRef> boundBuffers;
 };
 
 } /* Rendering */

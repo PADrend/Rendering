@@ -19,6 +19,11 @@
 #include "../Texture/Texture.h"
 #include "../BufferObject.h"
 #include "../FBO.h"
+#include "Commands/BindCommands.h"
+#include "Commands/CommonCommands.h"
+#include "Commands/CopyCommands.h"
+#include "Commands/DrawCommands.h"
+#include "Commands/DynamicStateCommands.h"
 
 #include <Util/Macros.h>
 
@@ -41,18 +46,7 @@ namespace Rendering {
 vk::AccessFlags getVkAccessMask(const ResourceUsage& usage);
 vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 vk::PipelineStageFlags getVkPipelineStageMask(const ResourceUsage& usage, bool src);
-vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
 vk::Filter getVkFilter(const ImageFilter& filter);
-
-//-----------------
-
-static inline Geometry::Vec3i toVec3i(const Geometry::Vec3ui& v) {
-	return Geometry::Vec3i(
-		static_cast<int32_t>(v.x()),
-		static_cast<int32_t>(v.y()),
-		static_cast<int32_t>(v.z())
-	);
-}
 
 //-----------------
 
@@ -64,14 +58,12 @@ CommandBuffer::Ref CommandBuffer::create(const DeviceRef& device, QueueFamily fa
 
 CommandBuffer::Ref CommandBuffer::create(const QueueRef& queue, bool transient, bool primary) {
 	auto buffer = new CommandBuffer(queue, primary, transient);
-	if(!buffer->init())
-		return nullptr;
 	return buffer;
 }
 
 //-----------------
 
-CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary, bool transient) : queue(queue.get()), primary(primary), transient(transient) { }
+CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary, bool transient) : queue(queue.get()), primary(primary), transient(transient), state(State::Recording) { }
 
 //-----------------
 
@@ -82,27 +74,46 @@ CommandBuffer::~CommandBuffer() {
 
 //-----------------
 
-bool CommandBuffer::init() {
+bool CommandBuffer::compile() {
+	if(state == State::Executable)
+		return true;
+	WARN_AND_RETURN_IF(state == State::Compiling, "Command Buffer is already compiling.", false);
+	WARN_AND_RETURN_IF(state == State::Pending, "Command Buffer is pending.", false);
 	handle = queue->requestCommandBuffer(primary);
-	if(handle) {
-		state = State::Initial;
-		begin();
+	WARN_AND_RETURN_IF(!handle || state == State::Invalid, "Could not compile command buffer: Invalid command buffer.", false);
+	WARN_AND_RETURN_IF(commands.empty(), "Could not compile command buffer: Command list is empty.", false);
+	state = State::Compiling;
+
+	CompileContext context;
+	context.cmd = handle;
+	context.device = queue->getDevice();
+	context.descriptorPool = context.device->getDescriptorPool();
+	context.resourceCache = context.device->getResourceCache();
+
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.begin({transient ? vk::CommandBufferUsageFlagBits::eOneTimeSubmit : vk::CommandBufferUsageFlagBits::eSimultaneousUse});
+	for(auto& cmd : commands) {
+		if(!cmd->compile(context)) {
+			WARN("Failed to compile command buffer.");
+			state = State::Invalid;
+			return false;
+		}
 	}
-	return handle.isNotNull();
+	vkCmd.end();
+	state = State::Executable;
+	return true;
 }
 
 //-----------------
 
 void CommandBuffer::reset() {
-	end();
+	WARN_AND_RETURN_IF(state == State::Compiling, "Cannot reset command buffer: Command buffer is compiling.",);
+	WARN_AND_RETURN_IF(state == State::Pending, "Cannot reset command buffer: Command buffer is pending execution.",);
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 	pipeline.reset();
-	boundDescriptorSets.clear();
-	boundPipelines.clear();
-	boundBuffers.clear();
-	boundResource.clear();
-	state = State::Initial;
+	commands.clear();
+	state = State::Recording;
 }
 
 //-----------------
@@ -110,39 +121,17 @@ void CommandBuffer::reset() {
 void CommandBuffer::flush() {
 	SCOPED_PROFILING(CommandBuffer::flush);
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkCmd(handle);
-	auto device = queue->getDevice();
-	auto shader = pipeline.getShader();
+	const auto& shader = pipeline.getShader();
 	WARN_AND_RETURN_IF(!shader, "Cannot flush command buffer. Invalid shader.",);
-	auto layout = shader->getLayout();
+	const auto& layout = shader->getLayout();
 
-	// bind pipeline if it has changed
-	vk::PipelineLayout vkPipelineLayout(shader->getLayoutHandle());
-	vk::PipelineBindPoint vkBindPoint;
-	switch (pipeline.getType()) {
-		case PipelineType::Compute: vkBindPoint = vk::PipelineBindPoint::eCompute; break;
-		case PipelineType::Graphics: vkBindPoint = vk::PipelineBindPoint::eGraphics; break;
-	}
-
-	if(boundPipelines.empty() || pipeline.isDirty()) {
-		// pipeline changed
-		PipelineHandle pipelineHandle = device->getResourceCache()->createPipeline(pipeline, nullptr);
-		WARN_AND_RETURN_IF(!pipelineHandle, "CommandBuffer: Invalid Pipeline.",);
-
-		if(boundPipelines.empty() || boundPipelines.back() != pipelineHandle) {
-			insertDebugMarker("Pipeline changed");
-			// only bind new pipeline if it differs from currently bound pipeline
-			vk::Pipeline vkPipeline(pipelineHandle);
-			vkCmd.bindPipeline(vkBindPoint, vkPipeline);
-			boundPipelines.emplace_back(pipelineHandle);
-		}
-
+	if(pipeline.isDirty()) {
+		commands.emplace_back(new BindPipelineCommand(pipeline));
 		pipeline.clearDirty();
 	}
 
 	// update descriptor sets
 	if(bindings.isDirty()) {
-
 		bool bindingsChanged = false;
 		std::vector<vk::DescriptorSet> bindSets;
 		for(auto& it : bindings.getBindingSets()) {
@@ -155,14 +144,7 @@ void CommandBuffer::flush() {
 				continue;
 			
 			bindingsChanged = true;
-			auto descriptorSet = device->getDescriptorPool()->requestDescriptorSet(layout.getLayoutSet(set), bindingSet);
-			if(descriptorSet) {
-				vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
-				vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, descriptorSet->getDynamicOffsets());
-				boundDescriptorSets.emplace_back(descriptorSet);
-			} else {
-				WARN("Failed to create descriptor set for binding set " + std::to_string(set));
-			}
+			commands.emplace_back(new BindSetCommand(set, bindingSet, layout, pipeline.getType()));
 		}
 		bindings.clearDirty();
 		if(bindingsChanged) 
@@ -172,33 +154,8 @@ void CommandBuffer::flush() {
 
 //-----------------
 
-void CommandBuffer::begin() {
-	BEGIN_PROFILING(CommandBuffer);
-	WARN_AND_RETURN_IF(state == State::Recording, "Command buffer is already recording.",);
-	WARN_AND_RETURN_IF(state == State::Invalid, "Invalid command buffer.",);
-	reset();
-	vk::CommandBuffer vkCmd(handle);
-	state = State::Recording;
-	vkCmd.begin({transient ? vk::CommandBufferUsageFlagBits::eOneTimeSubmit : vk::CommandBufferUsageFlagBits::eSimultaneousUse});
-}
-
-//-----------------
-
-void CommandBuffer::end() {
-	if(state != State::Recording)
-		return;
-	endRenderPass();
-	vk::CommandBuffer vkCmd(handle);
-	state = State::Executable;
-	vkCmd.end();
-	END_PROFILING(CommandBuffer);
-}
-
-//-----------------
-
 void CommandBuffer::submit(bool wait) {
 	WARN_AND_RETURN_IF(!primary, "Cannot submit secondary command buffer.",);
-	end();
 	vk::CommandBuffer vkCmd(handle);
 	queue->submit(this, wait);
 }
@@ -206,14 +163,10 @@ void CommandBuffer::submit(bool wait) {
 //-----------------
 
 void CommandBuffer::execute(const Ref& buffer) {
-	WARN_AND_RETURN_IF(!buffer || !buffer->getApiHandle(), "Cannot execute secondary command buffer. Invalid command buffer.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(buffer->primary, "Cannot execute primary command buffer as secondary.",);
 	WARN_AND_RETURN_IF(!primary, "Cannot execute command buffer on secondary command buffer.",);
-	buffer->end();
-	flush();
-	vk::CommandBuffer vkCmd(handle);
-	vk::CommandBuffer vkSecondaryCmd(buffer->getApiHandle());
-	vkCmd.executeCommands(vkSecondaryCmd);
+	commands.emplace_back(new ExecuteCommandBufferCommand(buffer));
 }
 
 //-----------------
@@ -272,71 +225,45 @@ void CommandBuffer::endRenderPass() {
 //-----------------
 
 void CommandBuffer::bindBuffer(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	bindings.bindBuffer(buffer, set, binding, arrayElement);
-	boundBuffers.emplace_back(buffer);
 }
 
 //-----------------
 
 void CommandBuffer::bindTexture(const TextureRef& texture, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	bindings.bindTexture(texture, set, binding, arrayElement);
 }
 
 //-----------------
 
-void CommandBuffer::bindInputImage(const ImageViewRef& view, uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	bindings.bindInputImage(view, set, binding, arrayElement);
-}
-
-//-----------------
-
 void CommandBuffer::pushConstants(const uint8_t* data, size_t size, size_t offset) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	WARN_AND_RETURN_IF(size+offset > queue->getDevice()->getMaxPushConstantSize(), "Push constant size exceeds maximum size",);
-	vk::CommandBuffer vkCmd(handle);
-	Shader::Ref shader = pipeline.getShader();
-	WARN_AND_RETURN_IF(!shader || !shader->init(), "Cannot set push constants. No bound shader.",);
-	auto& layout = shader->getLayout();
-	vk::PipelineLayout vkLayout(shader->getLayoutHandle());
-	vk::ShaderStageFlags stages{};
-	for(auto& range : layout.getPushConstantRanges()) {
-		if(offset >= range.offset && offset + size <= range.offset + range.size) {
-			stages |= getVkStageFlags(range.stages);
-		}
-	}
-	if(stages)
-		vkCmd.pushConstants(vkLayout, stages, offset, static_cast<uint32_t>(size), data);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	const auto& shader = pipeline.getShader();
+	WARN_AND_RETURN_IF(!shader, "Cannot set push constants. No bound shader.",);
+	const auto& layout = shader->getLayout();
+	commands.emplace_back(new PushConstantCommand(data, size, offset, layout));
 }
 
 //-----------------
 
-void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkCmd(handle);
-	std::vector<vk::Buffer> vkBuffers;
-	std::vector<vk::DeviceSize> vkOffsets(offsets.begin(), offsets.end());
-	vkOffsets.resize(buffers.size(), 0);
-	for(auto& bo : buffers) {
-		vkBuffers.emplace_back((bo && bo->isValid()) ? bo->getApiHandle() : nullptr);
-		boundBuffers.emplace_back(bo);
-	}
-	vkCmd.bindVertexBuffers(firstBinding, vkBuffers, vkOffsets);
+void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	commands.emplace_back(new BindVertexBuffersCommand(firstBinding, buffers));
 }
 
 //-----------------
 
-void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer, size_t offset) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkCmd(handle);
-	vk::Buffer vkBuffer((buffer && buffer->isValid()) ? buffer->getApiHandle() : nullptr);
-	vkCmd.bindIndexBuffer(vkBuffer, offset, vk::IndexType::eUint32);
-	boundBuffers.emplace_back(buffer);
+void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	commands.emplace_back(new BindIndexBufferCommand(buffer));
 }
 
 //-----------------
 
 void CommandBuffer::clear(bool clearColor, bool clearDepth, bool clearStencil, const Geometry::Rect_i& rect) {
-	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!activeFBO || !activeFBO->isValid(), "Cannot clear attachments. Invalid FBO.",);
 
 	std::vector<vk::ClearAttachment> clearAttachments;
@@ -433,6 +360,7 @@ void CommandBuffer::clearImage(const TextureRef& texture, const Util::Color4f& c
 //-----------------
 
 void CommandBuffer::clearImage(const ImageViewRef& view, const Util::Color4f& color) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!view, "Cannot clear image. Invalid image.",);
 	vk::CommandBuffer vkCmd(handle);
 	auto image = view->getImage();
@@ -456,12 +384,12 @@ void CommandBuffer::clearImage(const ImageViewRef& view, const Util::Color4f& co
 		range.aspectMask = vk::ImageAspectFlagBits::eColor;
 		vkCmd.clearColorImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(image->getLastUsage()), clearValue, {range});
 	}
-	boundResource.emplace_back(view->getApiHandle());
 }
 
 //-----------------
 
 void CommandBuffer::clearImage(const ImageStorageRef& image, const Util::Color4f& color) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!image, "Cannot clear image. Invalid image.",);
 	vk::CommandBuffer vkCmd(handle);
 	auto format = image->getFormat();
@@ -482,226 +410,118 @@ void CommandBuffer::clearImage(const ImageStorageRef& image, const Util::Color4f
 		range.aspectMask = vk::ImageAspectFlagBits::eColor;
 		vkCmd.clearColorImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(image->getLastUsage()), clearValue, {range});
 	}
-	boundResource.emplace_back(image->getApiHandle());
 }
 
 //-----------------
 
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
-	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	if(instanceCount==0) return;
-	vk::CommandBuffer vkCmd(handle);
 	pipeline.setType(PipelineType::Graphics); // ensure we have a graphics pipeline
-	flush();
-	vkCmd.draw(vertexCount, instanceCount, firstVertex, firstInstance);
+	flush(); // update pipeline & binding state
+	commands.emplace_back(new DrawCommand(vertexCount, instanceCount, firstVertex, firstInstance));
 }
 
 //-----------------
 
 void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance) {
-	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	if(instanceCount==0) return;
-	vk::CommandBuffer vkCmd(handle);
 	pipeline.setType(PipelineType::Graphics); // ensure we have a graphics pipeline
-	flush();
-	vkCmd.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+	flush(); // update pipeline & binding state
+	commands.emplace_back(new DrawIndexedCommand(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance));
 }
 
 //-----------------
 
 void CommandBuffer::drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride, size_t offset) {
-	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
-	WARN_AND_RETURN_IF(!buffer->isValid(), "Cannot perform indirect draw. Buffer is not valid.",);
-	vk::CommandBuffer vkCmd(handle);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	pipeline.setType(PipelineType::Graphics); // ensure we have a graphics pipeline
-	flush();
-	vk::Buffer vkBuffer(buffer->getApiHandle());
-	vkCmd.drawIndirect(vkBuffer, offset, drawCount, stride);
+	flush(); // update pipeline & binding state
+	commands.emplace_back(new DrawIndirectCommand(buffer, drawCount, stride, offset));
 }
 
 //-----------------
 
 void CommandBuffer::drawIndexedIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride, size_t offset) {
-	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
-	WARN_AND_RETURN_IF(!buffer->isValid(), "Cannot perform indirect draw. Buffer is not valid.",);
-	vk::CommandBuffer vkCmd(handle);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	pipeline.setType(PipelineType::Graphics); // ensure we have a graphics pipeline
-	flush();
-	vk::Buffer vkBuffer(buffer->getApiHandle());
-	vkCmd.drawIndexedIndirect(vkBuffer, offset, drawCount, stride);
+	flush(); // update pipeline & binding state
+	commands.emplace_back(new DrawIndexedIndirectCommand(buffer, drawCount, stride, offset));
 }
 
 //-----------------
 
 
 void CommandBuffer::copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size, size_t srcOffset, size_t tgtOffset) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!srcBuffer || !tgtBuffer, "Cannot copy buffer. Invalid buffers.",);
-	vk::CommandBuffer vkCmd(handle);
-	vkCmd.copyBuffer(static_cast<vk::Buffer>(srcBuffer->getApiHandle()), static_cast<vk::Buffer>(tgtBuffer->getApiHandle()), {{srcOffset,tgtOffset,size}});
-	boundResource.emplace_back(srcBuffer->getApiHandle());
-	boundResource.emplace_back(tgtBuffer->getApiHandle());
+	commands.emplace_back(new CopyBufferCommand(srcBuffer, tgtBuffer, size, srcOffset, tgtOffset));
 }
 
 //-----------------
 
 void CommandBuffer::copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size, size_t srcOffset, size_t tgtOffset) {
-	if(srcBuffer && tgtBuffer)
-		copyBuffer(srcBuffer->getBuffer(), tgtBuffer->getBuffer(), size, srcOffset, tgtOffset);
-	boundBuffers.emplace_back(srcBuffer);
-	boundBuffers.emplace_back(tgtBuffer);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	WARN_AND_RETURN_IF(!srcBuffer || !tgtBuffer, "Cannot copy buffer. Invalid buffers.",);
+	commands.emplace_back(new CopyBufferCommand(srcBuffer, tgtBuffer, size, srcOffset, tgtOffset));
 }
 
 //-----------------
 
 void CommandBuffer::updateBuffer(const BufferStorageRef& buffer, const uint8_t* data, size_t size, size_t offset) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!buffer || !data, "Cannot update buffer. Invalid buffer or data.",);
-	WARN_AND_RETURN_IF(size+offset > buffer->getSize(), "Cannot update buffer. Offset+size exceeds buffer size.",);
-	vk::CommandBuffer vkCmd(handle);
-	vkCmd.updateBuffer(static_cast<vk::Buffer>(buffer->getApiHandle()), offset, size, data);
-	boundResource.emplace_back(buffer->getApiHandle());
+	commands.emplace_back(new UpdateBufferCommand(buffer, data, size, offset));
 }
 
 //-----------------
 
 void CommandBuffer::copyImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot copy image. Invalid images.",);
 	WARN_AND_RETURN_IF(srcRegion.extent != tgtRegion.extent, "Cannot copy image. Source and target extent must be the same.",);
-
-	vk::CommandBuffer vkCmd(handle);
-	imageBarrier(srcImage, ResourceUsage::CopySource);
-	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
-	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
-	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
-	vk::ImageCopy copyRegion{
-		{srcAspect, srcRegion.mipLevel, srcRegion.baseLayer, srcRegion.layerCount}, {srcRegion.offset.x(), srcRegion.offset.y(), srcRegion.offset.z()},
-		{tgtAspect, tgtRegion.mipLevel, tgtRegion.baseLayer, tgtRegion.layerCount}, {tgtRegion.offset.x(), tgtRegion.offset.y(), tgtRegion.offset.z()},
-		{srcRegion.extent.x(), srcRegion.extent.y(), srcRegion.extent.z()}
-	};
-	vkCmd.copyImage(
-		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
-		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
-		{copyRegion}
-	);
-	boundResource.emplace_back(srcImage->getApiHandle());
-	boundResource.emplace_back(tgtImage->getApiHandle());
+	commands.emplace_back(new CopyImageCommand(srcImage, tgtImage, srcRegion, tgtRegion));
 }
 
 //-----------------
 
 void CommandBuffer::copyBufferToImage(const BufferStorageRef& srcBuffer, const ImageStorageRef& tgtImage, size_t srcOffset, const ImageRegion& tgtRegion) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!srcBuffer || !tgtImage, "Cannot copy buffer to image. Invalid buffer or image.",);
-
-	vk::CommandBuffer vkCmd(handle);
-	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
-	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
-	vk::BufferImageCopy copyRegion{
-		static_cast<vk::DeviceSize>(srcOffset), 0u, 0u,
-		{tgtAspect, tgtRegion.mipLevel, tgtRegion.baseLayer, tgtRegion.layerCount}, {tgtRegion.offset.x(), tgtRegion.offset.y(), tgtRegion.offset.z()},
-		{tgtRegion.extent.x(), tgtRegion.extent.y(), tgtRegion.extent.z()}
-	};
-	vkCmd.copyBufferToImage(
-		static_cast<vk::Buffer>(srcBuffer->getApiHandle()),
-		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
-		{copyRegion}
-	);
-	boundResource.emplace_back(srcBuffer->getApiHandle());
-	boundResource.emplace_back(tgtImage->getApiHandle());
+	commands.emplace_back(new CopyBufferToImageCommand(srcBuffer, tgtImage, srcOffset, tgtRegion));
 }
 
 //-----------------
 
 void CommandBuffer::copyImageToBuffer(const ImageStorageRef& srcImage, const BufferStorageRef& tgtBuffer, const ImageRegion& srcRegion, size_t tgtOffset) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!srcImage || !tgtBuffer, "Cannot copy image to buffer. Invalid buffer or image.",);
-
-	vk::CommandBuffer vkCmd(handle);	
-	imageBarrier(srcImage, ResourceUsage::CopySource);
-	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
-	vk::BufferImageCopy copyRegion{
-		static_cast<vk::DeviceSize>(tgtOffset), 0u, 0u,
-		{srcAspect, srcRegion.mipLevel, srcRegion.baseLayer, srcRegion.layerCount}, {srcRegion.offset.x(), srcRegion.offset.y(), srcRegion.offset.z()},
-		{srcRegion.extent.x(), srcRegion.extent.y(), srcRegion.extent.z()}
-	};
-	vkCmd.copyImageToBuffer(
-		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
-		static_cast<vk::Buffer>(tgtBuffer->getApiHandle()),
-		{copyRegion}
-	);
-	boundResource.emplace_back(srcImage->getApiHandle());
-	boundResource.emplace_back(tgtBuffer->getApiHandle());
+	commands.emplace_back(new CopyImageToBufferCommand(srcImage, tgtBuffer, srcRegion, tgtOffset));
 }
 
 //-----------------
 
 void CommandBuffer::blitImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion, ImageFilter filter) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot blit image. Invalid images.",);
-
-	vk::CommandBuffer vkCmd(handle);
-	imageBarrier(srcImage, ResourceUsage::CopySource);
-	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
-	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
-	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
-	Geometry::Vec3i srcOffset2 = srcRegion.offset + toVec3i(srcRegion.extent);
-	Geometry::Vec3i tgtOffset2 = srcRegion.offset + toVec3i(srcRegion.extent);
-	vk::ImageBlit blitRegion{
-		{srcAspect, srcRegion.mipLevel, srcRegion.baseLayer, srcRegion.layerCount},
-		{vk::Offset3D{srcRegion.offset.x(), srcRegion.offset.y(), srcRegion.offset.z()}, vk::Offset3D{srcOffset2.x(), srcOffset2.y(), srcOffset2.z()}},
-		{tgtAspect, tgtRegion.mipLevel, tgtRegion.baseLayer, tgtRegion.layerCount},
-		{vk::Offset3D{tgtRegion.offset.x(), tgtRegion.offset.y(), tgtRegion.offset.z()}, vk::Offset3D{tgtOffset2.x(), tgtOffset2.y(), tgtOffset2.z()}},
-	};
-	vkCmd.blitImage(
-		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
-		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
-		{blitRegion}, getVkFilter(filter)
-	);
-	boundResource.emplace_back(srcImage->getApiHandle());
-	boundResource.emplace_back(tgtImage->getApiHandle());
+	commands.emplace_back(new BlitImageCommand(srcImage, tgtImage, srcRegion, tgtRegion, filter));
 }
 
 //-----------------
 
 void CommandBuffer::imageBarrier(const TextureRef& texture, ResourceUsage newUsage) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!texture, "Cannot create image barrier. Invalid texture.",);
-	imageBarrier(texture->getImageView(), newUsage);
+	commands.emplace_back(new ImageBarrierCommand(texture, newUsage));
 }
 
 //-----------------
 
 void CommandBuffer::imageBarrier(const ImageViewRef& view, ResourceUsage newUsage) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!view, "Cannot create image barrier. Invalid image.",);
-	auto image = view->getImage();
-	if(view->getLastUsage() == newUsage || view->getLastUsage() == ResourceUsage::General)
-		return;
-
-	vk::CommandBuffer vkCmd(handle);
-	const auto& format = image->getFormat();
-
-	vk::ImageMemoryBarrier barrier{};
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.srcAccessMask = getVkAccessMask(view->getLastUsage());
-	barrier.dstAccessMask = getVkAccessMask(newUsage);
-	barrier.oldLayout = getVkImageLayout(view->getLastUsage());
-	barrier.newLayout = getVkImageLayout(newUsage);
-	barrier.image = image->getApiHandle();
-	barrier.subresourceRange = {
-		isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor,
-		view->getMipLevel(), view->getMipLevelCount(),
-		view->getLayer(), view->getLayerCount()
-	};
-
-	vkCmd.pipelineBarrier(
-		getVkPipelineStageMask(view->getLastUsage(), true),
-		getVkPipelineStageMask(newUsage, false),
-		{}, {}, {}, {barrier}
-	);
-	view->_setLastUsage(newUsage);
+	commands.emplace_back(new ImageBarrierCommand(view, newUsage));
 }
 
 //-----------------
@@ -709,87 +529,47 @@ void CommandBuffer::imageBarrier(const ImageViewRef& view, ResourceUsage newUsag
 void CommandBuffer::imageBarrier(const ImageStorageRef& image, ResourceUsage newUsage) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(!image, "Cannot create image barrier. Invalid image.",);
-	if(image->getLastUsage() == newUsage || image->getLastUsage() == ResourceUsage::General)
-		return;
-
-	vk::CommandBuffer vkCmd(handle);
-	const auto& format = image->getFormat();	
-
-	vk::ImageMemoryBarrier barrier{};
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.srcAccessMask = getVkAccessMask(image->getLastUsage());
-	barrier.dstAccessMask = getVkAccessMask(newUsage);
-	barrier.oldLayout = getVkImageLayout(image->getLastUsage());
-	barrier.newLayout = getVkImageLayout(newUsage);
-	barrier.image = image->getApiHandle();
-	barrier.subresourceRange = { 
-		isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor,
-		0, format.mipLevels,
-		0, format.layers
-	};
-
-	vkCmd.pipelineBarrier(
-		getVkPipelineStageMask(image->getLastUsage(), true),
-		getVkPipelineStageMask(newUsage, false),
-		{}, {}, {}, {barrier}
-	);
-	image->_setLastUsage(newUsage);
+	commands.emplace_back(new ImageBarrierCommand(image, newUsage));
 }
 
 //-----------------
 
-/*void CommandBuffer::bufferBarrier(const BufferObjectRef& buffer, ResourceUsage newUsage) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkCmd(handle);
-}*/
-
-//-----------------
-
 void CommandBuffer::setScissor(const Geometry::Rect_i& scissor) {
-	vk::CommandBuffer vkCmd(handle);
-	vk::Rect2D rect{};
-	rect.extent.width = static_cast<uint32_t>(scissor.getWidth());
-	rect.extent.height = static_cast<uint32_t>(scissor.getHeight());
-	rect.offset.x = std::max(0, scissor.getX());
-	rect.offset.y = std::max(0, scissor.getY());
-	vkCmd.setScissor(0, 1, &rect);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	if(pipeline.getViewportState().hasDynamicScissors())
+		commands.emplace_back(new DynamicScissorCommand({scissor}));
+	else
+		pipeline.getViewportState().setScissor(scissor);
 }
 
 //-----------------
 
 void CommandBuffer::beginDebugMarker(const std::string& name, const Util::Color4f& color) {
-	if(!queue->getDevice()->isDebugModeEnabled())
-		return;
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkCmd(handle);
-	vkCmd.beginDebugUtilsLabelEXT({name.c_str(), {color.r(), color.g(), color.b(), color.a()}});
+	if(!queue->getDevice()->isDebugModeEnabled()) return;
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	commands.emplace_back(new DebugMarkerCommand(name, color, DebugMarkerCommand::Begin));
 }
 
 //-----------------
 
 void CommandBuffer::insertDebugMarker(const std::string& name, const Util::Color4f& color) {
-	if(!queue->getDevice()->isDebugModeEnabled())
-		return;
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkCmd(handle);
-	vkCmd.insertDebugUtilsLabelEXT({name.c_str(), {color.r(), color.g(), color.b(), color.a()}});
+	if(!queue->getDevice()->isDebugModeEnabled()) return;
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	commands.emplace_back(new DebugMarkerCommand(name, color, DebugMarkerCommand::Insert));
 }
 
 //-----------------
 
 void CommandBuffer::endDebugMarker() {
-	if(!queue->getDevice()->isDebugModeEnabled())
-		return;
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkCmd(handle);
-	vkCmd.endDebugUtilsLabelEXT();
+	if(!queue->getDevice()->isDebugModeEnabled()) return;
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	commands.emplace_back(new DebugMarkerCommand("", {}, DebugMarkerCommand::End));
 }
 
 //-------------
 
 void CommandBuffer::setDebugName(const std::string& name) {
-	if(!queue->getDevice()->isDebugModeEnabled())
+	if(!queue->getDevice()->isDebugModeEnabled() || !handle)
 		return;
 	vk::Device vkDevice(queue->getDevice()->getApiHandle());
 	vkDevice.setDebugUtilsObjectNameEXT({ vk::CommandBuffer::objectType, handle, name.c_str() });

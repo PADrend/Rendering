@@ -236,6 +236,17 @@ struct ImageRegion {
 };
 
 //---------------------------
+
+static inline Geometry::Vec3i toVec3i(const Geometry::Vec3ui& v) {
+	return Geometry::Vec3i(
+		static_cast<int32_t>(v.x()),
+		static_cast<int32_t>(v.y()),
+		static_cast<int32_t>(v.z())
+	);
+}
+
+//---------------------------
+
 } /* Rendering */
 
 //===========================================================================================================

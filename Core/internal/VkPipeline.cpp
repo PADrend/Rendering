@@ -7,6 +7,8 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+#include "VkPipeline.h"
+
 #include "../Common.h"
 #include "../Device.h"
 #include "../ResourceCache.h"

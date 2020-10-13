@@ -745,7 +745,7 @@ enum class PipelineType {
 class PipelineState : public Util::ReferenceCounter<PipelineState> {
 public:
 	PipelineState();
-	~PipelineState() = default;
+	~PipelineState();
 	PipelineState(PipelineState&& o);
 	PipelineState(const PipelineState& o);
 	PipelineState& operator=(PipelineState&& o);

@@ -76,6 +76,10 @@ FramebufferFormat::FramebufferFormat(const FBORef& fbo) {
 
 PipelineState::PipelineState() { reset(); }
 
+//---------------
+
+PipelineState::~PipelineState() = default;
+
 //-------------
 
 PipelineState::PipelineState(PipelineState&& o) {

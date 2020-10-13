@@ -52,6 +52,7 @@ class BindingSet {
 HAS_DIRTY_FLAG
 public:
 	using BindingMap = std::map<uint32_t, Binding>;
+	~BindingSet();
 
 	bool bindBuffer(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
 	bool bindTexture(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
@@ -72,7 +73,7 @@ class BindingState {
 HAS_DIRTY_FLAG
 public:
 	BindingState() = default;
-	~BindingState() = default;
+	~BindingState();
 	BindingState(BindingState&& o);
 	BindingState(const BindingState& o);
 	BindingState& operator=(BindingState&& o);
@@ -98,7 +99,7 @@ public:
 		dirty = true;
 	}
 
-	void clearDirty(uint32_t set) { bindingSets[set].clearDirty(); }
+	void clearDirty(uint32_t set) { bindingSets.at(set).clearDirty(); }
 private:
 	std::unordered_map<uint32_t, BindingSet> bindingSets;
 };

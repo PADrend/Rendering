@@ -56,6 +56,10 @@ bool Binding::bindInputImage(const ImageViewRef& view, uint32_t arrayElement) {
 
 //------------------
 
+BindingSet::~BindingSet() = default;
+
+//------------------
+
 bool BindingSet::bindBuffer(const BufferObjectRef& buffer, uint32_t binding, uint32_t arrayElement) {	
 	dirty |= bindings[binding].bindBuffer(buffer, arrayElement);
 	return dirty;
@@ -74,6 +78,10 @@ bool BindingSet::bindInputImage(const ImageViewRef& view, uint32_t binding, uint
 	dirty |= bindings[binding].bindInputImage(view, arrayElement);
 	return dirty;
 }
+
+//------------------
+
+BindingState::~BindingState() = default;
 
 //------------------
 

@@ -18,71 +18,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(GNUInstallDirs)
 set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
-add_library(Rendering SHARED
-	Buffer/BufferObject.cpp
-	Buffer/BufferPool.cpp
-	Context/RenderingContext.cpp
-	Core/internal/VkFramebuffer.cpp
-	Core/internal/VkPipeline.cpp
-	Core/internal/VkUtils.cpp
-	Core/ApiHandles.cpp
-	Core/BufferStorage.cpp
-	Core/CommandBuffer.cpp
-	Core/Common.cpp
-	Core/DescriptorPool.cpp
-	Core/Device.cpp
-	Core/Fence.cpp
-	Core/ImageStorage.cpp
-	Core/ImageView.cpp
-	Core/QueryPool.cpp
-	Core/Queue.cpp
-	Core/ResourceCache.cpp
-	Core/Sampler.cpp
-	Core/Swapchain.cpp
-	Mesh/Mesh.cpp
-	Mesh/MeshDataStrategy.cpp
-	Mesh/MeshIndexData.cpp
-	Mesh/MeshVertexData.cpp
-	Mesh/VertexAccessor.cpp
-	Mesh/VertexAttributeAccessors.cpp
-	Mesh/VertexAttributeIds.cpp
-	MeshUtils/ConnectivityAccessor.cpp
-	MeshUtils/LocalMeshDataHolder.cpp
-	MeshUtils/MarchingCubesMeshBuilder.cpp
-	MeshUtils/MeshBuilder.cpp
-	MeshUtils/MeshUtils.cpp
-	MeshUtils/PlatonicSolids.cpp
-	MeshUtils/PrimitiveShapes.cpp
-	MeshUtils/QuadtreeMeshBuilder.cpp
-	MeshUtils/QuadtreeMeshBuilderDebug.cpp
-	MeshUtils/Simplification.cpp
-	MeshUtils/TriangleAccessor.cpp
-	MeshUtils/WireShapes.cpp
+add_library(Rendering SHARED "")
+
+target_sources(Rendering PRIVATE
 	RenderingContext/RenderingParameters.cpp
-	Serialization/GenericAttributeSerialization.cpp
-	Serialization/Serialization.cpp
-	Serialization/StreamerMD2.cpp
-	Serialization/StreamerMMF.cpp
-	Serialization/StreamerMTL.cpp
-	Serialization/StreamerMVBO.cpp
-	Serialization/StreamerNGC.cpp
-	Serialization/StreamerOBJ.cpp
-	Serialization/StreamerPKM.cpp
-	Serialization/StreamerPLY.cpp
-	Serialization/StreamerXYZ.cpp
-	Shader/Shader.cpp
-	Shader/ShaderObjectInfo.cpp
-	Shader/ShaderUtils.cpp
-	Shader/Uniform.cpp
-	Shader/UniformBuffer.cpp
-	Shader/UniformRegistry.cpp
-	State/BindingState.cpp
-	State/PipelineState.cpp
-	State/RenderingState.cpp
-	State/ShaderLayout.cpp
-	Texture/Texture.cpp
-	Texture/TextureType.cpp
-	Texture/TextureUtils.cpp
 	Draw.cpp
 	DrawCompound.cpp
 	FBO.cpp
@@ -92,6 +31,16 @@ add_library(Rendering SHARED
 	StatisticsQuery.cpp
 	TextRenderer.cpp
 )
+
+add_subdirectory(Buffer)
+add_subdirectory(Context)
+add_subdirectory(Core)
+add_subdirectory(Mesh)
+add_subdirectory(MeshUtils)
+add_subdirectory(Serialization)
+add_subdirectory(Shader)
+add_subdirectory(State)
+add_subdirectory(Texture)
 
 # Dependency to Geometry
 if(NOT TARGET Geometry)
@@ -118,26 +67,8 @@ set_target_properties(Rendering PROPERTIES VERSION ${Rendering_VERSION}
 add_subdirectory(tests)
 
 # Install the header files
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Buffer/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Buffer COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Context/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Context COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Core/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Core COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Mesh/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Mesh COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/MeshUtils/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/MeshUtils COMPONENT headers)
 file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/RenderingContext/*.h")
 install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/RenderingContext COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Serialization/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Serialization COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Shader/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Shader COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/State/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/State COMPONENT headers)
-file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Texture/*.h")
-install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Texture COMPONENT headers)
 file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering COMPONENT headers)
 

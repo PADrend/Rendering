@@ -67,7 +67,7 @@ endif()
 FetchContent_Declare(
   spirv-headers
   GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
-  GIT_TAG        c4f8f65792d4bf2657ca751904c511bbcf2ac77b
+  GIT_TAG        204cd131c42b90d129073719f2766293ce35c081
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-headers"
 )
 
@@ -85,7 +85,7 @@ endif()
 FetchContent_Declare(
   spirv-tools
   GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
-  GIT_TAG        0125b28ed4214d1860696f22d230dbfc965c6c2c
+  GIT_TAG        323a81fc5e30e43a04e5e22af4cba98ca2a161e6
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-tools"
 )
 
@@ -107,7 +107,7 @@ endif()
 FetchContent_Declare(
   glslang
   GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
-  GIT_TAG        f88e5824d2cfca5edc58c7c2101ec9a4ec36afac
+  GIT_TAG        b0ada80356ca7b560c600b93a596af1331442542
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/glslang"
 )
 
@@ -118,12 +118,12 @@ if(NOT glslang_POPULATED)
 endif()
 
 # ------------------------------------------------------------------------------
-# spirv_cross (required by shaderc_spvc)
+# spirv_cross
 
 FetchContent_Declare(
   spirv-cross
   GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Cross.git
-  GIT_TAG        fce83b7e8b0f6599efd4481992b2eb30f69f21de
+  GIT_TAG        2020-01-16
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-cross"
 )
 
@@ -136,6 +136,7 @@ if(NOT spirv-cross_POPULATED)
   set(SPIRV_CROSS_FORCE_STL_TYPES OFF CACHE BOOL "" FORCE)
   set(SPIRV_CROSS_SHARED OFF CACHE BOOL "" FORCE)
   set(SPIRV_CROSS_STATIC ON CACHE BOOL "" FORCE)
+  set(SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
   add_subdirectory(${spirv-cross_SOURCE_DIR} ${spirv-cross_BINARY_DIR})
 endif()
 target_link_libraries(RenderingExtern INTERFACE spirv-cross-core)
@@ -148,7 +149,7 @@ set_target_properties(spirv-cross-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 FetchContent_Declare(
   shaderc
   GIT_REPOSITORY https://github.com/google/shaderc.git
-  GIT_TAG        v2019.0
+  GIT_TAG        v2019.1
 )
 
 FetchContent_GetProperties(shaderc)
