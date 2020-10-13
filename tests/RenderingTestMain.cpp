@@ -30,6 +30,7 @@ int main( int argc, char* argv[] ) {
 	properties.clientAreaHeight = 512;
 	properties.title = "Rendering Test";
 	properties.compatibilityProfile = true;
+	properties.debug = true;
 	TestUtils::window = Util::UI::createWindow(properties);
 	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), {
 		//"VK_LAYER_LUNARG_api_dump"

@@ -9,6 +9,7 @@
 
 target_sources(Rendering PRIVATE
 	Context/RenderingContext.cpp
+	Context/RenderThread.cpp
 )
 
 # Install the header files

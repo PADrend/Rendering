@@ -8,6 +8,7 @@
 */
 
 #include "CopyCommands.h"
+#include "../Device.h"
 #include "../BufferStorage.h"
 #include "../ImageView.h"
 #include "../ImageStorage.h"
@@ -25,8 +26,6 @@ namespace Rendering {
 vk::AccessFlags getVkAccessMask(const ResourceUsage& usage);
 vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 vk::Filter getVkFilter(const ImageFilter& filter);
-void enqueueVkImageBarrier(const CommandBufferHandle& cmd, const ImageStorage::Ref& image, ResourceUsage newUsage);
-void enqueueVkImageBarrier(const CommandBufferHandle& cmd, const ImageView::Ref& view, ResourceUsage newUsage);
 
 //--------------
 
@@ -74,8 +73,6 @@ bool CopyImageCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot copy image. Invalid images.", false);
 	WARN_AND_RETURN_IF(srcRegion.extent != tgtRegion.extent, "Cannot copy image. Source and target extent must be the same.", false);
 
-	enqueueVkImageBarrier(context.cmd, srcImage, ResourceUsage::CopySource);
-	enqueueVkImageBarrier(context.cmd, tgtImage, ResourceUsage::CopyDestination);
 	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::ImageCopy copyRegion{
@@ -84,8 +81,8 @@ bool CopyImageCommand::compile(CompileContext& context) {
 		{srcRegion.extent.x(), srcRegion.extent.y(), srcRegion.extent.z()}
 	};
 	static_cast<vk::CommandBuffer>(context.cmd).copyImage(
-		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
-		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
+		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(ResourceUsage::CopySource),
+		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination),
 		{copyRegion}
 	);
 	return true;
@@ -100,8 +97,7 @@ CopyBufferToImageCommand::~CopyBufferToImageCommand() = default;
 bool CopyBufferToImageCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!srcBuffer || !tgtImage, "Cannot copy buffer to image. Invalid buffer or image.", false);
 
-	enqueueVkImageBarrier(context.cmd, tgtImage, ResourceUsage::CopyDestination);
-	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::BufferImageCopy copyRegion{
 		static_cast<vk::DeviceSize>(srcOffset), 0u, 0u,
 		{tgtAspect, tgtRegion.mipLevel, tgtRegion.baseLayer, tgtRegion.layerCount}, {tgtRegion.offset.x(), tgtRegion.offset.y(), tgtRegion.offset.z()},
@@ -109,7 +105,7 @@ bool CopyBufferToImageCommand::compile(CompileContext& context) {
 	};
 	static_cast<vk::CommandBuffer>(context.cmd).copyBufferToImage(
 		static_cast<vk::Buffer>(srcBuffer->getApiHandle()),
-		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
+		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination),
 		{copyRegion}
 	);
 	return true;
@@ -124,15 +120,14 @@ CopyImageToBufferCommand::~CopyImageToBufferCommand() = default;
 bool CopyImageToBufferCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!srcImage || !tgtBuffer, "Cannot copy image to buffer. Invalid buffer or image.", false);
 
-	enqueueVkImageBarrier(context.cmd, srcImage, ResourceUsage::CopySource);
-	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::BufferImageCopy copyRegion{
 		static_cast<vk::DeviceSize>(tgtOffset), 0u, 0u,
 		{srcAspect, srcRegion.mipLevel, srcRegion.baseLayer, srcRegion.layerCount}, {srcRegion.offset.x(), srcRegion.offset.y(), srcRegion.offset.z()},
 		{srcRegion.extent.x(), srcRegion.extent.y(), srcRegion.extent.z()}
 	};
 	static_cast<vk::CommandBuffer>(context.cmd).copyImageToBuffer(
-		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
+		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(ResourceUsage::CopySource),
 		static_cast<vk::Buffer>(tgtBuffer->getApiHandle()),
 		{copyRegion}
 	);
@@ -147,8 +142,6 @@ BlitImageCommand::~BlitImageCommand() = default;
 
 bool BlitImageCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot blit image. Invalid images.", false);
-	enqueueVkImageBarrier(context.cmd, srcImage, ResourceUsage::CopySource);
-	enqueueVkImageBarrier(context.cmd, tgtImage, ResourceUsage::CopyDestination);
 	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	Geometry::Vec3i srcOffset2 = srcRegion.offset + toVec3i(srcRegion.extent);
@@ -160,10 +153,52 @@ bool BlitImageCommand::compile(CompileContext& context) {
 		{vk::Offset3D{tgtRegion.offset.x(), tgtRegion.offset.y(), tgtRegion.offset.z()}, vk::Offset3D{tgtOffset2.x(), tgtOffset2.y(), tgtOffset2.z()}},
 	};
 	static_cast<vk::CommandBuffer>(context.cmd).blitImage(
-		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
-		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
+		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(ResourceUsage::CopySource),
+		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination),
 		{blitRegion}, getVkFilter(filter)
 	);
+	return true;
+}
+
+//--------------
+
+ClearImageCommand::ClearImageCommand(const TextureRef& texture, const Util::Color4f& color) : view(texture->getImageView()), image(nullptr), color(color) {}
+
+//--------------
+
+ClearImageCommand::~ClearImageCommand() = default;
+
+//--------------
+
+bool ClearImageCommand::compile(CompileContext& context) {
+	WARN_AND_RETURN_IF(!image && !view, "Cannot clear image. Invalid image or image view.", false);
+	ImageStorageRef image = image ? image : view->getImage();
+
+	const auto& format = image->getFormat();
+	vk::ImageSubresourceRange range{};
+	if(view) {
+		range.baseMipLevel = view->getMipLevel();
+		range.levelCount = view->getMipLevelCount();
+		range.baseArrayLayer = view->getLayer();
+		range.layerCount = view->getLayerCount();
+	} else {
+		range.levelCount = format.mipLevels;
+		range.layerCount = format.layers;
+	}
+
+	vk::CommandBuffer vkCmd(context.cmd);
+	if(isDepthStencilFormat(image->getFormat())) {
+		vk::ClearDepthStencilValue clearValue{};
+		clearValue.depth = color.r();
+		clearValue.stencil = static_cast<uint32_t>(color.g());
+		range.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+		vkCmd.clearDepthStencilImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination), clearValue, {range});
+	} else {
+		vk::ClearColorValue clearValue{};
+		clearValue.setFloat32({color.r(), color.g(), color.b(), color.a()});
+		range.aspectMask = vk::ImageAspectFlagBits::eColor;
+		vkCmd.clearColorImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination), clearValue, {range});
+	};
 	return true;
 }
 

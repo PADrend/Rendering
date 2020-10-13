@@ -10,6 +10,7 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "RenderingContext.h"
+#include "RenderThread.h"
 
 #include "../State/BindingState.h"
 #include "../State/PipelineState.h"
@@ -42,13 +43,13 @@
 #include <unordered_map>
 #include <stdexcept>
 #include <stack>
+#include <thread>
 
-#define PROFILING_ENABLED 1
+//#define PROFILING_ENABLED 1
 #include <Util/Profiling/Profiler.h>
 #include <Util/Profiling/Logger.h>
 
 INIT_PROFILING_TIME(std::cout);
-#define PROFILING_CONDITION internal->frameCounter == 1000
 
 namespace Rendering {
 
@@ -61,7 +62,7 @@ public:
 	BindingState bindingState;
 	RenderingState renderingState;
 	CommandBuffer::Ref cmd;
-	uint64_t frameCounter = 0;
+	RenderThread::Ref renderThread;
 
 	// pipeline state stacks
 	std::stack<VertexInputState> vertexInputStack;
@@ -114,7 +115,6 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->fallbackShader->init();
 
 	internal->cmd = CommandBuffer::create(device->getQueue(QueueFamily::Graphics));
-	internal->cmd->setDebugName("Initial Command Buffer");
 
 	// Initialize dummy vertex buffer
 	VertexDescription vd;
@@ -160,6 +160,9 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	setWindowClientArea(windowRect);
 
 	applyChanges();
+
+	// start render thread
+	internal->renderThread = RenderThread::create(device);
 }
 
 RenderingContext::RenderingContext() : RenderingContext(Device::getDefault()) {}
@@ -193,20 +196,20 @@ const RenderingState& RenderingContext::getRenderingState() const{
 // helper ***************************************************************************
 
 void RenderingContext::flush(bool wait) {
-	SCOPED_PROFILING_COND(RenderingContext::flush, PROFILING_CONDITION);
-	internal->cmd->submit(wait);
+	//internal->cmd->submit(wait);
+	internal->renderThread->compileAndSubmit(internal->cmd);
 
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
-	internal->cmd->setDebugName("RC Commands Frame " + std::to_string(internal->frameCounter) + " (flush)");
 	applyChanges();
 }
 
 void RenderingContext::present() {
-	SCOPED_PROFILING_COND(RenderingContext::present, PROFILING_CONDITION);
 	internal->cmd->endRenderPass();
 	auto& fbo = internal->device->getSwapchain()->getCurrentFBO();
 	internal->cmd->imageBarrier(fbo->getColorAttachment(0), ResourceUsage::Present);
-	internal->cmd->submit();
+	//internal->cmd->submit();
+	internal->renderThread->compileAndSubmit(internal->cmd);
+	// does not necessarily show the last submitted command buffer
 	internal->device->present();
 
 	// reset rendering state
@@ -214,10 +217,7 @@ void RenderingContext::present() {
 	internal->renderingState.getLights().clear();
 	internal->renderingState.getInstance().markDirty();
 
-	END_PROFILING_COND(RenderingContext, PROFILING_CONDITION);
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
-	internal->cmd->setDebugName("RC Commands Frame " + std::to_string(++internal->frameCounter));
-	BEGIN_PROFILING_COND(RenderingContext, PROFILING_CONDITION);
 	applyChanges();
 }
 
@@ -275,8 +275,6 @@ void RenderingContext::applyChanges(bool forced) {
 		if(!internal->bindingState.hasBinding(b.first.second, b.first.first)) //let rendering context overwrite uniform buffer bindings
 			b.second->bind(internal->cmd, b.first.second, b.first.first);
 	}
-
-	// TODO: set dynamic state
 }
 
 // Clear ***************************************************************************
@@ -284,51 +282,31 @@ void RenderingContext::applyChanges(bool forced) {
 void RenderingContext::clearColor(const Util::Color4f& color) {
 	applyChanges();
 	internal->cmd->setClearColor({color});
-	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, false, false);
-	} else {
-		internal->cmd->clear(true, false, false);
-	}
+	internal->cmd->clear(true, false, false);
 }
 
 void RenderingContext::clearScreen(const Util::Color4f& color) {
 	applyChanges();
 	internal->cmd->setClearColor({color});
-	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, true, true);
-	} else {
-		internal->cmd->clear(true, true, true);
-	}
+	internal->cmd->clear(true, true, true);
 }
 
 void RenderingContext::clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool _clearDepth, bool _clearStencil) {
 	applyChanges();
 	internal->cmd->setClearColor({color});
-	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, _clearDepth, _clearStencil);
-	} else {
-		internal->cmd->clear(true, _clearDepth, _clearStencil, rect);
-	}
+	internal->cmd->clear(true, _clearDepth, _clearStencil, rect);
 }
 
 void RenderingContext::clearDepth(float clearValue) {
 	applyChanges();
 	internal->cmd->setClearDepthValue(clearValue);
-	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, false, true, false);
-	} else {
-		internal->cmd->clear(false, true, false);
-	}
+	internal->cmd->clear(false, true, false);
 }
 
 void RenderingContext::clearStencil(uint32_t clearValue) {
 	applyChanges();
 	internal->cmd->setClearStencilValue(clearValue);
-	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, false, false, true);
-	} else {
-		internal->cmd->clear(false, false, true);
-	}
+	internal->cmd->clear(false, false, true);
 }
 
 // AlphaTest ************************************************************************************
@@ -580,22 +558,16 @@ void RenderingContext::bindIndexBuffer(const BufferObjectRef& buffer) {
 
 void RenderingContext::draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount, uint32_t firstInstance) {
 	applyChanges();
-	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass(internal->activeFBO, false, false, false);
 	internal->cmd->draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void RenderingContext::drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount, uint32_t firstInstance) {
 	applyChanges();
-	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass(internal->activeFBO, false, false, false);
 	internal->cmd->drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void RenderingContext::drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride) {
 	applyChanges();
-	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass(internal->activeFBO, false, false, false);
 	internal->cmd->drawIndirect(buffer, drawCount, stride);
 }
 

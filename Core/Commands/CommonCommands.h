@@ -11,6 +11,7 @@
 
 #include "Command.h"
 #include "../../State/ShaderLayout.h"
+#include <Util/Graphics/Color.h>
 
 namespace Rendering {
 class CommandBuffer;
@@ -21,6 +22,8 @@ class ImageView;
 using ImageViewRef = Util::Reference<ImageView>;
 class Texture;
 using TextureRef = Util::Reference<Texture>;
+class FBO;
+using FBORef = Util::Reference<FBO>;
 
 //------------------------------------------
 
@@ -31,6 +34,35 @@ public:
 	bool compile(CompileContext& context) override;
 private:
 	CommandBufferRef buffer;
+};
+
+//------------------------------------------
+
+class BeginRenderPassCommand : public Command {
+public:
+	BeginRenderPassCommand(const FBORef& fbo, std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil) : 
+		fbo(fbo), colors(colors), depthValue(depthValue), stencilValue(stencilValue), clearColor(clearColor), clearDepth(clearDepth), clearStencil(clearStencil) {}
+	~BeginRenderPassCommand();
+	bool compile(CompileContext& context) override;
+private:
+	FBORef fbo;
+	std::vector<Util::Color4f> colors;
+	float depthValue;
+	uint32_t stencilValue;
+	bool clearColor;
+	bool clearDepth;
+	bool clearStencil;
+	FramebufferHandle framebuffer;
+	RenderPassHandle renderPass;
+};
+
+//------------------------------------------
+
+class EndRenderPassCommand : public Command {
+public:
+	EndRenderPassCommand() {}
+	~EndRenderPassCommand() = default;
+	bool compile(CompileContext& context) override;
 };
 
 //------------------------------------------
@@ -52,14 +84,15 @@ private:
 
 class ImageBarrierCommand : public Command {
 public:
-	ImageBarrierCommand(const TextureRef& texture, ResourceUsage newUsage);
-	ImageBarrierCommand(const ImageViewRef& view, ResourceUsage newUsage) : view(view), image(nullptr), newUsage(newUsage) {}
-	ImageBarrierCommand(const ImageStorageRef& image, ResourceUsage newUsage) : view(nullptr), image(image), newUsage(newUsage) {}
+	ImageBarrierCommand(const TextureRef& texture, ResourceUsage oldUsage, ResourceUsage newUsage);
+	ImageBarrierCommand(const ImageViewRef& view, ResourceUsage oldUsage, ResourceUsage newUsage) : view(view), image(nullptr), oldUsage(oldUsage), newUsage(newUsage) {}
+	ImageBarrierCommand(const ImageStorageRef& image, ResourceUsage oldUsage, ResourceUsage newUsage) : view(nullptr), image(image), oldUsage(oldUsage), newUsage(newUsage) {}
 	~ImageBarrierCommand();
 	bool compile(CompileContext& context) override;
 private:
 	ImageViewRef view;
 	ImageStorageRef image;
+	ResourceUsage oldUsage;
 	ResourceUsage newUsage;
 };
 

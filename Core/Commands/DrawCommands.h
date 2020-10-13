@@ -10,6 +10,8 @@
 #define RENDERING_CORE_COMMANDS_DRAWCOMMANDS_H_
 
 #include "Command.h"
+#include <Geometry/Rect.h>
+#include <Util/Graphics/Color.h>
 
 namespace Rendering {
 class BufferObject;
@@ -71,6 +73,26 @@ private:
 	uint32_t stride;
 	size_t offset;
 };
+
+//------------------------------------------
+
+class ClearAttachmentsCommand : public Command {
+public:
+	ClearAttachmentsCommand(std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil, const Geometry::Rect_i& rect) :
+		colors(colors), depthValue(depthValue), stencilValue(stencilValue), rect(rect), clearColor(clearColor), clearDepth(clearDepth), clearStencil(clearStencil) {}
+	~ClearAttachmentsCommand() = default;
+	bool compile(CompileContext& context) override;
+private:
+	std::vector<Util::Color4f> colors;
+	float depthValue;
+	uint32_t stencilValue;
+	Geometry::Rect_i rect;
+	bool clearColor;
+	bool clearDepth;
+	bool clearStencil;
+};
+
+//------------------------------------------
 
 } /* Rendering */
 #endif /* end of include guard: RENDERING_CORE_COMMANDS_DRAWCOMMANDS_H_ */

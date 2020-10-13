@@ -52,7 +52,6 @@ public:
 		Recording,
 		Compiling,
 		Executable,
-		Pending,
 	};
 
 	static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool transient=true, bool primary=true);
@@ -151,6 +150,7 @@ public:
 	void setFramebufferFormat(const FBORef& fbo) { pipeline.setFramebufferFormat(fbo); }
 	void setEntryPoint(const std::string& value) { pipeline.setEntryPoint(value); }
 	void setShader(const ShaderRef& shader) { pipeline.setShader(shader); }
+	//void setFBO(const FBORef& fbo);
 	
 	const VertexInputState& getVertexInputState() const { return pipeline.getVertexInputState(); }
 	const InputAssemblyState& getInputAssemblyState() const { return pipeline.getInputAssemblyState(); }
@@ -162,6 +162,7 @@ public:
 	const FramebufferFormat& getFramebufferFormat() const { return pipeline.getFramebufferFormat(); }
 	const std::string& getEntryPoint() const { return pipeline.getEntryPoint(); }
 	const ShaderRef& getShader() const { return pipeline.getShader(); }
+	const FBORef& getFBO() const { return activeFBO; }
 	//! @}
 
 
@@ -194,10 +195,10 @@ public:
 	const CommandBufferHandle& getApiHandle() const { return handle; };
 	//! @}
 private:
-	friend class Queue;
-	bool init();
-	void begin();
-	void end();
+	void ensureRenderPass() {
+		if(!inRenderPass)
+			beginRenderPass(activeFBO, false, false, false);
+	}
 
 	Util::WeakPointer<Queue> queue;
 	bool primary;
@@ -215,6 +216,7 @@ private:
 	float clearDepthValue=1;
 	uint32_t clearStencilValue=0;
 
+	uint32_t drawCommandCount=0;
 };
 
 } /* Rendering */

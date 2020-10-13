@@ -10,6 +10,7 @@
 #define RENDERING_CORE_COMMANDS_COPYCOMMANDS_H_
 
 #include "Command.h"
+#include <Util/Graphics/Color.h>
 
 namespace Rendering {
 class BufferObject;
@@ -114,6 +115,21 @@ private:
 	ImageRegion srcRegion;
 	ImageRegion tgtRegion;
 	ImageFilter filter;
+};
+
+//------------------------------------------
+
+class ClearImageCommand : public Command {
+public:
+	ClearImageCommand(const ImageViewRef& view, const Util::Color4f& color) : view(view), image(nullptr), color(color) {}
+	ClearImageCommand(const ImageStorageRef& image, const Util::Color4f& color) : view(nullptr), image(image), color(color) {}
+	ClearImageCommand(const TextureRef& texture, const Util::Color4f& color);
+	~ClearImageCommand();
+	bool compile(CompileContext& context) override;
+private:
+	ImageViewRef view;
+	ImageStorageRef image;
+	Util::Color4f color;
 };
 
 //------------------------------------------

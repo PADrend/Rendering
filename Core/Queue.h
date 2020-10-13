@@ -15,6 +15,7 @@
 #include <Util/Factory/ObjectPool.h>
 
 #include <deque>
+#include <mutex>
 
 namespace Rendering {
 class Device;
@@ -30,7 +31,7 @@ public:
 	
 	~Queue();
 	
-	bool submit(const CommandBufferRef& commands, bool wait=false);
+	bool submit(const CommandBufferRef& commands);
 	bool present();
 	void wait();
 
@@ -65,6 +66,8 @@ private:
 		FenceHandle fence;
 	};
 	std::deque<PendingEntry> pendingQueue;
+	std::mutex submitMutex;
+	std::mutex poolMutex;
 };
 
 inline QueueFamily operator | (QueueFamily lhs, QueueFamily rhs) {

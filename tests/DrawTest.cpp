@@ -94,11 +94,14 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		{0.0, 0.0, 1.0}
 	};
 
-	auto vertexBuffer = BufferObject::create(device);
-	vertexBuffer->allocate(positions.size() * sizeof(Geometry::Vec2) + colors.size() * sizeof(Util::Color4f), ResourceUsage::VertexBuffer);
-	vertexBuffer->getBuffer()->setDebugName("Vertex Buffer");
-	vertexBuffer->upload(positions);
-	vertexBuffer->upload(colors, positions.size() * sizeof(Geometry::Vec2));
+	auto vertexBuffer1 = BufferObject::create(device);
+	vertexBuffer1->allocate(positions.size() * sizeof(Geometry::Vec2), ResourceUsage::VertexBuffer);
+	vertexBuffer1->getBuffer()->setDebugName("Vertex Buffer 1");
+	vertexBuffer1->upload(positions);
+	auto vertexBuffer2 = BufferObject::create(device);
+	vertexBuffer2->allocate(colors.size() * sizeof(Util::Color4f), ResourceUsage::VertexBuffer);
+	vertexBuffer2->getBuffer()->setDebugName("Vertex Buffer 2");
+	vertexBuffer2->upload(colors);
 
 	// --------------------------------------------
 	// create graphics pipeline
@@ -129,7 +132,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		cmdBuffer->setPipeline(state);
 
 		cmdBuffer->beginRenderPass();
-		cmdBuffer->bindVertexBuffers(0, {vertexBuffer, vertexBuffer}, {0, positions.size() * sizeof(Geometry::Vec2)});
+		cmdBuffer->bindVertexBuffers(0, {vertexBuffer1, vertexBuffer2});
 		cmdBuffer->pushConstants(angle.deg());
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();

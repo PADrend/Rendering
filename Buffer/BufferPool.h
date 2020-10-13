@@ -16,6 +16,7 @@
 #include <Util/Resources/ResourceAllocator.h>
 
 #include <vector>
+#include <mutex>
 
 namespace Rendering {
 class Device;
@@ -46,11 +47,15 @@ public:
 	void reset();
 	
 	uint32_t getAllocatedBlockCount() const;
-	uint32_t getAllocatedPageCount() const { return static_cast<uint32_t>(pages.size()); }
+	uint32_t getAllocatedPageCount() const {
+		std::unique_lock<std::mutex> lock(mutex);
+		return static_cast<uint32_t>(pages.size());
+	}
 private:
 	BufferPool(const DeviceRef& device, const Configuration& config);
 	const DeviceRef device;
 	const Configuration config;
+	mutable std::mutex mutex;
 
 	struct Page {
 		BufferStorageRef buffer;

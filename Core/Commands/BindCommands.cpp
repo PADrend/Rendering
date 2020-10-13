@@ -76,7 +76,6 @@ BindVertexBuffersCommand::~BindVertexBuffersCommand() = default;
 bool BindVertexBuffersCommand::compile(CompileContext& context) {
 	std::vector<vk::Buffer> vkBuffers;
 	std::vector<vk::DeviceSize> vkOffsets;
-	vkOffsets.resize(buffers.size(), 0);
 	for(auto& bo : buffers) {
 		WARN_AND_RETURN_IF(!bo || !bo->isValid(), "Could not bind vertex buffer: Invalid buffer.", false);
 		vkBuffers.emplace_back(bo->getApiHandle());

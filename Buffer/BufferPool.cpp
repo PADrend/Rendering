@@ -39,6 +39,7 @@ BufferPool::BufferPool(const DeviceRef& device, const Configuration& config) : d
 BufferObjectRef BufferPool::allocate(size_t size) {
 	if(size == 0)
 		return nullptr;
+	std::unique_lock<std::mutex> lock(mutex);
 	uint32_t count = Util::align(size, config.blockSize)/config.blockSize;
 	WARN_AND_RETURN_IF(count > config.blocksPerPage, 
 		"Cannot allocate buffer object of size " + std::to_string(config.blockSize*count) + 
@@ -75,6 +76,7 @@ BufferObjectRef BufferPool::allocate(size_t size) {
 void BufferPool::free(BufferObject* buffer) {
 	if(!buffer || !buffer->isValid())
 		return;
+	std::unique_lock<std::mutex> lock(mutex);
 	
 	// find page the buffer was allocated from
 	auto it = std::find_if(pages.begin(), pages.end(), [&buffer](const Page& page) {
@@ -99,12 +101,14 @@ void BufferPool::free(BufferObject* buffer) {
 //---------------
 
 void BufferPool::reset() {
+	std::unique_lock<std::mutex> lock(mutex);
 	pages.clear();
 }
 
 //---------------
 
 uint32_t BufferPool::getAllocatedBlockCount() const {
+	std::unique_lock<std::mutex> lock(mutex);
 	uint32_t count = 0;
 	for(auto& page : pages) {
 		count += std::count(page.blocks.begin(), page.blocks.end(), true);

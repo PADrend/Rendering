@@ -32,11 +32,10 @@ Queue::~Queue() = default;
 
 //-------------
 
-bool Queue::submit(const CommandBufferRef& commands, bool wait) {
+bool Queue::submit(const CommandBufferRef& commands) {
 	WARN_AND_RETURN_IF(!commands, "Queue: invalid command buffer.", false);
-	if(commands->isRecording())
-		commands->end();
-	WARN_AND_RETURN_IF(!commands->isExecutable(), "Queue: command buffer is not executable.", false);
+	WARN_AND_RETURN_IF(!commands->compile(), "Queue: command buffer is not executable.", false);
+	std::unique_lock<std::mutex> lock(submitMutex);
 	clearPending();
 	vk::Device vkDevice(handle);
 	vk::Queue vkQueue(handle);
@@ -48,8 +47,6 @@ bool Queue::submit(const CommandBufferRef& commands, bool wait) {
 		1, &vkCommandBuffer,
 		0, nullptr
 	}}, static_cast<vk::Fence>(fence));
-	if(wait)
-		this->wait();
 	return true;
 }
 
@@ -60,6 +57,7 @@ bool Queue::present() {
 		WARN("Queue: Present is not supported by queue " + Util::StringUtils::toString(index) + " of family " + Util::StringUtils::toString(familyIndex) + ".");
 		return false;
 	}
+	std::unique_lock<std::mutex> lock(submitMutex);
 	clearPending();
 	auto& swapchain = device->getSwapchain();
 	vk::SwapchainKHR vkSwapchain(swapchain->getApiHandle());
@@ -77,15 +75,13 @@ bool Queue::present() {
 //-------------
 
 void Queue::wait() {
+	std::unique_lock<std::mutex> lock(submitMutex);
 	vk::Device vkDevice(handle);
 	std::vector<vk::Fence> fences;
 	for(auto& pending : pendingQueue) {
 		fences.emplace_back(pending.fence);
 	}
 	vkDevice.waitForFences(fences, true, std::numeric_limits<uint64_t>::max());
-	for(auto& pending : pendingQueue) {
-		pending.cmd->state = CommandBuffer::State::Executable;
-	}
 	pendingQueue.clear();
 }
 
@@ -96,7 +92,6 @@ void Queue::clearPending() {
 	while(!pendingQueue.empty()) {
 		vk::Fence fence(pendingQueue.front().fence);
 		if(vkDevice.getFenceStatus(fence) == vk::Result::eSuccess ) {
-			pendingQueue.front().cmd->state = CommandBuffer::State::Executable;
 			pendingQueue.pop_front(); // fence is signaled
 		} else {
 			break;
@@ -108,6 +103,7 @@ void Queue::clearPending() {
 //-------------
 
 CommandBufferHandle Queue::requestCommandBuffer(bool primary) {
+	std::unique_lock<std::mutex> lock(poolMutex);
 	return commandPool.create(static_cast<uint32_t>(primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary));
 }
 
@@ -115,6 +111,7 @@ CommandBufferHandle Queue::requestCommandBuffer(bool primary) {
 //-------------
 
 void Queue::freeCommandBuffer(const CommandBufferHandle& bufferHandle, bool primary) {
+	std::unique_lock<std::mutex> lock(poolMutex);
 	commandPool.free(static_cast<uint32_t>(primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary), bufferHandle);
 }
 

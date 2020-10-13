@@ -7,8 +7,6 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#include "VkUtils.h"
-
 #include "../Common.h"
 #include "../ImageStorage.h"
 #include "../ImageView.h"
@@ -279,67 +277,6 @@ vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages) {
 	if((stages & ShaderStage::Fragment) == ShaderStage::Fragment) flags |= vk::ShaderStageFlagBits::eFragment;
 	if((stages & ShaderStage::Compute) == ShaderStage::Compute) flags |= vk::ShaderStageFlagBits::eCompute;
 	return flags;
-}
-
-//-----------------
-
-void enqueueVkImageBarrier(const CommandBufferHandle& cmd, const ImageStorage::Ref& image, ResourceUsage newUsage) {
-	if(image->getLastUsage() == newUsage || image->getLastUsage() == ResourceUsage::General)
-		return;
-
-	const auto& format = image->getFormat();
-
-	vk::ImageMemoryBarrier barrier{};
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.srcAccessMask = getVkAccessMask(image->getLastUsage());
-	barrier.dstAccessMask = getVkAccessMask(newUsage);
-	barrier.oldLayout = getVkImageLayout(image->getLastUsage());
-	barrier.newLayout = getVkImageLayout(newUsage);
-	barrier.image = image->getApiHandle();
-	barrier.subresourceRange = { 
-		isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor,
-		0, format.mipLevels,
-		0, format.layers
-	};
-
-	static_cast<vk::CommandBuffer>(cmd).pipelineBarrier(
-		getVkPipelineStageMask(image->getLastUsage(), true),
-		getVkPipelineStageMask(newUsage, false),
-		{}, {}, {}, {barrier}
-	);
-	image->_setLastUsage(newUsage);
-}
-
-//-----------------
-
-void enqueueVkImageBarrier(const CommandBufferHandle& cmd, const ImageView::Ref& view, ResourceUsage newUsage) {
-	auto image = view->getImage();
-	if(view->getLastUsage() == newUsage || view->getLastUsage() == ResourceUsage::General)
-		return;
-
-	const auto& format = image->getFormat();
-
-	vk::ImageMemoryBarrier barrier{};
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.srcAccessMask = getVkAccessMask(view->getLastUsage());
-	barrier.dstAccessMask = getVkAccessMask(newUsage);
-	barrier.oldLayout = getVkImageLayout(view->getLastUsage());
-	barrier.newLayout = getVkImageLayout(newUsage);
-	barrier.image = image->getApiHandle();
-	barrier.subresourceRange = {
-		isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor,
-		view->getMipLevel(), view->getMipLevelCount(),
-		view->getLayer(), view->getLayerCount()
-	};
-
-	static_cast<vk::CommandBuffer>(cmd).pipelineBarrier(
-		getVkPipelineStageMask(view->getLastUsage(), true),
-		getVkPipelineStageMask(newUsage, false),
-		{}, {}, {}, {barrier}
-	);
-	view->_setLastUsage(newUsage);
 }
 
 //-----------------
