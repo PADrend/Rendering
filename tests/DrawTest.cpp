@@ -93,7 +93,6 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	PipelineState state{};
 	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(TestUtils::window->getWidth()), static_cast<int32_t>(TestUtils::window->getHeight())};
 	state.setViewportState({windowRect, windowRect});
-	state.setShader(shader);
 		
 	// --------------------------------------------
 	// command queue
@@ -114,6 +113,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		cmdBuffer->begin();
 
 		state.setFBO(fbo);
+		cmdBuffer->setShader(shader);
 		cmdBuffer->setPipelineState(state);
 		cmdBuffer->textureBarrier(attachment, ResourceUsage::RenderTarget);
 

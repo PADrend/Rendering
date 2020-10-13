@@ -15,7 +15,6 @@
 #include "../Core/Device.h"
 #include "../Core/DescriptorPool.h"
 #include "../Core/DescriptorSet.h"
-#include "../Core/DescriptorSetLayout.h"
 #include "../RenderingContext/internal/RenderingStatus.h"
 #include "../Helper.h"
 
@@ -32,6 +31,8 @@
 
 using namespace std;
 namespace Rendering {
+
+vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
 
 // ---------------------------------------------------------------------------------------------
 // Shader
@@ -177,29 +178,16 @@ bool Shader::init() {
 /*!	(internal) */
 bool Shader::compileProgram() {
 	shaderModules.clear();
-	hash = 0;
+	//hash = 0;
 	vk::Device vkDevice(device->getApiHandle());
 	for(auto& shaderObject : shaderObjects) {
 		if(!shaderObject.compile(device))
 			return false;
 		auto& code = shaderObject.getCode();
-		Util::hash_combine(hash, Util::calcHash(reinterpret_cast<const uint8_t*>(code.data()), code.size() * sizeof(uint32_t)));
+		//Util::hash_combine(hash, Util::calcHash(reinterpret_cast<const uint8_t*>(code.data()), code.size() * sizeof(uint32_t)));
 		shaderModules.emplace(shaderObject.getType(), ShaderModuleHandle::create(vkDevice.createShaderModule({{}, static_cast<uint32_t>(code.size()) * sizeof(uint32_t), code.data()}), vkDevice));
 	}
 	return true;
-}
-
-//-----------------
-
-static vk::ShaderStageFlags convertStageFlags(const ShaderStage& stages) {
-	vk::ShaderStageFlags flags;
-	if((stages & ShaderStage::Vertex) == ShaderStage::Vertex) flags |= vk::ShaderStageFlagBits::eVertex;
-	if((stages & ShaderStage::TessellationControl) == ShaderStage::TessellationControl) flags |= vk::ShaderStageFlagBits::eTessellationControl;
-	if((stages & ShaderStage::TessellationEvaluation) == ShaderStage::TessellationEvaluation) flags |= vk::ShaderStageFlagBits::eTessellationEvaluation;
-	if((stages & ShaderStage::Geometry) == ShaderStage::Geometry) flags |= vk::ShaderStageFlagBits::eGeometry;
-	if((stages & ShaderStage::Fragment) == ShaderStage::Fragment) flags |= vk::ShaderStageFlagBits::eFragment;
-	if((stages & ShaderStage::Compute) == ShaderStage::Compute) flags |= vk::ShaderStageFlagBits::eCompute;
-	return flags;
 }
 
 //-----------------
@@ -209,7 +197,6 @@ bool Shader::linkProgram() {
 	using namespace ShaderUtils;
 	vk::Device vkDevice(device->getApiHandle());
 
-	pipelineLayout = nullptr;
 	resources.clear();
 	descriptorPools.clear();
 	
@@ -221,61 +208,45 @@ bool Shader::linkProgram() {
 		
 		for(auto& resource : objResources) {
 			std::string key = resource.name;
-			Util::hash_combine(hash, resource);
 
 			// Update name as input and output resources can have the same name
-			if(resource.type == ShaderResourceType::Output || resource.type == ShaderResourceType::Input) {
-				key = toString(resource.stages) + "_" + key;
+			if(resource.layout.type == ShaderResourceType::Output || resource.layout.type == ShaderResourceType::Input) {
+				key = toString(resource.layout.stages) + "_" + key;
 			}
 
 			auto it = resources.find(key);
 			if(it == resources.end()) {
 				resources.emplace(key, resource);
 			} else if(it->second == resource) {
-				it->second.stages = it->second.stages | resource.stages;
+				it->second.layout.stages = it->second.layout.stages | resource.layout.stages;
 			} else {
 				WARN("Shader: Cannot link shader. Resource missmatch: " + toString(it->second) + " != " + toString(resource));
 				return false;
 			}
 		}
 	}
+	
 
 	// Separate resources by set index
-	std::vector<vk::PushConstantRange> pushConstantRanges;
-	std::map<uint32_t, ShaderResourceList> setResources;
+	std::vector<PushConstantRange> pushConstantRanges;
+	std::map<uint32_t, ShaderResourceLayoutSet> layoutSets;
 	for(auto& res : resources) {
-		setResources[res.second.set].emplace_back(res.second);
-		if(res.second.type == ShaderResourceType::PushConstant) {
-			pushConstantRanges.emplace_back(convertStageFlags(res.second.stages), res.second.offset, res.second.size);
+		layoutSets[res.second.set].setLayout(res.second.binding, res.second.layout);
+		if(res.second.layout.type == ShaderResourceType::PushConstant) {
+			pushConstantRanges.emplace_back(PushConstantRange{res.second.offset, res.second.size, res.second.layout.stages});
 		}
 	}
+	layout.setLayoutSets(layoutSets);
+	layout.setPushConstantRanges(pushConstantRanges);
 
-	// Create descriptor set layouts
-	for(auto& res : setResources) {
-		DescriptorPool::Ref pool = new DescriptorPool(device, res.first);
-		if(pool->init(res.second))
+	// Create descriptor set pools
+	for(auto& res : layoutSets) {
+		DescriptorPool::Ref pool = new DescriptorPool(device, res.first, res.second);
+		if(pool->init())
 			descriptorPools.emplace(res.first, pool);
 	}
 
-	std::vector<vk::DescriptorSetLayout> layouts;
-	for(auto& res : descriptorPools)
-		layouts.emplace_back(res.second->getLayout()->getApiHandle());
-
-	pipelineLayout = PipelineLayoutHandle::create(vkDevice.createPipelineLayout({{},
-		static_cast<uint32_t>(layouts.size()), layouts.data(),
-		static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data(),
-	}), vkDevice);
-
 	return true;
-}
-
-//-----------------
-
-DescriptorSetRef Shader::requestDescriptorSet(uint32_t set) {
-	auto it = descriptorPools.find(set);
-	if(it == descriptorPools.end() || it->second.isNull())
-		return nullptr;
-	return it->second->request();
 }
 
 //-----------------
@@ -627,7 +598,7 @@ int32_t Shader::getVertexAttributeLocation(Util::StringIdentifier attrName) {
 		return -1;
 
 	auto it = resources.find(attrName.toString());
-	if( it != resources.end() && it->second.type == ShaderResourceType::Input ) {
+	if( it != resources.end() && it->second.layout.type == ShaderResourceType::Input ) {
 		return static_cast<int32_t>(it->second.location);
 	}
 	return -1;

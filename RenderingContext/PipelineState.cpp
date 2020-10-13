@@ -54,7 +54,6 @@ PipelineState::PipelineState(PipelineState&& o) {
 		.setDepthStencilState(std::move(o.depthStencil))
 		.setColorBlendState(std::move(o.colorBlend))
 		.setEntryPoint(std::move(o.entrypoint))
-		.setShader(std::move(o.shader))
 		.setFBO(std::move(o.fbo));
 	o.reset();
 }
@@ -70,7 +69,6 @@ PipelineState::PipelineState(const PipelineState& o) {
 		.setDepthStencilState(o.depthStencil)
 		.setColorBlendState(o.colorBlend)
 		.setEntryPoint(o.entrypoint)
-		.setShader(o.shader)
 		.setFBO(o.fbo);
 }
 
@@ -85,7 +83,6 @@ PipelineState& PipelineState::operator=(PipelineState&& o) {
 		.setDepthStencilState(std::move(o.depthStencil))
 		.setColorBlendState(std::move(o.colorBlend))
 		.setEntryPoint(std::move(o.entrypoint))
-		.setShader(std::move(o.shader))
 		.setFBO(std::move(o.fbo));
 	o.reset();
 	return *this;
@@ -102,7 +99,6 @@ PipelineState& PipelineState::operator=(const PipelineState& o) {
 		.setDepthStencilState(o.depthStencil)
 		.setColorBlendState(o.colorBlend)
 		.setEntryPoint(o.entrypoint)
-		.setShader(o.shader)
 		.setFBO(o.fbo);
 	return *this;
 }
@@ -118,17 +114,8 @@ PipelineState& PipelineState::reset() {
 		.setDepthStencilState({})
 		.setColorBlendState({})
 		.setEntryPoint("main")
-		.setShader(nullptr)
 		.setFBO(nullptr);
 		return *this;
-}
-
-//-------------
-
-PipelineState& PipelineState::setShader(const ShaderRef& _shader) {
-	shader = _shader;
-	hashes[PipelineHashEntry::Shader] = shader ? shader->getLayoutHash() : 0;
-	return *this;
 }
 
 //-------------

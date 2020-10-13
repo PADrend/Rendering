@@ -155,17 +155,15 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name Shader Resources */
 	// @{
 	public:
-		const PipelineLayoutHandle& getPipelineLayout() const { return pipelineLayout; }
-		size_t getLayoutHash() const { return hash; }
+		const ShaderLayout& getLayout() const { return layout; }
 		
 		const std::map<uint32_t, DescriptorPoolRef>& getDescriptorPools() const { return descriptorPools; }
 		const DescriptorPoolRef& getDescriptorPool(uint32_t set) const { return descriptorPools.at(set); }
-		DescriptorSetRef requestDescriptorSet(uint32_t set);
 	private:
-		PipelineLayoutHandle pipelineLayout;
+		ShaderLayout layout;
 		std::unordered_map<std::string, ShaderResource> resources;
+		
 		std::map<uint32_t, DescriptorPoolRef> descriptorPools;
-		size_t hash = 0;
 	// @}
 
 	// ------------------------

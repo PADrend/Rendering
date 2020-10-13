@@ -18,6 +18,8 @@
 namespace Rendering {
 class Device;
 using DeviceRef = Util::Reference<Device>;
+class Shader;
+using ShaderRef = Util::Reference<Shader>;
 
 //---------------
 
@@ -50,7 +52,7 @@ public:
 	void setDepthStencilState(const DepthStencilState& value) { state.setDepthStencilState(value); }
 	void setColorBlendState(const ColorBlendState& value) { state.setColorBlendState(value); }
 	void setEntryPoint(const std::string& value) { state.setEntryPoint(value); }
-	void setShader(const ShaderRef& shader) { state.setShader(shader); }
+	void setShader(const ShaderRef& value);
 	void setFBO(const FBORef& fbo) { state.setFBO(fbo); }
 	
 	const VertexInputState& getVertexInputState() const { return state.getVertexInputState(); }
@@ -61,7 +63,7 @@ public:
 	const DepthStencilState& getDepthStencilState() const { return state.getDepthStencilState(); }
 	const ColorBlendState& getColorBlendState() const { return state.getColorBlendState(); }
 	const std::string& getEntryPoint() const { return state.getEntryPoint(); }
-	const ShaderRef& getShader() const { return state.getShader(); }
+	const ShaderRef& getShader() const { return shader; }
 	const FBORef& getFBO() const { return state.getFBO(); }
 
 	void setType(const PipelineType& value) { type = value; }
@@ -74,6 +76,7 @@ private:
 	const DeviceRef device;
 	PipelineType type = PipelineType::Graphics;
 	PipelineState state;
+	ShaderRef shader;
 	Ref parent;
 	PipelineHandle handle;
 	size_t hash = 0;

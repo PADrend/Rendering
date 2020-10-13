@@ -26,7 +26,6 @@ add_library(Rendering SHARED
 	Core/Common.cpp
 	Core/DescriptorPool.cpp
 	Core/DescriptorSet.cpp
-	Core/DescriptorSetLayout.cpp
 	Core/Device.cpp
 	Core/Fence.cpp
 	Core/ImageStorage.cpp

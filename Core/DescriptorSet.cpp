@@ -9,7 +9,6 @@
 
 #include "DescriptorSet.h"
 #include "DescriptorPool.h"
-#include "DescriptorSetLayout.h"
 #include "Device.h"
 #include "Sampler.h"
 #include "ImageView.h"
@@ -27,7 +26,9 @@ namespace Rendering {
 
 //-----------------
 
+vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
 vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
+bool hasBindingPoint(const ShaderResourceType& type);
 
 //-----------------
 
@@ -62,9 +63,58 @@ inline static vk::ImageLayout getVkImageLayout(const ShaderResourceType& type) {
 
 //---------------
 
-DescriptorSet::Ref DescriptorSet::request(const DescriptorPoolRef& pool, const BindingSet& bindings) {
-	Ref obj = pool->request();
-	if(!obj)
+ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderResourceLayoutSet& layoutSet) {
+	vk::Device vkDevice(device->getApiHandle());
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	for(const auto& it : layoutSet.getLayouts()) {
+		auto layout = it.second;
+		if(!hasBindingPoint(layout.type))
+			continue; // Skip resources whitout a binding point
+
+		vk::DescriptorSetLayoutBinding binding{};
+		binding.binding = it.first;
+		binding.descriptorCount = layout.elementCount;
+		binding.descriptorType = getVkDescriptorType(layout.type, layout.dynamic);
+		binding.stageFlags = getVkStageFlags(layout.stages);
+
+		bindings.emplace_back(binding);
+	}
+
+	return DescriptorSetLayoutHandle::create(vkDevice.createDescriptorSetLayout({{}, static_cast<uint32_t>(bindings.size()), bindings.data()}), vkDevice).get();
+}
+
+//---------------
+
+ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout& layout) {
+	vk::Device vkDevice(device->getApiHandle());
+
+	for(auto& set : layout.getLayoutSets()) {
+
+	}
+	// Separate resources by set index
+	std::vector<vk::PushConstantRange> pushConstantRanges;
+	/*for(auto& res : resources) {
+		setResources[res.second.set].emplace_back(res.second);
+		if(res.second.layout.type == ShaderResourceType::PushConstant) {
+			pushConstantRanges.emplace_back(getVkStageFlags(res.second.layout.stages), res.second.offset, res.second.size);
+		}
+	}*/
+
+	std::vector<vk::DescriptorSetLayout> layouts;
+	/*for(auto& res : descriptorPools)
+		layouts.emplace_back(res.second->getLayout()->getApiHandle());*/
+
+	return PipelineLayoutHandle::create(vkDevice.createPipelineLayout({{},
+		static_cast<uint32_t>(layouts.size()), layouts.data(),
+		static_cast<uint32_t>(pushConstantRanges.size()), pushConstantRanges.data(),
+	}), vkDevice).get();
+}
+
+//---------------
+
+DescriptorSet::Ref DescriptorSet::create(const DescriptorPoolRef& pool, const BindingSet& bindings) {
+	Ref obj = new DescriptorSet(pool);
+	if(!obj->init())
 		return nullptr;
 	obj->update(bindings);
 	return obj;
@@ -72,33 +122,40 @@ DescriptorSet::Ref DescriptorSet::request(const DescriptorPoolRef& pool, const B
 
 //---------------
 
-DescriptorSet::DescriptorSet(const DescriptorPoolRef& pool, uint32_t descriptorId) : pool(pool), descriptorId(descriptorId) { }
+DescriptorSet::DescriptorSet(const DescriptorPoolRef& pool) : pool(pool) { }
 
 //---------------
 
 DescriptorSet::~DescriptorSet() {
-	pool->free(this);
-	descriptorId = std::numeric_limits<uint32_t>::max();
+	pool->free(handle);
+}
+
+//---------------
+
+bool DescriptorSet::init() {
+	if(!pool)
+		return false;
+	handle = pool->request();
+	layoutHandle = pool->getLayoutHandle();
+	return handle.isNotNull();
 }
 
 //---------------
 
 bool DescriptorSet::update(const BindingSet& bindings) {
 	auto layout = pool->getLayout();
-	vk::Device vkDevice(layout->getApiHandle());
-	vk::DescriptorSet vkDescriptorSet(pool->getDescriptorHandle(descriptorId));
-	WARN_AND_RETURN_IF(!vkDescriptorSet, "Descriptor set is invalid or has been freed.", false);
+	vk::Device vkDevice(layoutHandle);
+	vk::DescriptorSet vkDescriptorSet(handle);
 	
 	std::vector<vk::WriteDescriptorSet> writes;
 	for(auto& bIt : bindings.getBindings()) {
 		auto& binding = bIt.second;
-		auto descriptor = std::find_if(layout->getResources().begin(), layout->getResources().end(), [&](const ShaderResource& res) {
-			return bIt.first == res.binding;
-		});
-		if(descriptor == layout->getResources().end())
+		if(!layout.hasLayout(bIt.first))
 			continue;
-		auto usage = getResourceUsage(descriptor->type);
-		auto vkImageLayout = getVkImageLayout(descriptor->type);
+		auto descriptor = layout.getLayout(bIt.first);
+		
+		auto usage = getResourceUsage(descriptor.type);
+		auto vkImageLayout = getVkImageLayout(descriptor.type);
 
 		std::vector<vk::DescriptorImageInfo> imageBindings;
 		std::vector<vk::DescriptorBufferInfo> bufferBindings;
@@ -139,7 +196,7 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 		uint32_t count = static_cast<uint32_t>(std::max(imageBindings.size(), std::max(bufferBindings.size(), texelBufferViews.size())));
 		writes.emplace_back(
 			vkDescriptorSet, bIt.first, 
-			0, count, getVkDescriptorType(descriptor->type, descriptor->dynamic), 
+			0, count, getVkDescriptorType(descriptor.type, descriptor.dynamic), 
 			imageBindings.data(), bufferBindings.data(), texelBufferViews.data()
 		);
 	}
@@ -150,7 +207,7 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 //---------------
 
 const DescriptorSetHandle& DescriptorSet::getApiHandle() const {
-	return pool->getDescriptorHandle(descriptorId);
+	return handle;
 }
 
 //---------------

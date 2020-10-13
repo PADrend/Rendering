@@ -26,7 +26,7 @@ using DescriptorPoolRef = Util::Reference<DescriptorPool>;
 class DescriptorSet : public Util::ReferenceCounter<DescriptorSet> {
 public:
 	using Ref = Util::Reference<DescriptorSet>;
-	static Ref request(const DescriptorPoolRef& pool, const BindingSet& bindings);
+	static Ref create(const DescriptorPoolRef& pool, const BindingSet& bindings);
 
 	~DescriptorSet();
 	DescriptorSet(DescriptorSet&& o) = default;
@@ -39,10 +39,11 @@ public:
 	const DescriptorSetHandle& getApiHandle() const;
 private:
 	friend class DescriptorPool;
-	DescriptorSet(const DescriptorPoolRef& pool, uint32_t descriptorId);
-	
+	DescriptorSet(const DescriptorPoolRef& pool);
+	bool init();
 	const DescriptorPoolRef pool;
-	uint32_t descriptorId;
+	DescriptorSetHandle handle;
+	DescriptorSetLayoutHandle layoutHandle;
 };
 
 } /* Rendering */

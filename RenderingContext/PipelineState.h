@@ -20,6 +20,7 @@
 
 #include <functional>
 #include <vector>
+#include <map>
 
 namespace Rendering {
 class Shader;
@@ -540,7 +541,6 @@ private:
 	bool dynamicBlendConstant = false;
 };
 
-
 //==================================================================
 // PipelineState
 
@@ -563,7 +563,6 @@ public:
 	inline PipelineState& setDepthStencilState(const DepthStencilState& state);
 	inline PipelineState& setColorBlendState(const ColorBlendState& state);
 	inline PipelineState& setEntryPoint(const std::string& value);
-	PipelineState& setShader(const ShaderRef& shader);
 	PipelineState& setFBO(const FBORef& fbo);
 	
 	const VertexInputState& getVertexInputState() const { return vertexInput; }
@@ -574,7 +573,6 @@ public:
 	const DepthStencilState& getDepthStencilState() const { return depthStencil; }
 	const ColorBlendState& getColorBlendState() const { return colorBlend; }
 	const std::string& getEntryPoint() const { return entrypoint; }
-	const ShaderRef& getShader() const { return shader; }
 	const FBORef& getFBO() const { return fbo; }
 
 	size_t getHash() const {
@@ -593,7 +591,6 @@ private:
 		DepthStencil,
 		ColorBlend,
 		EntryPoint,
-		Shader,
 		FBO,
 		EntryCount,
 	};
@@ -608,7 +605,6 @@ private:
 	DepthStencilState depthStencil;
 	ColorBlendState colorBlend;
 	std::string entrypoint;
-	ShaderRef shader;
 	FBORef fbo;
 };
 
@@ -618,6 +614,7 @@ private:
 
 //==================================================================
 // state hashing
+//==================================================================
 
 namespace std {
 using namespace Rendering;
@@ -811,7 +808,6 @@ template <> struct hash<ColorBlendAttachmentState> {
 		return result;
 	}
 };
-
 
 //-------------
 

@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <deque>
+#include <set>
 
 namespace Rendering {
 class Device;
@@ -32,25 +33,28 @@ public:
 	DescriptorPool(DescriptorPool&& o) = delete;
 	DescriptorPool(const DescriptorPool& o) = delete;
 
-	DescriptorSetRef request();
-	void free(DescriptorSet* obj);
+	DescriptorSetHandle request();
+	void free(DescriptorSetHandle handle);
 	void reset();
 
 	uint32_t getSetIndex() const { return set; }
-	const DescriptorSetLayoutRef& getLayout() const { return layout; }
-	const DescriptorSetHandle& getDescriptorHandle(uint32_t id) const;
+	const ShaderResourceLayoutSet& getLayout() const { return layout; }
+	const DescriptorSetLayoutHandle& getLayoutHandle() const { return layoutHandle; }
 private:
 	friend class Shader;
-	explicit DescriptorPool(const DeviceRef& device, uint32_t set);
-	bool init(const ShaderResourceList& resources);
+	explicit DescriptorPool(const DeviceRef& device, uint32_t set, const ShaderResourceLayoutSet& layout);
+	bool init();
 
 	const DeviceRef device;
 	const uint32_t set = 0;
-	DescriptorSetLayoutRef layout;
+	const ShaderResourceLayoutSet layout;
+
+	DescriptorSetLayoutHandle layoutHandle;
 	std::vector<DescriptorPoolHandle> pools;
 	uint32_t poolCounter = 0;
-	std::deque<uint32_t> freeDescriptorIds;
-	std::deque<DescriptorSetHandle> descriptors;
+
+	std::deque<DescriptorSetHandle> freeObjects;
+	std::set<DescriptorSetHandle> activeObjects;
 };
 
 } /* Rendering */

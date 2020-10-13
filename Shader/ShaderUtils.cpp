@@ -18,12 +18,64 @@
 #include <vulkan/vulkan.hpp>
 
 namespace Rendering {
-namespace ShaderUtils {
+
+std::string toString(ShaderStage stage) {
+	switch(stage) {
+		case ShaderStage::Undefined: return "Undefined";
+		case ShaderStage::Vertex: return "Vertex";
+		case ShaderStage::TessellationControl: return "TessellationControl";
+		case ShaderStage::TessellationEvaluation: return "TessellationEvaluation";
+		case ShaderStage::Geometry: return "Geometry";
+		case ShaderStage::Fragment: return "Fragment";
+		case ShaderStage::Compute: return "Compute";
+	}
+	return "";
+}
 
 //-------------
 
+std::string toString(ShaderResourceType type) {
+	switch(type) {
+		case ShaderResourceType::Input: return "Input";
+		case ShaderResourceType::InputAttachment: return "InputAttachment";
+		case ShaderResourceType::Output: return "Output";
+		case ShaderResourceType::Image: return "Image";
+		case ShaderResourceType::ImageSampler: return "ImageSampler";
+		case ShaderResourceType::ImageStorage: return "ImageStorage";
+		case ShaderResourceType::Sampler: return "Sampler";
+		case ShaderResourceType::BufferUniform: return "BufferUniform";
+		case ShaderResourceType::BufferStorage: return "BufferStorage";
+		case ShaderResourceType::PushConstant: return "PushConstant";
+		case ShaderResourceType::SpecializationConstant: return "SpecializationConstant";
+		default: return "";
+	}
+}
+
+//-------------
+
+std::string toString(const ShaderResource& resource) {
+	return "ShaderResource(name " + resource.name + ", " 
+		+ "stage " + toString(resource.layout.stages) + ", "
+		+ "type " + toString(resource.layout.type) + ", "
+		+ "set " + std::to_string(resource.set) + ", "
+		+ "binding " + std::to_string(resource.binding) + ", "
+		+ "location " + std::to_string(resource.location) + ", "
+		+ "inputAttachmentIndex " + std::to_string(resource.inputAttachmentIndex) + ", "
+		+ "vecSize " + std::to_string(resource.vecSize) + ", "
+		+ "columns " + std::to_string(resource.columns) + ", "
+		+ "arraySize " + std::to_string(resource.layout.elementCount) + ", "
+		+ "offset " + std::to_string(resource.offset) + ", "
+		+ "size " + std::to_string(resource.size) + ", "
+		+ "constantId " + std::to_string(resource.constantId) + ", "
+		+ "dynamic " + std::to_string(resource.layout.dynamic) + ")";
+}
+
+//-------------
+
+namespace ShaderUtils {
+
 static ShaderResource readPushConstant(spirv_cross::Compiler& compiler, spirv_cross::Resource& resource, ShaderStage stage) {
-	ShaderResource result{resource.name, stage, ShaderResourceType::PushConstant};
+	ShaderResource result{resource.name, 0, 0, {ShaderResourceType::PushConstant, stage}};
 	const auto& spirvType = compiler.get_type_from_variable(resource.id);
 	result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
 	result.offset = std::numeric_limits<std::uint32_t>::max();
@@ -36,7 +88,7 @@ static ShaderResource readPushConstant(spirv_cross::Compiler& compiler, spirv_cr
 //-------------
 
 static ShaderResource readSpecializationConstant(spirv_cross::Compiler& compiler, spirv_cross::SpecializationConstant& resource, ShaderStage stage) {
-	ShaderResource result{compiler.get_name(resource.id), stage, ShaderResourceType::SpecializationConstant};
+	ShaderResource result{compiler.get_name(resource.id), 0, 0, {ShaderResourceType::SpecializationConstant, stage}};
 	const auto& spirvValue = compiler.get_constant(resource.id);
 	const auto& spirvType = compiler.get_type(spirvValue.constant_type);
 	switch (spirvType.basetype) {
@@ -57,17 +109,17 @@ static ShaderResource readSpecializationConstant(spirv_cross::Compiler& compiler
 			break;
 	}
 	result.offset = 0;
-	result.constant_id = resource.constant_id;
+	result.constantId = resource.constant_id;
 	return result;
 }
 
 //-------------
 
 static ShaderResource readShaderResource(spirv_cross::Compiler& compiler, spirv_cross::Resource& resource, ShaderStage stage, ShaderResourceType type) {
-	ShaderResource result{resource.name, stage, type};
+	ShaderResource result{resource.name, 0, 0, {type, stage}};
 	const auto& spirvType = compiler.get_type_from_variable(resource.id);
-	result.array_size = spirvType.array.size() ? spirvType.array[0] : 1;
-	result.vec_size = spirvType.vecsize;
+	result.layout.elementCount = spirvType.array.size() ? spirvType.array[0] : 1;
+	result.vecSize = spirvType.vecsize;
 
 	switch(type) {
 		case ShaderResourceType::BufferUniform:
@@ -80,7 +132,7 @@ static ShaderResource readShaderResource(spirv_cross::Compiler& compiler, spirv_
 	result.location = compiler.get_decoration(resource.id, spv::DecorationLocation);
 	result.set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 	result.binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-	result.input_attachment_index = compiler.get_decoration(resource.id, spv::DecorationInputAttachmentIndex);
+	result.inputAttachmentIndex = compiler.get_decoration(resource.id, spv::DecorationInputAttachmentIndex);
 	result.columns = spirvType.columns;
 	return result;
 }

@@ -15,9 +15,15 @@ namespace Rendering {
 
 static const Util::StringIdentifier COMPUTE_PIPELINE("ComputePipeline");
 static const Util::StringIdentifier GRAPHICS_PIPELINE("GraphicsPipeline");
+static const Util::StringIdentifier DESCRIPTORSET_LAYOUT("DescriptorSetLayout");
+static const Util::StringIdentifier PIPELINE_LAYOUT("PipelineLayout");
 
-ApiBaseHandle::Ref createComputePipelineHandle(Device* device, const PipelineState& state, VkPipeline parent);
-ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineState& state, VkPipeline parent);
+//----------------
+
+ApiBaseHandle::Ref createComputePipelineHandle(Device* device, Shader* shader, const std::string& entryPoint, VkPipeline parent);
+ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, const PipelineState& state, VkPipeline parent);
+ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderResourceLayoutSet& layoutSet);
+ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout& layout);
 
 //----------------
 
@@ -30,19 +36,32 @@ ResourceCache::Ref ResourceCache::create(const DeviceRef& device) {
 ResourceCache::ResourceCache(const DeviceRef& device) : device(device) {
 	cache.registerType(COMPUTE_PIPELINE, std::function<decltype(createComputePipelineHandle)>(createComputePipelineHandle));
 	cache.registerType(GRAPHICS_PIPELINE, std::function<decltype(createGraphicsPipelineHandle)>(createGraphicsPipelineHandle));
+	cache.registerType(DESCRIPTORSET_LAYOUT, std::function<decltype(createDescriptorSetLayoutHandle)>(createDescriptorSetLayoutHandle));
+	cache.registerType(PIPELINE_LAYOUT, std::function<decltype(createPipelineLayoutHandle)>(createPipelineLayoutHandle));
 }
 
 //----------------
 
-PipelineHandle ResourceCache::createComputePipeline(const PipelineState& state, const PipelineHandle& parent) {
-	return create<PipelineHandle, const PipelineState&, VkPipeline>(COMPUTE_PIPELINE, state, parent);
-	return nullptr;
+PipelineHandle ResourceCache::createComputePipeline(const ShaderRef& shader, const std::string& entryPoint, const PipelineHandle& parent) {
+	return create<PipelineHandle, Shader*, const std::string&, VkPipeline>(COMPUTE_PIPELINE, shader.get(), entryPoint, parent);
 }
 
 //----------------
 
-PipelineHandle ResourceCache::createGraphicsPipeline(const PipelineState& state, const PipelineHandle& parent) {
-	return create<PipelineHandle, const PipelineState&, VkPipeline>(GRAPHICS_PIPELINE, state, parent);
+PipelineHandle ResourceCache::createGraphicsPipeline(const ShaderRef& shader, const PipelineState& state, const PipelineHandle& parent) {
+	return create<PipelineHandle, Shader*, const PipelineState&, VkPipeline>(GRAPHICS_PIPELINE, shader, state, parent);
+}
+
+//----------------
+
+DescriptorSetLayoutHandle ResourceCache::createDescriptorSetLayout(const ShaderResourceLayoutSet& layout) {
+	return create<DescriptorSetLayoutHandle, const ShaderResourceLayoutSet&>(DESCRIPTORSET_LAYOUT, layout);
+}
+
+//----------------
+
+PipelineLayoutHandle ResourceCache::createPipelineLayout(const ShaderLayout& layout) {
+	return create<PipelineLayoutHandle, const ShaderLayout&>(PIPELINE_LAYOUT, layout);
 }
 
 //----------------

@@ -10,8 +10,9 @@
 #ifndef RENDERING_CORE_RESOURCECACHE_H_
 #define RENDERING_CORE_RESOURCECACHE_H_
 
-#include "ApiHandles.h"
+#include "Common.h"
 #include "../RenderingContext/PipelineState.h"
+#include "../Shader/ShaderUtils.h"
 
 #include <Util/StringIdentifier.h>
 #include <Util/Factory/ObjectCache.h>
@@ -32,8 +33,10 @@ public:
 	ResourceCache& operator=(ResourceCache&& o) = default;
 	ResourceCache& operator=(const ResourceCache& o) = default;
 
-	PipelineHandle createComputePipeline(const PipelineState& state, const PipelineHandle& parent);	
-	PipelineHandle createGraphicsPipeline(const PipelineState& state, const PipelineHandle& parent);
+	PipelineHandle createComputePipeline(const ShaderRef& shader, const std::string& entryPoint, const PipelineHandle& parent);
+	PipelineHandle createGraphicsPipeline(const ShaderRef& shader, const PipelineState& state, const PipelineHandle& parent);
+	DescriptorSetLayoutHandle createDescriptorSetLayout(const ShaderResourceLayoutSet& layout);
+	PipelineLayoutHandle createPipelineLayout(const ShaderLayout& layout);
 private:
 	ResourceCache(const DeviceRef& device);
 	Util::WeakPointer<Device> device;

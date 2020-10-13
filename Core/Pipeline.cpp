@@ -198,17 +198,16 @@ static vk::PipelineColorBlendAttachmentState convertColorBlendAttachmentState(co
 
 //---------------
 
-ApiBaseHandle::Ref createComputePipelineHandle(Device* device, const PipelineState& state, VkPipeline parent) {
-	auto shader = state.getShader();
+ApiBaseHandle::Ref createComputePipelineHandle(Device* device, Shader* shader, const std::string& entryPoint, VkPipeline parent) {
 
 	// Create new pipeline
 	vk::Device vkDevice(device->getApiHandle());
 	vk::PipelineCache vkCache(device->getPipelineCache());
 
 	vk::ComputePipelineCreateInfo info{};
-	info.layout = shader->getPipelineLayout();
+	info.layout = device->getResourceCache()->createPipelineLayout(shader->getLayout());
 	info.stage.stage = vk::ShaderStageFlagBits::eCompute;
-	info.stage.pName = state.getEntryPoint().c_str();
+	info.stage.pName = entryPoint.c_str();
 	info.stage.pSpecializationInfo = nullptr; // TODO
 	auto moduleEntry = shader->getShaderModules().find(ShaderStage::Compute);
 	if(moduleEntry == shader->getShaderModules().end() || !moduleEntry->second)
@@ -224,8 +223,7 @@ ApiBaseHandle::Ref createComputePipelineHandle(Device* device, const PipelineSta
 
 //---------------
 
-ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineState& state, VkPipeline parent) {
-	auto shader = state.getShader();
+ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, const PipelineState& state, VkPipeline parent) {
 	auto fbo = state.getFBO();
 
 	// Create new pipeline
@@ -233,7 +231,7 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineSt
 	vk::PipelineCache vkCache(device->getPipelineCache());
 
 	vk::GraphicsPipelineCreateInfo info{};
-	info.layout = shader->getPipelineLayout();
+	info.layout = device->getResourceCache()->createPipelineLayout(shader->getLayout());
 	
 	// Convert shader stages
 	std::vector<vk::PipelineShaderStageCreateInfo> stages;
@@ -263,7 +261,7 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineSt
 	for(auto& b : state.getVertexInputState().getBindings())
 		bindings.emplace_back(b.binding, b.stride, static_cast<vk::VertexInputRate>(b.inputRate));
 	for(auto& a : state.getVertexInputState().getAttributes())
-		attributes.emplace_back(a.location, a.binding, static_cast<vk::Format>(getVkFormat(a.format)), a.offset);
+		attributes.emplace_back(a.location, a.binding, getVkFormat(a.format), a.offset);
 	vk::PipelineVertexInputStateCreateInfo vertexInput{{}, 
 		static_cast<uint32_t>(bindings.size()), bindings.data(), 
 		static_cast<uint32_t>(attributes.size()), attributes.data()
@@ -383,7 +381,6 @@ bool Pipeline::validate() {
 	
 	hash = 0;
 	handle = nullptr;
-	auto shader = state.getShader();
 	if(!shader->init())
 		return false;
 	
@@ -394,13 +391,13 @@ bool Pipeline::validate() {
 		if(!fbo->validate())
 			return false;
 			
-		handle = device->getResourceCache()->createGraphicsPipeline(state, parentHandle);
+		handle = device->getResourceCache()->createGraphicsPipeline(shader, state, parentHandle);
 		Util::hash_combine(hash, state);
 	} else if(type == PipelineType::Compute){
-		handle = device->getResourceCache()->createComputePipeline(state, parentHandle);
-		Util::hash_combine(hash, shader->getLayoutHash());
+		handle = device->getResourceCache()->createComputePipeline(shader, state.getEntryPoint(), parentHandle);
 		Util::hash_combine(hash, state.getEntryPoint());
 	}
+	Util::hash_combine(hash, shader->getLayout());
 	Util::hash_combine(hash, parent ? parent->hash : 0);
 
 	return handle.isNotNull();
@@ -412,7 +409,6 @@ bool Pipeline::isValid() const {
 	if(!handle)
 		return false;
 
-	auto shader = state.getShader();
 	if(!shader || shader->getStatus() != Shader::LINKED)
 		return false;
 	
@@ -427,13 +423,17 @@ bool Pipeline::isValid() const {
 	if(type == PipelineType::Graphics) {
 		Util::hash_combine(tmpHash, state);
 	} else {
-		Util::hash_combine(tmpHash, shader->getLayoutHash());
 		Util::hash_combine(tmpHash, state.getEntryPoint());
 	}
+	Util::hash_combine(tmpHash, shader->getLayout());
 	Util::hash_combine(tmpHash, parent ? parent->hash : 0);
 	return hash == tmpHash;
 }
 
+//---------------
+
+void Pipeline::setShader(const ShaderRef& value) { shader = value; }
+	
 //---------------
 
 } /* Rendering */
