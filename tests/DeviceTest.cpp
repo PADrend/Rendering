@@ -27,5 +27,9 @@ TEST_CASE("DeviceTest_test", "[DeviceTest]") {
 	REQUIRE(device);
 	vk::Device vkDevice(device->getApiHandle());
 	REQUIRE(vkDevice);
+	std::cout << "Max. push constant size: " << device->getMaxPushConstantSize() << std::endl;
+	REQUIRE(device->getMaxPushConstantSize() >= 128);
+	std::cout << "Max. framebuffer attachments: " << device->getMaxFramebufferAttachments() << std::endl;
+	REQUIRE(device->getMaxFramebufferAttachments() >= 1);
 	vkDevice.waitIdle();
 }

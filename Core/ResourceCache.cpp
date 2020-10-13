@@ -10,22 +10,26 @@
 #include "ResourceCache.h"
 #include "../FBO.h"
 #include "../Shader/Shader.h"
+#include "../Texture/Texture.h"
 
 namespace Rendering {
 
-static const Util::StringIdentifier COMPUTE_PIPELINE("ComputePipeline");
-static const Util::StringIdentifier GRAPHICS_PIPELINE("GraphicsPipeline");
+static const Util::StringIdentifier PIPELINE("Pipeline");
 static const Util::StringIdentifier DESCRIPTORSET_LAYOUT("DescriptorSetLayout");
 static const Util::StringIdentifier PIPELINE_LAYOUT("PipelineLayout");
+static const Util::StringIdentifier RENDERPASS("RenderPass");
+static const Util::StringIdentifier FRAMEBUFFER("Framebuffer");
 
 //----------------
 
-// defined in Pipeline.cpp
-ApiBaseHandle::Ref createComputePipelineHandle(Device* device, Shader* shader, const std::string& entryPoint, VkPipeline parent);
-ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, const PipelineState& state, VkPipeline parent);
-ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout& layout);
-// defined in DescriptorSet.cpp
-ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderResourceLayoutSet& layoutSet);
+// defined in internal/VkPipeline.cpp
+ApiBaseHandle::Ref createPipelineHandle(Device*, const PipelineState&, VkPipeline);
+ApiBaseHandle::Ref createPipelineLayoutHandle(Device*, const ShaderLayout&);
+ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device*, const ShaderResourceLayoutSet&);
+
+// defined in internal/VkFramebuffer.cpp
+ApiBaseHandle::Ref createRenderPassHandle(Device*, const FramebufferFormat&, bool, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage);
+ApiBaseHandle::Ref createFramebufferHandle(Device*, FBO*, VkRenderPass);
 
 //----------------
 
@@ -36,22 +40,18 @@ ResourceCache::Ref ResourceCache::create(const DeviceRef& device) {
 //----------------
 
 ResourceCache::ResourceCache(const DeviceRef& device) : device(device) {
-	cache.registerType(COMPUTE_PIPELINE, std::function<decltype(createComputePipelineHandle)>(createComputePipelineHandle));
-	cache.registerType(GRAPHICS_PIPELINE, std::function<decltype(createGraphicsPipelineHandle)>(createGraphicsPipelineHandle));
+	cache.registerType(PIPELINE, std::function<decltype(createPipelineHandle)>(createPipelineHandle));
 	cache.registerType(DESCRIPTORSET_LAYOUT, std::function<decltype(createDescriptorSetLayoutHandle)>(createDescriptorSetLayoutHandle));
 	cache.registerType(PIPELINE_LAYOUT, std::function<decltype(createPipelineLayoutHandle)>(createPipelineLayoutHandle));
+	cache.registerType(RENDERPASS, std::function<decltype(createRenderPassHandle)>(createRenderPassHandle));
+	cache.registerType(FRAMEBUFFER, std::function<decltype(createFramebufferHandle)>(createFramebufferHandle));
 }
+
 
 //----------------
 
-PipelineHandle ResourceCache::createComputePipeline(const ShaderRef& shader, const std::string& entryPoint, const PipelineHandle& parent) {
-	return create<PipelineHandle, Shader*, const std::string&, VkPipeline>(COMPUTE_PIPELINE, shader.get(), entryPoint, parent);
-}
-
-//----------------
-
-PipelineHandle ResourceCache::createGraphicsPipeline(const ShaderRef& shader, const PipelineState& state, const PipelineHandle& parent) {
-	return create<PipelineHandle, Shader*, const PipelineState&, VkPipeline>(GRAPHICS_PIPELINE, shader, state, parent);
+PipelineHandle ResourceCache::createPipeline(const PipelineState& state, const PipelineHandle& parent) {
+	return create<PipelineHandle, const PipelineState&, VkPipeline>(PIPELINE, state, parent);
 }
 
 //----------------
@@ -67,4 +67,39 @@ PipelineLayoutHandle ResourceCache::createPipelineLayout(const ShaderLayout& lay
 }
 
 //----------------
+
+RenderPassHandle ResourceCache::createRenderPass(const FramebufferFormat& attachments) {
+	return create<RenderPassHandle, const FramebufferFormat&, bool, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage>(RENDERPASS, attachments, false, false, false, {}, {});
+}
+
+//----------------
+
+RenderPassHandle ResourceCache::createRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, bool prepareForPresent) {
+	if(!fbo)
+		return nullptr;
+	std::vector<ResourceUsage> lastColorUsages;
+	for(auto& att : fbo->getColorAttachments())
+		lastColorUsages.emplace_back(att.isNotNull() ? att->getLastUsage() : ResourceUsage::Undefined);
+	ResourceUsage lastDepthUsage = fbo->getDepthStencilAttachment() ? fbo->getDepthStencilAttachment()->getLastUsage() : ResourceUsage::Undefined;
+	return create<RenderPassHandle, const FramebufferFormat&, bool, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage>(RENDERPASS, {fbo}, clearColor, clearDepth, prepareForPresent, lastColorUsages, lastDepthUsage);
+}
+
+//----------------
+
+FramebufferHandle ResourceCache::createFramebuffer(const FBORef& fbo, const RenderPassHandle& renderPass) {
+	return create<FramebufferHandle, FBO*, VkRenderPass>(FRAMEBUFFER, fbo.get(), renderPass);
+}
+
+//----------------
 } /* Rendering */
+//---------------------------
+
+template <> struct std::hash<std::vector<Rendering::ResourceUsage>> {
+	std::size_t operator()(const std::vector<Rendering::ResourceUsage>& values) const {
+		std::size_t result = 0;
+		Util::hash_combine(result, values.size());
+		for(auto& v : values)
+			Util::hash_combine(result, v);
+		return result;
+	}
+};

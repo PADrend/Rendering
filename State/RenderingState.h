@@ -16,7 +16,7 @@
 
 #include <Util/Graphics/Color.h>
 #include <Util/References.h>
-#include <Util/Utils.h>
+#include <Util/Hashing.h>
 
 #include <vector>
 #include <map>
@@ -26,9 +26,6 @@ class Texture;
 using TextureRef = Util::Reference<Texture>;
 class Shader;
 using ShaderRef = Util::Reference<Shader>;
-
-template<typename T>
-inline size_t calcHash(const T& value) { return std::hash<T>{}(value); }
 
 //==================================================================
 // Camera
@@ -52,8 +49,8 @@ public:
 	}
 	bool operator!=(const CameraData& o) const { return !(*this == o); }
 
-	void markAsUnchanged() { hash = calcHash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != calcHash(*this) : false; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
 	Geometry::Matrix4x4f matrix_worldToCamera;
 	Geometry::Matrix4x4f matrix_cameraToWorld;
@@ -63,7 +60,7 @@ private:
 	Geometry::Vec3 position;
 	Geometry::Vec3 direction;
 	Geometry::Vec3 up;
-
+	
 	bool dirty = true;
 	size_t hash = 0;
 };
@@ -122,8 +119,8 @@ public:
 	}
 	bool operator!=(const MaterialData& o) const { return !(*this == o); }
 
-	void markAsUnchanged() { hash = calcHash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != calcHash(*this) : false; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
 	ShadingModel model = ShadingModel::Phong;
 	Util::Color4f ambient = {0,0,0,0};
@@ -197,8 +194,8 @@ public:
 	}
 	bool operator!=(const LightData& o) const { return !(*this == o); }
 
-	void markAsUnchanged() { hash = calcHash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != calcHash(*this) : false; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
 	LightType type;
 	Geometry::Vec3 position = {0,0,0};
@@ -251,8 +248,8 @@ public:
 	}
 	bool operator!=(const InstanceData& o) const { return !(*this == o); }
 
-	void markAsUnchanged() { hash = calcHash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != calcHash(*this) : false; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
 	Geometry::Matrix4x4f matrix_modelToCamera;
 	uint32_t materialId = 0;

@@ -9,6 +9,7 @@
 
 #include "PipelineState.h"
 #include "../Shader/Shader.h"
+#include "../Texture/Texture.h"
 #include "../FBO.h"
 
 #include <Util/Macros.h>
@@ -20,6 +21,7 @@ namespace Rendering {
 ViewportState& ViewportState::setViewport(const Viewport& value, uint32_t index) {
 	WARN_AND_RETURN_IF(viewports.size() <= index, "Invalid viewport index " + std::to_string(index), *this); 
 	viewports[index] = value; 
+	dirty = true;
 	return *this; 
 }
 
@@ -28,6 +30,7 @@ ViewportState& ViewportState::setViewport(const Viewport& value, uint32_t index)
 ViewportState& ViewportState::setViewports(const std::vector<Viewport>& values) {
 	setViewportScissorCount(values.size());
 	viewports = values;
+	dirty = true;
 	return *this; 
 }
 
@@ -35,6 +38,7 @@ ViewportState& ViewportState::setViewports(const std::vector<Viewport>& values) 
 
 ViewportState& ViewportState::setScissor(const Geometry::Rect_i& value, uint32_t index) {
 	WARN_AND_RETURN_IF(scissors.size() <= index, "Invalid scissor index " + std::to_string(index), *this); 
+	dirty = true;
 	scissors[index] = value; 
 	return *this; 
 }
@@ -44,6 +48,7 @@ ViewportState& ViewportState::setScissor(const Geometry::Rect_i& value, uint32_t
 ViewportState& ViewportState::setScissors(const std::vector<Geometry::Rect_i>& values) {
 	setViewportScissorCount(values.size());
 	scissors = values;
+	dirty = true;
 	return *this; 
 }
 
@@ -52,7 +57,27 @@ ViewportState& ViewportState::setScissors(const std::vector<Geometry::Rect_i>& v
 ColorBlendState& ColorBlendState::setAttachment(const ColorBlendAttachmentState& value, uint32_t index) { 
 	WARN_AND_RETURN_IF(attachments.size() <= index, "Invalid attachment index " + std::to_string(index), *this); 
 	attachments[index] = value; 
+	dirty = true;
 	return *this; 
+}
+
+//---------------
+
+FramebufferFormat::FramebufferFormat(const FBORef& fbo) {
+	if(fbo) {
+		colorAttachments.clear();
+		for(const auto& att : fbo->getColorAttachments()) {
+			if(att)
+				colorAttachments.emplace_back(att->getFormat().pixelFormat, att->getFormat().samples);
+			else
+				colorAttachments.emplace_back(InternalFormat::Unknown, 0);
+		}
+		auto depthAtt = fbo->getDepthStencilAttachment();
+		if(depthAtt)
+			depthAttachment = {depthAtt->getFormat().pixelFormat, depthAtt->getFormat().samples};
+		else
+			depthAttachment = {InternalFormat::Unknown, 0};
+	}
 }
 
 //---------------
@@ -69,8 +94,9 @@ PipelineState::PipelineState(PipelineState&& o) {
 		.setMultisampleState(std::move(o.multisample))
 		.setDepthStencilState(std::move(o.depthStencil))
 		.setColorBlendState(std::move(o.colorBlend))
+		.setShader(std::move(o.shader))
 		.setEntryPoint(std::move(o.entrypoint))
-		.setFBO(std::move(o.fbo));
+		.setFramebufferFormat(std::move(o.attachments));
 	o.reset();
 }
 
@@ -84,8 +110,9 @@ PipelineState::PipelineState(const PipelineState& o) {
 		.setMultisampleState(o.multisample)
 		.setDepthStencilState(o.depthStencil)
 		.setColorBlendState(o.colorBlend)
+		.setShader(o.shader)
 		.setEntryPoint(o.entrypoint)
-		.setFBO(o.fbo);
+		.setFramebufferFormat(o.attachments);
 }
 
 //-------------
@@ -98,9 +125,11 @@ PipelineState& PipelineState::operator=(PipelineState&& o) {
 		.setMultisampleState(std::move(o.multisample))
 		.setDepthStencilState(std::move(o.depthStencil))
 		.setColorBlendState(std::move(o.colorBlend))
+		.setShader(std::move(o.shader))
 		.setEntryPoint(std::move(o.entrypoint))
-		.setFBO(std::move(o.fbo));
+		.setFramebufferFormat(std::move(o.attachments));
 	o.reset();
+	markAsChanged();
 	return *this;
 }
 
@@ -114,8 +143,9 @@ PipelineState& PipelineState::operator=(const PipelineState& o) {
 		.setMultisampleState(o.multisample)
 		.setDepthStencilState(o.depthStencil)
 		.setColorBlendState(o.colorBlend)
+		.setShader(o.shader)
 		.setEntryPoint(o.entrypoint)
-		.setFBO(o.fbo);
+		.setFramebufferFormat(o.attachments);
 	return *this;
 }
 
@@ -129,21 +159,62 @@ PipelineState& PipelineState::reset() {
 		.setMultisampleState({})
 		.setDepthStencilState({})
 		.setColorBlendState({})
+		.setShader(nullptr)
 		.setEntryPoint("main")
-		.setFBO(nullptr);
-		return *this;
-}
-
-//-------------
-
-PipelineState& PipelineState::setFBO(const FBORef& _fbo) {
-	fbo = _fbo;
-	hashes[PipelineHashEntry::FBO] = fbo ? fbo->getLayoutHash() : 0;
+		.setFramebufferFormat(FramebufferFormat{});
+	markAsChanged();
 	return *this;
 }
 
 //-------------
 
+PipelineState& PipelineState::setShader(const ShaderRef& _shader) {
+	shader = _shader;
+	return *this;
+}
+
+//-------------
+
+void PipelineState::markAsChanged() {
+	dirty = true;
+	vertexInput.markAsChanged();
+	inputAssembly.markAsChanged();
+	viewport.markAsChanged();
+	rasterization.markAsChanged();
+	multisample.markAsChanged();
+	depthStencil.markAsChanged();
+	colorBlend.markAsChanged();
+}
+
+//-------------
+
+void PipelineState::markAsUnchanged() {
+	vertexInput.markAsUnchanged();
+	inputAssembly.markAsUnchanged();
+	viewport.markAsUnchanged();
+	rasterization.markAsUnchanged();
+	multisample.markAsUnchanged();
+	depthStencil.markAsUnchanged();
+	colorBlend.markAsUnchanged();
+	dirty = false;
+}
+
+//-------------
+
+bool PipelineState::hasChanged() const {
+	if(!dirty)
+		return false;
+	
+	return vertexInput.hasChanged() ||
+		inputAssembly.hasChanged() ||
+		viewport.hasChanged() ||
+		rasterization.hasChanged() ||
+		multisample.hasChanged() ||
+		depthStencil.hasChanged() ||
+		colorBlend.hasChanged();
+}
+
+//-------------
 
 } /* Rendering */
 

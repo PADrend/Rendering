@@ -9,12 +9,12 @@
 
 #include "CommandBuffer.h"
 #include "Device.h"
-#include "DescriptorSet.h"
+#include "ResourceCache.h"
 #include "DescriptorPool.h"
-#include "Pipeline.h"
 #include "ImageStorage.h"
 #include "ImageView.h"
 #include "BufferStorage.h"
+#include "Swapchain.h"
 #include "../Shader/Shader.h"
 #include "../Texture/Texture.h"
 #include "../BufferObject.h"
@@ -64,9 +64,7 @@ CommandBuffer::Ref CommandBuffer::create(const QueueRef& queue, bool primary) {
 
 //-----------------
 
-CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary) : queue(queue), primary(primary) {
-	pipeline = Pipeline::createGraphics(queue->getDevice());
-}
+CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary) : queue(queue), primary(primary) { }
 
 //-----------------
 
@@ -91,7 +89,7 @@ void CommandBuffer::reset() {
 	if(state == State::Recording)
 		end();
 	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-	pipeline = Pipeline::createGraphics(queue->getDevice());
+	pipeline.reset();
 	boundDescriptorSets.clear();
 	boundPipelines.clear();
 	state = State::Initial;
@@ -103,30 +101,26 @@ void CommandBuffer::flush() {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	auto device = queue->getDevice();
-	auto shader = pipeline->getShader();
+	auto shader = pipeline.getShader();
 	auto layout = shader->getLayout();
 
 	// bind pipeline if it has changed
-	WARN_AND_RETURN_IF(!pipeline->validate(), "CommandBuffer: Invalid Pipeline.",);
-
-	vk::Pipeline vkPipeline(pipeline->getApiHandle());
 	vk::PipelineLayout vkPipelineLayout(shader->getLayoutHandle());
 	vk::PipelineBindPoint vkBindPoint;
-	switch (pipeline->getType()) {
-		case PipelineType::Compute:
-			vkBindPoint = vk::PipelineBindPoint::eCompute;
-			break;
-		case PipelineType::Graphics:
-			vkBindPoint = vk::PipelineBindPoint::eGraphics;
-			break;
-		default:
-			break;
+	switch (pipeline.getType()) {
+		case PipelineType::Compute: vkBindPoint = vk::PipelineBindPoint::eCompute; break;
+		case PipelineType::Graphics: vkBindPoint = vk::PipelineBindPoint::eGraphics; break;
 	}
 
-	if(boundPipelines.empty() || boundPipelines.back() != pipeline->getApiHandle()) {
+	if(boundPipelines.empty() || pipeline.hasChanged()) {
 		// pipeline changed
+		PipelineHandle pipelineHandle = device->getResourceCache()->createPipeline(pipeline, nullptr);
+		WARN_AND_RETURN_IF(!pipelineHandle, "CommandBuffer: Invalid Pipeline.",);
+
+		vk::Pipeline vkPipeline(pipelineHandle);
 		vkCmd.bindPipeline(vkBindPoint, vkPipeline);
-		boundPipelines.emplace_back(pipeline->getApiHandle());
+		boundPipelines.emplace_back(pipelineHandle);
+		pipeline.markAsUnchanged();
 	}
 
 	// update descriptor sets
@@ -144,7 +138,7 @@ void CommandBuffer::flush() {
 		if(!layout.hasLayoutSet(set))
 			continue;
 		
-		auto descriptorSet = DescriptorSet::create(device->getDescriptorPool(), layout.getLayoutSet(set), bindingSet);
+		auto descriptorSet = device->getDescriptorPool()->requestDescriptorSet(layout.getLayoutSet(set), bindingSet);
 		if(descriptorSet) {
 			vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
 			vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, {});
@@ -170,6 +164,8 @@ void CommandBuffer::begin() {
 
 void CommandBuffer::end() {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	if(inRenderPass)
+		endRenderPass();
 	vk::CommandBuffer vkCmd(handle);
 	state = State::Executable;
 	vkCmd.end();
@@ -185,25 +181,31 @@ void CommandBuffer::submit(bool wait) {
 
 //-----------------
 
-void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColors) {
+void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, const std::vector<Util::Color4f>& clearColors, float clearDepthValue, uint32_t clearStencilValue) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(inRenderPass, "Command buffer is already in a render pass. Call endRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
-	auto& fbo = getFBO();
-	WARN_AND_RETURN_IF(!fbo || !fbo->validate(), "Cannot begin render pass. Invalid FBO.",);
+	auto device = queue->getDevice();
+	activeFBO = fbo ? fbo : device->getSwapchain()->getCurrentFBO();
+	pipeline.setFramebufferFormat(activeFBO);
 
-	vk::Framebuffer framebuffer(fbo->getApiHandle());
-	vk::RenderPass renderPass(fbo->getRenderPass());
+	auto renderPass = device->getResourceCache()->createRenderPass(activeFBO, clearColor, clearDepth, fbo.isNull());
+	auto framebuffer = device->getResourceCache()->createFramebuffer(activeFBO, renderPass);
+	WARN_AND_RETURN_IF(!framebuffer, "Failed to start render pass. Invalid framebuffer.",);
 
-	std::vector<vk::ClearValue> clearValues(fbo->getColorAttachmentCount(), vk::ClearColorValue{});
+	vk::RenderPass vkRenderPass(renderPass);
+	vk::Framebuffer vkFramebuffer(framebuffer);
+
+	std::vector<vk::ClearValue> clearValues(activeFBO->getColorAttachmentCount(), vk::ClearColorValue{});
 	for(uint32_t i=0; i<std::min<size_t>(clearValues.size(), clearColors.size()); ++i) {
 		auto& c = clearColors[i];
 		clearValues[i].color.setFloat32({c.r(), c.g(), c.b(), c.a()});
 	}
+	clearValues.emplace_back(vk::ClearDepthStencilValue(clearDepthValue, clearStencilValue));
 
 	vkCmd.beginRenderPass({
-		renderPass, framebuffer,
-		vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} },
+		vkRenderPass, vkFramebuffer,
+		vk::Rect2D{ {0, 0}, {activeFBO->getWidth(), activeFBO->getHeight()} },
 		static_cast<uint32_t>(clearValues.size()), clearValues.data()
 	}, vk::SubpassContents::eInline);
 	inRenderPass = true;
@@ -214,13 +216,12 @@ void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColor
 void CommandBuffer::endRenderPass() {
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
-	const auto& fbo = getFBO();
-	for(uint32_t i=0; i<fbo->getColorAttachmentCount(); ++i) {
-		const auto& attachment = fbo->getColorTexture(i);
+	for(uint32_t i=0; i<activeFBO->getColorAttachmentCount(); ++i) {
+		const auto& attachment = activeFBO->getColorAttachment(i);
 		if(attachment)
 			attachment->getImageView()->_setLastUsage(ResourceUsage::RenderTarget);
 	}
-	const auto& depthAttachment = fbo->getDepthStencilTexture();
+	const auto& depthAttachment = activeFBO->getDepthStencilAttachment();
 	if(depthAttachment)
 		depthAttachment->getImageView()->_setLastUsage(ResourceUsage::DepthStencil);
 
@@ -252,7 +253,7 @@ void CommandBuffer::pushConstants(const uint8_t* data, size_t size, size_t offse
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(size+offset > queue->getDevice()->getMaxPushConstantSize(), "Push constant size exceeds maximum size",);
 	vk::CommandBuffer vkCmd(handle);
-	Shader::Ref shader = pipeline->getShader();
+	Shader::Ref shader = pipeline.getShader();
 	WARN_AND_RETURN_IF(!shader || !shader->init(), "Cannot set push constants. No bound shader.",);
 	auto& layout = shader->getLayout();
 	vk::PipelineLayout vkLayout(shader->getLayoutHandle());
@@ -293,8 +294,7 @@ void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer, size_t offset
 
 void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors, const Geometry::Rect_i& rect) {
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
-	auto& fbo = getFBO();
-	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Cannot clear color. Invalid FBO.",);
+	WARN_AND_RETURN_IF(!activeFBO || !activeFBO->isValid(), "Cannot clear color. Invalid FBO.",);
 	std::vector<vk::ClearAttachment> clearAttachments(clearColors.size(), vk::ClearAttachment{});
 	for(uint32_t i=0; i<std::min<size_t>(clearAttachments.size(), clearColors.size()); ++i) {
 		auto& c = clearColors[i];
@@ -309,8 +309,8 @@ void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors, co
 	clearRect.rect = vk::Rect2D{
 		{rect.getX(), rect.getY()},
 		{
-			rect.getWidth() > 0 ? rect.getWidth() : fbo->getWidth(),
-			rect.getHeight() > 0 ? rect.getHeight() : fbo->getHeight(),
+			rect.getWidth() > 0 ? rect.getWidth() : activeFBO->getWidth(),
+			rect.getHeight() > 0 ? rect.getHeight() : activeFBO->getHeight(),
 		}
 	};
 	vk::CommandBuffer vkCmd(handle);
@@ -321,9 +321,8 @@ void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors, co
 
 void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect, bool clearDepth, bool clearStencil) {
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
-	auto& fbo = getFBO();
-	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Cannot clear depth stencil. Invalid FBO.",);
-	if(!fbo->getDepthStencilTexture())
+	WARN_AND_RETURN_IF(!activeFBO || !activeFBO->isValid(), "Cannot clear depth stencil. Invalid FBO.",);
+	if(!activeFBO->getDepthStencilAttachment())
 		return;
 	vk::ClearAttachment clearAttachment;
 	if(clearDepth)
@@ -338,8 +337,8 @@ void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geome
 	clearRect.rect = vk::Rect2D{
 		{rect.getX(), rect.getY()},
 		{
-			rect.getWidth() > 0 ? rect.getWidth() : fbo->getWidth(),
-			rect.getHeight() > 0 ? rect.getHeight() : fbo->getHeight(),
+			rect.getWidth() > 0 ? rect.getWidth() : activeFBO->getWidth(),
+			rect.getHeight() > 0 ? rect.getHeight() : activeFBO->getHeight(),
 		}
 	};
 	vk::CommandBuffer vkCmd(handle);
@@ -352,7 +351,7 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	if(instanceCount==0) return;
 	vk::CommandBuffer vkCmd(handle);
-	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
+	pipeline.setType(PipelineType::Graphics); // ensure we have a graphics pipeline
 	flush();
 	vkCmd.draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
@@ -363,7 +362,7 @@ void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uin
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	if(instanceCount==0) return;
 	vk::CommandBuffer vkCmd(handle);
-	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
+	pipeline.setType(PipelineType::Graphics); // ensure we have a graphics pipeline
 	flush();
 	vkCmd.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
@@ -374,7 +373,7 @@ void CommandBuffer::drawIndirect(const BufferObjectRef& buffer, uint32_t drawCou
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	WARN_AND_RETURN_IF(!buffer->isValid(), "Cannot perform indirect draw. Buffer is not valid.",);
 	vk::CommandBuffer vkCmd(handle);
-	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
+	pipeline.setType(PipelineType::Graphics); // ensure we have a graphics pipeline
 	flush();
 	vk::Buffer vkBuffer(buffer->getApiHandle());
 	vkCmd.drawIndirect(vkBuffer, offset, drawCount, stride);
@@ -386,7 +385,7 @@ void CommandBuffer::drawIndexedIndirect(const BufferObjectRef& buffer, uint32_t 
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	WARN_AND_RETURN_IF(!buffer->isValid(), "Cannot perform indirect draw. Buffer is not valid.",);
 	vk::CommandBuffer vkCmd(handle);
-	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
+	pipeline.setType(PipelineType::Graphics); // ensure we have a graphics pipeline
 	flush();
 	vk::Buffer vkBuffer(buffer->getApiHandle());
 	vkCmd.drawIndexedIndirect(vkBuffer, offset, drawCount, stride);

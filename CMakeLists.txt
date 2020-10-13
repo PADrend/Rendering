@@ -19,18 +19,18 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
 add_library(Rendering SHARED
+	Core/internal/VkFramebuffer.cpp
+	Core/internal/VkPipeline.cpp
 	Core/internal/VkUtils.cpp
 	Core/ApiHandles.cpp
 	Core/BufferStorage.cpp
 	Core/CommandBuffer.cpp
 	Core/Common.cpp
 	Core/DescriptorPool.cpp
-	Core/DescriptorSet.cpp
 	Core/Device.cpp
 	Core/Fence.cpp
 	Core/ImageStorage.cpp
 	Core/ImageView.cpp
-	Core/Pipeline.cpp
 	Core/Queue.cpp
 	Core/ResourceCache.cpp
 	Core/Sampler.cpp

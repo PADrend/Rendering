@@ -59,9 +59,9 @@ void UniformRegistry::setUniform(const Uniform & uniform, bool warnIfUnused, boo
 	else if( forced || (entry->valid && !(uniform==entry->uniform)) ){
 
 		//! \note This warning should do no harm - otherwise remove it.
-		if(entry->uniform.getType()!=uniform.getType() ){
-			WARN("Type of Uniform changed; this may be a problem. "+entry->uniform.toString()+" -> "+uniform.toString());
-		}
+		//if(entry->uniform.getType()!=uniform.getType() ){
+		//	WARN("Type of Uniform changed; this may be a problem. "+entry->uniform.toString()+" -> "+uniform.toString());
+		//}
 		// move entry to the front of the orderedList
 		orderedList.erase(entry->positionInUpdateList);
 		orderedList.push_front(entry);

@@ -15,6 +15,7 @@ if(RENDERING_BUILD_TESTS)
 	add_executable(RenderingTest 
 		BufferObjectTest.cpp
 		DeviceTest.cpp
+		FramebufferTest.cpp
 		DrawTest.cpp
 		RenderingContextTest.cpp
 		RenderingTestMain.cpp

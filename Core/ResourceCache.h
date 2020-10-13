@@ -22,6 +22,8 @@ class Device;
 using DeviceRef = Util::Reference<Device>;
 class Shader;
 using ShaderRef = Util::Reference<Shader>;
+class FBO;
+using FBORef = Util::Reference<FBO>;
 
 class ResourceCache : public Util::ReferenceCounter<ResourceCache> {
 public:
@@ -33,10 +35,12 @@ public:
 	ResourceCache& operator=(ResourceCache&& o) = default;
 	ResourceCache& operator=(const ResourceCache& o) = default;
 
-	PipelineHandle createComputePipeline(const ShaderRef& shader, const std::string& entryPoint, const PipelineHandle& parent);
-	PipelineHandle createGraphicsPipeline(const ShaderRef& shader, const PipelineState& state, const PipelineHandle& parent);
+	PipelineHandle createPipeline(const PipelineState& state, const PipelineHandle& parent);
 	DescriptorSetLayoutHandle createDescriptorSetLayout(const ShaderResourceLayoutSet& layout);
 	PipelineLayoutHandle createPipelineLayout(const ShaderLayout& layout);
+	RenderPassHandle createRenderPass(const FramebufferFormat& attachments);
+	RenderPassHandle createRenderPass(const FBORef& fbo, bool clearColor=false, bool clearDepth=false, bool prepareForPresent=false);
+	FramebufferHandle createFramebuffer(const FBORef& fbo, const RenderPassHandle& renderPass);
 private:
 	ResourceCache(const DeviceRef& device);
 	Util::WeakPointer<Device> device;

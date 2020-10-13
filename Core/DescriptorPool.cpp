@@ -8,10 +8,17 @@
 */
 
 #include "DescriptorPool.h"
-#include "DescriptorSet.h"
 #include "Device.h"
 #include "ResourceCache.h"
+#include "Sampler.h"
+#include "ImageView.h"
+#include "BufferStorage.h"
+#include "../BufferObject.h"
 #include "../Shader/Shader.h"
+#include "../State/BindingState.h"
+#include "../Texture/Texture.h"
+
+#include <Util/Macros.h>
 
 #include <vulkan/vulkan.hpp>
 
@@ -23,6 +30,37 @@ namespace Rendering {
 //-----------------
 
 vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
+
+//-----------------
+
+inline static ResourceUsage getResourceUsage(const ShaderResourceType& type) {
+	switch (type) {
+		case ShaderResourceType::Image:
+		case ShaderResourceType::ImageSampler:
+		case ShaderResourceType::Sampler:
+		case ShaderResourceType::BufferUniform:
+			return ResourceUsage::ShaderResource;
+		case ShaderResourceType::ImageStorage:
+		case ShaderResourceType::BufferStorage: 
+			return ResourceUsage::ShaderWrite;
+		default: return ResourceUsage::General;
+	}
+}
+
+//-----------------
+
+inline static vk::ImageLayout getVkImageLayout(const ShaderResourceType& type) {
+	switch (type) {
+		case ShaderResourceType::InputAttachment:
+			return vk::ImageLayout::eColorAttachmentOptimal;
+		case ShaderResourceType::Image:
+		case ShaderResourceType::ImageSampler:
+		case ShaderResourceType::Sampler:
+		case ShaderResourceType::BufferUniform:
+			return vk::ImageLayout::eShaderReadOnlyOptimal;
+		default: return vk::ImageLayout::eGeneral;
+	}
+}
 
 //-----------------
 
@@ -60,29 +98,31 @@ bool DescriptorPool::init() {
 	return handle.isNotNull();
 }
 
-//-----------------
-
-DescriptorSetLayoutHandle DescriptorPool::getLayoutHandle(const ShaderResourceLayoutSet& layout) {
-	return device->getResourceCache()->createDescriptorSetLayout(layout);
-}
 
 //-----------------
 
-DescriptorSetHandle DescriptorPool::requestDescriptorSet(const ShaderResourceLayoutSet& layout) {
+DescriptorSetRef DescriptorPool::requestDescriptorSet(const ShaderResourceLayoutSet& layout, const BindingSet& bindings) {
 	size_t layoutHash = std::hash<ShaderResourceLayoutSet>{}(layout);
 	if(!pool.hasType(layoutHash)) {
-		auto layoutHandle = getLayoutHandle(layout);
+		auto layoutHandle = device->getResourceCache()->createDescriptorSetLayout(layout);
 		pool.registerType(layoutHash, std::bind(&DescriptorPool::createDescriptorSet, this, layoutHandle));
 	}
-	return pool.create(layoutHash);
+	// TODO: cache bindings
+	auto setHandle = pool.create(layoutHash);
+	if(!setHandle)
+		return nullptr;
+	
+	DescriptorSet::Ref set = new DescriptorSet({this}, setHandle, layoutHash);
+	updateDescriptorSet(set, layout, bindings);
+	return set;
 }
 
 //-----------------
 
-void DescriptorPool::free(DescriptorSetHandle obj, size_t layoutHash) {
-	if(!obj)
+void DescriptorPool::free(DescriptorSet* descriptorSet) {
+	if(!descriptorSet || !descriptorSet->handle)
 		return;
-	pool.free(layoutHash, obj);
+	pool.free(descriptorSet->layoutHash, descriptorSet->handle);
 }
 
 //-----------------
@@ -105,6 +145,73 @@ DescriptorSetHandle DescriptorPool::createDescriptorSet(const DescriptorSetLayou
 		vkPool, 1, &vkLayout
 	}).front();
 	return DescriptorSetHandle::create(obj, {vkDevice, handle});
+}
+
+//-----------------
+
+void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, const ShaderResourceLayoutSet& layout, const BindingSet& bindings) {
+	vk::Device vkDevice(device->getApiHandle());
+	vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
+	
+	std::vector<vk::WriteDescriptorSet> writes;
+
+	// need to keep data alive during creating
+	std::vector<std::vector<vk::DescriptorImageInfo>> imageBindings;
+	std::vector<std::vector<vk::DescriptorBufferInfo>> bufferBindings;
+	
+	for(auto& bIt : bindings.getBindings()) {
+		auto& binding = bIt.second;
+		if(!layout.hasLayout(bIt.first))
+			continue;
+		auto descriptor = layout.getLayout(bIt.first);
+		
+		auto usage = getResourceUsage(descriptor.type);
+		auto vkImageLayout = getVkImageLayout(descriptor.type);
+		imageBindings.emplace_back();
+		bufferBindings.emplace_back();
+
+		for(auto& tex : binding.getTextures()) {
+			if(tex && tex->isValid()) {
+				imageBindings.back().emplace_back(
+					static_cast<vk::Sampler>(tex->getSampler()->getApiHandle()), 
+					static_cast<vk::ImageView>(tex->getImageView()->getApiHandle()), 
+					vkImageLayout);
+			} else {
+				WARN("Empty texture binding.");
+				imageBindings.back().emplace_back(nullptr, nullptr, vkImageLayout);
+			}
+		}
+
+		for(auto& view : binding.getInputImages()) {
+			if(view && view->getApiHandle()) {
+				imageBindings.back().emplace_back(nullptr, static_cast<vk::ImageView>(view->getApiHandle()), vkImageLayout);
+			} else {
+				WARN("Empty input image binding.");
+				imageBindings.back().emplace_back(nullptr, nullptr, vkImageLayout);
+			}
+		}
+
+		for(auto& buffer : binding.getBuffers()) {
+			if(buffer && buffer->isValid()) {
+				auto b = buffer->getBuffer();
+				bufferBindings.back().emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), 0, b->getSize());
+				//if(descriptor.dynamic)
+				//	dynamicOffsets.emplace_back(0);
+			} else {
+				WARN("Empty buffer binding.");
+				bufferBindings.back().emplace_back(nullptr, 0, 0);
+			}
+		}
+
+		// TODO: handle unbound array elements
+		uint32_t count = std::max<uint32_t>(imageBindings.back().size(), bufferBindings.back().size());
+		writes.emplace_back(
+			vkDescriptorSet, bIt.first, 
+			0, count, getVkDescriptorType(descriptor.type, descriptor.dynamic), 
+			imageBindings.back().data(), bufferBindings.back().data(), nullptr
+		);
+	}
+	vkDevice.updateDescriptorSets(writes, {});
 }
 
 //-----------------

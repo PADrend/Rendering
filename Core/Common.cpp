@@ -93,8 +93,8 @@ InternalFormat toInternalFormat(const Util::AttributeFormat& attr) {
 
 //-----------------
 
-bool isDepthStencilFormat(const ImageFormat& format) {
-	switch (format.pixelFormat) {
+bool isDepthStencilFormat(InternalFormat format) {
+	switch (format) {
 		case InternalFormat::D32Float:
 		case InternalFormat::D16Unorm:
 		case InternalFormat::D32FloatS8X24:

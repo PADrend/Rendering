@@ -13,7 +13,7 @@
 #include "../Core/Common.h"
 
 #include <Util/ReferenceCounter.h>
-#include <Util/Utils.h>
+#include <Util/Hashing.h>
 #include <Util/Graphics/Color.h>
 
 #include <Geometry/Rect.h>
@@ -61,9 +61,9 @@ struct VertexInputAttribute {
 class VertexInputState {
 public:
 	//! Sets the vertex binding description of the binding given by @p index.
-	VertexInputState& setBinding(const VertexInputBinding& value) { bindings[value.binding] = value; return *this; }
+	VertexInputState& setBinding(const VertexInputBinding& value) { bindings[value.binding] = value; dirty=true; return *this; }
 	//! Simultaneously sets all vertex binding descriptions.
-	VertexInputState& setBindings(const std::map<uint32_t, VertexInputBinding>& values) { bindings = values; return *this; }
+	VertexInputState& setBindings(const std::map<uint32_t, VertexInputBinding>& values) { bindings = values; dirty=true; return *this; }
 
 	//! @see{setBinding()}
 	const VertexInputBinding& getBinding(uint32_t binding=0) const { return bindings.at(binding); }
@@ -75,9 +75,9 @@ public:
 	uint32_t getBindingCount() const { return bindings.size(); }
 	
 	//! Sets the vertex attribute description of the attribute given by @p index.
-	VertexInputState& setAttribute(const VertexInputAttribute& value) { attributes[value.location] = value; return *this; }
+	VertexInputState& setAttribute(const VertexInputAttribute& value) { attributes[value.location] = value; dirty=true; return *this; }
 	//! Simultaneously sets all vertex attribute descriptions.
-	VertexInputState& setAttributes(const std::map<uint32_t, VertexInputAttribute>& values) { attributes = values; return *this; }
+	VertexInputState& setAttributes(const std::map<uint32_t, VertexInputAttribute>& values) { attributes = values; dirty=true; return *this; }
 
 	//! @see{setAttribute()}
 	const VertexInputAttribute& getAttribute(uint32_t location=0) const { return attributes.at(location); }
@@ -91,6 +91,15 @@ public:
 private:
 	std::map<uint32_t, VertexInputBinding> bindings;
 	std::map<uint32_t, VertexInputAttribute> attributes;
+
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged() { dirty = true; hash = 0; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+private:
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
@@ -116,9 +125,9 @@ enum class PrimitiveTopology {
 class InputAssemblyState {
 public:
 	//! Defines how consecutive vertices are organized into primitives.
-	InputAssemblyState& setTopology(PrimitiveTopology value) { topology = value; return *this; }
+	InputAssemblyState& setTopology(PrimitiveTopology value) { topology = value; dirty = true; return *this; }
 	//! Controls whether a special vertex index value is treated as restarting the assembly of primitives (0xffffffff for 32bit indices or 0xffff for 16bit indices).
-	InputAssemblyState& setPrimitiveRestartEnabled(bool value) { primitiveRestartEnabled = value; return *this; }
+	InputAssemblyState& setPrimitiveRestartEnabled(bool value) { primitiveRestartEnabled = value; dirty = true; return *this; }
 
 	//! @see{setTopology()}
 	PrimitiveTopology getTopology() const { return topology; }
@@ -128,6 +137,15 @@ public:
 private:
 	PrimitiveTopology topology = PrimitiveTopology::TriangleList;
 	bool primitiveRestartEnabled = false;
+
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged() { dirty = true; hash = 0; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+private:
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
@@ -164,10 +182,10 @@ public:
 	//! Simultaneously sets all scissors.
 	ViewportState& setScissors(const std::vector<Geometry::Rect_i>& values);
 	//! Controls if the scissor state is dynamic. If the scissor state is dynamic, all scissors in this state are ignored.
-	ViewportState& setDynamicScissors(bool value) { dynamicScissors = value; return *this; }
+	ViewportState& setDynamicScissors(bool value) { dynamicScissors = value; dirty = true; return *this; }
 
 	//! Sets the number of viewports and scissors used by the pipeline.
-	ViewportState& setViewportScissorCount(uint32_t value) { viewports.resize(value); scissors.resize(value); return *this; }
+	ViewportState& setViewportScissorCount(uint32_t value) { viewports.resize(value); scissors.resize(value); dirty = true; return *this; }
 
 	//! @see{setViewport()}
 	const Viewport& getViewport(uint32_t index=0) const { return viewports[index]; }
@@ -190,6 +208,15 @@ private:
 	std::vector<Geometry::Rect_i> scissors{{0,0,1,1}};
 	bool dynamicViewports = false;
 	bool dynamicScissors = false;
+
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged() { dirty = true; hash = 0; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+private:
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
@@ -223,29 +250,29 @@ enum class FrontFace {
 class RasterizationState {
 public:
 	//! Controls whether to clamp the fragment’s depth values. Enabling depth clamp will also disable clipping primitives to the z planes of the frustrum.
-	RasterizationState& setDepthClampEnabled(bool value) { depthClampEnable = value; return *this; }
+	RasterizationState& setDepthClampEnabled(bool value) { depthClampEnable = value; dirty = true; return *this; }
 	//! Controls whether primitives are discarded immediately before the rasterization stage.
-	RasterizationState& setRasterizerDiscardEnabled(bool value) { rasterizerDiscardEnable = value; return *this; }
+	RasterizationState& setRasterizerDiscardEnabled(bool value) { rasterizerDiscardEnable = value; dirty = true; return *this; }
 	//! Sets the triangle rendering mode.
-	RasterizationState& setPolygonMode(PolygonMode value) { polygonMode = value; return *this; }
+	RasterizationState& setPolygonMode(PolygonMode value) { polygonMode = value; dirty = true; return *this; }
 	//! Sets the triangle facing direction used for primitive culling.
-	RasterizationState& setCullMode(CullMode value) { cullMode = value; return *this; }
+	RasterizationState& setCullMode(CullMode value) { cullMode = value; dirty = true; return *this; }
 	//! Sets the front-facing triangle orientation to be used for culling.
-	RasterizationState& setFrontFace(FrontFace value) { frontFace = value; return *this; }
+	RasterizationState& setFrontFace(FrontFace value) { frontFace = value; dirty = true; return *this; }
 	//! Controls whether to bias fragment depth values.
-	RasterizationState& setDepthBiasEnabled(bool value) { depthBiasEnable = value; return *this; }
+	RasterizationState& setDepthBiasEnabled(bool value) { depthBiasEnable = value; dirty = true; return *this; }
 	//! Sets a scalar factor controlling the constant depth value added to each fragment.
-	RasterizationState& setDepthBiasConstantFactor(float value) { depthBiasConstantFactor = value; return *this; }
+	RasterizationState& setDepthBiasConstantFactor(float value) { depthBiasConstantFactor = value; dirty = true; return *this; }
 	//! Sets the maximum (or minimum) depth bias of a fragment.
-	RasterizationState& setDepthBiasClamp(float value) { depthBiasClamp = value; return *this; }
+	RasterizationState& setDepthBiasClamp(float value) { depthBiasClamp = value; dirty = true; return *this; }
 	//! Sets a scalar factor applied to a fragment’s slope in depth bias calculations.
-	RasterizationState& setDepthBiasSlopeFactor(float value) { depthBiasSlopeFactor = value; return *this; }
+	RasterizationState& setDepthBiasSlopeFactor(float value) { depthBiasSlopeFactor = value; dirty = true; return *this; }
 	//! Controls if the depth bias is dynamic. If it is dynamic, the depth bias values in this state are ignored.
-	RasterizationState& setDynamicDepthBias(bool value) { dynamicDepthBias = value; return *this; }
+	RasterizationState& setDynamicDepthBias(bool value) { dynamicDepthBias = value; dirty = true; return *this; }
 	//! Sets the width of rasterized line segments.
-	RasterizationState& setLineWidth(float value) { lineWidth = value; return *this; }
+	RasterizationState& setLineWidth(float value) { lineWidth = value; dirty = true; return *this; }
 	//! Controls if the line width is dynamic. If it is dynamic, the value in this state is ignored.
-	RasterizationState& setDynamicLineWidth(bool value) { dynamicLineWidth = value; return *this; }
+	RasterizationState& setDynamicLineWidth(bool value) { dynamicLineWidth = value; dirty = true; return *this; }
 
 	//! @see{setDepthClampEnabled()}
 	bool isDepthClampEnabled() const { return depthClampEnable; }
@@ -285,6 +312,15 @@ private:
 	float lineWidth = 1.0;
 	bool dynamicLineWidth = false;
 	bool dynamicDepthBias = false;
+
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged() { dirty = true; hash = 0; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+private:
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
@@ -294,17 +330,17 @@ private:
 class MultisampleState {
 public:
 	//! Sets the number of samples used in rasterization.
-	MultisampleState& setSampleCount(uint32_t value) { sampleCount = value; return *this; };
+	MultisampleState& setSampleCount(uint32_t value) { sampleCount = value; dirty = true; return *this; };
 	//! Enables or disables Sample Shading.
-	MultisampleState& setSampleShadingEnabled(bool value) { sampleShadingEnable = value; return *this; };
+	MultisampleState& setSampleShadingEnabled(bool value) { sampleShadingEnable = value; dirty = true; return *this; };
 	//! Specifies a minimum fraction of sample shading
-	MultisampleState& setMinSampleShading(float value) { minSampleShading = value; return *this; };
+	MultisampleState& setMinSampleShading(float value) { minSampleShading = value; dirty = true; return *this; };
 	//! A bitmask of static coverage information that is ANDed with the coverage information generated during rasterization (currently supports max. 32 samples).
-	MultisampleState& setSampleMask(uint32_t value) { sampleMask = value; return *this; };
+	MultisampleState& setSampleMask(uint32_t value) { sampleMask = value; dirty = true; return *this; };
 	//! Controls whether a temporary coverage value is generated based on the alpha component of the fragment’s first color output.
-	MultisampleState& setAlphaToCoverageEnabled(bool value) { alphaToCoverageEnable = value; return *this; };
+	MultisampleState& setAlphaToCoverageEnabled(bool value) { alphaToCoverageEnable = value; dirty = true; return *this; };
 	//! Controls whether the alpha component of the fragment’s first color output is replaced with one.
-	MultisampleState& setAlphaToOneEnabled(bool value) { alphaToOneEnable = value; return *this; };
+	MultisampleState& setAlphaToOneEnabled(bool value) { alphaToOneEnable = value; dirty = true; return *this; };
 
 	//! @see{setSampleCount()}
 	uint32_t getSampleCount() const { return sampleCount; };
@@ -325,6 +361,15 @@ private:
 	uint32_t sampleMask = 0xffffffffu;
 	bool alphaToCoverageEnable = false;
 	bool alphaToOneEnable = false;
+
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged() { dirty = true; hash = 0; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+private:
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
@@ -359,31 +404,31 @@ struct StencilOpState {
 class DepthStencilState {
 public:
 //! Controls whether depth testing is enabled.
-DepthStencilState& setDepthTestEnabled(bool value) { depthTestEnable = value; return *this; }
+DepthStencilState& setDepthTestEnabled(bool value) { depthTestEnable = value; dirty = true; return *this; }
 //! Controls whether depth writes are enabled when depth testing is enabled.
-DepthStencilState& setDepthWriteEnabled(bool value) { depthWriteEnable = value; return *this; }
+DepthStencilState& setDepthWriteEnabled(bool value) { depthWriteEnable = value; dirty = true; return *this; }
 //! Sets the comparison operator used in the depth test.
-DepthStencilState& setDepthCompareOp(ComparisonFunc value) { depthCompareOp = value; return *this; }
+DepthStencilState& setDepthCompareOp(ComparisonFunc value) { depthCompareOp = value; dirty = true; return *this; }
 //! Controls whether depth bounds testing is enabled.
-DepthStencilState& setDepthBoundsTestEnabled(bool value) { depthBoundsTestEnable = value; return *this; }
+DepthStencilState& setDepthBoundsTestEnabled(bool value) { depthBoundsTestEnable = value; dirty = true; return *this; }
 //! Controls whether stencil testing is enabled.
-DepthStencilState& setStencilTestEnabled(bool value) { stencilTestEnable = value; return *this; }
+DepthStencilState& setStencilTestEnabled(bool value) { stencilTestEnable = value; dirty = true; return *this; }
 //! Controls the front parameters of the stencil test.
-DepthStencilState& setFront(StencilOpState value) { front = value; return *this; }
+DepthStencilState& setFront(StencilOpState value) { front = value; dirty = true; return *this; }
 //! Controls the back parameters of the stencil test.
-DepthStencilState& setBack(StencilOpState value) { back = value; return *this; }
+DepthStencilState& setBack(StencilOpState value) { back = value; dirty = true; return *this; }
 //! Defines the min. value used in the depth bounds test.
-DepthStencilState& setMinDepthBounds(float value) { minDepthBounds = value; return *this; }
+DepthStencilState& setMinDepthBounds(float value) { minDepthBounds = value; dirty = true; return *this; }
 //! Defines the max. value used in the depth bounds test.
-DepthStencilState& setMaxDepthBounds(float value) { maxDepthBounds = value; return *this; }
+DepthStencilState& setMaxDepthBounds(float value) { maxDepthBounds = value; dirty = true; return *this; }
 //! Controls if the depth bounds are dynamic. If they are dynamic, the corresponding values in this state are ignored.
-DepthStencilState& setDynamicDepthBounds(bool value) { dynamicDepthBounds = value; return *this; }
+DepthStencilState& setDynamicDepthBounds(bool value) { dynamicDepthBounds = value; dirty = true; return *this; }
 //! Controls if the stencil compare mask for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-DepthStencilState& setDynamicCompareMask(bool value) { dynamicCompareMask = value; return *this; }
+DepthStencilState& setDynamicCompareMask(bool value) { dynamicCompareMask = value; dirty = true; return *this; }
 //! Controls if the stencil write mask for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-DepthStencilState& setDynamicWriteMask(bool value) { dynamicWriteMask = value; return *this; }
+DepthStencilState& setDynamicWriteMask(bool value) { dynamicWriteMask = value; dirty = true; return *this; }
 //! Controls if the stencil reference for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-DepthStencilState& setDynamicReference(bool value) { dynamicReference = value; return *this; }
+DepthStencilState& setDynamicReference(bool value) { dynamicReference = value; dirty = true; return *this; }
 
 //! @see{setDepthTestEnabled()}
 bool isDepthTestEnabled() const { return depthTestEnable; }
@@ -426,6 +471,15 @@ private:
 	bool dynamicCompareMask = false;
 	bool dynamicWriteMask = false;
 	bool dynamicReference = false;
+
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged() { dirty = true; hash = 0; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+private:
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
@@ -503,19 +557,19 @@ struct ColorBlendAttachmentState {
 class ColorBlendState {
 public:
 	//! Controls whether to apply Logical Operations.
-	ColorBlendState& setLogicOpEnabled(bool value) { logicOpEnable = value; return *this; }
+	ColorBlendState& setLogicOpEnabled(bool value) { logicOpEnable = value; dirty = true; return *this; }
 	//! Selects which logical operation to apply.
-	ColorBlendState& setLogicOp(LogicOp value) { logicOp = value; return *this; }
+	ColorBlendState& setLogicOp(LogicOp value) { logicOp = value; dirty = true; return *this; }
 	//! Sets the attachment state for the target given by @p index.
 	ColorBlendState& setAttachment(const ColorBlendAttachmentState& value, uint32_t index=0);
 	//! Simultaneously sets all attachments.
-	ColorBlendState& setAttachments(const std::vector<ColorBlendAttachmentState>& values) { attachments = values; return *this; }
+	ColorBlendState& setAttachments(const std::vector<ColorBlendAttachmentState>& values) { attachments = values; dirty = true; return *this; }
 	//! Sets the number of attachments. This value must equal the color attachment count for the subpass in which the pipeline is used.
-	ColorBlendState& setAttachmentCount(uint32_t value) { attachments.resize(value); return *this; }
+	ColorBlendState& setAttachmentCount(uint32_t value) { attachments.resize(value); dirty = true; return *this; }
 	//! Sets the blend constant that is used in blending, depending on the blend factor.
-	ColorBlendState& setConstantColor(const Util::Color4f& value) { constantColor = value; return *this; }
+	ColorBlendState& setConstantColor(const Util::Color4f& value) { constantColor = value; dirty = true; return *this; }
 	//! Controls if the blend constant is dynamic. If it is dynamic, the value in this state is ignored.
-	ColorBlendState& setDynamicConstantColor(bool value) { dynamicBlendConstant = value; return *this; }
+	ColorBlendState& setDynamicConstantColor(bool value) { dynamicBlendConstant = value; dirty = true; return *this; }
 
 	//! @see{setLogicOpEnabled()}
 	bool isLogicOpEnabled() const { return logicOpEnable; }
@@ -537,10 +591,73 @@ private:
 	std::vector<ColorBlendAttachmentState> attachments = {{}};
 	Util::Color4f constantColor = {0,0,0,0};
 	bool dynamicBlendConstant = false;
+
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged() { dirty = true; hash = 0; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+private:
+	bool dirty = true;
+	size_t hash = 0;
+};
+
+//==================================================================
+// FramebufferFormat
+
+struct AttachmentFormat {
+	AttachmentFormat(InternalFormat format = InternalFormat::Unknown, uint32_t samples = 1) : format(format), samples(samples) {}
+	InternalFormat format;
+	uint32_t samples;
+};
+
+class FramebufferFormat {
+public:
+	FramebufferFormat() {}
+	FramebufferFormat(const FBORef& fbo);
+
+	//! Sets the color attachment format for the framebuffer attachment given by @p index.
+	FramebufferFormat& setColorAttachment(const AttachmentFormat& value, uint32_t index=0) { colorAttachments[index] = value; dirty = true; return *this; }
+	//! Simultaneously sets all color attachments.
+	FramebufferFormat& setColorAttachments(const std::vector<AttachmentFormat>& values) { colorAttachments = values; dirty = true; return *this; }
+	//! Sets the number of color attachments of the framebuffer.
+	FramebufferFormat& setColorAttachmentCount(uint32_t value) { colorAttachments.resize(value); dirty = true; return *this; }
+	//! Sets the depth/stencil attachment of the framebuffer.
+	FramebufferFormat& setDepthStencilAttachment(const AttachmentFormat& value, uint32_t index=0) { colorAttachments[index] = value; dirty = true; return *this; }
+
+	//! @see{setColorAttachment()}
+	const AttachmentFormat& getColorAttachment(uint32_t index=0) const { return colorAttachments[index]; }
+	//! @see{setColorAttachments()}
+	const std::vector<AttachmentFormat>& getColorAttachments() const { return colorAttachments; }
+	//! @see{setColorAttachmentCount()}
+	uint32_t getColorAttachmentCount() const { return colorAttachments.size(); }	
+	//! @see{setDepthStencilAttachment()}
+	const AttachmentFormat& getDepthStencilAttachment() const { return depthAttachment; }
+	//! @see{setDepthStencilAttachment()}
+	bool hasDepthStencilAttachment() const { return depthAttachment.samples > 0 && isDepthStencilFormat(depthAttachment.format); }
+	
+private:
+	std::vector<AttachmentFormat> colorAttachments = {};
+	AttachmentFormat depthAttachment = {InternalFormat::Unknown, 0};
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged() { dirty = true; hash = 0; }
+	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+private:
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
 // PipelineState
+
+enum class PipelineType {
+	Graphics = 0,
+	Compute,
+};
+
+//-------------
 
 class PipelineState : public Util::ReferenceCounter<PipelineState> {
 public:
@@ -553,48 +670,53 @@ public:
 
 	PipelineState& reset();
 	
-	inline PipelineState& setVertexInputState(const VertexInputState& state);
-	inline PipelineState& setInputAssemblyState(const InputAssemblyState& state);
-	inline PipelineState& setViewportState(const ViewportState& state);
-	inline PipelineState& setRasterizationState(const RasterizationState& state);
-	inline PipelineState& setMultisampleState(const MultisampleState& state);
-	inline PipelineState& setDepthStencilState(const DepthStencilState& state);
-	inline PipelineState& setColorBlendState(const ColorBlendState& state);
-	inline PipelineState& setEntryPoint(const std::string& value);
-	PipelineState& setFBO(const FBORef& fbo);
+	inline PipelineState& setType(PipelineType value) { type = value; dirty = true; return *this; }
+	inline PipelineState& setVertexInputState(const VertexInputState& state) { vertexInput = state; vertexInput.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setInputAssemblyState(const InputAssemblyState& state) { inputAssembly = state; inputAssembly.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setViewportState(const ViewportState& state) { viewport = state; viewport.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setRasterizationState(const RasterizationState& state) { rasterization = state; rasterization.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setMultisampleState(const MultisampleState& state) { multisample = state; multisample.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setDepthStencilState(const DepthStencilState& state) { depthStencil = state; depthStencil.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setColorBlendState(const ColorBlendState& state) { colorBlend = state; colorBlend.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setFramebufferFormat(const FramebufferFormat& state) { attachments = state; attachments.markAsDirty(); dirty = true; return *this; }
+	inline PipelineState& setFramebufferFormat(const FBORef& fbo) { attachments = fbo; dirty = true; return *this; }
+	inline PipelineState& setEntryPoint(const std::string& value) { entrypoint = value; dirty = true; return *this; }
+	PipelineState& setShader(const ShaderRef& value);
+
+	PipelineType getType() const { return type; }
 	
 	const VertexInputState& getVertexInputState() const { return vertexInput; }
+	VertexInputState& getVertexInputState() { dirty = true; return vertexInput; }
+
 	const InputAssemblyState& getInputAssemblyState() const { return inputAssembly; }
+	InputAssemblyState& getInputAssemblyState() { dirty = true; return inputAssembly; }
+
 	const ViewportState& getViewportState() const { return viewport; }
+	ViewportState& getViewportState() { dirty = true; return viewport; }
+
 	const RasterizationState& getRasterizationState() const { return rasterization; }
+	RasterizationState& getRasterizationState() { dirty = true; return rasterization; }
+
 	const MultisampleState& getMultisampleState() const { return multisample; }
+	MultisampleState& getMultisampleState() { dirty = true; return multisample; }
+
 	const DepthStencilState& getDepthStencilState() const { return depthStencil; }
+	DepthStencilState& getDepthStencilState() { dirty = true; return depthStencil; }
+
 	const ColorBlendState& getColorBlendState() const { return colorBlend; }
+	ColorBlendState& getColorBlendState() { dirty = true; return colorBlend; }
+
+	const FramebufferFormat& getFramebufferFormat() const { return attachments; }
+	FramebufferFormat& getFramebufferFormat() { dirty = true; return attachments; }
+
 	const std::string& getEntryPoint() const { return entrypoint; }
-	const FBORef& getFBO() const { return fbo; }
+	std::string& getEntryPoint() { dirty = true; return entrypoint; }
 
-	size_t getHash() const {
-		std::size_t result = 0;
-		for(auto& hash : hashes)
-			Util::hash_combine(result, hash);
-		return result;
-	}
+	const ShaderRef& getShader() const { return shader; }
+	ShaderRef& getShader() { dirty = true; return shader; }
+
 private:
-	enum PipelineHashEntry {
-		VertexInput = 0,
-		InputAssembly,
-		Viewport,
-		Rasterization,
-		Multisample,
-		DepthStencil,
-		ColorBlend,
-		EntryPoint,
-		FBO,
-		EntryCount,
-	};
-
-	std::array<size_t, PipelineHashEntry::EntryCount> hashes;
-
+	PipelineType type = PipelineType::Graphics;
 	VertexInputState vertexInput;
 	InputAssemblyState inputAssembly;
 	ViewportState viewport;
@@ -602,8 +724,17 @@ private:
 	MultisampleState multisample;
 	DepthStencilState depthStencil;
 	ColorBlendState colorBlend;
+	FramebufferFormat attachments;
+	ShaderRef shader;
 	std::string entrypoint;
-	FBORef fbo; // TODO: only use RenderPass instead of framebuffer
+
+public:
+	void markAsDirty() { dirty = true; }
+	void markAsChanged();
+	void markAsUnchanged();
+	bool hasChanged() const;
+private:
+	bool dirty = true;
 };
 
 //! @}
@@ -829,25 +960,46 @@ template <> struct hash<Rendering::ColorBlendState> {
 
 //-------------
 
+template <> struct hash<Rendering::FramebufferFormat> {
+	std::size_t operator()(const Rendering::FramebufferFormat& state) const {
+		std::size_t result = 0;
+		Util::hash_combine(result, state.getColorAttachmentCount());
+		for(auto& a : state.getColorAttachments()) {
+			Util::hash_combine(result, a.format);
+			Util::hash_combine(result, a.samples);
+		}
+		if(state.hasDepthStencilAttachment()) {
+			Util::hash_combine(result, state.getDepthStencilAttachment().format);
+			Util::hash_combine(result, state.getDepthStencilAttachment().samples);
+		}
+		return result;
+	}
+};
+
+//-------------
+
 template <> struct hash<Rendering::PipelineState> {
 	std::size_t operator()(const Rendering::PipelineState& state) const {
-		return state.getHash();
+		std::size_t result = 0;
+		Util::hash_combine(result, state.getType());	
+		Util::hash_combine(result, state.getShader().get());
+		Util::hash_combine(result, state.getEntryPoint());
+		if(state.getType() == Rendering::PipelineType::Graphics) {
+			Util::hash_combine(result, state.getColorBlendState());
+			Util::hash_combine(result, state.getDepthStencilState());
+			Util::hash_combine(result, state.getFramebufferFormat());
+			Util::hash_combine(result, state.getInputAssemblyState());
+			Util::hash_combine(result, state.getMultisampleState());
+			Util::hash_combine(result, state.getRasterizationState());
+			Util::hash_combine(result, state.getVertexInputState());
+			Util::hash_combine(result, state.getViewportState());
+		}
+		return result;
 	}
 };
 
 //-------------
 
 }
-
-namespace Rendering {
-inline PipelineState& PipelineState::setVertexInputState(const VertexInputState& state) { vertexInput = state; hashes[PipelineHashEntry::VertexInput] = std::hash<VertexInputState>{}(state); return *this; }
-inline PipelineState& PipelineState::setInputAssemblyState(const InputAssemblyState& state) { inputAssembly = state; hashes[PipelineHashEntry::InputAssembly] = std::hash<InputAssemblyState>{}(state); return *this; }
-inline PipelineState& PipelineState::setViewportState(const ViewportState& state) { viewport = state; hashes[PipelineHashEntry::Viewport] = std::hash<ViewportState>{}(state); return *this; }
-inline PipelineState& PipelineState::setRasterizationState(const RasterizationState& state) { rasterization = state; hashes[PipelineHashEntry::Rasterization] = std::hash<RasterizationState>{}(state); return *this; }
-inline PipelineState& PipelineState::setMultisampleState(const MultisampleState& state) { multisample = state; hashes[PipelineHashEntry::Multisample] = std::hash<MultisampleState>{}(state); return *this; }
-inline PipelineState& PipelineState::setDepthStencilState(const DepthStencilState& state) { depthStencil = state; hashes[PipelineHashEntry::DepthStencil] = std::hash<DepthStencilState>{}(state); return *this; }
-inline PipelineState& PipelineState::setColorBlendState(const ColorBlendState& state) { colorBlend = state; hashes[PipelineHashEntry::ColorBlend] = std::hash<ColorBlendState>{}(state); return *this; }
-inline PipelineState& PipelineState::setEntryPoint(const std::string& value) { entrypoint = value; hashes[PipelineHashEntry::EntryPoint] = std::hash<std::string>{}(value); return *this; }
-} /* Rendering */
 
 #endif /* end of include guard: RENDERING_CORE_PIPELINE_STATE_H_ */

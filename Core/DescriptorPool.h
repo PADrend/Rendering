@@ -22,6 +22,7 @@ class Device;
 using DeviceRef = Util::Reference<Device>;
 class DescriptorSet;
 using DescriptorSetRef = Util::Reference<DescriptorSet>;
+class BindingSet;
 
 class DescriptorPool : public Util::ReferenceCounter<DescriptorPool> {
 public:
@@ -46,24 +47,42 @@ public:
 	DescriptorPool(DescriptorPool&& o) = delete;
 	DescriptorPool(const DescriptorPool& o) = delete;
 
-	DescriptorSetLayoutHandle getLayoutHandle(const ShaderResourceLayoutSet& layout);
-	DescriptorSetHandle requestDescriptorSet(const ShaderResourceLayoutSet& layout);
-	void free(DescriptorSetHandle handle, size_t layoutHash);
+	DescriptorSetRef requestDescriptorSet(const ShaderResourceLayoutSet& layout, const BindingSet& bindings);
 	void reset();
 
 	uint32_t getMaxDescriptorCount(ShaderResourceType type) const { return config.counts[static_cast<uint32_t>(type)]; }
 
 	const DescriptorPoolHandle& getApiHandle() const { return handle; }
 private:
+	friend class DescriptorSet;
 	explicit DescriptorPool(const DeviceRef& device, const Configuration& config);
 	bool init();
 	DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle& layout);
+	void updateDescriptorSet(const DescriptorSetRef& descriptorSet, const ShaderResourceLayoutSet& layout, const BindingSet& bindings);
+	void free(DescriptorSet* descriptorSet);
 
 	const Util::WeakPointer<Device> device;
 	const Configuration config;
 	DescriptorPoolHandle handle;
 
 	Util::ObjectPool<DescriptorSetHandle, size_t> pool;
+};
+
+//--------------------------------------
+
+class DescriptorSet : public Util::ReferenceCounter<DescriptorSet> {
+public:
+	using Ref = Util::Reference<DescriptorSet>;
+	~DescriptorSet() { pool->free(this); }
+	DescriptorSet(DescriptorSet&& o) = default;
+	DescriptorSet(const DescriptorSet& o) = delete;
+	const DescriptorSetHandle& getApiHandle() const { return handle; }
+private:
+	friend class DescriptorPool;
+	DescriptorSet(const DescriptorPool::Ref& pool, const DescriptorSetHandle& handle, size_t layoutHash) : pool(pool), handle(handle), layoutHash(layoutHash) {}
+	const DescriptorPool::Ref pool;
+	const DescriptorSetHandle handle;
+	size_t layoutHash;
 };
 
 } /* Rendering */

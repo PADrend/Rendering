@@ -69,8 +69,9 @@ class RenderingContext;
 class FBO : public Util::ReferenceCounter<FBO> {
 public:
 	using Ref = Util::Reference<FBO>;
-			
-	static Ref create(const DeviceRef& device);
+	static Ref create(uint32_t maxAttachments=8);
+
+	FBO(uint32_t maxAttachments=8);
 	~FBO();
 
 	void attachColorTexture(const TextureRef& texture, uint32_t index = 0);
@@ -83,35 +84,22 @@ public:
 	void attachDepthStencilTexture(const ImageStorageRef& image, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1);
 	void detachDepthStencilTexture();
 	
-	const TextureRef& getColorTexture(uint32_t index = 0) const;
-	const TextureRef& getDepthStencilTexture() const;
+	TextureRef getColorAttachment(uint32_t index = 0) const;
+	const std::vector<TextureRef>& getColorAttachments() const { return colorAttachments; }
+	TextureRef getDepthStencilAttachment() const;
 	
 	uint32_t getWidth() const { return width; }
 	uint32_t getHeight() const { return height; }
 	uint32_t getColorAttachmentCount() const { return colorAttachments.size(); }
 	
-	bool isValid() const { return valid; }
-	void invalidate() { valid = false; hash = 0; }
-	bool validate();
-	const std::string getStatusMessage() const;
+	bool isValid() const;
 	
-	const FramebufferHandle& getApiHandle() const { return handle; }
-	const RenderPassHandle& getRenderPass() const { return renderPass; }
-	size_t getLayoutHash() const { return hash; }
 private:
-	FBO(const DeviceRef& device);
-	void init();
 	
-	FramebufferHandle handle;
-	RenderPassHandle renderPass;
-	Util::WeakPointer<Device> device;
 	std::vector<TextureRef> colorAttachments;
 	TextureRef depthStencilAttachment;
 	uint32_t width = 0;
 	uint32_t height = 0;
-	bool valid = false;
-	size_t hash = 0;
-
 public:
 	//! @name Deprecated
 	//! @{
@@ -123,13 +111,13 @@ public:
 	static void _disable() { }
 
 	[[deprecated]]
-	void _enable() { validate(); }
+	void _enable() { }
 
 	[[deprecated]]
 	bool isComplete(RenderingContext & context) { return isValid(); }
 
 	[[deprecated]]
-	const char * getStatusMessage(RenderingContext & context) { return getStatusMessage().c_str(); }
+	const char * getStatusMessage(RenderingContext & context) { return ""; }
 
 	[[deprecated]]
 	void attachTexture(RenderingContext & context, uint32_t attachmentPoint, Texture * t, uint32_t level, int32_t layer=-1);

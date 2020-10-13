@@ -1,27 +1,28 @@
 /*
 	This file is part of the Rendering library.
-	Copyright (C) 2019-2020 Sascha Brandt <sascha@brandt.graphics>
-
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
+	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#include "Pipeline.h"
-#include "Device.h"
-#include "ResourceCache.h"
-#include "../FBO.h"
-#include "../Shader/Shader.h"
-
-#include <Util/Utils.h>
-#include <Util/Macros.h>
+#include "../Common.h"
+#include "../Device.h"
+#include "../ResourceCache.h"
+#include "../../FBO.h"
+#include "../../Shader/Shader.h"
+#include "../../State/ShaderLayout.h"
+#include "../../State/PipelineState.h"
 
 #include <vulkan/vulkan.hpp>
 
 namespace Rendering {
 
+// defined in VkUtils.cpp
 vk::Format getVkFormat(const InternalFormat& format);
 vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
+vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
 
 //---------------
 
@@ -200,6 +201,28 @@ static vk::PipelineColorBlendAttachmentState convertColorBlendAttachmentState(co
 
 //---------------
 
+ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderResourceLayoutSet& layoutSet) {
+	vk::Device vkDevice(device->getApiHandle());
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	for(const auto& it : layoutSet.getLayouts()) {
+		auto layout = it.second;
+		if(!hasBindingPoint(layout.type))
+			continue; // Skip resources whitout a binding point
+
+		vk::DescriptorSetLayoutBinding binding{};
+		binding.binding = it.first;
+		binding.descriptorCount = layout.elementCount;
+		binding.descriptorType = getVkDescriptorType(layout.type, layout.dynamic);
+		binding.stageFlags = getVkStageFlags(layout.stages);
+
+		bindings.emplace_back(binding);
+	}
+
+	return DescriptorSetLayoutHandle::create(vkDevice.createDescriptorSetLayout({{}, static_cast<uint32_t>(bindings.size()), bindings.data()}), vkDevice).get();
+}
+
+//---------------
+
 ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout& layout) {
 	vk::Device vkDevice(device->getApiHandle());
 
@@ -221,16 +244,17 @@ ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout
 
 //---------------
 
-ApiBaseHandle::Ref createComputePipelineHandle(Device* device, Shader* shader, const std::string& entryPoint, VkPipeline parent) {
+ApiBaseHandle::Ref createComputePipelineHandle(Device* device, const PipelineState& state, VkPipeline parent) {
 
 	// Create new pipeline
 	vk::Device vkDevice(device->getApiHandle());
 	vk::PipelineCache vkCache(device->getPipelineCache());
+	auto shader = state.getShader();
 
 	vk::ComputePipelineCreateInfo info{};
 	info.layout = shader->getLayoutHandle();
 	info.stage.stage = vk::ShaderStageFlagBits::eCompute;
-	info.stage.pName = entryPoint.c_str();
+	info.stage.pName = state.getEntryPoint().c_str();
 	info.stage.pSpecializationInfo = nullptr; // TODO
 	auto moduleEntry = shader->getShaderModules().find(ShaderStage::Compute);
 	if(moduleEntry == shader->getShaderModules().end() || !moduleEntry->second)
@@ -246,12 +270,12 @@ ApiBaseHandle::Ref createComputePipelineHandle(Device* device, Shader* shader, c
 
 //---------------
 
-ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, const PipelineState& state, VkPipeline parent) {
-	auto fbo = state.getFBO();
+ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineState& state, VkPipeline parent) {
 
 	// Create new pipeline
 	vk::Device vkDevice(device->getApiHandle());
 	vk::PipelineCache vkCache(device->getPipelineCache());
+	auto shader = state.getShader();
 
 	vk::GraphicsPipelineCreateInfo info{};
 	info.layout = shader->getLayoutHandle();
@@ -359,7 +383,7 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, 
 	info.pDynamicState = &dynamicState;
 
 	// Render pass
-	info.renderPass = fbo->getRenderPass();
+	info.renderPass = device->getResourceCache()->createRenderPass(state.getFramebufferFormat());
 	info.subpass = 0; // TODO: allow multiple subpasses
 
 	// Derived pipeline
@@ -371,94 +395,14 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, 
 
 //---------------
 
-Pipeline::~Pipeline() = default;
-
-//---------------
-
-Pipeline::Pipeline(const DeviceRef& device) : device(device) { }
-
-//---------------
-
-Pipeline::Ref Pipeline::createCompute(const DeviceRef& device, const ShaderRef& shader, const std::string& entryPoint, const Ref& parent) {
-	Ref obj = new Pipeline(device);
-	obj->setType(PipelineType::Compute);
-	obj->setShader(shader);
-	obj->setEntryPoint(entryPoint);
-	obj->parent = parent;
-	return obj;
-}
-
-//---------------
-
-Pipeline::Ref Pipeline::createGraphics(const DeviceRef& device, const PipelineState& state, const Ref& parent) {
-	Ref obj = new Pipeline(device);
-	obj->setType(PipelineType::Graphics);
-	obj->setState(state);
-	obj->parent = parent;
-	return obj;
-}
-
-//---------------
-
-bool Pipeline::validate() {
-	if(isValid())
-		return true;
-	
-	hash = 0;
-	handle = nullptr;
-	if(!shader->init())
-		return false;
-	
-	auto parentHandle = (parent && parent->validate()) ? parent->getApiHandle() : nullptr;
-	
-	if(type == PipelineType::Graphics) {
-		auto fbo = state.getFBO();
-		if(!fbo->validate())
-			return false;
-			
-		handle = device->getResourceCache()->createGraphicsPipeline(shader, state, parentHandle);
-		Util::hash_combine(hash, state);
-	} else if(type == PipelineType::Compute){
-		handle = device->getResourceCache()->createComputePipeline(shader, state.getEntryPoint(), parentHandle);
-		Util::hash_combine(hash, state.getEntryPoint());
+ApiBaseHandle::Ref createPipelineHandle(Device* device, const PipelineState& state, VkPipeline parent) {
+	switch(state.getType()) {
+		case PipelineType::Compute: return createComputePipelineHandle(device, state, parent);
+		case PipelineType::Graphics: return createGraphicsPipelineHandle(device, state, parent);
+		default: return nullptr;
 	}
-	Util::hash_combine(hash, shader->getLayout());
-	Util::hash_combine(hash, parent ? parent->hash : 0);
-
-	return handle.isNotNull();
 }
 
-//---------------
-
-bool Pipeline::isValid() const {
-	if(!handle)
-		return false;
-
-	if(!shader || shader->getStatus() != Shader::LINKED)
-		return false;
-	
-	auto fbo = state.getFBO();
-	if(type == PipelineType::Graphics && (!fbo || !fbo->isValid()))
-		return false;
-	
-	if(parent && !parent->isValid())
-		return false;
-	
-	size_t tmpHash = 0;
-	if(type == PipelineType::Graphics) {
-		Util::hash_combine(tmpHash, state);
-	} else {
-		Util::hash_combine(tmpHash, state.getEntryPoint());
-	}
-	Util::hash_combine(tmpHash, shader->getLayout());
-	Util::hash_combine(tmpHash, parent ? parent->hash : 0);
-	return hash == tmpHash;
-}
-
-//---------------
-
-void Pipeline::setShader(const ShaderRef& value) { shader = value; }
-	
 //---------------
 
 } /* Rendering */

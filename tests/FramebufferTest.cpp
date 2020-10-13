@@ -34,39 +34,31 @@
 #include <spirv_cross.hpp>
 #include <vulkan/vulkan.hpp>
 
-const std::string vertexShader = R"vs(
+const std::string shaderSrc = R"vs(
 	#version 450
+	#ifdef SG_VERTEX_SHADER
 
-	layout(location = 0) in vec2 position;
-	layout(location = 1) in vec4 color;
-
-	layout(location = 0) out vec3 fragColor;
-
-	layout(push_constant) uniform PushConstants {
-		float angle;
-	};
+	vec2 positions[3] = vec2[](
+		vec2(0.0, -0.5),
+		vec2(-0.5, 0.5),
+		vec2(0.5, 0.5)
+	);
 
 	void main() {
-		float s = sin(angle);
-		float c = cos(angle);
-		mat2 m = mat2(c, -s, s, c);
-		gl_Position = vec4(m * position, 0.0, 1.0);
-		fragColor = color.rgb;
+		gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
 	}
+	#endif
+	#ifdef SG_FRAGMENT_SHADER
+
+	layout(location = 0) out vec4 outColor;
+	void main() {
+		outColor = vec4(1.0, 0.0, 0.0, 1.0);
+	}
+	#endif
 )vs";
 
-const std::string fragmentShader = R"fs(
-	#version 450
 
-	layout(location = 0) in vec3 fragColor;
-	layout(location = 0) out vec4 outColor;
-
-	void main() {
-		outColor = vec4(fragColor, 1.0);
-	}
-)fs";
-
-TEST_CASE("DrawTest_testBox", "[DrawTest]") {
+TEST_CASE("FramebufferTest_testDraw", "[FramebufferTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
 	
@@ -80,66 +72,33 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	auto swapchain = device->getSwapchain();
 
 	// --------------------------------------------
-	// input
-
-	std::vector<Geometry::Vec2> positions {
-		{0.0, -0.5},
-		{-0.5, 0.5},
-		{0.5, 0.5}
-	};
-
-	std::vector<Util::Color4f> colors {
-		{1.0, 0.0, 0.0},
-		{0.0, 1.0, 0.0},
-		{0.0, 0.0, 1.0}
-	};
-
-	auto vertexBuffer = BufferObject::create(device);
-	vertexBuffer->allocate(positions.size() * sizeof(Geometry::Vec2) + colors.size() * sizeof(Util::Color4f), ResourceUsage::VertexBuffer);
-	vertexBuffer->upload(positions);
-	vertexBuffer->upload(colors, positions.size() * sizeof(Geometry::Vec2));
-
-	// --------------------------------------------
 	// create graphics pipeline
 	
 	// compile shaders
-	auto shader = Shader::createShader(device, vertexShader, fragmentShader);
+	auto shader = Shader::createShader(device, shaderSrc, shaderSrc);
 	REQUIRE(shader->init());
 
 	PipelineState state{};
 	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(TestUtils::window->getWidth()), static_cast<int32_t>(TestUtils::window->getHeight())};
 	state.setViewportState({windowRect, windowRect});
-
-	VertexInputState inputState;
-	inputState.setBinding({0, sizeof(Geometry::Vec2)});
-	inputState.setBinding({1, sizeof(Util::Color4f)});
-	inputState.setAttribute({0, 0, InternalFormat::RG32Float, 0});
-	inputState.setAttribute({1, 1, InternalFormat::RGBA32Float, 0});
-	state.setVertexInputState(inputState);
-
 	state.setShader(shader);
 	state.setFramebufferFormat(swapchain->getCurrentFBO());
+
 	// --------------------------------------------
 	// draw
 
-	auto angle = Geometry::Angle::deg(0);
-	for(uint_fast32_t round = 0; round < 1000; ++round) {		
+	for(uint_fast32_t round = 0; round < 100; ++round) {		
 		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
 		cmdBuffer->begin();
-		cmdBuffer->setPipeline(state);
 
 		cmdBuffer->beginRenderPass(nullptr, true, true, {{1,1,1,1}});
-		cmdBuffer->bindVertexBuffers(0, {vertexBuffer, vertexBuffer}, {0, positions.size() * sizeof(Geometry::Vec2)});
-		cmdBuffer->pushConstants(angle.deg());
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
-				
+		
 		cmdBuffer->end();
 
 		graphicsQueue->submit(cmdBuffer);
 		graphicsQueue->present();
-
-		angle += Geometry::Angle::deg(1);
 	}
 	vkDevice.waitIdle();
 }

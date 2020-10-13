@@ -121,10 +121,11 @@ bool ImageView::init() {
 
 	auto type = getViewType(config.type);
 	vk::Format format(static_cast<vk::Format>(getVkFormat(image->getFormat().pixelFormat)));
-	
+	auto aspect = isDepthStencilFormat(image->getFormat()) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+
 	auto view = vkDevice.createImageView({{}, 
 		vkImage, type, format, {},
-		{ vk::ImageAspectFlagBits::eColor,
+		{ aspect,
 			config.baseMipLevel, config.mipLevelCount,
 			config.baseLayer, config.layerCount
 		}

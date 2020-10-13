@@ -47,13 +47,6 @@ enum class QueueFamily : uint8_t {
 
 //---------------------------
 
-enum class PipelineType {
-	Graphics = 0,
-	Compute,
-};
-
-//---------------------------
-
 enum class InternalFormat : std::uint8_t {
 	Unknown,
 	R8Unorm,
@@ -200,7 +193,10 @@ struct ImageFormat {
 
 //---------------------------
 
-bool isDepthStencilFormat(const ImageFormat& format);
+bool isDepthStencilFormat(InternalFormat format);
+inline bool isDepthStencilFormat(const ImageFormat& format) {
+	return isDepthStencilFormat(format.pixelFormat);
+}
 
 //---------------------------
 

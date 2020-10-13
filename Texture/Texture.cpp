@@ -256,4 +256,9 @@ void Texture::enableComparision(RenderingContext & context, Comparison::function
 
 //---------------
 
+ResourceUsage Texture::getLastUsage() const {
+	return imageView ? imageView->getLastUsage() : ResourceUsage::Undefined;
+}
+
+//---------------
 }

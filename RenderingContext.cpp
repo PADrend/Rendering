@@ -76,6 +76,7 @@ public:
 
 	// fbo
 	std::stack<FBO::Ref> fboStack;
+	FBO::Ref activeFBO;
 	Geometry::Rect_i windowClientArea;
 
 	// shader
@@ -152,8 +153,6 @@ CommandBufferRef RenderingContext::getCommandBuffer() const {
 
 void RenderingContext::flush(bool wait) {
 	applyChanges();
-	if(internal->cmd->isInRenderPass())
-		internal->cmd->endRenderPass();
 	internal->cmd->end();
 	internal->cmd->submit(wait);
 
@@ -164,7 +163,7 @@ void RenderingContext::flush(bool wait) {
 void RenderingContext::present() {
 	flush();
 
-	// clear  lights
+	// clear lights
 	// TODO: do explicit clearing?
 	internal->renderingState.getLights().clear();
 
@@ -182,21 +181,17 @@ void RenderingContext::barrier(uint32_t flags) {
 
 void RenderingContext::applyChanges(bool forced) {
 	if(internal->cmd->isInRenderPass() && 
-		internal->cmd->getFBO() != internal->pipelineState.getFBO() &&
-		internal->pipelineState.getFBO().isNotNull() && 
-		internal->cmd->getFBO() != internal->device->getSwapchain()->getCurrentFBO()
+		internal->cmd->getActiveFBO() != internal->activeFBO &&
+		internal->activeFBO.isNotNull() && 
+		internal->cmd->getActiveFBO() != internal->device->getSwapchain()->getCurrentFBO()
 	) {
 		// FBO has changed: end the active render pass
 		internal->cmd->endRenderPass();
 	}
 
 	// Update state
-	internal->cmd->setPipelineState(internal->pipelineState);
+	internal->cmd->setPipeline(internal->pipelineState);
 	internal->cmd->setBindings(internal->bindingState);
-
-	// if there is no active FBO, use the swapchain FBO
-	if(!internal->pipelineState.getFBO())
-		internal->cmd->setFBO(internal->device->getSwapchain()->getCurrentFBO());
 
 	// Set the shader
 	Shader::Ref shader;
@@ -236,40 +231,50 @@ void RenderingContext::applyChanges(bool forced) {
 
 void RenderingContext::clearColor(const Util::Color4f& color) {
 	applyChanges();
-	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
-	internal->cmd->clearColor({color});
+	if(!internal->cmd->isInRenderPass()) {
+		internal->cmd->beginRenderPass(internal->activeFBO, true, false, {color});
+	} else {
+		internal->cmd->clearColor({color});
+	}
 }
 
 void RenderingContext::clearScreen(const Util::Color4f& color) {
 	applyChanges();
-	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
-	internal->cmd->clearColor({color});
-	internal->cmd->clearDepthStencil(1, 0);
+	if(!internal->cmd->isInRenderPass()) {
+		internal->cmd->beginRenderPass(internal->activeFBO, true, true, {color});
+	} else {
+		internal->cmd->clearColor({color});
+		internal->cmd->clearDepthStencil(1, 0);
+	}
 }
 
 void RenderingContext::clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool _clearDepth) {
 	applyChanges();
-	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
-	internal->cmd->clearColor({color}, rect);
-	if(_clearDepth)
-		internal->cmd->clearDepthStencil(1, 0, rect);
+	if(!internal->cmd->isInRenderPass()) {
+		internal->cmd->beginRenderPass(internal->activeFBO, true, _clearDepth, {color});
+	} else {
+		internal->cmd->clearColor({color}, rect);
+		if(_clearDepth)
+			internal->cmd->clearDepthStencil(1, 0, rect);
+	}
 }
 
 void RenderingContext::clearDepth(float clearValue) {
 	applyChanges();
-	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
-	internal->cmd->clearDepthStencil(clearValue, 0, {}, true, false);
+	if(!internal->cmd->isInRenderPass()) {
+		internal->cmd->beginRenderPass(internal->activeFBO, false, true, {}, clearValue);
+	} else {
+		internal->cmd->clearDepthStencil(clearValue, 0, {}, true, false);
+	}
 }
 
 void RenderingContext::clearStencil(int32_t clearValue) {
 	applyChanges();
-	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
-	internal->cmd->clearDepthStencil(1, clearValue, {}, false, true);
+	if(!internal->cmd->isInRenderPass()) {
+		internal->cmd->beginRenderPass(internal->activeFBO, false, true, {}, 0, clearValue);
+	} else {
+		internal->cmd->clearDepthStencil(1, clearValue, {}, false, true);
+	}
 }
 
 // AlphaTest ************************************************************************************
@@ -503,14 +508,14 @@ void RenderingContext::bindIndexBuffer(const BufferObjectRef& buffer) {
 void RenderingContext::draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount, uint32_t firstInstance) {
 	applyChanges();
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
+		internal->cmd->beginRenderPass(internal->activeFBO);
 	internal->cmd->draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void RenderingContext::drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount, uint32_t firstInstance) {
 	applyChanges();
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
+		internal->cmd->beginRenderPass(internal->activeFBO);
 	internal->cmd->drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
@@ -523,11 +528,11 @@ void RenderingContext::setPrimitiveTopology(PrimitiveTopology topology) {
 // FBO ************************************************************************************
 
 FBO * RenderingContext::getActiveFBO() const {
-	return internal->pipelineState.getFBO().get();
+	return internal->activeFBO;
 }
 
 FBORef RenderingContext::getFBO() const {
-	return internal->pipelineState.getFBO();
+	return internal->activeFBO;
 }
 
 void RenderingContext::popFBO() {
@@ -537,7 +542,7 @@ void RenderingContext::popFBO() {
 }
 
 void RenderingContext::pushFBO() {
-	internal->fboStack.emplace(getFBO());
+	internal->fboStack.emplace(internal->activeFBO);
 }
 
 void RenderingContext::pushAndSetFBO(const FBORef& fbo) {
@@ -546,7 +551,8 @@ void RenderingContext::pushAndSetFBO(const FBORef& fbo) {
 }
 
 void RenderingContext::setFBO(const FBORef& fbo) {
-	internal->pipelineState.setFBO(fbo);
+	internal->pipelineState.setFramebufferFormat(fbo);
+	internal->activeFBO = fbo;
 }
 
 // ImageBinding ************************************************************************************

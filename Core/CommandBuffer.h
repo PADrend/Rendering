@@ -10,7 +10,7 @@
 #define RENDERING_CORE_COMMANDBUFFER_H_
 
 #include "Common.h"
-#include "Pipeline.h"
+#include "../State/PipelineState.h"
 #include "../State/BindingState.h"
 
 #include <Util/ReferenceCounter.h>
@@ -64,7 +64,7 @@ public:
 	void begin();
 	void end();
 
-	void beginRenderPass(const std::vector<Util::Color4f>& clearColors={});
+	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, const std::vector<Util::Color4f>& clearColors={}, float clearDepthValue=0, uint32_t clearStencilValue=0);
 	void endRenderPass();
 	//! @}
 
@@ -122,30 +122,31 @@ public:
 	//! @name Pipeline state
 	//! @{
 
-	PipelineState& getPipelineState() { return pipeline->getState(); }
-	void setPipelineState(const PipelineState& value) { pipeline->setState(value); }
+	PipelineState& getPipeline() { return pipeline; }
+	void setPipeline(const PipelineState& value) { pipeline = value; }
 	
-	void setVertexInputState(const VertexInputState& state) { pipeline->setVertexInputState(state); }
-	void setInputAssemblyState(const InputAssemblyState& state) { pipeline->setInputAssemblyState(state); }
-	void setViewportState(const ViewportState& state) { pipeline->setViewportState(state); }
-	void setRasterizationState(const RasterizationState& state) { pipeline->setRasterizationState(state); }
-	void setMultisampleState(const MultisampleState& state) { pipeline->setMultisampleState(state); }
-	void setDepthStencilState(const DepthStencilState& state) { pipeline->setDepthStencilState(state); }
-	void setColorBlendState(const ColorBlendState& state) { pipeline->setColorBlendState(state); }
-	void setEntryPoint(const std::string& value) { pipeline->setEntryPoint(value); }
-	void setShader(const ShaderRef& shader) { pipeline->setShader(shader); }
-	void setFBO(const FBORef& fbo) { pipeline->setFBO(fbo); }
+	void setVertexInputState(const VertexInputState& state) { pipeline.setVertexInputState(state); }
+	void setInputAssemblyState(const InputAssemblyState& state) { pipeline.setInputAssemblyState(state); }
+	void setViewportState(const ViewportState& state) { pipeline.setViewportState(state); }
+	void setRasterizationState(const RasterizationState& state) { pipeline.setRasterizationState(state); }
+	void setMultisampleState(const MultisampleState& state) { pipeline.setMultisampleState(state); }
+	void setDepthStencilState(const DepthStencilState& state) { pipeline.setDepthStencilState(state); }
+	void setColorBlendState(const ColorBlendState& state) { pipeline.setColorBlendState(state); }
+	void setFramebufferFormat(const FramebufferFormat& state) { pipeline.setFramebufferFormat(state); }
+	void setFramebufferFormat(const FBORef& fbo) { pipeline.setFramebufferFormat(fbo); }
+	void setEntryPoint(const std::string& value) { pipeline.setEntryPoint(value); }
+	void setShader(const ShaderRef& shader) { pipeline.setShader(shader); }
 	
-	const VertexInputState& getVertexInputState() const { return pipeline->getVertexInputState(); }
-	const InputAssemblyState& getInputAssemblyState() const { return pipeline->getInputAssemblyState(); }
-	const ViewportState& getViewportState() const { return pipeline->getViewportState(); }
-	const RasterizationState& getRasterizationState() const { return pipeline->getRasterizationState(); }
-	const MultisampleState& getMultisampleState() const { return pipeline->getMultisampleState(); }
-	const DepthStencilState& getDepthStencilState() const { return pipeline->getDepthStencilState(); }
-	const ColorBlendState& getColorBlendState() const { return pipeline->getColorBlendState(); }
-	const std::string& getEntryPoint() const { return pipeline->getEntryPoint(); }
-	const ShaderRef& getShader() const { return pipeline->getShader(); }
-	const FBORef& getFBO() const { return pipeline->getFBO(); }
+	const VertexInputState& getVertexInputState() const { return pipeline.getVertexInputState(); }
+	const InputAssemblyState& getInputAssemblyState() const { return pipeline.getInputAssemblyState(); }
+	const ViewportState& getViewportState() const { return pipeline.getViewportState(); }
+	const RasterizationState& getRasterizationState() const { return pipeline.getRasterizationState(); }
+	const MultisampleState& getMultisampleState() const { return pipeline.getMultisampleState(); }
+	const DepthStencilState& getDepthStencilState() const { return pipeline.getDepthStencilState(); }
+	const ColorBlendState& getColorBlendState() const { return pipeline.getColorBlendState(); }
+	const FramebufferFormat& getFramebufferFormat() const { return pipeline.getFramebufferFormat(); }
+	const std::string& getEntryPoint() const { return pipeline.getEntryPoint(); }
+	const ShaderRef& getShader() const { return pipeline.getShader(); }
 
 	//! @}
 
@@ -156,6 +157,7 @@ public:
 	bool isInRenderPass() const { return inRenderPass; }
 	bool isPrimary() const { return primary; }
 	State getState() const { return state; }
+	const FBORef& getActiveFBO() const { return activeFBO; }
 	//! @}
 
 	//! @name Internal
@@ -172,7 +174,8 @@ private:
 	CommandBufferHandle handle;
 	State state = Invalid;
 	bool inRenderPass=false;
-	Pipeline::Ref pipeline;
+	FBORef activeFBO;
+	PipelineState pipeline;
 	BindingState bindings;
 
 	// Keep as long as command buffer is used

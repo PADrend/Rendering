@@ -15,7 +15,6 @@
 #include "UniformRegistry.h"
 #include "../Core/Device.h"
 #include "../Core/DescriptorPool.h"
-#include "../Core/DescriptorSet.h"
 #include "../Core/ResourceCache.h"
 #include "../Helper.h"
 
@@ -200,8 +199,6 @@ bool Shader::linkProgram() {
 	// Merge resources from shader objects
 	for(auto& obj : shaderObjects) {
 		auto objResources = reflect(obj.getType(), obj.getCode());
-		if(objResources.empty())
-			return false;
 		
 		for(auto& resource : objResources) {
 			std::string key = resource.name;
@@ -244,6 +241,7 @@ bool Shader::linkProgram() {
 	layout.setPushConstantRanges(pushConstantRanges);
 	layoutHandle = device->getResourceCache()->createPipelineLayout(layout);
 
+	WARN_IF(!layoutHandle, "Shader: Cannot link shader. Failed to create pipeline layout.");
 	return layoutHandle.isNotNull();
 }
 

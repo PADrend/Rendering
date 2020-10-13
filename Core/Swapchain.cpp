@@ -138,15 +138,10 @@ bool Swapchain::updateFramebuffers() {
 		auto image = ImageStorage::createFromHandle(device.get(), {format, MemoryUsage::GpuOnly, ResourceUsage::RenderTarget}, std::move(imageHandle));
 		auto texture = Texture::create(device.get(), image);
 		auto& fbo = fbos[i];
-		if(!fbo) fbo = FBO::create(device.get());
+		if(!fbo) fbo = FBO::create();
 		fbo->attachColorTexture(texture);
 		fbo->attachDepthStencilTexture(depthTexture);
 
-		// TODO: create & add depth texture
-		if(!fbo || !fbo->validate()) {
-			WARN("Device: Could not create swap chain framebuffers.");
-			return false;
-		}
 	}
 	acquireNextIndex();
 	return true;

@@ -81,6 +81,7 @@ public:
 
 	const ImageHandle& getApiHandle() const { return handle; }
 	const AllocationHandle& getAllocation() const { return allocation; }
+	const DeviceRef& getDevice() const { return device; }
 	//! @}
 private:
 	explicit ImageStorage(const DeviceRef& device, const Configuration& config);

@@ -10,37 +10,27 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "FBO.h"
-#include "Core/ApiHandles.h"
 #include "Core/Device.h"
-#include "Texture/Texture.h"
 #include "Core/ImageStorage.h"
 #include "Core/ImageView.h"
 #include "Core/Sampler.h"
+#include "Texture/Texture.h"
 #include "GLHeader.h"
 
 #include <Util/Macros.h>
 #include <Util/Utils.h>
 
-#include <vulkan/vulkan.hpp>
-
 #include <stdexcept>
 
 namespace Rendering {
 
-vk::Format getVkFormat(const InternalFormat& format);
-vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
+//-----------------
+
+FBO::Ref FBO::create(uint32_t maxAttachments) { return new FBO(maxAttachments); }
 
 //-----------------
 
-FBO::Ref FBO::create(const DeviceRef& device) {
-	return new FBO(device);
-}
-
-//-----------------
-
-FBO::FBO(const DeviceRef& device) : device(device) {
-	colorAttachments.resize(device->getMaxFramebufferAttachments(), {});
-}
+FBO::FBO(uint32_t maxAttachments) : colorAttachments(maxAttachments, nullptr) {}
 
 //-----------------
 
@@ -49,10 +39,7 @@ FBO::~FBO() = default;
 //-----------------
 
 void FBO::attachColorTexture(const TextureRef& texture, uint32_t index) {
-	if(index >= colorAttachments.size()) {
-		WARN("FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".");
-		return;
-	}
+	WARN_AND_RETURN_IF(index >= colorAttachments.size(),"FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".",);
 	if(!texture) {
 		detachColorTexture(index);
 		return;
@@ -60,30 +47,23 @@ void FBO::attachColorTexture(const TextureRef& texture, uint32_t index) {
 	colorAttachments[index] = texture;
 	width = texture->getWidth();
 	height = texture->getHeight();
-	invalidate();
 }
 
 //-----------------
 
 void FBO::attachColorTexture(const ImageViewRef& view, uint32_t index) {
-	if(index >= colorAttachments.size()) {
-		WARN("FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".");
-		return;
-	}
+	WARN_AND_RETURN_IF(index >= colorAttachments.size(),"FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".",);
 	if(!view) {
 		detachColorTexture(index);
 		return;
 	}
-	attachColorTexture(Texture::create(device.get(), view), index);
+	attachColorTexture(Texture::create(view->getImage()->getDevice(), view), index);
 }
 
 //-----------------
 
 void FBO::attachColorTexture(const ImageStorageRef& image, uint32_t index, uint32_t mipLevel, uint32_t baseLayer, uint32_t layerCount) {
-	if(index >= colorAttachments.size()) {
-		WARN("FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".");
-		return;
-	}
+	WARN_AND_RETURN_IF(index >= colorAttachments.size(),"FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".",);
 	if(!image) {
 		detachColorTexture(index);
 		return;
@@ -94,10 +74,8 @@ void FBO::attachColorTexture(const ImageStorageRef& image, uint32_t index, uint3
 //-----------------
 
 void FBO::detachColorTexture(uint32_t index) {
-	if(index < colorAttachments.size()) {
-		invalidate();
+	if(index < colorAttachments.size())
 		colorAttachments[index] = nullptr;
-	}
 }
 
 //-----------------
@@ -108,7 +86,6 @@ void FBO::attachDepthStencilTexture(const TextureRef& texture) {
 	if(texture) {
 		width = texture->getWidth();
 		height = texture->getHeight();
-		invalidate();
 	}
 }
 
@@ -119,7 +96,7 @@ void FBO::attachDepthStencilTexture(const ImageViewRef& view) {
 		detachDepthStencilTexture();
 		return;
 	}
-	attachDepthStencilTexture(Texture::create(device.get(), view));
+	attachDepthStencilTexture(Texture::create(view->getImage()->getDevice(), view));
 }
 
 //-----------------
@@ -136,146 +113,41 @@ void FBO::attachDepthStencilTexture(const ImageStorageRef& image, uint32_t mipLe
 
 void FBO::detachDepthStencilTexture() {
 	depthStencilAttachment = nullptr;
-	invalidate();
 }
 
 //-----------------
 
-const TextureRef& FBO::getColorTexture(uint32_t index) const {
-	static TextureRef nullRef;
-	if(index >= colorAttachments.size())
-		return nullRef;
-	return colorAttachments[index];
+ TextureRef FBO::getColorAttachment(uint32_t index) const {
+	return index < colorAttachments.size() ? colorAttachments[index] : nullptr;
 }
 
 //-----------------
 
-const TextureRef& FBO::getDepthStencilTexture() const {
+TextureRef FBO::getDepthStencilAttachment() const {
 	return depthStencilAttachment;
 }
 
 //-----------------
 
-const std::string FBO::getStatusMessage() const {
-	return "";
-}
-
-//-----------------
-
-bool FBO::validate() {
-	if(!valid)
-		init();
-	valid = handle && renderPass;
-	return valid;
-}
-
-//-----------------
-
-void FBO::init() {
-	vk::Device vkDevice(device->getApiHandle());
-	hash = 0;
-	
-	// Bind color buffers	
-	uint32_t layerCount = 0;
-	uint32_t attachmentCount = 0;
-	std::vector<vk::ImageView> attachments;
-	std::vector<vk::AttachmentDescription> attachmentDescs;
-	std::vector<vk::AttachmentReference> attachmentRefs(colorAttachments.size()+1, {VK_ATTACHMENT_UNUSED, vk::ImageLayout::eUndefined});
-	
+bool FBO::isValid() const {
+	if(width == 0 || height == 0)
+		return false;
 	for(uint32_t i=0; i<colorAttachments.size(); ++i) {
-		auto& attachment = colorAttachments[i];
-		if(attachment) {
-			if(!attachment->isValid()) attachment->upload();
-
-			assert(layerCount == 0 || layerCount == attachment->getImageView()->getLayerCount());
-			layerCount = attachment->getImageView()->getLayerCount();
-			attachments.emplace_back(attachment->getImageView()->getApiHandle());
-			const auto& format = attachment->getFormat();
-			auto lastLayout = getVkImageLayout(attachment->getImageView()->getLastUsage());
-
-			// Init color attachment descriptions
-			attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
-				static_cast<vk::Format>(getVkFormat(format.pixelFormat)),
-				static_cast<vk::SampleCountFlagBits>(format.samples),
-				lastLayout == vk::ImageLayout::eUndefined ? vk::AttachmentLoadOp::eDontCare : vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
-				vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-				lastLayout,
-				vk::ImageLayout::ePresentSrcKHR
-			);
-			
-			attachmentRefs[i] = {attachmentCount++, vk::ImageLayout::eColorAttachmentOptimal};
-
-			Util::hash_combine(hash, attachmentCount);
-			Util::hash_combine(hash, vk::ImageLayout::eColorAttachmentOptimal);
-			Util::hash_combine(hash, format);
+		const auto& att = colorAttachments[i];
+		if(att && (att->getWidth() != width || att->getHeight() != height)) {
+			WARN("FBO: Invalid size of color attachment " + std::to_string(i) + ".");
+			return false;
 		}
 	}
-	bool hasColor = attachmentCount > 0;
-	bool hasDepth = depthStencilAttachment;
-	
-	// Bind depth buffer
-	if(hasDepth) {
-		if(!depthStencilAttachment->isValid()) depthStencilAttachment->upload();
-
-		assert(layerCount == 0 || layerCount == depthStencilAttachment->getImageView()->getLayerCount());
-		if(layerCount == 0) layerCount = depthStencilAttachment->getImageView()->getLayerCount();
-		attachments.emplace_back(depthStencilAttachment->getImageView()->getApiHandle());
-		const auto& format = depthStencilAttachment->getFormat();
-		auto lastLayout = getVkImageLayout(depthStencilAttachment->getImageView()->getLastUsage());
-		
-		// Init depth attachment descriptions. No need to attach if the texture is null
-		attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
-			static_cast<vk::Format>(getVkFormat(format.pixelFormat)),
-			static_cast<vk::SampleCountFlagBits>(format.samples),
-			lastLayout == vk::ImageLayout::eUndefined ? vk::AttachmentLoadOp::eDontCare : vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
-			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
-			lastLayout,
-			vk::ImageLayout::eDepthStencilAttachmentOptimal
-		);
-		attachmentRefs.back() = {attachmentCount++, vk::ImageLayout::eDepthStencilAttachmentOptimal};
-
-		Util::hash_combine(hash, attachmentCount);
-		Util::hash_combine(hash, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-		Util::hash_combine(hash, format);
+	if(depthStencilAttachment && (depthStencilAttachment->getWidth() != width || depthStencilAttachment->getHeight() != height)) {
+		WARN("FBO: Invalid size of depth attachment.");
+		return false;
 	}
-	
-	// Init Subpass info
-	std::vector<vk::SubpassDescription> subpassDescs;
-
-	vk::SubpassDescription subpassDesc = {};
-	if(hasColor) {
-		subpassDesc.colorAttachmentCount = colorAttachments.size();
-		subpassDesc.pColorAttachments = attachmentRefs.data();
-	}
-	
-	// Depth
-	if(hasDepth) {
-		subpassDesc.pDepthStencilAttachment = &attachmentRefs.back();
-	}	
-	subpassDescs.emplace_back(subpassDesc);
-
-	// Create render pass
-	auto pass = vkDevice.createRenderPass({{},
-		static_cast<uint32_t>(attachmentDescs.size()), attachmentDescs.data(),
-		static_cast<uint32_t>(subpassDescs.size()), subpassDescs.data()
-	});
-	renderPass = RenderPassHandle::create(pass, vkDevice);
-
-	// Framebuffer
-	auto frameBuffer = vkDevice.createFramebuffer({{},
-		pass,
-		attachmentCount, attachments.data(),
-		attachmentCount ? getWidth() : 1, 
-		attachmentCount ? getHeight() : 1,
-		attachmentCount ? layerCount : 1
-	});
-	handle = FramebufferHandle::create(frameBuffer, vkDevice);
+	return true;
 }
 
 //=========================================================================
 // deprecated
-
-FBO::FBO() : FBO(Device::getDefault()) { }
 
 void FBO::attachTexture(RenderingContext & context,uint32_t attachmentPoint,Texture * texture,uint32_t level,int32_t layer) {
 	if(attachmentPoint == GL_DEPTH_ATTACHMENT || attachmentPoint == GL_STENCIL_ATTACHMENT) {
