@@ -80,7 +80,10 @@ struct Device::InternalData {
 
 //=========================================================================
 
-bool Device::InternalData::createInstance(const Device::Ref& device, const Device::Configuration& config) {	
+bool Device::InternalData::createInstance(const Device::Ref& device, const Device::Configuration& config) {
+	if(config.debugMode)
+		std::cout << "Creating Vulkan instance..." << std::endl;
+
 	vk::ApplicationInfo appInfo(
 		config.name.c_str(), 1,
 		nullptr, 0,
@@ -126,6 +129,8 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 //------------
 
 bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const Device::Configuration& config) {
+	if(config.debugMode)
+		std::cout << "Initializing physical device..." << std::endl;
 	vk::Instance vkInstance(instance);
 
 	// enumerate physical device
@@ -174,7 +179,9 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const D
 
 //------------
 
-bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const Device::Configuration& config) {	
+bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const Device::Configuration& config) {
+	if(config.debugMode)
+		std::cout << "Creating logical device..." << std::endl;
 	vk::SurfaceKHR vkSurface(surface);
 	vk::Instance vkInstance(instance);
 
@@ -244,6 +251,8 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 //------------
 
 bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, const Device::Configuration& config){
+	if(config.debugMode)
+		std::cout << "Creating memory allocator..." << std::endl;
 	VmaVulkanFunctions vmaVulkanFunc{};
 	vmaVulkanFunc.vkAllocateMemory                    = dldy.vkAllocateMemory;
 	vmaVulkanFunc.vkBindBufferMemory                  = dldy.vkBindBufferMemory;
@@ -285,6 +294,8 @@ bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, cons
 //------------
 
 bool Device::InternalData::createSwapchain(const Device::Ref& device, const Device::Configuration& config) {
+	if(config.debugMode)
+		std::cout << "Creating swapchain..." << std::endl;
 	swapchain = new Swapchain(device, {static_cast<int32_t>(window->getWidth()), static_cast<int32_t>(window->getHeight())});
 	if(!swapchain->init()) {
 		swapchain = nullptr;
@@ -446,6 +457,8 @@ bool Device::init(const Configuration& config) {
 		return false;
 	}
 
+	if(config.debugMode)
+		std::cout << "Aquirering window surface..." << std::endl;
 	vk::SurfaceKHR surface(internal->window->createSurface(internal->instance));
 	if(!surface) {
 		WARN("Device: Could not create Vulkan surface.");
