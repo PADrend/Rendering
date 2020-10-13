@@ -107,6 +107,8 @@ public:
 	void bind(RenderingContext & context);
 	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfElements);
 
+	const BufferObject::Ref& getBuffer() { return bufferObject; }
+
 	//! @name Deprecated
 	//! @{
 	[[deprecated]]

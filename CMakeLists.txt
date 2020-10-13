@@ -54,9 +54,6 @@ add_library(Rendering SHARED
 	MeshUtils/Simplification.cpp
 	MeshUtils/TriangleAccessor.cpp
 	MeshUtils/WireShapes.cpp
-	#RenderingContext/internal/StatusHandler_glCompatibility.cpp
-	#RenderingContext/internal/StatusHandler_glCore.cpp
-	#RenderingContext/internal/StatusHandler_sgUniforms.cpp
 	RenderingContext/RenderingParameters.cpp
 	#Serialization/GenericAttributeSerialization.cpp
 	#Serialization/Serialization.cpp

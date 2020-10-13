@@ -24,6 +24,11 @@
 namespace Rendering {
 class Texture;
 using TextureRef = Util::Reference<Texture>;
+class Shader;
+using ShaderRef = Util::Reference<Shader>;
+
+template<typename T>
+inline size_t calcHash(const T& value) { return std::hash<T>{}(value); }
 
 //==================================================================
 // Camera
@@ -41,6 +46,14 @@ public:
 	const Geometry::Vec3& getPosition() const { return position; }
 	const Geometry::Vec3& getDirection() const { return direction; }
 	const Geometry::Vec3& getUp() const { return up; }
+
+	bool operator==(const CameraData& o) const {
+		return matrix_cameraToWorld == o.matrix_cameraToWorld && matrix_cameraToClipping == o.matrix_cameraToClipping;
+	}
+	bool operator!=(const CameraData& o) const { return !(*this == o); }
+
+	void markAsUnchanged() { hash = calcHash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != calcHash(*this) : false; }
 private:
 	Geometry::Matrix4x4f matrix_worldToCamera;
 	Geometry::Matrix4x4f matrix_cameraToWorld;
@@ -50,6 +63,9 @@ private:
 	Geometry::Vec3 position;
 	Geometry::Vec3 direction;
 	Geometry::Vec3 up;
+
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
@@ -66,18 +82,18 @@ enum class ShadingModel {
 
 class MaterialData {
 public:
-	void setAmbient(const Util::Color4f& color) { ambient = color; }
-	void setDiffuse(const Util::Color4f& color) { diffuse = color; diffuseMap = nullptr; }
-	void setDiffuse(const TextureRef& texture) { diffuseMap = texture; }
-	void setSpecular(const Util::Color4f& color) { specular = color; specularMap = nullptr; }
-	void setSpecular(const TextureRef& texture) { specularMap = texture; }
-	void setEmission(const Util::Color4f& color) { emission = color; emissionMap = nullptr; }
-	void setEmission(const TextureRef& texture) { emissionMap = texture; }
-	void setEmissionIntensity(float value) { emission.a(value); }
-	void setNormal(const TextureRef& texture) { normalMap = texture; }
-	void setAlphaThreshold(float value) { alphaThreshold = value; }
-	void setAlphaMaskEnabled(bool value) { alphaMask = value; }
-	void setShadingModel(ShadingModel value) { model = value; }
+	void setAmbient(const Util::Color4f& color) { ambient = color; dirty = true; }
+	void setDiffuse(const Util::Color4f& color) { diffuse = color; diffuseMap = nullptr; dirty = true; }
+	void setDiffuse(const TextureRef& texture) { diffuseMap = texture; dirty = true; }
+	void setSpecular(const Util::Color4f& color) { specular = color; specularMap = nullptr; dirty = true; }
+	void setSpecular(const TextureRef& texture) { specularMap = texture; dirty = true; }
+	void setEmission(const Util::Color4f& color) { emission = color; emissionMap = nullptr; dirty = true; }
+	void setEmission(const TextureRef& texture) { emissionMap = texture; dirty = true; }
+	void setEmissionIntensity(float value) { emission.a(value); dirty = true; }
+	void setNormal(const TextureRef& texture) { normalMap = texture; dirty = true; }
+	void setAlphaThreshold(float value) { alphaThreshold = value; dirty = true; }
+	void setAlphaMaskEnabled(bool value) { alphaMask = value; dirty = true; }
+	void setShadingModel(ShadingModel value) { model = value; dirty = true; }
 
 	const Util::Color4f& getAmbient() const { return ambient; }
 	const Util::Color4f& getDiffuse() const { return diffuse; }
@@ -90,7 +106,26 @@ public:
 	float getAlphaThreshold() const { return alphaThreshold; }
 	bool isAlphaMaskEnabled() const { return alphaMask; }
 	ShadingModel getShadingModel() const { return model; }
+
+	bool operator==(const MaterialData& o) const {
+		return model == o.model &&
+			ambient == o.ambient &&
+			diffuse == o.diffuse &&
+			diffuseMap == o.diffuseMap &&
+			specular == o.specular &&
+			specularMap == o.specularMap &&
+			emission == o.emission &&
+			emissionMap == o.emissionMap &&
+			normalMap == o.normalMap &&
+			alphaThreshold == o.alphaThreshold &&
+			alphaMask == o.alphaMask;
+	}
+	bool operator!=(const MaterialData& o) const { return !(*this == o); }
+
+	void markAsUnchanged() { hash = calcHash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != calcHash(*this) : false; }
 private:
+	ShadingModel model = ShadingModel::Phong;
 	Util::Color4f ambient = {0,0,0,0};
 	Util::Color4f diffuse = {1,1,1,1};
 	TextureRef diffuseMap;
@@ -101,7 +136,9 @@ private:
 	TextureRef normalMap;
 	float alphaThreshold = 0.5;
 	bool alphaMask = false;
-	ShadingModel model = ShadingModel::Phong;
+
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //-------------
@@ -111,9 +148,12 @@ public:
 	uint32_t addMaterial(const MaterialData& material);
 	bool hasMaterial(uint32_t materialId) const;
 	bool hasMaterial(const MaterialData& material) const;
-	const MaterialData& getMaterial(uint32_t materialId) const;
+	MaterialData& getMaterial(uint32_t materialId);
 	void clear() { materials.clear(); materialByHash.clear(); }
 	const std::vector<MaterialData>& getMaterials() const { return materials; }
+
+	bool operator==(const MaterialSet& o) const { return materials == o.materials; }
+	bool operator!=(const MaterialSet& o) const { return materials != o.materials; }
 private:
 	std::vector<MaterialData> materials;
 	std::map<size_t,uint32_t> materialByHash;
@@ -132,12 +172,12 @@ enum class LightType {
 
 class LightData {
 public:
-	void setType(LightType value) { type = value; }
-	void setPosition(const Geometry::Vec3& value) { position = value; }
-	void setDirection(const Geometry::Vec3& value) { direction = value; }
-	void setIntensity(const Util::Color4f& value) { intensity = value; }
-	void setConeAngle(const Geometry::Angle& value) { coneAngle = value; cosConeAngle = std::cos(coneAngle.rad()); }
-	void setRange(float value) { range = value; }
+	void setType(LightType value) { type = value; dirty = true; }
+	void setPosition(const Geometry::Vec3& value) { position = value; dirty = true; }
+	void setDirection(const Geometry::Vec3& value) { direction = value; dirty = true; }
+	void setIntensity(const Util::Color4f& value) { intensity = value; dirty = true; }
+	void setConeAngle(const Geometry::Angle& value) { coneAngle = value; cosConeAngle = std::cos(coneAngle.rad()); dirty = true; }
+	void setRange(float value) { range = value; dirty = true; }
 
 	LightType getType() const { return type; }
 	const Geometry::Vec3& getPosition() const { return position; }
@@ -146,6 +186,19 @@ public:
 	float getRange() const { return range; }
 	const Geometry::Angle& getConeAngle() const { return coneAngle; }
 	float getCosConeAngle() const { return cosConeAngle; }
+
+	bool operator==(const LightData& o) const {
+		return type == o.type &&
+			position == o.position &&
+			direction == o.direction &&
+			intensity == o.intensity &&
+			range == o.range &&
+			coneAngle == o.coneAngle;
+	}
+	bool operator!=(const LightData& o) const { return !(*this == o); }
+
+	void markAsUnchanged() { hash = calcHash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != calcHash(*this) : false; }
 private:
 	LightType type;
 	Geometry::Vec3 position = {0,0,0};
@@ -154,6 +207,9 @@ private:
 	float range = -1;
 	Geometry::Angle coneAngle = Geometry::Angle::deg(20.0);
 	float cosConeAngle = std::cos(Geometry::Angle::deg(20.0).rad());
+
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //-------------
@@ -166,6 +222,9 @@ public:
 	const LightData& getLight(uint32_t lightId) const;
 	void clear() { lights.clear(); lightByHash.clear(); }
 	const std::vector<LightData>& getLights() const { return lights; }
+
+	bool operator==(const LightSet& o) const { return lights == o.lights; }
+	bool operator!=(const LightSet& o) const { return lights != o.lights; }
 private:
 	std::vector<LightData> lights;
 	std::map<size_t,uint32_t> lightByHash;
@@ -176,18 +235,31 @@ private:
 
 class InstanceData {
 public:
-	void setMatrixModelToCamera(const Geometry::Matrix4x4f& value) { matrix_modelToCamera = value; }
-	void multMatrixModelToCamera(const Geometry::Matrix4x4f& value) { matrix_modelToCamera *= value; }
-	void setMaterialId(uint32_t value) { materialId = value; }
-	void setPointSize(float value) { pointSize = value; }
+	void setMatrixModelToCamera(const Geometry::Matrix4x4f& value) { matrix_modelToCamera = value; dirty = true; }
+	void multMatrixModelToCamera(const Geometry::Matrix4x4f& value) { matrix_modelToCamera *= value; dirty = true; }
+	void setMaterialId(uint32_t value) { materialId = value; dirty = true; }
+	void setPointSize(float value) { pointSize = value; dirty = true; }
 
 	const Geometry::Matrix4x4f& getMatrixModelToCamera() const { return matrix_modelToCamera; }
 	uint32_t getMaterialId() const { return materialId; }
 	float getPointSize() const { return pointSize; }
+
+	bool operator==(const InstanceData& o) const {
+		return matrix_modelToCamera == o.matrix_modelToCamera &&
+			materialId == o.materialId &&
+			pointSize == o.pointSize;
+	}
+	bool operator!=(const InstanceData& o) const { return !(*this == o); }
+
+	void markAsUnchanged() { hash = calcHash(*this); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != calcHash(*this) : false; }
 private:
 	Geometry::Matrix4x4f matrix_modelToCamera;
 	uint32_t materialId = 0;
 	float pointSize = 1.0;
+
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 
@@ -200,6 +272,15 @@ public:
 	MaterialSet& getMaterials() { return materials; }
 	LightSet& getLights() { return lights; }
 	InstanceData& getInstance() { return instance; }
+
+	void apply(const ShaderRef& shader, bool forced=false);
+
+	bool operator==(const RenderingState& o) const {
+		return camera == o.camera &&
+			materials == o.materials &&
+			lights == o.lights;
+	}
+	bool operator!=(const RenderingState& o) const { return !(*this == o); }
 private:
 	CameraData camera;
 	MaterialSet materials;

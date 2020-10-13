@@ -15,6 +15,7 @@
 #include <catch2/catch.hpp>
 
 #include <memory>
+#include <vector>
 
 Util::Reference<Util::UI::Window> TestUtils::window;
 Rendering::Device::Ref TestUtils::device;
@@ -29,7 +30,11 @@ int main( int argc, char* argv[] ) {
 	properties.title = "Rendering Test";
 	properties.compatibilityProfile = true;
 	TestUtils::window = Util::UI::createWindow(properties);
-	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), {"Test", 0u, 0u, true});
+	Rendering::Device::Configuration config{"Test", 0u, 0u, true};
+	config.validationLayers = {
+		"VK_LAYER_LUNARG_api_dump"
+	};
+	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), config);
 	
 	auto result = Catch::Session().run( argc, argv );
 	

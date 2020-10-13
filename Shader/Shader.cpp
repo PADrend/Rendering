@@ -17,7 +17,6 @@
 #include "../Core/DescriptorPool.h"
 #include "../Core/DescriptorSet.h"
 #include "../Core/ResourceCache.h"
-#include "../RenderingContext/internal/RenderingStatus.h"
 #include "../Helper.h"
 
 #include <vulkan/vulkan.hpp>
@@ -155,9 +154,6 @@ bool Shader::init() {
 		} else if(status == COMPILED) {
 			if( linkProgram() ) {
 				status = LINKED;
-
-				// recreate renderingData
-				renderingData.reset(new RenderingStatus(this));
 
 				// make sure all set uniforms are re-applied.
 				uniforms->resetCounters();
@@ -316,15 +312,12 @@ void Shader::applyUniforms(bool forced) {
 		// new uniform? --> query and store the location
 		if( entry->location==-1 ) {
 			// find uniform
-			const auto& rIt = resources.find(entry->uniform.getNameId());
-			if(rIt == resources.end()) {
-				entry->valid = false;
-				if(entry->warnIfUnused)
-					WARN(std::string("No uniform named: ") + entry->uniform.getName());
-				continue;
-			} else {
-				entry->location = static_cast<int32_t>(rIt->second.binding);
-				entry->set = static_cast<int32_t>(rIt->second.set); 
+			entry->valid = false;
+			for(const auto& rIt : uniformBuffers) {
+				if(rIt.second->getFormat().hasAttribute(entry->uniform.getNameId())) {
+					entry->set = static_cast<int32_t>(rIt.first.first); 
+					entry->location = static_cast<int32_t>(rIt.first.second);
+				}
 			}
 		}
 

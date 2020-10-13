@@ -39,7 +39,6 @@ class FileName;
 namespace Rendering {
 class Uniform;
 class UniformRegistry;
-class RenderingStatus;
 class Device;
 using DeviceRef = Util::Reference<Device>;
 class DescriptorPool;
@@ -82,12 +81,8 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		[[deprecated]]
 		void setUsage(flag_t newUsage) { }
 
-		[[deprecated]]
-		RenderingStatus * getRenderingStatus() { return renderingData.get(); }
-
 		const DeviceRef& getDevice() const { return device; }
 	private:
-		std::unique_ptr<RenderingStatus> renderingData; // created when the shader is successfully initialized
 		DeviceRef device;
 
 		Shader(const DeviceRef& device);
@@ -190,7 +185,8 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	// @{
 	private:
 		const std::unique_ptr<UniformRegistry> uniforms;
-		std::map<std::pair<uint32_t,uint32_t>, UniformBufferRef> uniformBuffers;
+		using UniformBufferMap_t = std::map<std::pair<uint32_t,uint32_t>, UniformBufferRef>;
+		UniformBufferMap_t uniformBuffers;
 
 		/*! (internal) Make sure that all uniforms declared in the shader are registered to the registry
 			with their current value. Called when a shader is linked successfully */
@@ -220,6 +216,8 @@ class Shader : public Util::ReferenceCounter<Shader> {
 			\note The uniform is stored at the Shader's internal uniformRegistry.
 			\note The Shader needs not to be active.*/
 		void setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused=true, bool forced=false);
+
+		const UniformBufferMap_t& getUniformBuffers() const { return uniformBuffers; }
 	// @}
 
 	// ------------------------
@@ -232,6 +230,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		[[deprecated]]
 		void defineVertexAttribute(const std::string & attrName, uint32_t index) {}
 		int32_t getVertexAttributeLocation(const Util::StringIdentifier& attrName);
+		const std::unordered_map<Util::StringIdentifier, int32_t>& getVertexAttributeLocations() const { return vertexAttributeLocations; }
 	// @}
 
 

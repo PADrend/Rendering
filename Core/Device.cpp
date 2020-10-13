@@ -114,8 +114,11 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 	);
 
 	std::vector<const char*> layerNames;
-	if(config.debugMode)
+	if(config.debugMode) {
 		layerNames.emplace_back("VK_LAYER_LUNARG_standard_validation");
+		for(auto& layer : config.validationLayers)
+			layerNames.emplace_back(layer.c_str());
+	}
 	std::vector<const char*> requiredExtensions = window->getAPIExtensions();
 	if(config.debugMode)
 		requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

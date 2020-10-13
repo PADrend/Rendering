@@ -603,7 +603,7 @@ private:
 	DepthStencilState depthStencil;
 	ColorBlendState colorBlend;
 	std::string entrypoint;
-	FBORef fbo;
+	FBORef fbo; // TODO: only use RenderPass instead of framebuffer
 };
 
 //! @}

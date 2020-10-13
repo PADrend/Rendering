@@ -29,6 +29,7 @@
 #include "Mesh/VertexDescription.h"
 #include "Shader/Shader.h"
 #include "Shader/UniformRegistry.h"
+#include "Shader/UniformBuffer.h"
 #include "Texture/Texture.h"
 #include "FBO.h"
 #include <Geometry/Matrix4x4.h>
@@ -83,8 +84,10 @@ public:
 	std::stack<Shader::Ref> shaderStack;
 	Shader::Ref activeShader;
 	Shader::Ref fallbackShader;
-
 	UniformRegistry globalUniforms;
+
+	// dummy vertex buffer
+	BufferObjectRef dummyVertexBuffer;
 
 	// deprecated
 	std::stack<AlphaTestParameters> alphaTestParameterStack;
@@ -99,6 +102,9 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->device = device;
 	
 	internal->fallbackShader = ShaderUtils::createDefaultShader(device);
+
+	internal->dummyVertexBuffer = BufferObject::create(device);
+	internal->dummyVertexBuffer->allocate(16 * sizeof(float), ResourceUsage::VertexBuffer, MemoryUsage::GpuOnly);
 
 	internal->cmd = CommandBuffer::create(device->getQueue(QueueFamily::Graphics));
 	internal->cmd->begin();
@@ -183,7 +189,11 @@ void RenderingContext::applyChanges(bool forced) {
 	
 	internal->activeMaterialId = internal->renderingState.getMaterials().addMaterial(internal->activeMaterial);
 
-	if(internal->cmd->isInRenderPass() && internal->cmd->getFBO() != internal->pipelineState.getFBO()) {
+	if(internal->cmd->isInRenderPass() && 
+		internal->cmd->getFBO() != internal->pipelineState.getFBO() &&
+		internal->pipelineState.getFBO().isNotNull() && 
+		internal->cmd->getFBO() != internal->device->getSwapchain()->getCurrentFBO()
+	) {
 		// FBO has changed: end the active render pass
 		internal->cmd->endRenderPass();
 	}
@@ -192,25 +202,40 @@ void RenderingContext::applyChanges(bool forced) {
 	internal->cmd->setPipelineState(internal->pipelineState);
 	internal->cmd->setBindings(internal->bindingState);
 
-	// Set the shader
-	if(!internal->activeShader || !internal->activeShader->init()) {
-		// if there is no active shader, use the fallback
-		internal->cmd->setShader(internal->fallbackShader);
-	} else {
-		internal->cmd->setShader(internal->activeShader);
-	}
-
 	// if there is no active FBO, use the swapchain FBO
 	if(!internal->pipelineState.getFBO())
 		internal->cmd->setFBO(internal->device->getSwapchain()->getCurrentFBO());
 
-	auto shader = internal->cmd->getShader();
+	// Set the shader
+	Shader::Ref shader;
+	if(!internal->activeShader || !internal->activeShader->init()) {
+		// if there is no active shader, use the fallback
+		shader = internal->fallbackShader;
+	} else {
+		shader = internal->activeShader;
+	}
+
+	if(shader != internal->cmd->getShader()) {
+		internal->cmd->setShader(shader);
+		// Shader changed: force apply
+		internal->renderingState.apply(shader, true);
+	} else {
+		// apply rendering state
+		internal->renderingState.apply(shader, forced);
+	}
+
 
 	// transfer updated global uniforms to the shader
 	shader->_getUniformRegistry()->performGlobalSync(internal->globalUniforms, false);
 
 	// apply uniforms
 	shader->applyUniforms(forced);
+
+	// bind uniform buffers
+	for(auto& b : shader->getUniformBuffers()) {
+		if(!internal->bindingState.hasBinding(b.first.second, b.first.first)) //let rendering context overwrite uniform buffer bindings
+			b.second->bind(internal->cmd, b.first.second, b.first.first);
+	}
 
 	// TODO: set dynamic state
 }
@@ -220,23 +245,26 @@ void RenderingContext::applyChanges(bool forced) {
 void RenderingContext::clearColor(const Util::Color4f& color) {
 	applyChanges();
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
+		internal->cmd->beginRenderPass({color});
 	internal->cmd->clearColor({color});
 }
 
 void RenderingContext::clearScreen(const Util::Color4f& color) {
 	applyChanges();
+	// TODO: check if LOAD_OP_CLEAR is set in RenderPass
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
-	internal->cmd->clearColor({color});
-	internal->cmd->clearDepthStencil(1, 0);
+		internal->cmd->beginRenderPass({color});
+	else
+		internal->cmd->clearColor({color});
+	//internal->cmd->clearDepthStencil(1, 0); // TODO: check FBO for depth attachment
 }
 
 void RenderingContext::clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool _clearDepth) {
 	applyChanges();
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass();
-	internal->cmd->clearColor({color}, rect);
+		internal->cmd->beginRenderPass({color});
+	else
+		internal->cmd->clearColor({color}, rect);
 	if(_clearDepth)
 		internal->cmd->clearDepthStencil(1, 0, rect);
 }
@@ -463,15 +491,20 @@ void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const Ver
 
 	VertexInputState state;	
 	state.setBinding({0, static_cast<uint32_t>(vd.getVertexSize()), 0});
-	for(auto& attr : vd.getAttributes()) {
-		auto location = shader->getVertexAttributeLocation(attr.getNameId());
-		if(location != -1) {
-			state.setAttribute({static_cast<uint32_t>(location), 0, toInternalFormat(attr), attr.getOffset()});
+	state.setBinding({1, 0, 1});
+	for(auto& location : shader->getVertexAttributeLocations()) {
+		auto attr = vd.getAttribute(location.first);
+		if(!attr.empty()) {
+			state.setAttribute({static_cast<uint32_t>(location.second), 0, toInternalFormat(attr), attr.getOffset()});
+		} else {
+			// bind dummy attribute
+			state.setAttribute({static_cast<uint32_t>(location.second), 1, InternalFormat::RGBA32Float, 0});
 		}
 	}
+
 	internal->pipelineState.setVertexInputState(state);
 
-	internal->cmd->bindVertexBuffers(0, {buffer});
+	internal->cmd->bindVertexBuffers(0, {buffer,internal->dummyVertexBuffer});
 }
 
 void RenderingContext::bindIndexBuffer(const BufferObjectRef& buffer) {
@@ -978,7 +1011,7 @@ const MaterialParameters RenderingContext::getMaterial() const {
 }
 
 void RenderingContext::popMaterial() {
-	WARN_AND_RETURN_IF(internal->modelToCameraStack.empty(), "Cannot pop material. The stack is empty.",);
+	WARN_AND_RETURN_IF(internal->materialStack.empty(), "Cannot pop material. The stack is empty.",);
 	internal->materialStack.pop();
 	if(internal->materialStack.empty()) {
 		MaterialData tmp;

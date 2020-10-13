@@ -125,6 +125,11 @@ void DescriptorSet::update(const BindingSet& bindings) {
 	vk::DescriptorSet vkDescriptorSet(handle);
 	
 	std::vector<vk::WriteDescriptorSet> writes;
+
+	std::vector<std::vector<vk::DescriptorImageInfo>> imageBindings;
+	std::vector<std::vector<vk::DescriptorBufferInfo>> bufferBindings;
+	std::vector<std::vector<vk::BufferView>> texelBufferViews; // TODO
+	
 	for(auto& bIt : bindings.getBindings()) {
 		auto& binding = bIt.second;
 		if(!layout.hasLayout(bIt.first))
@@ -133,50 +138,49 @@ void DescriptorSet::update(const BindingSet& bindings) {
 		
 		auto usage = getResourceUsage(descriptor.type);
 		auto vkImageLayout = getVkImageLayout(descriptor.type);
-
-		std::vector<vk::DescriptorImageInfo> imageBindings;
-		std::vector<vk::DescriptorBufferInfo> bufferBindings;
-		std::vector<vk::BufferView> texelBufferViews; // TODO
+		imageBindings.emplace_back();
+		bufferBindings.emplace_back();
+		texelBufferViews.emplace_back();
 
 		for(auto& tex : binding.getTextures()) {
 			if(tex && tex->isValid()) {
-				imageBindings.emplace_back(
+				imageBindings.back().emplace_back(
 					static_cast<vk::Sampler>(tex->getSampler()->getApiHandle()), 
 					static_cast<vk::ImageView>(tex->getImageView()->getApiHandle()), 
 					vkImageLayout);
 			} else {
 				WARN("Empty texture binding.");
-				imageBindings.emplace_back(nullptr, nullptr, vkImageLayout);
+				imageBindings.back().emplace_back(nullptr, nullptr, vkImageLayout);
 			}
 		}
 
 		for(auto& view : binding.getInputImages()) {
 			if(view && view->getApiHandle()) {
-				imageBindings.emplace_back(nullptr, static_cast<vk::ImageView>(view->getApiHandle()), vkImageLayout);
+				imageBindings.back().emplace_back(nullptr, static_cast<vk::ImageView>(view->getApiHandle()), vkImageLayout);
 			} else {
 				WARN("Empty texture binding.");
-				imageBindings.emplace_back(nullptr, nullptr, vkImageLayout);
+				imageBindings.back().emplace_back(nullptr, nullptr, vkImageLayout);
 			}
 		}
 
 		for(auto& buffer : binding.getBuffers()) {
 			if(buffer && buffer->isValid()) {
 				auto b = buffer->getBuffer();
-				bufferBindings.emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), 0, b->getSize());
+				bufferBindings.back().emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), 0, b->getSize());
 				if(descriptor.dynamic)
 					dynamicOffsets.emplace_back(0);
 			} else {
 				WARN("Empty texture binding.");
-				bufferBindings.emplace_back(nullptr, 0, 0);
+				bufferBindings.back().emplace_back(nullptr, 0, 0);
 			}
 		}
 
 		// TODO: handle unbound array elements
-		uint32_t count = std::max<uint32_t>(imageBindings.size(), std::max<uint32_t>(bufferBindings.size(), texelBufferViews.size()));
+		uint32_t count = std::max<uint32_t>(imageBindings.back().size(), std::max<uint32_t>(bufferBindings.back().size(), texelBufferViews.back().size()));
 		writes.emplace_back(
 			vkDescriptorSet, bIt.first, 
 			0, count, getVkDescriptorType(descriptor.type, descriptor.dynamic), 
-			imageBindings.data(), bufferBindings.data(), texelBufferViews.data()
+			imageBindings.back().data(), bufferBindings.back().data(), texelBufferViews.back().data()
 		);
 	}
 	vkDevice.updateDescriptorSets(writes, {});

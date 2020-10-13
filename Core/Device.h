@@ -48,6 +48,7 @@ public:
 		uint32_t apiVersionMajor;
 		uint32_t apiVersionMinor;
 		bool debugMode;
+		std::vector<std::string> validationLayers;
 	};
 	
 	static Ref create(Util::UI::WindowRef window, const Configuration& config);
