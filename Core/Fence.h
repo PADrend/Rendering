@@ -10,16 +10,25 @@
 #ifndef RENDERING_CORE_FENCE_H_
 #define RENDERING_CORE_FENCE_H_
 
+#include "Common.h"
+
+#include <Util/ReferenceCounter.h>
+
 namespace Rendering {
 
-class Fence {
-private:
-	/* data */
+class Fence : public Util::ReferenceCounter<Fence> {
 public:
-	Fence(/* args */);
+	using Ref = Util::Reference<Fence>;
+	static Ref create();
 	~Fence();
-};
+	Fence(Fence&& o) = default;
+	Fence(const Fence& o) = delete;
 
+private:
+	Fence();
+	bool init();
+	
+};
 
 } /* Rendering */
 

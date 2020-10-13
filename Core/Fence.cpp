@@ -11,11 +11,31 @@
 
 namespace Rendering {
 
+//---------------
 
-Fence::Fence(/* args */) {
+Fence::Ref Fence::create() {
+	Ref obj = new Fence();
+	if(!obj->init()) {
+		return nullptr;
+	}
+	return obj;
 }
 
-Fence::~Fence() {
+//---------------
+
+Fence::~Fence() = default;
+
+//---------------
+
+Fence::Fence() { }
+
+//---------------
+
+bool Fence::init() {
+	
+	return true;
 }
+
+//---------------
 
 } /* Rendering */
