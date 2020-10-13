@@ -202,17 +202,40 @@ vk::BufferUsageFlags getVkBufferUsage(const ResourceUsage& usage) {
 		case ResourceUsage::IndexBuffer: flags |= vk::BufferUsageFlagBits::eIndexBuffer; break;
 		case ResourceUsage::VertexBuffer: flags |= vk::BufferUsageFlagBits::eVertexBuffer; break;
 		case ResourceUsage::IndirectBuffer: flags |= vk::BufferUsageFlagBits::eIndirectBuffer; break;
-		default: flags |= vk::BufferUsageFlagBits::eUniformBuffer |
+		case ResourceUsage::General: flags |= vk::BufferUsageFlagBits::eUniformBuffer |
 			vk::BufferUsageFlagBits::eUniformTexelBuffer |
 			vk::BufferUsageFlagBits::eStorageBuffer |
 			vk::BufferUsageFlagBits::eStorageTexelBuffer |
 			vk::BufferUsageFlagBits::eIndexBuffer |
 			vk::BufferUsageFlagBits::eVertexBuffer |
 			vk::BufferUsageFlagBits::eIndirectBuffer;
+		default: break;
 	}
 	
 	return flags;
 }
+
+//-----------------
+
+vk::ImageUsageFlags getVkImageUsage(const ResourceUsage& usage) {
+	vk::ImageUsageFlags flags = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+	switch(usage) {
+		case ResourceUsage::ShaderResource: flags |= vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment; break;
+		case ResourceUsage::ShaderWrite: flags |= vk::ImageUsageFlagBits::eStorage; break;
+		case ResourceUsage::Present:
+		case ResourceUsage::RenderTarget: flags |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment; break;
+		case ResourceUsage::General: flags |= vk::ImageUsageFlagBits::eColorAttachment |
+			vk::ImageUsageFlagBits::eDepthStencilAttachment |
+			vk::ImageUsageFlagBits::eInputAttachment |
+			vk::ImageUsageFlagBits::eSampled |
+			vk::ImageUsageFlagBits::eStorage |
+			vk::ImageUsageFlagBits::eTransientAttachment;
+		default: break;
+	}
+	
+	return flags;
+}
+
 
 //-----------------
 
@@ -258,6 +281,19 @@ vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages) {
 	if((stages & ShaderStage::Compute) == ShaderStage::Compute) flags |= vk::ShaderStageFlagBits::eCompute;
 	return flags;
 }
+
+//-----------------
+
+bool isDepthStencilFormat(const ImageFormat& format) {
+	switch (format.pixelFormat) {
+		case InternalFormat::D32Float:
+		case InternalFormat::D16Unorm:
+		case InternalFormat::D32FloatS8X24:
+		case InternalFormat::D24UnormS8:
+			return true;
+		default: return false;
+	}
+};
 
 //-----------------
 

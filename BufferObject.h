@@ -231,6 +231,7 @@ public:
 	/*!	@name Internal */
 	// @{
 	const BufferStorageRef& getBuffer() const { return buffer; }
+	BufferHandle getApiHandle() const;
 	// @}
 
 private:

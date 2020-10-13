@@ -28,8 +28,8 @@ class ImageStorage : public Util::ReferenceCounter<ImageStorage> {
 public:
 	struct Configuration {
 		ImageFormat format; //! internal format of the image storage.
-		MemoryUsage memoryUsage = MemoryUsage::CpuToGpu; //! memory usage flag
-		uint32_t usageFlags = 0x7fffffffu; //! additional (api dependend) usage flags (e.g., VkBufferUsageFlags)
+		MemoryUsage access = MemoryUsage::CpuToGpu; //! memory access flag
+		ResourceUsage usage = ResourceUsage::General; //! usage flags
 	};
 
 	using Ref = Util::Reference<ImageStorage>;
@@ -74,8 +74,11 @@ public:
 	 */
 	const Configuration& getConfig() const { return config; }
 
-	//! @name API Handles
-	//! @{
+	//! @name Internal
+	//! @{	
+	ResourceUsage getLastUsage() const { return lastUsage; }
+	void _setLastUsage(ResourceUsage usage) { lastUsage = usage; }
+
 	const ImageHandle& getApiHandle() const { return handle; }
 	const AllocationHandle& getAllocation() const { return allocation; }
 	//! @}
@@ -89,6 +92,7 @@ private:
 	ImageHandle handle;
 	AllocationHandle allocation;
 	size_t dataSize = 0;
+	ResourceUsage lastUsage = ResourceUsage::Undefined;
 };
 } /* Rendering */
 

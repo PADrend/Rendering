@@ -28,8 +28,9 @@ std::string toString(ShaderStage stage) {
 		case ShaderStage::Geometry: return "Geometry";
 		case ShaderStage::Fragment: return "Fragment";
 		case ShaderStage::Compute: return "Compute";
+		case ShaderStage::All: return "All";
+		default: return "";
 	}
-	return "";
 }
 
 //-------------

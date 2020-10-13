@@ -192,6 +192,27 @@ struct ImageFormat {
 
 //---------------------------
 
+bool isDepthStencilFormat(const ImageFormat& format);
+
+//---------------------------
+
+struct ImageRegion {
+	ImageRegion() {}
+	ImageRegion(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1)
+		: offset(x,y,0), extent(w,h,1), mipLevel(mipLevel), baseLayer(baseLayer), layerCount(layerCount) {}
+	ImageRegion(int32_t x, int32_t y, int32_t z, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1)
+		: offset(x,y,0), extent(w,h,1), mipLevel(mipLevel), baseLayer(baseLayer), layerCount(layerCount) {}
+	ImageRegion(const Geometry::Vec3i& offset, const Geometry::Vec3ui& extent, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1)
+		: offset(offset), extent(extent), mipLevel(mipLevel), baseLayer(baseLayer), layerCount(layerCount) {}
+	Geometry::Vec3i offset;
+	Geometry::Vec3ui extent;	
+	uint32_t mipLevel = 0;
+	uint32_t baseLayer = 0;
+	uint32_t layerCount = 1;
+};
+
+//---------------------------
+
 enum class ShaderStage : uint8_t {
 	Undefined = 0,
 	Vertex = 1 << 0,

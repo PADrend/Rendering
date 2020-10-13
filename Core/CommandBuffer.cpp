@@ -34,6 +34,17 @@ vk::AccessFlags getVkAccessMask(const ResourceUsage& usage);
 vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 vk::PipelineStageFlags getVkPipelineStageMask(const ResourceUsage& usage, bool src);
 vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
+vk::Filter getVkFilter(const ImageFilter& filter);
+
+//-----------------
+
+static inline Geometry::Vec3i toVec3i(const Geometry::Vec3ui& v) {
+	return Geometry::Vec3i(
+		static_cast<int32_t>(v.x()),
+		static_cast<int32_t>(v.y()),
+		static_cast<int32_t>(v.z())
+	);
+}
 
 //-----------------
 
@@ -214,25 +225,6 @@ void CommandBuffer::endRenderPass() {
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.endRenderPass();
 }
-//-----------------
-
-void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors) {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	auto& fbo = getFBO();
-	std::vector<vk::ClearAttachment> clearAttachments(fbo->getColorAttachmentCount(), vk::ClearAttachment{});
-	for(uint32_t i=0; i<std::min(clearAttachments.size(), clearColors.size()); ++i) {
-		auto& c = clearColors[i];
-		clearAttachments[i].clearValue.color.setFloat32({c.r(), c.g(), c.b(), c.a()});
-		clearAttachments[i].colorAttachment = i;
-		clearAttachments[i].aspectMask = vk::ImageAspectFlagBits::eColor;
-	}
-	vk::ClearRect clearRect;
-	clearRect.baseArrayLayer = 0;
-	clearRect.layerCount = 1;
-	clearRect.rect = vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} };
-	vk::CommandBuffer vkCmd(handle);
-	vkCmd.clearAttachments(clearAttachments, {clearRect});
-}
 
 //-----------------
 
@@ -279,7 +271,7 @@ void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<B
 	std::vector<vk::DeviceSize> vkOffsets(offsets.begin(), offsets.end());
 	vkOffsets.resize(buffers.size(), 0);
 	for(auto& bo : buffers) {
-		vkBuffers.emplace_back((bo && bo->isValid()) ? bo->getBuffer()->getApiHandle() : nullptr);
+		vkBuffers.emplace_back((bo && bo->isValid()) ? bo->getApiHandle() : nullptr);
 	}
 	vkCmd.bindVertexBuffers(firstBinding, vkBuffers, offsets);
 }
@@ -289,8 +281,28 @@ void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<B
 void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer, size_t offset) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
-	vk::Buffer vkBuffer((buffer && buffer->isValid()) ? buffer->getBuffer()->getApiHandle() : nullptr);
+	vk::Buffer vkBuffer((buffer && buffer->isValid()) ? buffer->getApiHandle() : nullptr);
 	vkCmd.bindIndexBuffer(vkBuffer, offset, vk::IndexType::eUint32);
+}
+
+//-----------------
+
+void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	auto& fbo = getFBO();
+	std::vector<vk::ClearAttachment> clearAttachments(clearColors.size(), vk::ClearAttachment{});
+	for(uint32_t i=0; i<std::min(clearAttachments.size(), clearColors.size()); ++i) {
+		auto& c = clearColors[i];
+		clearAttachments[i].clearValue.color.setFloat32({c.r(), c.g(), c.b(), c.a()});
+		clearAttachments[i].colorAttachment = i;
+		clearAttachments[i].aspectMask = vk::ImageAspectFlagBits::eColor;
+	}
+	vk::ClearRect clearRect;
+	clearRect.baseArrayLayer = 0;
+	clearRect.layerCount = 1;
+	clearRect.rect = vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} };
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.clearAttachments(clearAttachments, {clearRect});
 }
 
 //-----------------
@@ -306,18 +318,146 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
 
 //-----------------
 
-void CommandBuffer::copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size) {
+void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	WARN_AND_RETURN_IF(!srcBuffer || !tgtBuffer, "Cannot copy buffers. Invalid buffers.",);
+	if(instanceCount==0) return;
 	vk::CommandBuffer vkCmd(handle);
-	vkCmd.copyBuffer(static_cast<vk::Buffer>(srcBuffer->getApiHandle()), static_cast<vk::Buffer>(tgtBuffer->getApiHandle()), {{0,0,size}});
+	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
+	flush();
+	vkCmd.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 //-----------------
 
-void CommandBuffer::copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size) {
+void CommandBuffer::drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride, size_t offset) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!buffer->isValid(), "Cannot perform indirect draw. Buffer is not valid.",);
+	vk::CommandBuffer vkCmd(handle);
+	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
+	flush();
+	vk::Buffer vkBuffer(buffer->getApiHandle());
+	vkCmd.drawIndirect(vkBuffer, offset, drawCount, stride);
+}
+
+//-----------------
+
+void CommandBuffer::drawIndexedIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride, size_t offset) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!buffer->isValid(), "Cannot perform indirect draw. Buffer is not valid.",);
+	vk::CommandBuffer vkCmd(handle);
+	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
+	flush();
+	vk::Buffer vkBuffer(buffer->getApiHandle());
+	vkCmd.drawIndexedIndirect(vkBuffer, offset, drawCount, stride);
+}
+
+//-----------------
+
+
+void CommandBuffer::copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size, size_t srcOffset, size_t tgtOffset) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!srcBuffer || !tgtBuffer, "Cannot copy buffer. Invalid buffers.",);
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.copyBuffer(static_cast<vk::Buffer>(srcBuffer->getApiHandle()), static_cast<vk::Buffer>(tgtBuffer->getApiHandle()), {{srcOffset,tgtOffset,size}});
+}
+
+//-----------------
+
+void CommandBuffer::copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size, size_t srcOffset, size_t tgtOffset) {
 	if(srcBuffer && tgtBuffer)
-		copyBuffer(srcBuffer->getBuffer(), tgtBuffer->getBuffer(), size);
+		copyBuffer(srcBuffer->getBuffer(), tgtBuffer->getBuffer(), size, srcOffset, tgtOffset);
+}
+
+//-----------------
+
+void CommandBuffer::copyImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot copy image. Invalid images.",);
+	WARN_AND_RETURN_IF(srcRegion.extent != tgtRegion.extent, "Cannot copy image. Source and target extent must be the same.",);
+
+	vk::CommandBuffer vkCmd(handle);
+	imageBarrier(srcImage, ResourceUsage::CopySource);
+	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
+	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	vk::ImageCopy copyRegion{
+		{srcAspect, srcRegion.mipLevel, srcRegion.baseLayer, srcRegion.layerCount}, {srcRegion.offset.x(), srcRegion.offset.y(), srcRegion.offset.z()},
+		{tgtAspect, tgtRegion.mipLevel, tgtRegion.baseLayer, tgtRegion.layerCount}, {tgtRegion.offset.x(), tgtRegion.offset.y(), tgtRegion.offset.z()},
+		{srcRegion.extent.x(), srcRegion.extent.y(), srcRegion.extent.z()}
+	};
+	vkCmd.copyImage(
+		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
+		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
+		{copyRegion}
+	);
+}
+
+//-----------------
+
+void CommandBuffer::copyBufferToImage(const BufferStorageRef& srcBuffer, const ImageStorageRef& tgtImage, size_t srcOffset, const ImageRegion& tgtRegion) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!srcBuffer || !tgtImage, "Cannot copy buffer to image. Invalid buffer or image.",);
+
+	vk::CommandBuffer vkCmd(handle);
+	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
+	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	vk::BufferImageCopy copyRegion{
+		static_cast<vk::DeviceSize>(srcOffset), 0u, 0u,
+		{tgtAspect, tgtRegion.mipLevel, tgtRegion.baseLayer, tgtRegion.layerCount}, {tgtRegion.offset.x(), tgtRegion.offset.y(), tgtRegion.offset.z()},
+		{tgtRegion.extent.x(), tgtRegion.extent.y(), tgtRegion.extent.z()}
+	};
+	vkCmd.copyBufferToImage(
+		static_cast<vk::Buffer>(srcBuffer->getApiHandle()),
+		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
+		{copyRegion}
+	);
+}
+
+//-----------------
+
+void CommandBuffer::copyImageToBuffer(const ImageStorageRef& srcImage, const BufferStorageRef& tgtBuffer, const ImageRegion& srcRegion, size_t tgtOffset) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!srcImage || !tgtBuffer, "Cannot copy image to buffer. Invalid buffer or image.",);
+
+	vk::CommandBuffer vkCmd(handle);	
+	imageBarrier(srcImage, ResourceUsage::CopySource);
+	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	vk::BufferImageCopy copyRegion{
+		static_cast<vk::DeviceSize>(tgtOffset), 0u, 0u,
+		{srcAspect, srcRegion.mipLevel, srcRegion.baseLayer, srcRegion.layerCount}, {srcRegion.offset.x(), srcRegion.offset.y(), srcRegion.offset.z()},
+		{srcRegion.extent.x(), srcRegion.extent.y(), srcRegion.extent.z()}
+	};
+	vkCmd.copyImageToBuffer(
+		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
+		static_cast<vk::Buffer>(tgtBuffer->getApiHandle()),
+		{copyRegion}
+	);
+}
+
+//-----------------
+
+void CommandBuffer::blitImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion, ImageFilter filter) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot blit image. Invalid images.",);
+
+	vk::CommandBuffer vkCmd(handle);
+	imageBarrier(srcImage, ResourceUsage::CopySource);
+	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
+	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	Geometry::Vec3i srcOffset2 = srcRegion.offset + toVec3i(srcRegion.extent);
+	Geometry::Vec3i tgtOffset2 = srcRegion.offset + toVec3i(srcRegion.extent);
+	vk::ImageBlit blitRegion{
+		{srcAspect, srcRegion.mipLevel, srcRegion.baseLayer, srcRegion.layerCount},
+		{vk::Offset3D{srcRegion.offset.x(), srcRegion.offset.y(), srcRegion.offset.z()}, vk::Offset3D{srcOffset2.x(), srcOffset2.y(), srcOffset2.z()}},
+		{tgtAspect, tgtRegion.mipLevel, tgtRegion.baseLayer, tgtRegion.layerCount},
+		{vk::Offset3D{tgtRegion.offset.x(), tgtRegion.offset.y(), tgtRegion.offset.z()}, vk::Offset3D{tgtOffset2.x(), tgtOffset2.y(), tgtOffset2.z()}},
+	};
+	vkCmd.blitImage(
+		static_cast<vk::Image>(srcImage->getApiHandle()), getVkImageLayout(srcImage->getLastUsage()),
+		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
+		{blitRegion}, getVkFilter(filter)
+	);
 }
 
 //-----------------
@@ -327,10 +467,11 @@ void CommandBuffer::textureBarrier(const TextureRef& texture, ResourceUsage newU
 	WARN_AND_RETURN_IF(!texture || !texture->isValid(), "Cannot create texture barrier. Invalid texture.",);
 	auto view = texture->getImageView();
 	auto image = texture->getImage();
-	if(view->getLastUsage() == newUsage)
+	if(view->getLastUsage() == newUsage || view->getLastUsage() == ResourceUsage::General)
 		return;
 
 	vk::CommandBuffer vkCmd(handle);
+	const auto& format = image->getFormat();
 
 	vk::ImageMemoryBarrier barrier{};
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -340,8 +481,8 @@ void CommandBuffer::textureBarrier(const TextureRef& texture, ResourceUsage newU
 	barrier.oldLayout = getVkImageLayout(view->getLastUsage());
 	barrier.newLayout = getVkImageLayout(newUsage);
 	barrier.image = image->getApiHandle();
-	barrier.subresourceRange = { 
-		vk::ImageAspectFlagBits::eColor, // TODO: check for depth/stencil format
+	barrier.subresourceRange = {
+		isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor,
 		view->getMipLevel(), view->getMipLevelCount(),
 		view->getLayer(), view->getLayerCount()
 	};
@@ -352,6 +493,39 @@ void CommandBuffer::textureBarrier(const TextureRef& texture, ResourceUsage newU
 		{}, {}, {}, {barrier}
 	);
 	view->_setLastUsage(newUsage);
+}
+
+//-----------------
+
+void CommandBuffer::imageBarrier(const ImageStorageRef& image, ResourceUsage newUsage) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!image, "Cannot create image barrier. Invalid image.",);
+	if(image->getLastUsage() == newUsage || image->getLastUsage() == ResourceUsage::General)
+		return;
+
+	vk::CommandBuffer vkCmd(handle);
+	const auto& format = image->getFormat();	
+
+	vk::ImageMemoryBarrier barrier{};
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcAccessMask = getVkAccessMask(image->getLastUsage());
+	barrier.dstAccessMask = getVkAccessMask(newUsage);
+	barrier.oldLayout = getVkImageLayout(image->getLastUsage());
+	barrier.newLayout = getVkImageLayout(newUsage);
+	barrier.image = image->getApiHandle();
+	barrier.subresourceRange = { 
+		isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor,
+		0, format.mipLevels,
+		0, format.layers
+	};
+
+	vkCmd.pipelineBarrier(
+		getVkPipelineStageMask(image->getLastUsage(), true),
+		getVkPipelineStageMask(newUsage, false),
+		{}, {}, {}, {barrier}
+	);
+	image->_setLastUsage(newUsage);
 }
 
 //-----------------

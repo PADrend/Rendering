@@ -29,6 +29,8 @@ class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
 class BufferStorage;
 using BufferStorageRef = Util::Reference<BufferStorage>;
+class ImageStorage;
+using ImageStorageRef = Util::Reference<ImageStorage>;
 class DescriptorSet;
 using DescriptorSetRef = Util::Reference<DescriptorSet>;
 class Queue;
@@ -51,6 +53,8 @@ public:
 	
 	~CommandBuffer();
 	
+	//! @name Command buffer recording & executing
+	//! @{
 	void reset();
 	void flush();
 	void submit(bool wait=false);
@@ -60,31 +64,56 @@ public:
 
 	void beginRenderPass(const std::vector<Util::Color4f>& clearColors={});
 	void endRenderPass();
+	//! @}
 
-	void clearColor(const std::vector<Util::Color4f>& clearColors);
-
+	//! @name Binding commands
+	//! @{
 	void bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets={});
+	void bindIndexBuffer(const BufferObjectRef& buffer, size_t offset=0);
+	//! @}
 
+	//! @name Push constants
+	//! @{
 	void pushConstants(const std::vector<uint8_t>& data, uint32_t offset=0);
 
 	template<typename T>
 	void pushConstants(const T& value, uint32_t offset=0) {
 		pushConstants({reinterpret_cast<const uint8_t *>(&value), reinterpret_cast<const uint8_t *>(&value) + sizeof(T)}, offset);
 	}
+	//! @}
 
-	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets={});
-	void bindIndexBuffer(const BufferObjectRef& buffer, size_t offset=0);
 
+	//! @name Draw commands
+	//! @{
+	void clearColor(const std::vector<Util::Color4f>& clearColors);
 	void draw(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0);
+	void drawIndexed(uint32_t indexCount, uint32_t instanceCount=1, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t firstInstance=0);
+	void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);
+	void drawIndexedIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);
+	//! @}
 
-	void copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size);
-	void copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size);
+	//! @name Copy commands
+	//! @{
+	void copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size, size_t srcOffset=0, size_t tgtOffset=0);
+	void copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size, size_t srcOffset=0, size_t tgtOffset=0);
+	void copyImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion);
+	void copyBufferToImage(const BufferStorageRef& srcBuffer, const ImageStorageRef& tgtImage, size_t srcOffset, const ImageRegion& tgtRegion);
+	void copyImageToBuffer(const ImageStorageRef& srcImage, const BufferStorageRef& tgtBuffer, const ImageRegion& srcRegion, size_t tgtOffset);
+	void blitImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion, ImageFilter filter=ImageFilter::Nearest);
+	//! @}
 
+	//! @name Memory barriers
+	//! @{
 	void textureBarrier(const TextureRef& texture, ResourceUsage newUsage);
+	void imageBarrier(const ImageStorageRef& image, ResourceUsage newUsage);
 	//void bufferBarrier(const BufferObjectRef& buffer, ResourceUsage newUsage);
+	//! @}
 
+	//! @name Pipeline state
+	//! @{
 
 	PipelineState& getPipelineState() { return pipeline->getState(); }
 	void setPipelineState(const PipelineState& value) { pipeline->setState(value); }
@@ -111,12 +140,20 @@ public:
 	const ShaderRef& getShader() const { return pipeline->getShader(); }
 	const FBORef& getFBO() const { return pipeline->getFBO(); }
 
-	State getState() const { return state; }
+	//! @}
 
+	//! @name Command buffer state
+	//! @{
 	bool isRecording() const { return state == State::Recording; }
 	bool isExecutable() const { return state == State::Executable; }
 	bool isPrimary() const { return primary; }
+	State getState() const { return state; }
+	//! @}
+
+	//! @name Internal
+	//! @{
 	const CommandBufferHandle& getApiHandle() const { return handle; };
+	//! @}
 private:
 	friend class Queue;
 	explicit CommandBuffer(const QueueRef& queue, bool primary=true);

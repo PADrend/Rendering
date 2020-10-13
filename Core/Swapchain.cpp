@@ -130,7 +130,7 @@ bool Swapchain::updateFramebuffers() {
 	for(uint32_t i=0; i<imageCount; ++i) {
 		auto imageHandle = ImageHandle::create(swapchainImages[i], vkDevice);
 		
-		auto image = ImageStorage::createFromHandle(device.get(), {format, MemoryUsage::GpuOnly, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT}, std::move(imageHandle));
+		auto image = ImageStorage::createFromHandle(device.get(), {format, MemoryUsage::GpuOnly, ResourceUsage::RenderTarget}, std::move(imageHandle));
 		auto texture = Texture::create(device.get(), image);
 		auto& fbo = fbos[i];
 		if(!fbo) fbo = FBO::create(device.get());

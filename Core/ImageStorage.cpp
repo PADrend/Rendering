@@ -20,6 +20,7 @@
 namespace Rendering {
 
 vk::Format getVkFormat(const InternalFormat& format);
+vk::ImageUsageFlags getVkImageUsage(const ResourceUsage& usage);
 
 //-------------
 
@@ -111,7 +112,7 @@ bool ImageStorage::init() {
 	imageCreateInfo.samples = getSampleCount(config.format.samples);
 	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-	imageCreateInfo.usage = config.usageFlags;
+	imageCreateInfo.usage = static_cast<VkImageUsageFlags>(getVkImageUsage(config.usage));
 
 	if(imageCreateInfo.imageType == VK_IMAGE_TYPE_MAX_ENUM) {		
 		WARN("ImageStorage: invalid image extent.");
@@ -129,7 +130,7 @@ bool ImageStorage::init() {
 	}
 
 	VmaAllocationCreateInfo allocCreateInfo{};
-	switch(config.memoryUsage) {
+	switch(config.access) {
 		case MemoryUsage::CpuOnly: allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY; break;
 		case MemoryUsage::GpuOnly: allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; break;
 		case MemoryUsage::CpuToGpu: allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU; break;
@@ -137,7 +138,7 @@ bool ImageStorage::init() {
 		default: allocCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN; break;
 	}
 
-	if(config.usageFlags & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) {
+	if(imageCreateInfo.usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) {
 		allocCreateInfo.preferredFlags = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
 	}
 

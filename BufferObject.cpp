@@ -182,4 +182,10 @@ size_t BufferObject::getSize() const {
 }
 
 //----------------
+
+BufferHandle BufferObject::getApiHandle() const {
+	return buffer ? buffer->getApiHandle() : nullptr;
+}
+
+//----------------
 }
