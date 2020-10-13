@@ -20,72 +20,18 @@
 #include <memory>
 
 #include <shaderc/shaderc.hpp>
-#include <spirv_cross.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include <iostream>
 
 namespace Rendering {
-
-//-------------
-
-static std::string toString(ShaderStage stage) {
-	switch(stage) {
-		case ShaderStage::Vertex: return "Vertex";
-		case ShaderStage::TesselationControl: return "TesselationControl";
-		case ShaderStage::TesselationEvaluation: return "TesselationEvaluation";
-		case ShaderStage::Geometry: return "Geometry";
-		case ShaderStage::Fragment: return "Fragment";
-		case ShaderStage::Compute: return "Compute";
-	}
-	return "";
-}
-
-//-------------
-
-static std::string toString(ShaderResourceType type) {
-	switch(type) {
-		case ShaderResourceType::Input: return "Input";
-		case ShaderResourceType::InputAttachment: return "InputAttachment";
-		case ShaderResourceType::Output: return "Output";
-		case ShaderResourceType::Image: return "Image";
-		case ShaderResourceType::ImageSampler: return "ImageSampler";
-		case ShaderResourceType::ImageStorage: return "ImageStorage";
-		case ShaderResourceType::Sampler: return "Sampler";
-		case ShaderResourceType::BufferUniform: return "BufferUniform";
-		case ShaderResourceType::BufferStorage: return "BufferStorage";
-		case ShaderResourceType::PushConstant: return "PushConstant";
-		case ShaderResourceType::SpecializationConstant: return "SpecializationConstant";
-	}
-	return "";
-}
-
-//-------------
-
-std::string ShaderResource::toString() const {
-	return name + ": (" 
-		+ "stage " + Rendering::toString(stages) + ", "
-		+ "type " + Rendering::toString(type) + ", "
-		+ "set " + std::to_string(set) + ", "
-		+ "binding " + std::to_string(binding) + ", "
-		+ "location " + std::to_string(location) + ", "
-		+ "input_attachment_index " + std::to_string(input_attachment_index) + ", "
-		+ "vec_size " + std::to_string(vec_size) + ", "
-		+ "columns " + std::to_string(columns) + ", "
-		+ "array_size " + std::to_string(array_size) + ", "
-		+ "offset " + std::to_string(offset) + ", "
-		+ "size " + std::to_string(size) + ", "
-		+ "constant_id " + std::to_string(constant_id) + ", "
-		+ "dynamic " + std::to_string(dynamic) + ")";
-}
-
-//-------------
+using namespace ShaderUtils;
 	
 const uint32_t ShaderObjectInfo::SHADER_STAGE_VERTEX = static_cast<uint32_t>(ShaderStage::Vertex);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_FRAGMENT = static_cast<uint32_t>(ShaderStage::Fragment);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_GEOMETRY = static_cast<uint32_t>(ShaderStage::Geometry);
-const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_CONTROL = static_cast<uint32_t>(ShaderStage::TesselationControl);
-const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_EVALUATION = static_cast<uint32_t>(ShaderStage::TesselationEvaluation);
+const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_CONTROL = static_cast<uint32_t>(ShaderStage::TessellationControl);
+const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_EVALUATION = static_cast<uint32_t>(ShaderStage::TessellationEvaluation);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_COMPUTE = static_cast<uint32_t>(ShaderStage::Compute);
 	
 //-------------
@@ -126,26 +72,22 @@ shaderc_include_result* ShaderIncluder::GetInclude(const char* requested_source,
 
 //-------------
 
-ShaderObjectInfo::ShaderObjectInfo(ShaderStage stage, std::string _code) : stage(stage), code(std::move(_code)) { }
+ShaderObjectInfo::ShaderObjectInfo(ShaderStage stage, std::string source) : stage(stage), source(std::move(source)) { }
 
 //-------------
 
-ShaderObjectInfo::ShaderObjectInfo(ShaderStage stage, std::vector<uint32_t> _spirv) : stage(stage), spirv(std::move(_spirv)) { }
+ShaderObjectInfo::ShaderObjectInfo(ShaderStage stage, std::vector<uint32_t> code) : stage(stage), code(std::move(code)) { }
 
 //-------------
 
-ShaderModuleHandle ShaderObjectInfo::compile(const DeviceRef& device) {
-	if(code.empty()) {
-		WARN("ShaderObjectInfo: Cannot compile empty code.");
-		return nullptr;
+bool ShaderObjectInfo::compile(const DeviceRef& device) {
+	if(source.empty()) {
+		WARN("ShaderObjectInfo: There is no source code to be compiled.");
+		return false;
 	}
+	code.clear();
 
 	vk::Device vkDevice(device->getApiHandle());
-
-	if(!spirv.empty()) {
-		// Don't recompile
-		return {vkDevice.createShaderModule({{}, spirv.size() * sizeof(uint32_t), spirv.data()}), vkDevice};
-	}
 	
 	shaderc::Compiler compiler;
 	shaderc::CompileOptions options;
@@ -157,156 +99,54 @@ ShaderModuleHandle ShaderObjectInfo::compile(const DeviceRef& device) {
 	ShaderIncluder::Ptr includer(new ShaderIncluder(filename));
 	options.SetIncluder(std::move(includer));
 
-	std::string name = filename.toString();
 	shaderc_shader_kind kind;
 	switch(stage) {
 		case ShaderStage::Vertex:
-			name = "Vertex"; 
 			options.AddMacroDefinition("SG_VERTEX_SHADER");
 			kind = shaderc_glsl_vertex_shader;
 			break;
-		case ShaderStage::TesselationControl:
-			name = "TesselationControl"; 
-			options.AddMacroDefinition("SG_TESSELATIONCONTROL_SHADER");
+		case ShaderStage::TessellationControl:
+			options.AddMacroDefinition("SG_TESSELLATION_CONTROL_SHADER");
 			kind = shaderc_glsl_tess_control_shader;
 			break;
-		case ShaderStage::TesselationEvaluation:
-			name = "TesselationEvaluation"; 
-			options.AddMacroDefinition("SG_TESSELATIONEVALUATION_SHADER");
+		case ShaderStage::TessellationEvaluation:
+			options.AddMacroDefinition("SG_TESSELLATION_EVALUATION_SHADER");
 			kind = shaderc_glsl_tess_evaluation_shader;
 			break;
 		case ShaderStage::Geometry:
-			name = "Geometry"; 
 			options.AddMacroDefinition("SG_GEOMETRY_SHADER");
 			kind = shaderc_glsl_geometry_shader;
 			break;
 		case ShaderStage::Fragment:
-			name = "Fragment"; 
 			options.AddMacroDefinition("SG_FRAGMENT_SHADER");
 			kind = shaderc_glsl_fragment_shader;
 			break;
 		case ShaderStage::Compute:
-			name = "Compute"; 
 			options.AddMacroDefinition("SG_COMPUTE_SHADER");
 			kind = shaderc_glsl_compute_shader;
 			break;
+		default:
+			WARN("ShaderObjectInfo: Invalid shader stage '" + toString(stage) + "'");
+			return false;
 	}
 	for(auto& define : defines)
-		options.AddMacroDefinition(define.key, define.value);
+		options.AddMacroDefinition(define.first, define.second);
 
+	std::string name = toString(stage);
 	if(!filename.empty())
 		name = filename.toString();
 	
-	shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(code, kind, name.c_str(), options);
+	shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, kind, name.c_str(), options);
 	if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
 		if(filename.empty())
-			WARN(std::string("Shader compile error:\n") + result.GetErrorMessage() + "\nShader code:\n" + code);
+			WARN(std::string("Shader compile error:\n") + result.GetErrorMessage() + "\nShader code:\n" + source);
 		else
 			WARN(std::string("Shader compile error:\n") + result.GetErrorMessage() + "\nin shader file: " + filename.toShortString() + "\n");
-		return nullptr;
+		return false;
 	}
-	spirv = { result.cbegin(), result.cend() };
+	code.insert(code.end(), result.cbegin(), result.cend());
 
-	return {vkDevice.createShaderModule({{}, spirv.size() * sizeof(uint32_t), spirv.data()}), vkDevice};
-}
-
-//-------------
-
-ShaderModuleHandle ShaderObjectInfo::compile() {
-	return compile(Device::getDefault());
-}
-
-//-------------
-
-static ShaderResource readPushConstant(spirv_cross::Compiler& compiler, spirv_cross::Resource& resource, ShaderStage stage) {
-	ShaderResource result{resource.name, stage, ShaderResourceType::PushConstant};
-	const auto& spirvType = compiler.get_type_from_variable(resource.id);
-	result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
-	result.offset = std::numeric_limits<std::uint32_t>::max();
-	for(auto i=0u; i < spirvType.member_types.size(); ++i) 
-		result.offset = std::min(result.offset, compiler.get_member_decoration(spirvType.self, i, spv::DecorationOffset));
-	result.size -= result.offset;
-	return result;
-}
-
-//-------------
-
-static ShaderResource readSpecializationConstant(spirv_cross::Compiler& compiler, spirv_cross::SpecializationConstant& resource, ShaderStage stage) {
-	ShaderResource result{compiler.get_name(resource.id), stage, ShaderResourceType::SpecializationConstant};
-	const auto& spirvValue = compiler.get_constant(resource.id);
-	const auto& spirvType = compiler.get_type(spirvValue.constant_type);
-	switch (spirvType.basetype) {
-		case spirv_cross::SPIRType::BaseType::Boolean:
-		case spirv_cross::SPIRType::BaseType::Char:
-		case spirv_cross::SPIRType::BaseType::Int:
-		case spirv_cross::SPIRType::BaseType::UInt:
-		case spirv_cross::SPIRType::BaseType::Float:
-			result.size = 4;
-			break;
-		case spirv_cross::SPIRType::BaseType::Int64:
-		case spirv_cross::SPIRType::BaseType::UInt64:
-		case spirv_cross::SPIRType::BaseType::Double:
-			result.size = 8;
-			break;
-		default:
-			result.size = 0;
-			break;
-	}
-	result.offset = 0;
-	result.constant_id = resource.constant_id;
-	return result;
-}
-
-//-------------
-
-static ShaderResource readShaderResource(spirv_cross::Compiler& compiler, spirv_cross::Resource& resource, ShaderStage stage, ShaderResourceType type) {
-	ShaderResource result{resource.name, stage, type};
-	result.set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-	result.binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-	result.location = compiler.get_decoration(resource.id, spv::DecorationLocation);
-	result.input_attachment_index = compiler.get_decoration(resource.id, spv::DecorationInputAttachmentIndex);	
-	const auto& spirvType = compiler.get_type_from_variable(resource.id);
-	result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
-	result.array_size = spirvType.array.size() ? spirvType.array[0] : 1;
-	result.vec_size = spirvType.vecsize;
-	result.columns = spirvType.columns;
-	return result;
-}
-
-//-------------
-
-std::vector<ShaderResource> ShaderObjectInfo::reflect() {
-	if(spirv.empty()) {
-		WARN("ShaderObjectInfo: Cannot reflect shader code. Please compile first.");
-		return {};
-	}
-	std::vector<ShaderResource> resources;
-	spirv_cross::Compiler compiler(spirv);	
-	auto spvResources = compiler.get_shader_resources();
-	for(auto& res : spvResources.stage_inputs)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::Input));
-	for(auto& res : spvResources.subpass_inputs)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::InputAttachment));
-	for(auto& res : spvResources.stage_outputs)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::Output));
-	for(auto& res : spvResources.separate_images)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::Image));
-	for(auto& res : spvResources.sampled_images)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::ImageSampler));
-	for(auto& res : spvResources.storage_images)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::ImageStorage));
-	for(auto& res : spvResources.separate_samplers)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::Sampler));
-	for(auto& res : spvResources.uniform_buffers)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::BufferUniform));
-	for(auto& res : spvResources.storage_buffers)
-		resources.emplace_back(readShaderResource(compiler, res, stage, ShaderResourceType::BufferStorage));
-	for(auto& res : spvResources.push_constant_buffers)
-		resources.emplace_back(readPushConstant(compiler, res, stage));
-	for(auto& res : compiler.get_specialization_constants())
-		resources.emplace_back(readSpecializationConstant(compiler, res, stage));
-	
-	return resources;
+	return true;
 }
 
 //-------------

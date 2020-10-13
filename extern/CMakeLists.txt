@@ -92,7 +92,10 @@ if(NOT spirv-tools_POPULATED)
   set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
   set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
   set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
+  add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
 endif()
+target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
+set_target_properties(SPIRV-Tools-link PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
 # glslang (required by shaderc)

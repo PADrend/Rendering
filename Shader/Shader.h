@@ -3,18 +3,23 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2019-2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef RENDERING_SHADER_H
+#define RENDERING_SHADER_H
+
+#include "../Core/Common.h"
 
 #include "ShaderObjectInfo.h"
 #include "../RenderingContext/RenderingContext.h"
+
 #include <Util/ReferenceCounter.h>
 #include <Util/StringIdentifier.h>
+
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -34,6 +39,8 @@ namespace Rendering {
 class Uniform;
 class UniformRegistry;
 class RenderingStatus;
+class Device;
+using DeviceRef = Util::Reference<Device>;
 
 //! @defgroup shader Shader
 
@@ -44,6 +51,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name Main */
 	// @{
 	public:
+		using Ref = Util::Reference<Shader>;
 		typedef uint32_t flag_t;
 		static const flag_t USE_GL = 1 << 0;
 		static const flag_t USE_UNIFORMS = 1 << 1;
@@ -51,26 +59,32 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		~Shader();
 
 		//! (internal) called by RenderingContext
+		[[deprecated]]
 		bool _enable();
 
 		/*! Sets the active shader at the renderingContext. If the shader
 			has not been linked, it is linked.
-			\return returns true if the status of the shader is LINKED	*/
+			\return returns true if the status of the shader is LINKED */
+		[[deprecated]]
 		bool enable(RenderingContext & rc);
+		[[deprecated]]
 		bool isActive(RenderingContext & rc); // (???) !=enabled
 
-		bool usesClassicOpenGL()const		{	return RenderingContext::getCompabilityMode() && (usageFlags & USE_GL);	}
-		bool usesSGUniforms()const			{	return !RenderingContext::getCompabilityMode() || (usageFlags & USE_UNIFORMS);	}
-		void setUsage(flag_t newUsage)		{	usageFlags=newUsage;	}
+		[[deprecated]]
+		bool usesClassicOpenGL() const { return false; }
+		[[deprecated]]
+		bool usesSGUniforms() const { return true; }
+		[[deprecated]]
+		void setUsage(flag_t newUsage) { }
 
-		RenderingStatus * getRenderingStatus()	{	return renderingData.get();	}
+		[[deprecated]]
+		RenderingStatus * getRenderingStatus() { return renderingData.get(); }
 
 	private:
-		flag_t usageFlags;
 		std::unique_ptr<RenderingStatus> renderingData; // created when the shader is successfully initialized
+		DeviceRef device;
 
-		Shader(flag_t usage = USE_GL|USE_UNIFORMS);
-		static void printProgramInfoLog(uint32_t obj);
+		Shader(const DeviceRef& device);
 	// @}
 
 	// ------------------------
@@ -78,10 +92,23 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name (static) Factories */
 	// @{
 	public:
+		static Ref loadShader(const DeviceRef& device, const Util::FileName & vsFile, const Util::FileName & fsFile);
+		static Ref loadShader(const DeviceRef& device, const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile);
+		static Ref loadComputeShader(const DeviceRef& device, const Util::FileName & csFile);
+		static Ref createShader(const DeviceRef& device);
+		static Ref createShader(const DeviceRef& device, const std::string & vsa, const std::string & fsa);
+		static Ref createShader(const DeviceRef& device, const std::string & vsa, const std::string & gsa, const std::string & fsa);
+		static Ref createComputeShader(const DeviceRef& device, const std::string & csa);
+
+		[[deprecated]]
 		static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & fsFile, flag_t usage = USE_GL|USE_UNIFORMS);
+		[[deprecated]]
 		static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile, flag_t usage = USE_GL|USE_UNIFORMS);
+		[[deprecated]]
 		static Shader * createShader(flag_t usage = USE_GL|USE_UNIFORMS);
+		[[deprecated]]
 		static Shader * createShader(const std::string & vsa, const std::string & fsa, flag_t usage = USE_GL|USE_UNIFORMS);
+		[[deprecated]]
 		static Shader * createShader(const std::string & vsa, const std::string & gsa, const std::string & fsa, flag_t usage = USE_GL|USE_UNIFORMS);
 	// @}
 
@@ -90,30 +117,36 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name Program and status*/
 	// @{
 	public:
-		enum status_t{
+		enum status_t {
 			UNKNOWN = 0,
 			COMPILED = 1,
 			LINKED = 2,
 			INVALID = 3
 		};
-		status_t getStatus()const				{	return status;	}
-		uint32_t getShaderProg()const			{	return prog;	}
+		status_t getStatus() const { return status; }
+
+		[[deprecated]]
+		uint32_t getShaderProg() const { return 0; }
 
 		//! Try to transfer the shader into LINKED-state. Returns true on success.
 		bool init();
 
+		const PipelineLayoutHandle& getPipelineLayout() const { return pipelineLayout; }
 	private:
-		uint32_t prog;
+		PipelineLayoutHandle pipelineLayout;
+		std::unordered_map<std::string, ShaderResource> resources;
+		std::unordered_map<uint32_t, ShaderResourceList> setResources;
+		std::unordered_map<uint32_t, DescriptorSetLayoutHandle> setLayouts;
 		status_t status;
 
 		/*! (internal) Compile all objects and create the shader program.
 			If everything works fine, status is set to COMPILED and true is returned.
-			Otherwise, status is set to INVALID and false is returned.	*/
+			Otherwise, status is set to INVALID and false is returned. */
 		bool compileProgram();
 
 		/*! (internal) Link the program (which must already exist).
 			If everything works fine, status is set to LINKED and true is returned.
-			Otherwise, status is set to INVALID and false is returned.	*/
+			Otherwise, status is set to INVALID and false is returned. */
 		bool linkProgram();
 	// @}
 
@@ -123,8 +156,10 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	// @{
 	private:
 		std::vector<ShaderObjectInfo> shaderObjects;
+		std::unordered_map<ShaderStage, ShaderModuleHandle> shaderModules;
 	public:
 		void attachShaderObject(ShaderObjectInfo && obj);
+		const std::unordered_map<ShaderStage, ShaderModuleHandle>& getShaderModules() const { return shaderModules; }
 	// @}
 
 	// ------------------------
@@ -138,7 +173,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 			with their current value. Called when a shader is linked successfully */
 		void initUniformRegistry();
 
-		/*! (internal)	Really set a value to a uniform variable of the shader.
+		/*! (internal) Really set a value to a uniform variable of the shader.
 			It is linked and that the uniform variable is used within the shader.
 			@note *** matrices are committed in transposed order ***
 			@param uniform Uniform variable.
@@ -148,7 +183,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 
 	public:
 		//! (internal) should only be used by renderingContext
-		UniformRegistry * _getUniformRegistry()const			{	return uniforms.get();	}
+		UniformRegistry * _getUniformRegistry() const { return uniforms.get(); }
 
 		/*! Apply those uniforms stored in the internal uniformRegistry to the shader, that have been changed since
 			the last call to this function (or all, if forced is true).
@@ -158,15 +193,15 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		bool isUniform(const Util::StringIdentifier name);
 
 		/*! Get the values of all uniforms defined in the shader's program.
-			\note The Shader needs not to be active.	*/
+			\note The Shader needs not to be active. */
 		void getActiveUniforms(std::vector<Uniform> & uniforms);
 
 		/*! Get the value of the uniform with the given name.
 			If the name is not defined in the shader's program, the resulting Uniform is null (uniform.isNull()==true).
-			\note The Shader needs not to be active.	*/
+			\note The Shader needs not to be active. */
 		const Uniform & getUniform(const Util::StringIdentifier name);
 
-		/*!	Set an Uniform. The uniform is applied when the shader is active and the renderingContext's changes are applied.
+		/*! Set an Uniform. The uniform is applied when the shader is active and the renderingContext's changes are applied.
 			\note The uniform is stored at the Shader's internal uniformRegistry.
 			\note The Shader needs not to be active.*/
 		void setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused=true, bool forced=false);
@@ -179,7 +214,8 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	private:
 		std::unordered_map<Util::StringIdentifier, int32_t> vertexAttributeLocations;
 	public:
-		void defineVertexAttribute(const std::string & attrName, uint32_t index);
+		[[deprecated]]
+		void defineVertexAttribute(const std::string & attrName, uint32_t index) {}
 		int32_t getVertexAttributeLocation(Util::StringIdentifier attrName);
 	// @}
 
@@ -189,20 +225,20 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name Transform Feedback */
 	// @{
 	public:
-		void setInterleavedFeedbackVaryings(const std::vector<std::string>& names);
-		void setSeparateFeedbackVaryings(const std::vector<std::string>& names);
-	private:
-		std::vector<std::string> feedbackVaryings;
-		uint32_t glFeedbackVaryingType; //!< 0...disabled, interleaved, or separate
+		[[deprecated]]
+		void setInterleavedFeedbackVaryings(const std::vector<std::string>& names) {}
+		[[deprecated]]
+		void setSeparateFeedbackVaryings(const std::vector<std::string>& names) {}
 	// @}
 	
 
 	/*! @name Shader Subroutines */
 	// @{
 	public:
-		int32_t getSubroutineIndex(uint32_t stage, const std::string & name);
+		[[deprecated]]
+		int32_t getSubroutineIndex(uint32_t stage, const std::string & name) { return -1; }
 	// @}
 };
 }
 
-#endif // SHADER_H
+#endif // RENDERING_SHADER_H

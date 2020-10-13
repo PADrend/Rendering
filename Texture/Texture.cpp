@@ -113,8 +113,6 @@ void Texture::_createGLID(RenderingContext & context) {
 //---------------
 
 void Texture::createMipmaps(RenderingContext & context) {
-	if(!imageView || dataHasChanged)
-		_uploadGLTexture(context);
 	mipmapCreationIsPlanned = false;
 }
 
@@ -208,8 +206,8 @@ const uint8_t * Texture::getLocalData() const { return localBitmap ? localBitmap
 uint8_t * Texture::openLocalData(RenderingContext & context) {
 	if(!localBitmap) {
 		allocateLocalData();
-		if(getGLId()!=0)
-			downloadGLTexture(context);
+		//if(isValid())
+		//	download();
 	}
 	return getLocalData();
 }
@@ -224,10 +222,10 @@ const ImageStorageRef& Texture::getImage() const {
 //---------------
 
 uint32_t Texture::_prepareForBinding(RenderingContext & context){
-	if(!glId || dataHasChanged)
-		_uploadGLTexture(context);
-	if(mipmapCreationIsPlanned)
-		createMipmaps(context);
+	if(!isValid() || dataHasChanged)
+		upload();
+	//if(mipmapCreationIsPlanned)
+	//	createMipmaps(context);
 	return glId;
 }
 

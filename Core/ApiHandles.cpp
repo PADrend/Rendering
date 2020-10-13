@@ -12,49 +12,40 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
-#define API_BASE_IMPL(HandleType) HandleType##Handle::~HandleType##Handle() { \
-	if(handle && owner) \
-		vkDestroy##HandleType(handle, nullptr); \
+#define API_NO_DESTROY(HandleType) HandleType##Handle::~HandleType##Handle() = default;
+#define API_DESTROY(HandleType, destroyFunction, ...) HandleType##Handle::~HandleType##Handle() { \
+	if(handle && owner) destroyFunction(__VA_ARGS__); \
 }
 
-#define API_IMPL_NO_DESTR(HandleType) HandleType##Handle::~HandleType##Handle() = default;
-
-#define API_IMPL(HandleType) HandleType##Handle::~HandleType##Handle() { \
-	if(handle && owner) \
-		vkDestroy##HandleType(parent, handle, nullptr); \
-}
-
-#define API_IMPL_KHR(HandleType) HandleType##Handle::~HandleType##Handle() { \
-	if(handle && owner) \
-		vkDestroy##HandleType##KHR(parent, handle, nullptr); \
-}
+#define API_DEFAULT_DESTROY_NO_PARENT(HandleType) API_DESTROY(HandleType, vkDestroy##HandleType, handle, nullptr)
+#define API_DEFAULT_DESTROY(HandleType) API_DESTROY(HandleType, vkDestroy##HandleType, parent, handle, nullptr)
+#define API_DEFAULT_DESTROY_KHR(HandleType) API_DESTROY(HandleType, vkDestroy##HandleType##KHR, parent, handle, nullptr)
 
 namespace Rendering {
 	
-API_BASE_IMPL(Instance)
-API_BASE_IMPL(Device)
-API_IMPL_KHR(Surface)
-API_IMPL_KHR(Swapchain)
-API_IMPL_NO_DESTR(Queue)
-API_IMPL(Fence)
-API_IMPL(Image)
-API_IMPL(ImageView)
-API_IMPL(Framebuffer)
-API_IMPL(RenderPass)
-API_IMPL(CommandPool)
-API_IMPL_NO_DESTR(CommandBuffer)
-API_IMPL_NO_DESTR(Memory)
-API_IMPL(Buffer)
-API_IMPL(BufferView)
-API_IMPL(Pipeline)
-API_IMPL(ShaderModule)
+API_DEFAULT_DESTROY_NO_PARENT(Instance)
+API_DEFAULT_DESTROY_NO_PARENT(Device)
+API_DEFAULT_DESTROY_KHR(Surface)
+API_DEFAULT_DESTROY_KHR(Swapchain)
+API_NO_DESTROY(Queue)
+API_DEFAULT_DESTROY(Fence)
+API_DEFAULT_DESTROY(Image)
+API_DEFAULT_DESTROY(ImageView)
+API_DEFAULT_DESTROY(Framebuffer)
+API_DEFAULT_DESTROY(RenderPass)
+API_DEFAULT_DESTROY(CommandPool)
+API_NO_DESTROY(CommandBuffer)
+API_NO_DESTROY(Memory)
+API_DEFAULT_DESTROY(Buffer)
+API_DEFAULT_DESTROY(BufferView)
+API_DEFAULT_DESTROY(Pipeline)
+API_DEFAULT_DESTROY(PipelineLayout)
+API_DEFAULT_DESTROY(ShaderModule)
+API_DEFAULT_DESTROY(DescriptorSetLayout);
+API_DEFAULT_DESTROY(DescriptorPool);
 
-AllocatorHandle::~AllocatorHandle() {
-	if(handle) vmaDestroyAllocator(handle);
-}
-
-AllocationHandle::~AllocationHandle() {
-	if(handle) vmaFreeMemory(parent, handle);
-}
+API_DESTROY(DescriptorSet, vkFreeDescriptorSets, parent.first, parent.second, 1, &handle);
+API_DESTROY(Allocator, vmaDestroyAllocator, handle);
+API_DESTROY(Allocation, vmaFreeMemory, parent, handle);
 
 } /* Rendering */

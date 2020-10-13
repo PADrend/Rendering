@@ -68,11 +68,11 @@ add_library(Rendering SHARED
 	#Serialization/StreamerPKM.cpp
 	#Serialization/StreamerPLY.cpp
 	#Serialization/StreamerXYZ.cpp
-	#Shader/Shader.cpp
+	Shader/Shader.cpp
 	Shader/ShaderObjectInfo.cpp
-	#Shader/ShaderUtils.cpp
-	#Shader/Uniform.cpp
-	#Shader/UniformRegistry.cpp
+	Shader/ShaderUtils.cpp
+	Shader/Uniform.cpp
+	Shader/UniformRegistry.cpp
 	Texture/Texture.cpp
 	Texture/TextureType.cpp
 	#Texture/TextureUtils.cpp

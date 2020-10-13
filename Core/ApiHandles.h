@@ -25,10 +25,18 @@
 
 //! @}
 
+template<typename TypeA, typename TypeB>
+struct HandlePair {
+	HandlePair() {}
+	HandlePair(TypeA a, TypeB b = nullptr) : first(a), second(b) {}
+	TypeA first = nullptr;
+	TypeB second = nullptr;
+};
+
 #define API_HANDLE_DECLARE(Handle) typedef struct Vk##Handle##_T* Vk##Handle
 #define API_HANDLE_DECLARE_MA(Handle) typedef struct Vma##Handle##_T* Vma##Handle
 
-#define API_BASE_HANDLE(HandleType, ParentType, ApiType, ParentApiType) class HandleType##Handle { \
+#define API_BASE_HANDLE(HandleType, ApiType, ParentApiType) class HandleType##Handle { \
 public: \
 	using Ptr = std::unique_ptr<HandleType##Handle>; \
 	HandleType##Handle() {} \
@@ -47,10 +55,11 @@ private: \
 	bool owner = true; \
 }
 
-#define API_HANDLE(HandleType, ParentType) API_BASE_HANDLE(HandleType, ParentType, Vk##HandleType, Vk##ParentType)
-#define API_HANDLE_KHR(HandleType, ParentType) API_BASE_HANDLE(HandleType, ParentType, Vk##HandleType##KHR, Vk##ParentType)
-#define API_HANDLE_MA(HandleType, ParentType) API_BASE_HANDLE(HandleType, ParentType, Vma##HandleType, Vk##ParentType)
-#define API_HANDLE_MA2(HandleType, ParentType) API_BASE_HANDLE(HandleType, ParentType, Vma##HandleType, Vma##ParentType)
+#define API_HANDLE(HandleType, ParentType) API_BASE_HANDLE(HandleType, Vk##HandleType, Vk##ParentType)
+#define API_HANDLE_KHR(HandleType, ParentType) API_BASE_HANDLE(HandleType, Vk##HandleType##KHR, Vk##ParentType)
+#define API_HANDLE_MA(HandleType, ParentType) API_BASE_HANDLE(HandleType, Vma##HandleType, Vk##ParentType)
+#define API_HANDLE_MA2(HandleType, ParentType) API_BASE_HANDLE(HandleType, Vma##HandleType, Vma##ParentType)
+#define API_HANDLE_DUAL_PARENT(HandleType, ParentTypeA, ParentTypeB) typedef HandlePair<Vk##ParentTypeA,Vk##ParentTypeB> HandleType##Parent; API_BASE_HANDLE(HandleType, Vk##HandleType, HandleType##Parent)
 
 typedef void* VkNullHandle;
 API_HANDLE_DECLARE(Instance);
@@ -70,7 +79,11 @@ API_HANDLE_DECLARE(BufferView);
 API_HANDLE_DECLARE(Framebuffer);
 API_HANDLE_DECLARE(RenderPass);
 API_HANDLE_DECLARE(Pipeline);
+API_HANDLE_DECLARE(PipelineLayout);
 API_HANDLE_DECLARE(ShaderModule);
+API_HANDLE_DECLARE(DescriptorSet);
+API_HANDLE_DECLARE(DescriptorSetLayout);
+API_HANDLE_DECLARE(DescriptorPool);
 API_HANDLE_DECLARE_MA(Allocator);
 API_HANDLE_DECLARE_MA(Allocation);
 
@@ -95,7 +108,11 @@ API_HANDLE(CommandPool, Device);
 API_HANDLE(Framebuffer, Device);
 API_HANDLE(RenderPass, Device);
 API_HANDLE(Pipeline, Device);
+API_HANDLE(PipelineLayout, Device);
 API_HANDLE(ShaderModule, Device);
+API_HANDLE(DescriptorSetLayout, Device);
+API_HANDLE(DescriptorPool, Device);
+API_HANDLE_DUAL_PARENT(DescriptorSet, Device, DescriptorPool);
 API_HANDLE_MA(Allocator, Device);
 API_HANDLE_MA2(Allocation, Allocator);
 

@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2019-2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -11,10 +12,13 @@
 #include "Shader.h"
 #include "Uniform.h"
 #include "UniformRegistry.h"
+#include "../Core/Device.h"
 #include "../RenderingContext/internal/RenderingStatus.h"
-#include "../RenderingContext/RenderingContext.h"
-#include "../GLHeader.h"
 #include "../Helper.h"
+
+#include <vulkan/vulkan.hpp>
+#include <spirv-tools/linker.hpp>
+
 #include <Util/Macros.h>
 #include <Util/StringIdentifier.h>
 #include <Util/StringUtils.h>
@@ -25,90 +29,124 @@
 using namespace std;
 namespace Rendering {
 
-// -----------------------------------------
-// static helper
-
-//! (static)
-void Shader::printProgramInfoLog(uint32_t obj) {
-	int infoLogLength = 0;
-	GET_GL_ERROR();
-	glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &infoLogLength);
-	GET_GL_ERROR();
-	if (infoLogLength > 1) {
-		int charsWritten = 0;
-		auto infoLog = new char[infoLogLength];
-		glGetProgramInfoLog(obj, infoLogLength, &charsWritten, infoLog);
-		string s(infoLog, charsWritten);
-		// Skip "Everything ok" messages from AMD-drivers.
-		if(s.find("successfully")==string::npos && s.find("shader(s) linked.")==string::npos && s.find("No errors.")==string::npos) {
-			WARN(std::string("Program error:\n") + s);
-		}
-		delete [] infoLog;
-	}
-	GET_GL_ERROR();
-}
-
 // ---------------------------------------------------------------------------------------------
 // Shader
 
-//! (static)
-Shader * Shader::loadShader(const Util::FileName & vsFile, const Util::FileName & fsFile, flag_t usage) {
-	Shader * s = createShader(usage);
+Shader::Ref Shader::loadShader(const DeviceRef& device, const Util::FileName & vsFile, const Util::FileName & fsFile) {
+	Ref s = createShader(device);
 	s->attachShaderObject(ShaderObjectInfo::loadVertex(vsFile));
 	s->attachShaderObject(ShaderObjectInfo::loadFragment(fsFile));
 	return s;
 }
-#ifdef LIB_GL
-//! (static)
-Shader * Shader::loadShader(const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile, flag_t usage) {
-	Shader * s = createShader(usage);
+
+//-----------------
+
+Shader::Ref Shader::loadShader(const DeviceRef& device, const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile) {
+	Ref s = createShader(device);
 	s->attachShaderObject(ShaderObjectInfo::loadVertex(vsFile));
 	s->attachShaderObject(ShaderObjectInfo::loadGeometry(gsFile));
 	s->attachShaderObject(ShaderObjectInfo::loadFragment(fsFile));
 	return s;
 }
-#endif /* LIB_GL */
-//! (static)
-Shader * Shader::createShader(flag_t usage) {
-	return new Shader(usage);
+
+//-----------------
+
+Shader::Ref Shader::loadComputeShader(const DeviceRef& device, const Util::FileName & csFile) {
+	Ref s = createShader(device);
+	s->attachShaderObject(ShaderObjectInfo::loadCompute(csFile));
+	return s;
 }
 
-//! (static)
-Shader * Shader::createShader(const std::string & vsa, const std::string & fsa, flag_t usage) {
-	Shader * s = createShader(usage);
+//-----------------
+
+Shader::Ref Shader::createShader(const DeviceRef& device) {
+	return new Shader(device);
+}
+
+//-----------------
+
+Shader::Ref Shader::createShader(const DeviceRef& device, const std::string & vsa, const std::string & fsa) {
+	Ref s = createShader(device);
 	s->attachShaderObject(ShaderObjectInfo::createVertex(vsa));
 	s->attachShaderObject(ShaderObjectInfo::createFragment(fsa));
 	return s;
 }
-#ifdef LIB_GL
-//! (static)
-Shader * Shader::createShader(const std::string & vsa, const std::string & gsa, const std::string & fsa, flag_t usage) {
-	Shader * s = createShader(usage);
+
+//-----------------
+
+Shader::Ref Shader::createShader(const DeviceRef& device, const std::string & vsa, const std::string & gsa, const std::string & fsa) {
+	Ref s = createShader(device);
 	s->attachShaderObject(ShaderObjectInfo::createVertex(vsa));
 	s->attachShaderObject(ShaderObjectInfo::createGeometry(gsa));
 	s->attachShaderObject(ShaderObjectInfo::createFragment(fsa));
 	return s;
 }
-#endif /* LIB_GL */
+
+//-----------------
+
+Shader::Ref Shader::createComputeShader(const DeviceRef& device, const std::string & csa) {
+	Ref s = createShader(device);
+	s->attachShaderObject(ShaderObjectInfo::createCompute(csa));
+	return s;
+}
+
+//-----------------
+
+
+//! (static)
+Shader * Shader::loadShader(const Util::FileName & vsFile, const Util::FileName & fsFile, flag_t usage) {
+	return loadShader(Device::getDefault(), vsFile, fsFile).detachAndDecrease();
+}
+
+//-----------------
+
+//! (static)
+Shader * Shader::loadShader(const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile, flag_t usage) {
+	return loadShader(Device::getDefault(), vsFile, gsFile, fsFile).detachAndDecrease();
+}
+
+//-----------------
+
+//! (static)
+Shader * Shader::createShader(flag_t usage) {
+	return createShader(Device::getDefault()).detachAndDecrease();
+}
+
+//-----------------
+
+//! (static)
+Shader * Shader::createShader(const std::string & vsa, const std::string & fsa, flag_t usage) {
+	return createShader(Device::getDefault(), vsa, fsa).detachAndDecrease();
+}
+
+//-----------------
+
+//! (static)
+Shader * Shader::createShader(const std::string & vsa, const std::string & gsa, const std::string & fsa, flag_t usage) {
+	return createShader(Device::getDefault(), vsa, gsa, fsa).detachAndDecrease();
+}
+
+//-----------------
+
 
 // ------------------------------------------------------------------
 
 /*!	[ctor]	*/
-Shader::Shader(flag_t _usage) :
-		usageFlags(_usage), renderingData(), prog(0), status(UNKNOWN), uniforms(new UniformRegistry),glFeedbackVaryingType(0){
-}
+Shader::Shader(const DeviceRef& device) : device(device), status(UNKNOWN), uniforms(new UniformRegistry) { }
+
+//-----------------
 
 /*!	[dtor]	*/
-Shader::~Shader() {
-	glDeleteProgram(prog);
-}
+Shader::~Shader() = default;
+
+//-----------------
 
 bool Shader::init() {
-	while(status!=LINKED){
-		if(status == UNKNOWN){
+	while(status!=LINKED) {
+		if(status == UNKNOWN) {
 			status = compileProgram() ? COMPILED : INVALID;
-		}else if(status == COMPILED){
-			if( linkProgram() ){
+		} else if(status == COMPILED) {
+			if( linkProgram() ) {
 				status = LINKED;
 
 				// recreate renderingData
@@ -119,10 +157,10 @@ bool Shader::init() {
 
 				// initialize uniforms with default
 				initUniformRegistry();
-			}else{
+			} else {
 				status = INVALID;
 			}
-		}else{ // if(status == INVALID)
+		} else { // if(status == INVALID)
 			DEBUG("shader is invalid");
 			return false;
 		}
@@ -130,96 +168,178 @@ bool Shader::init() {
 	return true;
 }
 
+//-----------------
+
 /*!	(internal) */
 bool Shader::compileProgram() {
-	prog = glCreateProgram();
-
-	for(const auto & shaderObject : shaderObjects) {
-		GLuint handle = shaderObject.compile();
-		if(handle == 0) {
-			GET_GL_ERROR();
+	shaderModules.clear();
+	vk::Device vkDevice(device->getApiHandle());
+	for(auto& shaderObject : shaderObjects) {
+		if(!shaderObject.compile(device))
 			return false;
-		}
-		glAttachShader(prog, handle);
-		glDeleteShader(handle);
+		auto& code = shaderObject.getCode();
+		ShaderModuleHandle handle(vkDevice.createShaderModule({{}, static_cast<uint32_t>(code.size()) * sizeof(uint32_t), code.data()}), vkDevice);
+		shaderModules.emplace(shaderObject.getType(), std::move(handle));
 	}
 	return true;
 }
 
+//-----------------
+
+DescriptorSetLayoutHandle createDescriptorSetLayout(const DeviceRef& device, const ShaderResourceList& resources) {
+	vk::Device vkDevice(device->getApiHandle());
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	for(const auto& resource : resources) {
+		if(
+			resource.type == ShaderResourceType::Input || 
+			resource.type == ShaderResourceType::Output || 
+			resource.type == ShaderResourceType::PushConstant || 
+			resource.type == ShaderResourceType::SpecializationConstant
+		) continue; // Skip resources whitout a binding point
+
+		// Convert to vulkan descriptor type
+		vk::DescriptorType vkType;
+		switch (resource.type) {
+			case ShaderResourceType::InputAttachment: 
+				vkType = vk::DescriptorType::eInputAttachment;
+				break;
+			case ShaderResourceType::Image: 
+				vkType = vk::DescriptorType::eSampledImage;
+				break;
+			case ShaderResourceType::ImageSampler: 
+				vkType = vk::DescriptorType::eCombinedImageSampler;
+				break;
+			case ShaderResourceType::ImageStorage: 
+				vkType = vk::DescriptorType::eStorageImage;
+				break;
+			case ShaderResourceType::Sampler: 
+				vkType = vk::DescriptorType::eSampler;
+				break;
+			case ShaderResourceType::BufferUniform: 
+				vkType = resource.dynamic ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eUniformBuffer;
+				break;
+			case ShaderResourceType::BufferStorage: 
+				vkType = resource.dynamic ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eStorageBuffer;
+				break;
+			default: break;
+		}
+
+		vk::DescriptorSetLayoutBinding binding{};
+		binding.binding = resource.binding;
+		binding.descriptorCount = resource.array_size;
+		binding.descriptorType = vkType;
+
+		// Convert stage flags
+		if((resource.stages & ShaderStage::Vertex) == ShaderStage::Vertex) binding.stageFlags |= vk::ShaderStageFlagBits::eVertex;
+		if((resource.stages & ShaderStage::TessellationControl) == ShaderStage::TessellationControl) binding.stageFlags |= vk::ShaderStageFlagBits::eTessellationControl;
+		if((resource.stages & ShaderStage::TessellationEvaluation) == ShaderStage::TessellationEvaluation) binding.stageFlags |= vk::ShaderStageFlagBits::eTessellationEvaluation;
+		if((resource.stages & ShaderStage::Geometry) == ShaderStage::Geometry) binding.stageFlags |= vk::ShaderStageFlagBits::eGeometry;
+		if((resource.stages & ShaderStage::Fragment) == ShaderStage::Fragment) binding.stageFlags |= vk::ShaderStageFlagBits::eFragment;
+		if((resource.stages & ShaderStage::Compute) == ShaderStage::Compute) binding.stageFlags |= vk::ShaderStageFlagBits::eCompute;
+
+		bindings.emplace_back(binding);
+	}
+
+	return {vkDevice.createDescriptorSetLayout({{}, static_cast<uint32_t>(bindings.size()), bindings.data()}), vkDevice};
+}
+
+//-----------------
 
 //! (internal)
 bool Shader::linkProgram() {
-	
-	// apply feedback varyings
-	#if defined(GL_EXT_transform_feedback)
-	if(!feedbackVaryings.empty() && RenderingContext::requestTransformFeedbackSupport()){
-		const auto namesBuffer = new const char *[feedbackVaryings.size()];
-		size_t i = 0;
-		for(const auto& nameStr : feedbackVaryings)
-			namesBuffer[i++] = nameStr.c_str();
+	using namespace ShaderUtils;
+
+	pipelineLayout = nullptr;
+	resources.clear();
+	setResources.clear();
+	setLayouts.clear();
+
+	// Merge resources from shader objects
+	for(auto& obj : shaderObjects) {
+		auto objResources = reflect(obj.getType(), obj.getCode());
+		if(objResources.empty())
+			return false;
 		
-		glTransformFeedbackVaryingsEXT(prog,feedbackVaryings.size(),namesBuffer,static_cast<GLenum>(glFeedbackVaryingType));
-		delete [] namesBuffer;
+		for(auto& resource : objResources) {
+			std::string key = resource.name;
+
+			// Update name as input and output resources can have the same name
+			if(resource.type == ShaderResourceType::Output || resource.type == ShaderResourceType::Input) {
+				key = toString(resource.stages) + "_" + key;
+			}
+
+			auto it = resources.find(key);
+			if(it == resources.end()) {
+				resources.emplace(key, resource);
+			} else if(it->second == resource) {
+				it->second.stages = it->second.stages | resource.stages;
+			} else {
+				WARN("Shader: Cannot link shader. Resource missmatch: " + toString(it->second) + " != " + toString(resource));
+				return false;
+			}
+		}
 	}
-	#endif // GL_EXT_transform_feedback
 
-	
-	glLinkProgram(prog);
-	GET_GL_ERROR();
-
-	GLint linkStatus;
-	glGetProgramiv(prog, GL_LINK_STATUS, &linkStatus);
-	if (linkStatus == GL_FALSE) {
-		printProgramInfoLog(prog);
-		GET_GL_ERROR();
-		glDeleteProgram(prog);
-		prog = 0;
-		return false;
+	// Separate resources by set index
+	for(auto& res : resources) {
+		setResources[res.second.set].emplace_back(res.second);
 	}
 
-	GET_GL_ERROR();
+	// Create descriptor set layouts
+	for(auto& res : setResources) {
+		setLayouts.emplace(res.first, std::move(createDescriptorSetLayout(device, res.second)));
+	}
+
 	return true;
 }
+
+//-----------------
 
 void Shader::attachShaderObject(ShaderObjectInfo && obj) {
 	shaderObjects.emplace_back(obj);
 	status = UNKNOWN;
 }
 
+//-----------------
+
 bool Shader::_enable() {
-	if( status==LINKED || init() ){
-		glUseProgram(prog);
+	if( status==LINKED || init() ) {
 		return true;
 	}
 	else
 		return false;
 }
 
-bool Shader::enable(RenderingContext & rc){
-	rc.setShader(this);
+//-----------------
+
+bool Shader::enable(RenderingContext & rc) {
 	return getStatus() == LINKED || init();
 }
 
-bool Shader::isActive(RenderingContext & rc){
-	return rc.getActiveShader() == this;
+//-----------------
+
+bool Shader::isActive(RenderingContext & rc) {
+	return false;
 }
+
+//-----------------
 
 
 // ----------------------------------------------------------
 // Uniforms
-void Shader::applyUniforms(bool forced){
+void Shader::applyUniforms(bool forced) {
 	if( getStatus()!=LINKED && !init())
 		return;
 
 	// apply the uniforms that have been changed since the last call (or all, if forced)
-	for(auto it=uniforms->orderedList.begin();
-			it!=uniforms->orderedList.end() && ( (*it)->stepOfLastSet > uniforms->stepOfLastApply || forced ); ++it ){
+	/*for(auto it=uniforms->orderedList.begin();
+			it!=uniforms->orderedList.end() && ( (*it)->stepOfLastSet > uniforms->stepOfLastApply || forced ); ++it ) {
 		UniformRegistry::entry_t * entry(*it);
 
 		// new uniform? --> query and store the location
-		if( entry->location==-1 ){
+		if( entry->location==-1 ) {
 			entry->location = glGetUniformLocation( getShaderProg(), entry->uniform.getName().c_str());
-			if(entry->location==-1){
+			if(entry->location==-1) {
 				entry->valid = false;
 				if(entry->warnIfUnused)
 					WARN(std::string("No uniform named: ") + entry->uniform.getName());
@@ -229,12 +349,14 @@ void Shader::applyUniforms(bool forced){
 		// set the data
 		applyUniform(entry->uniform,entry->location);
 	}
-	uniforms->stepOfLastApply = UniformRegistry::getNewGlobalStep();
+	uniforms->stepOfLastApply = UniformRegistry::getNewGlobalStep();*/
 }
+
+//-----------------
 
 //! (internal)
 bool Shader::applyUniform(const Uniform & uniform, int32_t uniformLocation) {
-	switch (uniform.getType()) {
+	/*switch (uniform.getType()) {
 		case Uniform::UNIFORM_FLOAT: {
 			glUniform1fv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLfloat *>(uniform.getData()));
 			break;
@@ -290,9 +412,11 @@ bool Shader::applyUniform(const Uniform & uniform, int32_t uniformLocation) {
 		default:
 			WARN("Unsupported data type of Uniform.");
 			return false;
-	}
+	}*/
 	return true;
 }
+
+//-----------------
 
 const Uniform & Shader::getUniform(const Util::StringIdentifier name) {
 	// apply all pending changes, as this may lead to an invalidation of a newly set uniform which
@@ -301,8 +425,10 @@ const Uniform & Shader::getUniform(const Util::StringIdentifier name) {
 	return uniforms->getUniform(name);
 }
 
+//-----------------
+
 //! (internal)
-void Shader::initUniformRegistry(){
+void Shader::initUniformRegistry() {
 	std::vector<Uniform> activeUniforms;
 
 	getActiveUniforms(activeUniforms);
@@ -314,19 +440,23 @@ void Shader::initUniformRegistry(){
 	uniforms->stepOfLastApply = UniformRegistry::getNewGlobalStep();
 }
 
+//-----------------
+
 bool Shader::isUniform(const Util::StringIdentifier name) {
 	applyUniforms();
 	return !uniforms->getUniform(name).isNull();
 }
 
+//-----------------
 
-void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
+
+void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms) {
 	// make sure shader is ready and that all pending changes are applied.
 	applyUniforms();
 	if(getStatus()!=LINKED)
 		return;
 
-	GLint uniformCount = 0;
+	/*GLint uniformCount = 0;
 	glGetProgramiv(prog,GL_ACTIVE_UNIFORMS,&uniformCount);
 	GLint bufSize=0;
 	glGetProgramiv(prog,GL_ACTIVE_UNIFORM_MAX_LENGTH,&bufSize);
@@ -334,7 +464,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 
 	activeUniforms.reserve(uniformCount);
 
-	for(GLint i=0;i<uniformCount;++i){
+	for(GLint i=0;i<uniformCount;++i) {
 		GLsizei nameLength=0;
 		GLint arraySize=0;
 		GLenum glType=0;
@@ -349,7 +479,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 		// determine data type
 		Uniform::dataType_t dataType;
 		bool readFloats=false; // false :== read bool or int
-		switch(glType){
+		switch(glType) {
 			// bool
 			case GL_BOOL:{
 				dataType = Uniform::UNIFORM_BOOL;
@@ -393,7 +523,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_SAMPLER_2D:
 			case GL_SAMPLER_CUBE:
 
-#ifdef LIB_GL
+
 			case GL_SAMPLER_1D:
 			case GL_SAMPLER_1D_ARRAY:
 			case GL_SAMPLER_2D_ARRAY:
@@ -423,7 +553,7 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			case GL_INT_IMAGE_2D_ARRAY:
 			case GL_UNSIGNED_INT_IMAGE_1D_ARRAY:
 			case GL_UNSIGNED_INT_IMAGE_2D_ARRAY:
-#endif /* LIB_GL */
+
 			{
 				dataType = Uniform::UNIFORM_INT;
 				break;
@@ -469,12 +599,12 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 		std::vector<uint8_t> data(valueSize * arraySize);
 		bool valid=true;
 		// fetch the values
-		for(int index=0;index<arraySize;++index){
+		for(int index=0;index<arraySize;++index) {
 			// add '[index]' for index>0
 			const std::string name2(index==0? name : name+'['+Util::StringUtils::toString(index)+']');
 			// query location
 			const GLint location = glGetUniformLocation( getShaderProg(), name2.c_str() );
-			if(location==-1){
+			if(location==-1) {
 //				WARN(std::string("Uniform not found (should not be possible):")+name2);
 				valid=false;
 				break;
@@ -485,80 +615,42 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms){
 			else
 				glGetUniformiv(prog,location,reinterpret_cast<GLint*>(data.data()+index*valueSize));
 		}
-		if(valid){
+		if(valid) {
 //				std::cout << name<<"\n";
 			activeUniforms.emplace_back(name, dataType, arraySize, data);
 		}
 	}
 
-	delete [] nameBuffer;
+	delete [] nameBuffer;*/
 }
 
-void Shader::setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused, bool forced){
-	if(!init()){
+//-----------------
+
+void Shader::setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused, bool forced) {
+	if(!init()) {
 		WARN("setUniform: Shader not ready.");
 		return;
 	}
-	rc._setUniformOnShader(this,uniform,warnIfUnused,forced);
+	//rc._setUniformOnShader(this,uniform,warnIfUnused,forced);
 }
 
 // --------------------------------
 // vertexAttributes
 
-void Shader::defineVertexAttribute(const std::string & attrName, uint32_t index){
-	if(!init()){
-		WARN("defineVertexAttribute: Shader not ready.");
-		return;
-	}
-
-	glBindAttribLocation(prog,index,attrName.c_str());
-}
-
-int32_t Shader::getVertexAttributeLocation(Util::StringIdentifier attrName){
+int32_t Shader::getVertexAttributeLocation(Util::StringIdentifier attrName) {
 	if(getStatus()!=LINKED && !init())
 		return -1;
 
-	auto it = vertexAttributeLocations.find(attrName);
-	if( it == vertexAttributeLocations.end() ){
-		GLint location = glGetAttribLocation(getShaderProg(), attrName.toString().c_str());
-		vertexAttributeLocations[attrName] = location;
-		return location;
+	auto it = resources.find(attrName.toString());
+	if( it != resources.end() && it->second.type == ShaderResourceType::Input ) {
+		return static_cast<int32_t>(it->second.location);
 	}
-	return it->second;
-}
-// ---------------------------------
-// feedback handler
-
-
-void Shader::setInterleavedFeedbackVaryings(const std::vector<std::string>& names){
-	if(RenderingContext::requestTransformFeedbackSupport()){
-		feedbackVaryings = names;
-		#if defined(GL_INTERLEAVED_ATTRIBS_EXT)
-		glFeedbackVaryingType = static_cast<uint32_t>(GL_INTERLEAVED_ATTRIBS_EXT);
-		#endif
-		status = UNKNOWN;
-	}
-}
-void Shader::setSeparateFeedbackVaryings(const std::vector<std::string>& names){
-	if(RenderingContext::requestTransformFeedbackSupport()){
-		feedbackVaryings = names;
-		#if defined(GL_SEPARATE_ATTRIBS_EXT)
-		glFeedbackVaryingType = static_cast<uint32_t>(GL_SEPARATE_ATTRIBS_EXT);
-		#endif
-		status = UNKNOWN;
-	}
-}
-
-// ---------------------------------
-// Shader Subroutines
-
-int32_t Shader::getSubroutineIndex(uint32_t stage, const std::string & name) {
-	#if defined(LIB_GL) and defined(GL_ARB_shader_subroutine)
-	return glGetSubroutineIndex(getShaderProg(), stage, name.c_str());
-	#else
 	return -1;
-	#endif
 }
+
+//-----------------
 
 
 }
+
+//-----------------

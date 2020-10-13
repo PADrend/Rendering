@@ -13,71 +13,16 @@
 #define RENDERING_SHADER_SHADEROBJECTINFO_H
 
 #include "../Core/ApiHandles.h"
+#include "ShaderUtils.h"
 
 #include <cstdint>
-#include <string>
-#include <utility>
 #include <vector>
 
 #include <Util/IO/FileName.h>
 
-// Forward declarations
-namespace Util {
-class FileName;
-}
 namespace Rendering {
 class Device;
 using DeviceRef = Util::Reference<Device>;
-
-enum class ShaderStage : uint8_t {
-	Undefined = 0,
-	Vertex = 1 << 0,
-	TesselationControl = 1 << 1,
-	TesselationEvaluation = 1 << 2,
-	Geometry = 1 << 3,
-	Fragment = 1 << 4,
-	Compute = 1 << 5,
-};
-
-inline ShaderStage operator|(ShaderStage a, ShaderStage b) {
-	return static_cast<ShaderStage>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-}
-
-inline ShaderStage operator&(ShaderStage a, ShaderStage b) {
-	return static_cast<ShaderStage>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
-}
-
-enum class ShaderResourceType {
-	Input,
-	InputAttachment,
-	Output,
-	Image,
-	ImageSampler,
-	ImageStorage,
-	Sampler,
-	BufferUniform,
-	BufferStorage,
-	PushConstant,
-	SpecializationConstant
-};
-
-struct ShaderResource {
-	std::string name;
-	ShaderStage stages;
-	ShaderResourceType type;
-	uint32_t set;
-	uint32_t binding;
-	uint32_t location;
-	uint32_t input_attachment_index;
-	uint32_t vec_size;
-	uint32_t columns;
-	uint32_t array_size;
-	uint32_t offset;
-	uint32_t size;
-	uint32_t constant_id;
-	bool dynamic;
-	std::string toString() const;
-};
 
 /**
  * Storage for shader type and shader code. There is no handle stored in
@@ -94,45 +39,39 @@ class ShaderObjectInfo {
 		static const uint32_t SHADER_STAGE_TESS_EVALUATION;
 		static const uint32_t SHADER_STAGE_COMPUTE;
 	private:
-		struct Define {
-			std::string key;
-			std::string value;
-		};
+		using Define = std::pair<std::string, std::string>;
 		const ShaderStage stage;
-		std::string code;
+		std::string source;
 		std::vector<Define> defines;
-		std::vector<uint32_t> spirv;
+		std::vector<uint32_t> code;
 		Util::FileName filename;
 
-		ShaderObjectInfo(ShaderStage stage, std::string _code);
-		ShaderObjectInfo(ShaderStage stage, std::vector<uint32_t> _spirv);
+		ShaderObjectInfo(ShaderStage stage, std::string source);
+		ShaderObjectInfo(ShaderStage stage, std::vector<uint32_t> code);
 
 	public:
-		const std::string & getCode() const {
+		const std::string& getSource() const {
+			return source;
+		}
+		const std::vector<uint32_t>& getCode() const {
 			return code;
 		}
 		ShaderStage getType() const {
 			return stage;
 		}
 		ShaderObjectInfo& addDefine(const std::string& key, const std::string& value="") {
-			defines.emplace_back(Define{key, value});
+			defines.emplace_back(key, value);
 			return *this;
 		}
 
-		/**
-		 * Compile the source stored in this shader object.
-		 * 
-		 * @return Handle of the compiled shader.
-		 */
-		ShaderModuleHandle compile(const DeviceRef& device);
-		ShaderModuleHandle compile();
+		bool isCompiled() const { return !code.empty(); }
 
 		/**
 		 * Compile the source stored in this shader object.
 		 * 
-		 * @return Handle of the compiled shader.
+		 * @return true on success, false otherwise
 		 */
-		std::vector<ShaderResource> reflect();
+		bool compile(const DeviceRef& device);
 
 		/**
 		 * Create a VertexShaderObject from the given spir-v code

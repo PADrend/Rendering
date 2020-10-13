@@ -20,7 +20,7 @@
 #include "../Core/ImageView.h"
 #include "../FBO.h"
 #include "../Texture/Texture.h"
-#include "../Shader/ShaderObjectInfo.h"
+#include "../Shader/Shader.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
 #include <cstdint>
@@ -32,7 +32,6 @@
 
 const std::string vertexShader = R"vs(
 	#version 450
-	#extension GL_ARB_separate_shader_objects : enable
 
 	out gl_PerVertex {
 			vec4 gl_Position;
@@ -60,7 +59,6 @@ const std::string vertexShader = R"vs(
 
 const std::string fragmentShader = R"fs(
 	#version 450
-	#extension GL_ARB_separate_shader_objects : enable
 
 	layout(location = 0) in vec3 fragColor;
 
@@ -70,6 +68,18 @@ const std::string fragmentShader = R"fs(
 		outColor = vec4(fragColor, 1.0);
 	}
 )fs";
+
+vk::ShaderStageFlagBits convertShaderStage(Rendering::ShaderStage stage) {
+	switch(stage) {
+		case Rendering::ShaderStage::Undefined: return vk::ShaderStageFlagBits::eAll;
+		case Rendering::ShaderStage::Vertex: return vk::ShaderStageFlagBits::eVertex;
+		case Rendering::ShaderStage::TessellationControl: return vk::ShaderStageFlagBits::eTessellationControl;
+		case Rendering::ShaderStage::TessellationEvaluation: return vk::ShaderStageFlagBits::eTessellationEvaluation;
+		case Rendering::ShaderStage::Geometry: return vk::ShaderStageFlagBits::eGeometry;
+		case Rendering::ShaderStage::Fragment: return vk::ShaderStageFlagBits::eFragment;
+		case Rendering::ShaderStage::Compute: return vk::ShaderStageFlagBits::eCompute;
+	}
+}
 
 TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	using namespace Rendering;
@@ -82,19 +92,11 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	// create graphics pipeline
 	
 	// compile shaders
-	auto vso = ShaderObjectInfo::createVertex(vertexShader);
-	auto fso = ShaderObjectInfo::createFragment(fragmentShader);
-	auto vertexShaderModule = vso.compile(device);
-	auto fragmentShaderModule = fso.compile(device);
-	std::vector<vk::PipelineShaderStageCreateInfo> pipelineShaderStages = {
-		{ {}, vk::ShaderStageFlagBits::eVertex, vk::ShaderModule(vertexShaderModule), "main" },
-		{ {}, vk::ShaderStageFlagBits::eFragment, vk::ShaderModule(fragmentShaderModule), "main" }
-	};
-	
-	for(auto& res : vso.reflect())
-		std::cout << res.toString() << std::endl;
-	for(auto& res : fso.reflect())
-		std::cout << res.toString() << std::endl;
+	auto shader = Shader::createShader(device, vertexShader, fragmentShader);
+	REQUIRE(shader->init());
+	std::vector<vk::PipelineShaderStageCreateInfo> pipelineShaderStages;
+	for(auto& sm : shader->getShaderModules())
+		pipelineShaderStages.emplace_back(vk::PipelineShaderStageCreateInfo{{}, convertShaderStage(sm.first), vk::ShaderModule(sm.second), "main" });
 	
 	// vertex input
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
