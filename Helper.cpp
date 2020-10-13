@@ -157,15 +157,16 @@ uint32_t getGLType(Util::TypeConstant type) {
 		case Util::TypeConstant::UINT8: return GL_UNSIGNED_BYTE;
 		case Util::TypeConstant::UINT16: return GL_UNSIGNED_SHORT;
 		case Util::TypeConstant::UINT32: return GL_UNSIGNED_INT;
-		case Util::TypeConstant::UINT64: return 0; // unsupported
+		//case Util::TypeConstant::UINT64: return 0; // unsupported
 		case Util::TypeConstant::INT8: return GL_BYTE;
 		case Util::TypeConstant::INT16: return GL_SHORT;
 		case Util::TypeConstant::INT32: return GL_INT;
-		case Util::TypeConstant::INT64: return 0; // unsupported
+		//case Util::TypeConstant::INT64: return 0; // unsupported
 		case Util::TypeConstant::FLOAT: return GL_FLOAT;
 		case Util::TypeConstant::DOUBLE: return GL_DOUBLE;
 		case Util::TypeConstant::HALF: return GL_HALF_FLOAT;
 	}
+	return 0;
 }
 
 Util::TypeConstant getAttributeType(uint32_t glType) {
@@ -216,17 +217,13 @@ float readDepthValue(int32_t x, int32_t y) {
 }
 
 #if defined(LIB_GLEW) && defined(LIB_GL) && defined(GL_ARB_debug_output)
-#if defined(_WIN32)
-#if defined(_MSC_VER)
-#define STDCALL __stdcall
-#else
-#define STDCALL __attribute__((__stdcall__))
-#else
-#define STDCALL 
-#endif
-#else
-#define STDCALL 
-#endif
+	#if defined(_MSC_VER)
+		#define STDCALL __stdcall
+	#elif defined(_WIN32)
+		#define STDCALL __attribute__((__stdcall__))
+	#else
+		#define STDCALL 
+	#endif
 
 static void STDCALL debugCallback(GLenum, GLenum, GLuint, GLenum, GLsizei , const char *, const void * );
 // the following alias function is required as different versions of glew define GLDEBUGPROCARB differently:

@@ -14,7 +14,7 @@
 #if defined(LIB_GLESv2)
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
-#elif defined(LIB_GL) and defined(LIB_GLEW)
+#elif defined(LIB_GL) && defined(LIB_GLEW)
 #ifdef _WIN64
 // Workaround for mingw32 w64 (without __int64 is not defined in glew.h).
 #include <cstdint>
