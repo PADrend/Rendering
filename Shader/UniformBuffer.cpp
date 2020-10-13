@@ -18,6 +18,12 @@
 #include <Util/Macros.h>
 #include <Util/Resources/ResourceFormat.h>
 #include <Util/Resources/ResourceAccessor.h>
+#include <Util/Graphics/Color.h>
+
+#include <Geometry/Vec2.h>
+#include <Geometry/Vec3.h>
+#include <Geometry/Vec4.h>
+#include <Geometry/Matrix4x4.h>
 
 namespace Rendering {
 
@@ -54,14 +60,20 @@ UniformBuffer::~UniformBuffer() = default;
 
 //---------------
 
-void UniformBuffer::applyUniform(const Uniform& uniform) {
-	const auto& format = accessor->getFormat();
-	uint32_t location = format.getAttributeLocation(uniform.getNameId());
-	if(location >= format.getSize())
-		return; // uniform does not exist
+void UniformBuffer::applyUniform(const Uniform& uniform, uint32_t index) {
 	// TODO: check uniform format
-	accessor->writeRawValue(0, location, uniform.getData(), uniform.getDataSize());
-	dataHasChanged = true;
+	writeData(uniform.getNameId(), uniform.getData(), uniform.getDataSize(), index);
+}
+
+//---------------
+
+void UniformBuffer::writeData(const Util::StringIdentifier& name, const uint8_t* data, size_t size, uint32_t index) {
+	const auto& format = accessor->getFormat();
+	uint32_t location = format.getAttributeLocation(name);
+	if(location < format.getSize() && index < arraySize) {
+		accessor->writeRawValue(index, location, data, size);
+		dataHasChanged = true;
+	}
 }
 
 //---------------
@@ -86,12 +98,6 @@ void UniformBuffer::bind(const CommandBufferRef& cmd, uint32_t binding, uint32_t
 	flush(cmd);
 	if(!pushConstant)
 		cmd->bindBuffer(buffer, set, binding);
-}
-
-//---------------
-
-const Util::ResourceFormat& UniformBuffer::getFormat() const {
-	return accessor->getFormat();
 }
 
 //---------------

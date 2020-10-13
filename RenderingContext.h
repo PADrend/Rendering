@@ -30,50 +30,51 @@ class StringIdentifier;
 class AttributeFormat;
 }
 namespace Rendering {
-class Device;
-using DeviceRef = Util::Reference<Device>;
-class FBO;
-using FBORef = Util::Reference<FBO>;
-class Shader;
-using ShaderRef = Util::Reference<Shader>;
-class Texture;
-using TextureRef = Util::Reference<Texture>;
-class BufferObject;
-using BufferObjectRef = Util::Reference<BufferObject>;
-class CommandBuffer;
-using CommandBufferRef = Util::Reference<CommandBuffer>;
 class AlphaTestParameters;
 class BlendingParameters;
+class BufferObject;
 class ClipPlaneParameters;
+class ColorBlendState;
 class ColorBufferParameters;
+class CommandBuffer;
 class CullFaceParameters;
 class DepthBufferParameters;
+class DepthStencilState;
+class Device;
+class FBO;
 class ImageBindParameters;
-class LightParameters;
+class InputAssemblyState;
+class LightData;
 class LightingParameters;
+class LightParameters;
 class LineParameters;
+class MaterialData;
 class MaterialParameters;
 class Mesh;
+class MultisampleState;
 class PointParameters;
 class PolygonModeParameters;
 class PolygonOffsetParameters;
 class PrimitiveRestartParameters;
+class RasterizationState;
 class ScissorParameters;
-class StencilParameters;
 class Shader;
+class Shader;
+class StencilParameters;
+class Texture;
 class Uniform;
 class UniformRegistry;
 class VertexDescription;
-enum class TexUnitUsageParameter : uint8_t;
-enum class PrimitiveTopology;
-
 class VertexInputState;
-class InputAssemblyState;
 class ViewportState;
-class RasterizationState;
-class MultisampleState;
-class DepthStencilState;
-class ColorBlendState;
+enum class PrimitiveTopology;
+enum class TexUnitUsageParameter : uint8_t;
+using BufferObjectRef = Util::Reference<BufferObject>;
+using CommandBufferRef = Util::Reference<CommandBuffer>;
+using DeviceRef = Util::Reference<Device>;
+using FBORef = Util::Reference<FBO>;
+using ShaderRef = Util::Reference<Shader>;
+using TextureRef = Util::Reference<Texture>;
 
 //! @defgroup context Rendering Context
 
@@ -165,15 +166,15 @@ public:
 	//! @name AlphaTest (deprecated)
 	//	@{
 	[[deprecated]]
-	const AlphaTestParameters& getAlphaTestParameters() const;
+	const AlphaTestParameters getAlphaTestParameters() const;
 	[[deprecated]]
-	void popAlphaTest() {}
+	void popAlphaTest();
 	[[deprecated]]
-	void pushAlphaTest() {}
+	void pushAlphaTest();
 	[[deprecated]]
-	void pushAndSetAlphaTest(const AlphaTestParameters& alphaTestParameter) {}
+	void pushAndSetAlphaTest(const AlphaTestParameters& alphaTestParameter);
 	[[deprecated]]
-	void setAlphaTest(const AlphaTestParameters& alphaTestParameter) {}
+	void setAlphaTest(const AlphaTestParameters& alphaTestParameter);
 	// @}
 	
 	// ------
@@ -208,7 +209,7 @@ public:
 	void setBlending(const ColorBlendState& state);
 
 	[[deprecated]]
-	const BlendingParameters& getBlendingParameters() const;
+	const BlendingParameters getBlendingParameters() const;
 	[[deprecated]]
 	void pushAndSetBlending(const BlendingParameters& blendingParameter);
 	[[deprecated]]
@@ -220,7 +221,7 @@ public:
 	//! @name Clip plane
 	//	@{
 	[[deprecated]]
-	const ClipPlaneParameters& getClipPlane(uint8_t index) const;
+	const ClipPlaneParameters getClipPlane(uint8_t index) const;
 	[[deprecated]]
 	void popClipPlane(uint8_t index) {}
 	[[deprecated]]
@@ -236,7 +237,7 @@ public:
 	//! @name ColorBuffer
 	//	@{
 	[[deprecated]]
-	const ColorBufferParameters& getColorBufferParameters() const;
+	const ColorBufferParameters getColorBufferParameters() const;
 	[[deprecated]]
 	void popColorBuffer();
 	[[deprecated]]
@@ -263,7 +264,7 @@ public:
 	//! @name CullFace
 	//	@{
 	[[deprecated]]
-	const CullFaceParameters& getCullFaceParameters() const;
+	const CullFaceParameters getCullFaceParameters() const;
 	[[deprecated]]
 	void popCullFace();
 	[[deprecated]]
@@ -290,7 +291,7 @@ public:
 	//! @name DepthBuffer
 	//	@{
 	[[deprecated]]
-	const DepthBufferParameters& getDepthBufferParameters() const;
+	const DepthBufferParameters getDepthBufferParameters() const;
 	[[deprecated]]
 	void popDepthBuffer();
 	[[deprecated]]
@@ -351,11 +352,16 @@ public:
 
 	//! @name Lighting
 	//	@{
-	const LightingParameters& getLightingParameters() const;
-	void popLighting();
-	void pushLighting();
-	void pushAndSetLighting(const LightingParameters& lightingParameter);
-	void setLighting(const LightingParameters& lightingParameter);
+	[[deprecated]]
+	const LightingParameters getLightingParameters() const;
+	[[deprecated]]
+	void popLighting() {}
+	[[deprecated]]
+	void pushLighting() {}
+	[[deprecated]]
+	void pushAndSetLighting(const LightingParameters& lightingParameter) {}
+	[[deprecated]]
+	void setLighting(const LightingParameters& lightingParameter) {}
 
 	// ------
 
@@ -367,14 +373,16 @@ public:
 	 * @param light Parameters of a light source.
 	 * @return Light number that was used for this light. This number has to be used to deactivate the light.
 	 */
-	uint8_t enableLight(const LightParameters& light);
+	uint32_t enableLight(const LightData& light);
+	[[deprecated]]
+	uint32_t enableLight(const LightParameters& light);
 
 	/**
 	 * Deactivate a previuosly activated light.
 	 *
 	 * @param lightNumber Light number that was returned by @a enableLight.
 	 */
-	void disableLight(uint8_t lightNumber);
+	void disableLight(uint32_t lightNumber);
 	// @}
 
 	// ------
@@ -382,7 +390,7 @@ public:
 	//! @name Line
 	//	@{
 	[[deprecated]]
-	const LineParameters& getLineParameters() const;
+	const LineParameters getLineParameters() const;
 	[[deprecated]]
 	void popLine();
 	[[deprecated]]
@@ -398,18 +406,23 @@ public:
 	//! @name Material
 	//	@{
 	//! Return the active material.
-	const MaterialParameters& getMaterial() const;
+	const MaterialData& getActiveMaterial() const;
+	[[deprecated]]
+	const MaterialParameters getMaterial() const;
 	//! Pop a material from the top of the stack and activate it. Deactivate material usage if stack is empty.
 	void popMaterial();
 	//! Push the given material onto the material stack.
 	void pushMaterial();
 	//! Push the given material onto the material stack and activate it.
+	void pushAndSetMaterial(const MaterialData& material);
+	[[deprecated]]
 	void pushAndSetMaterial(const MaterialParameters& material);
 	//! Convert the given color to a material, and call @a pushAndSetMaterial
 	void pushAndSetColorMaterial(const Util::Color4f& color);
 	//! Activate the given material.
+	void setMaterial(const MaterialData& material);
+	[[deprecated]]
 	void setMaterial(const MaterialParameters& material);
-
 
 	// @}
 	// ------
@@ -452,7 +465,7 @@ public:
 	//! @name Point
 	//	@{
 	[[deprecated]]
-	const PointParameters& getPointParameters() const;
+	const PointParameters getPointParameters() const;
 	[[deprecated]]
 	void popPointParameters();
 	[[deprecated]]
@@ -467,7 +480,7 @@ public:
 	//! @name PolygonMode
 	//	@{
 	[[deprecated]]
-	const PolygonModeParameters& getPolygonModeParameters() const;
+	const PolygonModeParameters getPolygonModeParameters() const;
 	[[deprecated]]
 	void popPolygonMode();
 	[[deprecated]]
@@ -483,7 +496,7 @@ public:
 	//! @name PolygonOffset
 	//	@{
 	[[deprecated]]
-	const PolygonOffsetParameters& getPolygonOffsetParameters() const;
+	const PolygonOffsetParameters getPolygonOffsetParameters() const;
 	[[deprecated]]
 	void popPolygonOffset();
 	[[deprecated]]
@@ -499,7 +512,7 @@ public:
 	//! @name Primitive restart
 	//	@{
 	[[deprecated]]
-	const PrimitiveRestartParameters& getPrimitiveRestartParameters() const;
+	const PrimitiveRestartParameters getPrimitiveRestartParameters() const;
 	[[deprecated]]
 	void popPrimitiveRestart();
 	[[deprecated]]
@@ -543,7 +556,7 @@ public:
 	//! @name Scissor
 	//	@{
 	[[deprecated]]
-	const ScissorParameters& getScissor() const;
+	const ScissorParameters getScissor() const;
 	[[deprecated]]
 	void popScissor();
 	[[deprecated]]
@@ -559,7 +572,7 @@ public:
 	//! @name Stencil
 	//	@{
 	[[deprecated]]
-	const StencilParameters& getStencilParamters() const;
+	const StencilParameters getStencilParamters() const;
 	[[deprecated]]
 	void popStencil();
 	[[deprecated]]
@@ -577,7 +590,7 @@ public:
 	 \todo Move array of activeTextures to RenderingStatus to allow delayed binding
 	 */
 	//	@{
-	const TextureRef& getTexture(uint8_t unit, uint8_t set=0) const;
+	const TextureRef getTexture(uint8_t unit, uint8_t set=0) const;
 	[[deprecated]]
 	TexUnitUsageParameter getTextureUsage(uint8_t unit) const;
 	void pushTexture(uint8_t unit, uint8_t set=0);

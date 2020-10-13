@@ -77,6 +77,7 @@ add_library(Rendering SHARED
 	Shader/UniformRegistry.cpp
 	State/BindingState.cpp
 	State/PipelineState.cpp
+	State/RenderingState.cpp
 	State/ShaderLayout.cpp
 	Texture/Texture.cpp
 	Texture/TextureType.cpp

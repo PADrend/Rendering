@@ -11,14 +11,11 @@
 #define RENDERING_SHADER_UNIFORMBUFFER_H_
 
 #include <Util/ReferenceCounter.h>
+#include <Util/StringIdentifier.h>
+#include <Util/Resources/ResourceFormat.h>
+#include <Util/Resources/ResourceAccessor.h>
 
 #include <vector>
-
-namespace Util {
-class ResourceFormat;
-class ResourceAccessor;
-using ResourceAccessorRef = Util::Reference<ResourceAccessor>;
-} /* Util */
 
 namespace Rendering {
 class Device;
@@ -43,23 +40,56 @@ public:
 	UniformBuffer(UniformBuffer&& o) = default;
 	UniformBuffer(const UniformBuffer& o) = delete;
 
-	void applyUniform(const Uniform& uniform);
+	[[deprecated]]
+	void applyUniform(const Uniform& uniform, uint32_t index=0);
+
+	void writeData(const Util::StringIdentifier& name, const uint8_t* data, size_t size, uint32_t index=0);
+
+	template<typename T>
+	void writeValue(const Util::StringIdentifier& name, const T& value, uint32_t index=0);
+
+	template<typename T>
+	void writeValues(const Util::StringIdentifier& name, const std::vector<T>& values, uint32_t index=0);
 
 	void flush(const CommandBufferRef& cmd, bool force=false);
 	void bind(const CommandBufferRef& cmd, uint32_t binding=0, uint32_t set=0);
 
-	const Util::ResourceFormat& getFormat() const;
+	const Util::ResourceFormat& getFormat() const { return accessor->getFormat(); }
+	size_t getSize() const { return cache.size(); }
+	uint32_t getElementCount() const { return arraySize; }
 private:
 	explicit UniformBuffer(bool pushConstant);
 	bool init(const DeviceRef& device, const Util::ResourceFormat& format, uint32_t arraySize);
 	
-	Util::ResourceAccessorRef accessor;
+	Util::ResourceAccessor::Ref accessor;
 	BufferObjectRef buffer;
 	std::vector<uint8_t> cache;
 	uint32_t arraySize;
 	bool pushConstant;
 	bool dataHasChanged;
 };
+
+//---------------
+
+template<typename T>
+void UniformBuffer::writeValue(const Util::StringIdentifier& name, const T& value, uint32_t index) {
+	uint32_t location = getFormat().getAttributeLocation(name);
+	if(location < getSize() && index < arraySize) {
+		accessor->writeValue<T>(index, name, value);
+		dataHasChanged = true;
+	}
+}
+
+//---------------
+
+template<typename T>
+void UniformBuffer::writeValues(const Util::StringIdentifier& name, const std::vector<T>& values, uint32_t index) {
+	uint32_t location = getFormat().getAttributeLocation(name);
+	if(location < getSize() && index < arraySize) {
+		accessor->writeValues<T>(index, name, values);
+		dataHasChanged = true;
+	}
+}
 
 } /* Rendering */
 

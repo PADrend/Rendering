@@ -13,6 +13,7 @@
 
 #include "State/BindingState.h"
 #include "State/PipelineState.h"
+#include "State/RenderingState.h"
 #include "Core/Device.h"
 #include "Core/CommandBuffer.h"
 #include "Core/Swapchain.h"
@@ -45,45 +46,49 @@ namespace Rendering {
 
 
 class RenderingContext::InternalData {
-	public:
-		DeviceRef device;
-		PipelineState pipelineState;
-		BindingState bindingState;
-		CommandBuffer::Ref cmd;
+public:
+	DeviceRef device;
+	PipelineState pipelineState;
+	BindingState bindingState;
+	RenderingState renderingState;
+	CommandBuffer::Ref cmd;
 
-		// pipeline state stacks
-		std::stack<VertexInputState> vertexInputStack;
-		std::stack<InputAssemblyState> inputAssemblyStack;
-		std::stack<ViewportState> viewportStack;
-		std::stack<RasterizationState> rasterizationStack;
-		std::stack<MultisampleState> multisampleStack;
-		std::stack<DepthStencilState> depthStencilStack;
-		std::stack<ColorBlendState> colorBlendStack;
+	// pipeline state stacks
+	std::stack<VertexInputState> vertexInputStack;
+	std::stack<InputAssemblyState> inputAssemblyStack;
+	std::stack<ViewportState> viewportStack;
+	std::stack<RasterizationState> rasterizationStack;
+	std::stack<MultisampleState> multisampleStack;
+	std::stack<DepthStencilState> depthStencilStack;
+	std::stack<ColorBlendState> colorBlendStack;
 
-		// binding stacks
-		std::unordered_map<uint32_t, std::stack<Texture::Ref>> textureStacks;
-		std::unordered_map<uint32_t, std::stack<ImageView::Ref>> imageStacks;
-		
-		// transformation stack
-		std::stack<Geometry::Matrix4x4> matrixStack;
-		std::stack<Geometry::Matrix4x4> projectionMatrixStack;
+	// binding stacks
+	std::unordered_map<uint32_t, std::stack<Texture::Ref>> textureStacks;
+	std::unordered_map<uint32_t, std::stack<ImageView::Ref>> imageStacks;
+	
+	// transformation stack
+	std::stack<Geometry::Matrix4x4> modelToCameraStack;
+	std::stack<Geometry::Matrix4x4> cameraToClippingStack;
 
-		// lights & materials
-		std::stack<LightingParameters> lightingParameterStack;
-		std::stack<MaterialParameters> materialStack;
-		std::stack<PointParameters> pointParameterStack;
+	// materials
+	std::stack<MaterialData> materialStack;
+	MaterialData activeMaterial;
+	uint32_t activeMaterialId;
 
-		// fbo
-		std::stack<FBO::Ref> fboStack;
-		Geometry::Rect_i windowClientArea;
+	// fbo
+	std::stack<FBO::Ref> fboStack;
+	Geometry::Rect_i windowClientArea;
 
-		// shader
-		std::stack<Shader::Ref> shaderStack;
-		Shader::Ref activeShader;
-		Shader::Ref fallbackShader;
+	// shader
+	std::stack<Shader::Ref> shaderStack;
+	Shader::Ref activeShader;
+	Shader::Ref fallbackShader;
 
-		UniformRegistry globalUniforms;
+	UniformRegistry globalUniforms;
 
+	// deprecated
+	std::stack<AlphaTestParameters> alphaTestParameterStack;
+	std::stack<PointParameters> pointParameterStack;
 };
 
 RenderingContext::RenderingContext(const DeviceRef& device) :
@@ -110,6 +115,10 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	setPointParameters(PointParameters());
 	setPolygonOffset(PolygonOffsetParameters());
 	setStencil(StencilParameters());
+
+	MaterialData tmp;
+	tmp.setShadingModel(ShadingModel::Shadeless);
+	setMaterial(tmp);
 
 	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(device->getWindow()->getWidth()), static_cast<int32_t>(device->getWindow()->getHeight())};
 	setViewport({windowRect}, {windowRect});
@@ -150,6 +159,13 @@ void RenderingContext::flush(bool wait) {
 
 void RenderingContext::present() {
 	flush();
+
+	// clear materials & lights
+	// TODO: do explicit clearing?
+	internal->renderingState.getMaterials().clear();
+	internal->renderingState.getLights().clear();
+	internal->activeMaterialId = 0;
+
 	internal->device->getQueue(QueueFamily::Present)->present();
 }
 
@@ -163,6 +179,10 @@ void RenderingContext::barrier(uint32_t flags) {
 // Applying changes ***************************************************************************
 
 void RenderingContext::applyChanges(bool forced) {
+	// apply material
+	
+	internal->activeMaterialId = internal->renderingState.getMaterials().addMaterial(internal->activeMaterial);
+
 	if(internal->cmd->isInRenderPass() && internal->cmd->getFBO() != internal->pipelineState.getFBO()) {
 		// FBO has changed: end the active render pass
 		internal->cmd->endRenderPass();
@@ -237,13 +257,38 @@ void RenderingContext::clearStencil(int32_t clearValue) {
 
 // AlphaTest ************************************************************************************
 
-const AlphaTestParameters& RenderingContext::getAlphaTestParameters() const {
-	return {};
+const AlphaTestParameters RenderingContext::getAlphaTestParameters() const {
+	return internal->activeMaterial.isAlphaMaskEnabled() ? AlphaTestParameters(Comparison::LESS, internal->activeMaterial.getAlphaThreshold()) : AlphaTestParameters();
+}
+
+void RenderingContext::popAlphaTest() {
+	WARN_AND_RETURN_IF(internal->alphaTestParameterStack.empty(), "popAlphaTest: Empty AlphaTest-Stack",);
+	setAlphaTest(internal->alphaTestParameterStack.top());
+	internal->alphaTestParameterStack.pop();
+}
+
+void RenderingContext::pushAlphaTest() {
+	internal->alphaTestParameterStack.emplace(getAlphaTestParameters());
+}
+
+void RenderingContext::pushAndSetAlphaTest(const AlphaTestParameters & p) {
+	pushAlphaTest();
+	setAlphaTest(p);
+}
+
+void RenderingContext::setAlphaTest(const AlphaTestParameters & p) {
+	if(p.isEnabled()) {
+		WARN_IF(p.getMode() != Comparison::LESS, "setAlphaTest: Only Comparison::LESS is supported.");
+		internal->activeMaterial.setAlphaMaskEnabled(true);
+		internal->activeMaterial.setAlphaThreshold(p.getReferenceValue());
+	} else {
+		internal->activeMaterial.setAlphaMaskEnabled(false);
+	}
 }
 
 // Blending ************************************************************************************
 
-const BlendingParameters& RenderingContext::getBlendingParameters() const {
+const BlendingParameters RenderingContext::getBlendingParameters() const {
 	return BlendingParameters(internal->pipelineState.getColorBlendState());
 }
 
@@ -286,13 +331,11 @@ void RenderingContext::setBlending(const ColorBlendState& s) {
 
 // ClipPlane ************************************************************************************
 
-const ClipPlaneParameters& RenderingContext::getClipPlane(uint8_t index) const {	
-	return {};
-}
+const ClipPlaneParameters RenderingContext::getClipPlane(uint8_t index) const { return {}; }
 
 
 // ColorBuffer ************************************************************************************
-const ColorBufferParameters& RenderingContext::getColorBufferParameters() const {
+const ColorBufferParameters RenderingContext::getColorBufferParameters() const {
 	return ColorBufferParameters(internal->pipelineState.getColorBlendState().getAttachment().colorWriteMask);
 }
 
@@ -338,7 +381,7 @@ void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::v
 }
 
 // Cull Face ************************************************************************************
-const CullFaceParameters& RenderingContext::getCullFaceParameters() const {
+const CullFaceParameters RenderingContext::getCullFaceParameters() const {
 	return internal->pipelineState.getRasterizationState().getCullMode();
 }
 void RenderingContext::popCullFace() {
@@ -364,7 +407,7 @@ void RenderingContext::setCullFace(const CullFaceParameters& p) {
 // DepthStencil ************************************************************************************
 
 const DepthStencilState& RenderingContext::getDepthStencil() const {
-	internal->pipelineState.getDepthStencilState();
+	return internal->pipelineState.getDepthStencilState();
 }
 
 void RenderingContext::popDepthStencil() {
@@ -387,7 +430,7 @@ void RenderingContext::setDepthStencil(const DepthStencilState& state) {
 }
 
 // DepthBuffer ************************************************************************************
-const DepthBufferParameters& RenderingContext::getDepthBufferParameters() const {
+const DepthBufferParameters RenderingContext::getDepthBufferParameters() const {
 	auto state = internal->pipelineState.getDepthStencilState();
 	return DepthBufferParameters(state.isDepthTestEnabled(), state.isDepthWriteEnabled(), Comparison::comparisonFuncToFunction(state.getDepthCompareOp()));
 }
@@ -525,30 +568,46 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 }
 	
 // Lighting ************************************************************************************
-const LightingParameters& RenderingContext::getLightingParameters() const {
-	return LightingParameters();
-}
-void RenderingContext::popLighting() {
-	WARN_AND_RETURN_IF(internal->lightingParameterStack.empty(), "popLighting: Empty lighting stack",);
-	setLighting(internal->lightingParameterStack.top());
-	internal->lightingParameterStack.pop();
+const LightingParameters RenderingContext::getLightingParameters() const { return LightingParameters(true); }
+
+uint32_t RenderingContext::enableLight(const LightParameters& _light) {
+	LightData light;
+	switch(_light.type) {
+		case LightParameters::POINT:
+			light.setType(LightType::Point);
+			break;
+		case LightParameters::DIRECTIONAL:
+			light.setType(LightType::Directional);
+			break;
+		case LightParameters::SPOT:
+			light.setType(LightType::Spot);
+			break;
+	}
+	light.setPosition(_light.position);
+	light.setDirection(_light.direction);
+	light.setIntensity(_light.diffuse);
+	light.setConeAngle(Geometry::Angle::deg(_light.cutoff));
+
+	if(light.getType() != LightType::Directional) {
+		// 0 = q*x^2 + l*x + (c - 1/a)
+		float attThreshold = 0.01f;
+		float tmp = _light.linear *_light.linear - 4.0 * _light.quadratic * (_light.constant - 1.0/attThreshold);
+		// x = (-l +- sqrt(l*l - 4*q*(c-1/a)))/2q
+	}
+
+	return enableLight(light);
 }
 
-void RenderingContext::pushLighting() {
-	internal->lightingParameterStack.emplace(LightingParameters());
+uint32_t RenderingContext::enableLight(const LightData& light) {
+	return internal->renderingState.getLights().addLight(light);
 }
 
-void RenderingContext::pushAndSetLighting(const LightingParameters& p) {
-	pushLighting();
-	setLighting(p);
-}
-
-void RenderingContext::setLighting(const LightingParameters& p) {
-	// TODO: use uniform buffers
+void RenderingContext::disableLight(uint32_t lightNumber) {
+	// not needed(?)
 }
 
 // Line ************************************************************************************
-const LineParameters& RenderingContext::getLineParameters() const {
+const LineParameters RenderingContext::getLineParameters() const {
 	return {internal->pipelineState.getRasterizationState().getLineWidth()};
 }
 
@@ -572,8 +631,8 @@ void RenderingContext::setLine(const LineParameters& p) {
 }
 
 // Point ************************************************************************************
-const PointParameters& RenderingContext::getPointParameters() const {
-	return {};
+const PointParameters RenderingContext::getPointParameters() const { 
+	return {internal->renderingState.getInstance().getPointSize()};
 }
 
 void RenderingContext::popPointParameters() {
@@ -592,11 +651,11 @@ void RenderingContext::pushAndSetPointParameters(const PointParameters& p) {
 }
 
 void RenderingContext::setPointParameters(const PointParameters& p) {
-	// TODO: use push constants?
+	internal->renderingState.getInstance().setPointSize(p.getSize());
 }
 
 // PolygonMode ************************************************************************************
-const PolygonModeParameters& RenderingContext::getPolygonModeParameters() const {
+const PolygonModeParameters RenderingContext::getPolygonModeParameters() const {
 	return PolygonModeParameters(internal->pipelineState.getRasterizationState().getPolygonMode());
 }
 
@@ -620,7 +679,7 @@ void RenderingContext::setPolygonMode(const PolygonModeParameters& p) {
 }
 
 // PolygonOffset ************************************************************************************
-const PolygonOffsetParameters& RenderingContext::getPolygonOffsetParameters() const {
+const PolygonOffsetParameters RenderingContext::getPolygonOffsetParameters() const {
 	const auto& state = internal->pipelineState.getRasterizationState();
 	PolygonOffsetParameters p(state.getDepthBiasSlopeFactor(), state.getDepthBiasConstantFactor());
 	if(!state.isDepthBiasEnabled()) p.disable();
@@ -647,7 +706,7 @@ void RenderingContext::setPolygonOffset(const PolygonOffsetParameters& p) {
 }
 
 // PrimitiveRestart ************************************************************************************
-const PrimitiveRestartParameters& RenderingContext::getPrimitiveRestartParameters() const {
+const PrimitiveRestartParameters RenderingContext::getPrimitiveRestartParameters() const {
 	const auto& state = internal->pipelineState.getInputAssemblyState();
 	return state.isPrimitiveRestartEnabled() ? PrimitiveRestartParameters(0xffffffffu) : PrimitiveRestartParameters();
 }
@@ -677,7 +736,7 @@ void RenderingContext::setPrimitiveRestart(const PrimitiveRestartParameters& p) 
 // Rasterization ************************************************************************************
 
 const RasterizationState& RenderingContext::getRasterization() const {
-	internal->pipelineState.getRasterizationState();
+	return internal->pipelineState.getRasterizationState();
 }
 
 void RenderingContext::popRasterization() {
@@ -701,7 +760,7 @@ void RenderingContext::setRasterization(const RasterizationState& state) {
 
 // Scissor ************************************************************************************
 
-const ScissorParameters& RenderingContext::getScissor() const {
+const ScissorParameters RenderingContext::getScissor() const {
 	const auto& state = internal->pipelineState.getViewportState();
 	return (state.getScissor() == state.getViewport().rect) ? ScissorParameters(state.getScissor()) : ScissorParameters();
 }
@@ -726,7 +785,7 @@ void RenderingContext::setScissor(const ScissorParameters& scissorParameters) {
 }
 
 // Stencil ************************************************************************************
-const StencilParameters& RenderingContext::getStencilParamters() const {
+const StencilParameters RenderingContext::getStencilParamters() const {
 	auto state = internal->pipelineState.getDepthStencilState();
 	return state.isDepthTestEnabled() ? StencilParameters(state.getFront()) : StencilParameters();
 }
@@ -799,7 +858,7 @@ void RenderingContext::_setUniformOnShader(const ShaderRef& shader, const Unifor
 
 // TEXTURES **********************************************************************************
 
-const TextureRef& RenderingContext::getTexture(uint8_t unit, uint8_t set) const {
+const TextureRef RenderingContext::getTexture(uint8_t unit, uint8_t set) const {
 	return internal->bindingState.getBoundTexture(set, unit);
 }
 
@@ -828,26 +887,16 @@ void RenderingContext::setTexture(uint8_t unit, const TextureRef& texture, uint8
 	internal->bindingState.bindTexture(texture, set, unit, 0);
 }
 
-// LIGHTS ************************************************************************************
-
-uint8_t RenderingContext::enableLight(const LightParameters& light) {
-	return 0;
-}
-
-void RenderingContext::disableLight(uint8_t lightNumber) {
-
-}
-
 // PROJECTION MATRIX *************************************************************************
 
 void RenderingContext::popMatrix_cameraToClipping() {
-	WARN_AND_RETURN_IF(internal->projectionMatrixStack.empty(), "Cannot pop projection matrix. The stack is empty.",);
-	setMatrix_cameraToClipping(internal->projectionMatrixStack.top());
-	internal->projectionMatrixStack.pop();
+	WARN_AND_RETURN_IF(internal->cameraToClippingStack.empty(), "Cannot pop projection matrix. The stack is empty.",);
+	setMatrix_cameraToClipping(internal->cameraToClippingStack.top());
+	internal->cameraToClippingStack.pop();
 }
 
 void RenderingContext::pushMatrix_cameraToClipping() {
-	internal->projectionMatrixStack.emplace(getMatrix_cameraToClipping());
+	internal->cameraToClippingStack.emplace(getMatrix_cameraToClipping());
 }
 
 void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4x4& matrix) {
@@ -856,29 +905,29 @@ void RenderingContext::pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4
 }
 	
 void RenderingContext::setMatrix_cameraToClipping(const Geometry::Matrix4x4& matrix) {
-	
+	internal->renderingState.getCamera().setMatrixCameraToClipping(matrix);
 }
 
 const Geometry::Matrix4x4& RenderingContext::getMatrix_cameraToClipping() const {
-	return {};
+	return internal->renderingState.getCamera().getMatrixCameraToClipping();
 }
 
 // CAMERA MATRIX *****************************************************************************
 
 void RenderingContext::setMatrix_cameraToWorld(const Geometry::Matrix4x4& matrix) {
-	
+	internal->renderingState.getCamera().setMatrixCameraToWorld(matrix);
 }
 const Geometry::Matrix4x4& RenderingContext::getMatrix_worldToCamera() const {
-	return {};
+	return internal->renderingState.getCamera().getMatrixWorldToCamera();
 }
 const Geometry::Matrix4x4& RenderingContext::getMatrix_cameraToWorld() const {
-	return {};
+	return internal->renderingState.getCamera().getMatrixCameraToWorld();
 }
 
 // MODEL VIEW MATRIX *************************************************************************
 
 void RenderingContext::resetMatrix() {
-	
+	internal->renderingState.getInstance().setMatrixModelToCamera(internal->renderingState.getCamera().getMatrixCameraToWorld());
 }
 
 
@@ -888,51 +937,72 @@ void RenderingContext::pushAndSetMatrix_modelToCamera(const Geometry::Matrix4x4&
 }
 
 const Geometry::Matrix4x4& RenderingContext::getMatrix_modelToCamera() const {
-	return {};
+	return internal->renderingState.getInstance().getMatrixModelToCamera();
 }
 
 void RenderingContext::pushMatrix_modelToCamera() {
-	internal->matrixStack.emplace(getMatrix_modelToCamera());
+	internal->modelToCameraStack.emplace(getMatrix_modelToCamera());
 }
 
 void RenderingContext::multMatrix_modelToCamera(const Geometry::Matrix4x4& matrix) {
-	
+	internal->renderingState.getInstance().multMatrixModelToCamera(matrix);
 }
 
 void RenderingContext::setMatrix_modelToCamera(const Geometry::Matrix4x4& matrix) {
-	
+	internal->renderingState.getInstance().setMatrixModelToCamera(matrix);
 }
 
 void RenderingContext::popMatrix_modelToCamera() {
-	WARN_AND_RETURN_IF(internal->matrixStack.empty(), "Cannot pop matrix. The stack is empty.",);
-	setMatrix_modelToCamera(internal->matrixStack.top());
-	internal->matrixStack.pop();
+	WARN_AND_RETURN_IF(internal->modelToCameraStack.empty(), "Cannot pop matrix. The stack is empty.",);
+	setMatrix_modelToCamera(internal->modelToCameraStack.top());
+	internal->modelToCameraStack.pop();
 }
 
 // MATERIAL **********************************************************************************
 
 
-const MaterialParameters& RenderingContext::getMaterial() const {
-	return MaterialParameters();
+const MaterialData& RenderingContext::getActiveMaterial() const {
+	return internal->activeMaterial;
+}
+
+const MaterialParameters RenderingContext::getMaterial() const {
+	// convert from MaterialData
+	MaterialParameters material;
+	material.setAmbient(internal->activeMaterial.getAmbient());
+	material.setDiffuse(internal->activeMaterial.getDiffuse());
+	material.setSpecular(internal->activeMaterial.getSpecular());
+	material.setEmission(internal->activeMaterial.getEmission());
+	if(internal->activeMaterial.getShadingModel() == ShadingModel::Shadeless)
+		material.enableColorMaterial();
+	return material;
 }
 
 void RenderingContext::popMaterial() {
-	WARN_AND_RETURN_IF(internal->matrixStack.empty(), "Cannot pop material. The stack is empty.",);
+	WARN_AND_RETURN_IF(internal->modelToCameraStack.empty(), "Cannot pop material. The stack is empty.",);
 	internal->materialStack.pop();
 	if(internal->materialStack.empty()) {
-		//internal->targetRenderingStatus.disableMaterial();
+		MaterialData tmp;
+		tmp.setShadingModel(ShadingModel::Shadeless);
+		setMaterial(tmp);
 	} else {
-		//internal->targetRenderingStatus.setMaterial(internal->materialStack.top());
+		setMaterial(internal->materialStack.top());
 	}
 }
 
 void RenderingContext::pushMaterial() {
-	internal->materialStack.emplace(getMaterial());
+	internal->materialStack.emplace(internal->activeMaterial);
 }
+
+void RenderingContext::pushAndSetMaterial(const MaterialData& material) {
+	pushMaterial();
+	setMaterial(material);
+}
+
 void RenderingContext::pushAndSetMaterial(const MaterialParameters& material) {
 	pushMaterial();
 	setMaterial(material);
 }
+
 void RenderingContext::pushAndSetColorMaterial(const Util::Color4f& color) {
 	MaterialParameters material;
 	material.setAmbient(color);
@@ -941,7 +1011,20 @@ void RenderingContext::pushAndSetColorMaterial(const Util::Color4f& color) {
 	material.enableColorMaterial();
 	pushAndSetMaterial(material);
 }
-void RenderingContext::setMaterial(const MaterialParameters& material) {
+
+void RenderingContext::setMaterial(const MaterialParameters& _material) {
+	// convert to MaterialData
+	MaterialData material;
+	material.setAmbient(_material.getAmbient());
+	material.setDiffuse(_material.getDiffuse());
+	material.setSpecular({_material.getSpecular().r(), _material.getSpecular().g(), _material.getSpecular().b(), _material.getShininess()});
+	material.setEmission(_material.getEmission());
+	material.setShadingModel(_material.getColorMaterial() ? ShadingModel::Shadeless : ShadingModel::Phong);
+	setMaterial(material);
+}
+
+void RenderingContext::setMaterial(const MaterialData& material) {
+	internal->activeMaterial = material;
 }
 
 // VIEWPORT **********************************************************************************

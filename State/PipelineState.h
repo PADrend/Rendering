@@ -615,13 +615,11 @@ private:
 //==================================================================
 
 namespace std {
-using namespace Rendering;
-
 
 //-------------
 
-template <> struct hash<VertexInputBinding> {
-	std::size_t operator()(const VertexInputBinding& state) const {
+template <> struct hash<Rendering::VertexInputBinding> {
+	std::size_t operator()(const Rendering::VertexInputBinding& state) const {
 		std::size_t result = 0;
 		Util::hash_combine(result, state.binding);
 		Util::hash_combine(result, state.stride);
@@ -633,8 +631,8 @@ template <> struct hash<VertexInputBinding> {
 
 //-------------
 
-template <> struct hash<VertexInputAttribute> {
-	std::size_t operator()(const VertexInputAttribute& state) const {
+template <> struct hash<Rendering::VertexInputAttribute> {
+	std::size_t operator()(const Rendering::VertexInputAttribute& state) const {
 		std::size_t result = 0;
 		Util::hash_combine(result, state.location);
 		Util::hash_combine(result, state.binding);
@@ -646,8 +644,8 @@ template <> struct hash<VertexInputAttribute> {
 
 //-------------
 
-template <> struct hash<VertexInputState> {
-	std::size_t operator()(const VertexInputState& state) const {
+template <> struct hash<Rendering::VertexInputState> {
+	std::size_t operator()(const Rendering::VertexInputState& state) const {
 		std::size_t result = 0;
 		Util::hash_combine(result, state.getBindingCount());
 		for(const auto& b : state.getBindings())
@@ -661,8 +659,8 @@ template <> struct hash<VertexInputState> {
 
 //-------------
 
-template <> struct hash<InputAssemblyState> {
-	std::size_t operator()(const InputAssemblyState& state) const {
+template <> struct hash<Rendering::InputAssemblyState> {
+	std::size_t operator()(const Rendering::InputAssemblyState& state) const {
 		std::size_t result = 0;
 		Util::hash_combine(result, state.getTopology());
 		Util::hash_combine(result, state.isPrimitiveRestartEnabled());
@@ -685,8 +683,8 @@ template <> struct hash<Geometry::Rect_i> {
 
 //-------------
 
-template <> struct hash<Viewport> {
-	std::size_t operator()(const Viewport &vp) const {
+template <> struct hash<Rendering::Viewport> {
+	std::size_t operator()(const Rendering::Viewport &vp) const {
 		std::size_t result = 0;
 		Util::hash_combine(result, vp.rect);
 		Util::hash_combine(result, vp.minDepth);
@@ -697,8 +695,8 @@ template <> struct hash<Viewport> {
 
 //-------------
 
-template <> struct hash<ViewportState> {
-	std::size_t operator()(const ViewportState& state) const {
+template <> struct hash<Rendering::ViewportState> {
+	std::size_t operator()(const Rendering::ViewportState& state) const {
 		std::size_t result = 0;
 		if(!state.hasDynamicViewports()) {
 			Util::hash_combine(result, state.getViewportScissorCount());
@@ -716,8 +714,8 @@ template <> struct hash<ViewportState> {
 
 //-------------
 
-template <> struct hash<RasterizationState> {
-	std::size_t operator()(const RasterizationState& state) const {
+template <> struct hash<Rendering::RasterizationState> {
+	std::size_t operator()(const Rendering::RasterizationState& state) const {
 		std::size_t result = 0;
 		Util::hash_combine(result, state.isDepthClampEnabled());
 		Util::hash_combine(result, state.isRasterizerDiscardEnabled());
@@ -737,8 +735,8 @@ template <> struct hash<RasterizationState> {
 
 //-------------
 
-template <> struct hash<MultisampleState> {
-	std::size_t operator()(const MultisampleState& state) const {
+template <> struct hash<Rendering::MultisampleState> {
+	std::size_t operator()(const Rendering::MultisampleState& state) const {
 		std::size_t result = 0;
 		if(state.isSampleShadingEnabled()) {
 			Util::hash_combine(result, state.getSampleCount());
@@ -753,8 +751,8 @@ template <> struct hash<MultisampleState> {
 
 //-------------
 
-template <> struct hash<DepthStencilState> {
-	std::size_t operator()(const DepthStencilState& state) const {
+template <> struct hash<Rendering::DepthStencilState> {
+	std::size_t operator()(const Rendering::DepthStencilState& state) const {
 		std::size_t result = 0;
 		if(state.isDepthTestEnabled()) {
 			Util::hash_combine(result, state.getDepthCompareOp());
@@ -791,8 +789,8 @@ template <> struct hash<DepthStencilState> {
 
 //-------------
 
-template <> struct hash<ColorBlendAttachmentState> {
-	std::size_t operator()(const ColorBlendAttachmentState& state) const {
+template <> struct hash<Rendering::ColorBlendAttachmentState> {
+	std::size_t operator()(const Rendering::ColorBlendAttachmentState& state) const {
 		std::size_t result = 0;
 		if(state.blendEnable) {
 			Util::hash_combine(result, state.srcColorBlendFactor);
@@ -809,8 +807,8 @@ template <> struct hash<ColorBlendAttachmentState> {
 
 //-------------
 
-template <> struct hash<ColorBlendState> {
-	std::size_t operator()(const ColorBlendState& state) const {
+template <> struct hash<Rendering::ColorBlendState> {
+	std::size_t operator()(const Rendering::ColorBlendState& state) const {
 		std::size_t result = 0;
 		if(state.isLogicOpEnabled()) {
 			Util::hash_combine(result, state.getLogicOp());
@@ -831,8 +829,8 @@ template <> struct hash<ColorBlendState> {
 
 //-------------
 
-template <> struct hash<PipelineState> {
-	std::size_t operator()(const PipelineState& state) const {
+template <> struct hash<Rendering::PipelineState> {
+	std::size_t operator()(const Rendering::PipelineState& state) const {
 		return state.getHash();
 	}
 };
