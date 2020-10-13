@@ -57,17 +57,17 @@ add_library(Rendering SHARED
 	MeshUtils/TriangleAccessor.cpp
 	MeshUtils/WireShapes.cpp
 	RenderingContext/RenderingParameters.cpp
-	#Serialization/GenericAttributeSerialization.cpp
-	#Serialization/Serialization.cpp
-	#Serialization/StreamerMD2.cpp
-	#Serialization/StreamerMMF.cpp
-	#Serialization/StreamerMTL.cpp
-	#Serialization/StreamerMVBO.cpp
-	#Serialization/StreamerNGC.cpp
-	#Serialization/StreamerOBJ.cpp
-	#Serialization/StreamerPKM.cpp
-	#Serialization/StreamerPLY.cpp
-	#Serialization/StreamerXYZ.cpp
+	Serialization/GenericAttributeSerialization.cpp
+	Serialization/Serialization.cpp
+	Serialization/StreamerMD2.cpp
+	Serialization/StreamerMMF.cpp
+	Serialization/StreamerMTL.cpp
+	Serialization/StreamerMVBO.cpp
+	Serialization/StreamerNGC.cpp
+	Serialization/StreamerOBJ.cpp
+	Serialization/StreamerPKM.cpp
+	Serialization/StreamerPLY.cpp
+	Serialization/StreamerXYZ.cpp
 	Shader/Shader.cpp
 	Shader/ShaderObjectInfo.cpp
 	Shader/ShaderUtils.cpp
@@ -80,7 +80,7 @@ add_library(Rendering SHARED
 	State/ShaderLayout.cpp
 	Texture/Texture.cpp
 	Texture/TextureType.cpp
-	#Texture/TextureUtils.cpp
+	Texture/TextureUtils.cpp
 	Draw.cpp
 	DrawCompound.cpp
 	FBO.cpp

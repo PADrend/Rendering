@@ -25,12 +25,12 @@ vk::ImageUsageFlags getVkImageUsage(const ResourceUsage& usage);
 
 //-------------
 
-static VkImageType getImageType(TextureType type) {
+static vk::ImageType getImageType(TextureType type) {
 	switch(type) {
-		case TextureType::TEXTURE_1D: return VK_IMAGE_TYPE_1D;
-		case TextureType::TEXTURE_2D: return VK_IMAGE_TYPE_2D;
-		case TextureType::TEXTURE_3D: return VK_IMAGE_TYPE_3D;
-		default: return VK_IMAGE_TYPE_MAX_ENUM; // never happens
+		case TextureType::TEXTURE_1D: return vk::ImageType::e1D;
+		case TextureType::TEXTURE_2D: return vk::ImageType::e2D;
+		case TextureType::TEXTURE_3D: return vk::ImageType::e3D;
+		default: return {}; // never happens
 	}
 };
 
@@ -55,16 +55,16 @@ static TextureType getTextureType(const Geometry::Vec3ui& extent) {
 
 //-------------
 
-static VkSampleCountFlagBits getSampleCount(uint32_t samples) {
+static vk::SampleCountFlagBits getSampleCount(uint32_t samples) {
 	switch(samples) {
-		case 1: return VK_SAMPLE_COUNT_1_BIT;
-		case 2: return VK_SAMPLE_COUNT_2_BIT;
-		case 4: return VK_SAMPLE_COUNT_4_BIT;
-		case 8: return VK_SAMPLE_COUNT_8_BIT;
-		case 16: return VK_SAMPLE_COUNT_16_BIT;
-		case 32: return VK_SAMPLE_COUNT_32_BIT;
-		case 64: return VK_SAMPLE_COUNT_64_BIT;
-		default: return VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
+		case 1: return vk::SampleCountFlagBits::e1;
+		case 2: return vk::SampleCountFlagBits::e2;
+		case 4: return vk::SampleCountFlagBits::e4;
+		case 8: return vk::SampleCountFlagBits::e8;
+		case 16: return vk::SampleCountFlagBits::e16;
+		case 32: return vk::SampleCountFlagBits::e32;
+		case 64: return vk::SampleCountFlagBits::e64;
+		default: return {};
 	}
 };
 
@@ -99,21 +99,18 @@ ImageStorage::ImageStorage(const DeviceRef& device, const ImageStorage::Configur
 
 bool ImageStorage::init() {
 	VkImage vkImage = nullptr;
-	VkImageCreateInfo imageCreateInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-	imageCreateInfo.flags = 0;
+	vk::ImageCreateInfo imageCreateInfo{};
 	imageCreateInfo.imageType = getImageType(type);
-	imageCreateInfo.format = static_cast<VkFormat>(getVkFormat(config.format.pixelFormat));
-	imageCreateInfo.extent = {
-		static_cast<uint32_t>(config.format.extent.x()), 
-		static_cast<uint32_t>(config.format.extent.y()), 
-		static_cast<uint32_t>(config.format.extent.z())
-	};
+	imageCreateInfo.format = getVkFormat(config.format.pixelFormat);
+	imageCreateInfo.extent.width = static_cast<uint32_t>(config.format.extent.x());
+	imageCreateInfo.extent.height = static_cast<uint32_t>(config.format.extent.y());
+	imageCreateInfo.extent.depth = static_cast<uint32_t>(config.format.extent.z());
 	imageCreateInfo.mipLevels = config.format.mipLevels;
 	imageCreateInfo.arrayLayers = config.format.layers;
 	imageCreateInfo.samples = getSampleCount(config.format.samples);
-	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	imageCreateInfo.usage = static_cast<VkImageUsageFlags>(getVkImageUsage(config.usage));
+	imageCreateInfo.tiling = vk::ImageTiling::eOptimal;
+	imageCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+	imageCreateInfo.usage = getVkImageUsage(config.usage);
 
 	
 	std::vector<uint32_t> familyIndices;
@@ -122,23 +119,30 @@ bool ImageStorage::init() {
 		familyIndices.emplace_back(queue->getFamilyIndex());
 	}
 	if(familyIndices.size() > 1) {
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		imageCreateInfo.sharingMode = vk::SharingMode::eConcurrent;
 	}
 
-	if(imageCreateInfo.imageType == VK_IMAGE_TYPE_MAX_ENUM) {		
-		WARN("ImageStorage: invalid image extent.");
+	if(type != TextureType::TEXTURE_1D && type != TextureType::TEXTURE_2D && type != TextureType::TEXTURE_3D) {
+		WARN("ImageStorage: invalid image type.");
 		return false;
 	}
 
-	if(imageCreateInfo.format == VK_FORMAT_UNDEFINED) {		
+	if(imageCreateInfo.format == vk::Format::eUndefined) {
 		WARN("ImageStorage: invalid image format.");
 		return false;
 	}
 
-	if(imageCreateInfo.samples == VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM) {		
+	if(config.format.samples != 1 && config.format.samples != 2 && config.format.samples != 4 && 
+		config.format.samples != 8 && config.format.samples != 16 && config.format.samples != 32 && config.format.samples != 64
+	) {
 		WARN("ImageStorage: invalid sample count: " + Util::StringUtils::toString(config.format.samples));
 		return false;
 	}
+
+	vk::PhysicalDevice physicalDevice(device->getApiHandle());
+	vk::ImageFormatProperties imageProperties;
+	vk::Result result = physicalDevice.getImageFormatProperties(imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.tiling, imageCreateInfo.usage, imageCreateInfo.flags, &imageProperties);
+	WARN_AND_RETURN_IF(result != vk::Result::eSuccess, "ImageStorage: invalid combination of format, type, and usage.", false);
 
 	VmaAllocationCreateInfo allocCreateInfo{};
 	switch(config.access) {
@@ -149,17 +153,19 @@ bool ImageStorage::init() {
 		default: allocCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN; break;
 	}
 
-	if(imageCreateInfo.usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) {
+	if(imageCreateInfo.usage & vk::ImageUsageFlagBits::eTransientAttachment) {
 		allocCreateInfo.preferredFlags = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
 	}
 
 	VmaAllocation vmaAllocation = nullptr;
 	VmaAllocationInfo allocationInfo{};
-	if(vmaCreateImage(device->getAllocator(), &imageCreateInfo, &allocCreateInfo, &vkImage, &vmaAllocation, &allocationInfo) != VK_SUCCESS)
+	VkImageCreateInfo vkImageCreateInfo = imageCreateInfo;
+	if(vmaCreateImage(device->getAllocator(), &vkImageCreateInfo, &allocCreateInfo, &vkImage, &vmaAllocation, &allocationInfo) != VK_SUCCESS)
 		return false;
 	
 	handle = ImageHandle::create(vkImage, device->getApiHandle());
 	allocation = AllocationHandle::create(vmaAllocation, device->getAllocator());
+	dataSize = allocationInfo.size;
 	return true;
 }
 

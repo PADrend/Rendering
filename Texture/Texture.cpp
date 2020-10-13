@@ -14,11 +14,11 @@
 #include "../Core/ImageStorage.h"
 #include "../Core/ImageView.h"
 #include "../Core/Sampler.h"
+#include "../Core/BufferStorage.h"
+#include "../Core/CommandBuffer.h"
 
-#include "../GLHeader.h"
-#include "../BufferObject.h"
 #include "../Helper.h"
-#include "../RenderingContext/RenderingContext.h"
+#include "../RenderingContext.h"
 
 #include "TextureUtils.h"
 #include <Util/Graphics/Bitmap.h>
@@ -100,17 +100,6 @@ Texture::Texture(Format _format) : Texture(Device::getDefault(), format, Sampler
 //! [dtor]
 Texture::~Texture() = default;
 
-void Texture::_createGLID(RenderingContext & context) {
-	if(imageView) {
-		//INFO ("Recreating Texture!");
-		if(isGLTextureValid()) {
-			WARN("Recreating valid Texture!");
-			removeGLData();
-		}
-	}
-
-}
-
 //---------------
 
 bool Texture::getUseLinearMinFilter() const {
@@ -131,13 +120,18 @@ void Texture::createMipmaps(RenderingContext & context) {
 
 //---------------
 
-void Texture::upload() {
+void Texture::upload(ResourceUsage usage) {
 	if(imageView && !dataHasChanged)
 		return;
 	
+	if(localBitmap.isNull()) {
+		WARN("Texture::upload: Data has not been allocated.");
+		return;
+	}
+	
 	if(!imageView) {
 		// allocate new image storage & create view
-		auto image = ImageStorage::create(device, {format});
+		auto image = ImageStorage::create(device, {format, MemoryUsage::GpuOnly, usage});
 		if(!image) {
 			WARN("Texture: Failed to allocate image storage.");
 			return;
@@ -149,9 +143,18 @@ void Texture::upload() {
 		}
 	}
 
-	if(localBitmap && dataHasChanged) {
-		// TODO: upload data
-		WARN("Texture: data upload is currently not supported.");
+	if(dataHasChanged) {
+		auto stagingBuffer = BufferStorage::create(device, {getDataSize(), MemoryUsage::CpuOnly, false, ResourceUsage::CopySource});
+		stagingBuffer->upload(localBitmap->data(), localBitmap->getDataSize());
+		CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
+		ImageRegion tgtRegion{};
+		tgtRegion.baseLayer = imageView->getLayer();
+		tgtRegion.layerCount = imageView->getLayerCount();
+		tgtRegion.mipLevel = imageView->getMipLevel();
+		tgtRegion.extent = format.extent;
+		cmds->copyBufferToImage(stagingBuffer, getImage(), 0, tgtRegion);
+		cmds->imageBarrier(imageView, usage);
+		cmds->submit(true);
 	}
 	dataHasChanged = false;
 }
@@ -170,32 +173,50 @@ void Texture::allocateLocalData() {
 		WARN("Texture::allocateLocalData: Data already allocated");
 		return;
 	}
-	/*const auto localFormat = TextureUtils::glPixelFormatToPixelFormat( format.pixelFormat );
-	if(localFormat == Util::PixelFormat::UNKNOWN) {
+	const auto localFormat = toAttributeFormat(format.pixelFormat);
+	if(!localFormat.isValid()) {
 		WARN("Texture::allocateLocalData: Unsupported pixel format.");
 		localBitmap = nullptr;
 	}else{
 		localBitmap = new Util::Bitmap(getWidth(), getHeight()*getNumLayers(), localFormat);
-	}*/
+	}
 }
 
 //---------------
 
-void Texture::removeGLData() {
+void Texture::release() {
+	if(!imageView)
+		return;
+	WARN_AND_RETURN_IF(!localBitmap, "Texture::release: releasing texture without local copy of the data. You should call download() first.",);
 	imageView = nullptr;
 }
 
 //---------------
 
-void Texture::clearGLData(const Util::Color4f& color) {
-	throw std::runtime_error("Texture::clearGLData: unsupported.");
+void Texture::clear(const Util::Color4f& color) {
+	if(localBitmap) {
+		auto acc = Util::PixelAccessor::create(localBitmap);
+		for(uint32_t y=0; y < acc->getHeight(); ++y) {
+			for(uint32_t x=0; x < acc->getWidth(); ++x) {
+				acc->writeColor(x, y, color);
+			}
+		}
+	}
+	if(imageView) {
+		CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
+		auto usage = getLastUsage();
+		cmds->clearImage(imageView, color);
+		if(usage != ResourceUsage::Undefined)
+			cmds->imageBarrier(imageView, usage);
+		cmds->submit(true);
+	}
 }
 
 //---------------
 
-void Texture::downloadGLTexture(RenderingContext & context) {
+void Texture::download() {
 	if(!imageView) {
-		WARN("downloadGLTexture: No glTexture available.");
+		WARN("Texture::download: Texture is not uploaded.");
 		return;
 	}
 	dataHasChanged = false;
@@ -203,7 +224,19 @@ void Texture::downloadGLTexture(RenderingContext & context) {
 	if(!localBitmap)
 		allocateLocalData();
 
-	throw std::runtime_error("Texture::downloadGLTexture: unsupported.");
+	auto stagingBuffer = BufferStorage::create(device, {getDataSize(), MemoryUsage::CpuOnly, false, ResourceUsage::CopySource});
+	stagingBuffer->upload(localBitmap->data(), localBitmap->getDataSize());
+	CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
+	ImageRegion srcRegion{};
+	srcRegion.baseLayer = imageView->getLayer();
+	srcRegion.layerCount = imageView->getLayerCount();
+	srcRegion.mipLevel = imageView->getMipLevel();
+	srcRegion.extent = format.extent;
+	cmds->copyImageToBuffer(getImage(), stagingBuffer, srcRegion, 0);
+	cmds->submit(true);
+	uint8_t* ptr = stagingBuffer->map();
+	std::copy(ptr, ptr+localBitmap->getDataSize(), localBitmap->data());
+	stagingBuffer->unmap();
 }
 
 //---------------
@@ -216,20 +249,19 @@ const uint8_t * Texture::getLocalData() const { return localBitmap ? localBitmap
 
 //---------------
 
-uint8_t * Texture::openLocalData(RenderingContext & context) {
+uint8_t * Texture::openLocalData() {
 	if(!localBitmap) {
 		allocateLocalData();
-		//if(isValid())
-		//	download();
+		if(isValid())
+			download();
 	}
 	return getLocalData();
 }
 
 //---------------
 
-const ImageStorageRef& Texture::getImage() const {
-	static ImageStorageRef nullImage;
-	return imageView ? imageView->getImage() : nullImage;
+ImageStorageRef Texture::getImage() const {
+	return imageView ? imageView->getImage() : nullptr;
 }
 
 //---------------
@@ -237,8 +269,8 @@ const ImageStorageRef& Texture::getImage() const {
 uint32_t Texture::_prepareForBinding(RenderingContext & context){
 	if(!isValid() || dataHasChanged)
 		upload();
-	//if(mipmapCreationIsPlanned)
-	//	createMipmaps(context);
+	if(mipmapCreationIsPlanned)
+		createMipmaps(context);
 	return glId;
 }
 

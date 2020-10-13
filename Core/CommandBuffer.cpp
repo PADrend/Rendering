@@ -143,7 +143,7 @@ void CommandBuffer::flush() {
 			bindings.clearDirty(set);
 			if(!layout.hasLayoutSet(set))
 				continue;
-			
+						
 			auto descriptorSet = device->getDescriptorPool()->requestDescriptorSet(layout.getLayoutSet(set), bindingSet);
 			if(descriptorSet) {
 				vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
@@ -261,7 +261,7 @@ void CommandBuffer::prepareForPresent() {
 	auto& fbo = queue->getDevice()->getSwapchain()->getCurrentFBO();
 	auto att = fbo->getColorAttachment(0);
 	// explicitely transfer image to present layout
-	textureBarrier(att, ResourceUsage::Present);
+	imageBarrier(att, ResourceUsage::Present);
 }
 
 //-----------------
@@ -410,13 +410,74 @@ void CommandBuffer::clearStencil(uint32_t stencil, const Geometry::Rect_i& rect)
 	clear(false,false,true,rect);
 }
 
-
 //-----------------
 
 void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect) {
 	setClearDepthValue(depth);
 	setClearStencilValue(stencil);
 	clear(false,true,true,rect);
+}
+
+//-----------------
+
+void CommandBuffer::clearImage(const TextureRef& texture, const Util::Color4f& color) {
+	WARN_AND_RETURN_IF(!texture, "Cannot clear image. Invalid texture.",);
+	clearImage(texture->getImageView(), color);
+}
+
+//-----------------
+
+void CommandBuffer::clearImage(const ImageViewRef& view, const Util::Color4f& color) {
+	WARN_AND_RETURN_IF(!view, "Cannot clear image. Invalid image.",);
+	vk::CommandBuffer vkCmd(handle);
+	auto image = view->getImage();
+	auto format = image->getFormat();
+	vk::ImageSubresourceRange range = {};
+	range.baseMipLevel = view->getMipLevel();
+	range.levelCount = view->getMipLevelCount();
+	range.baseArrayLayer = view->getLayer();
+	range.layerCount = view->getLayerCount();
+	
+	imageBarrier(view, ResourceUsage::CopyDestination);
+	if(isDepthStencilFormat(image->getFormat())) {
+		vk::ClearDepthStencilValue clearValue{};
+		clearValue.depth = color.r();
+		clearValue.stencil = static_cast<uint32_t>(color.g());
+		range.aspectMask = vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil;
+		vkCmd.clearDepthStencilImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(image->getLastUsage()), clearValue, {range});
+	} else {
+		vk::ClearColorValue clearValue{};
+		clearValue.setFloat32({color.r(), color.g(), color.b(), color.a()});
+		range.aspectMask = vk::ImageAspectFlagBits::eColor;
+		vkCmd.clearColorImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(image->getLastUsage()), clearValue, {range});
+	}
+	boundResource.emplace_back(view->getApiHandle());
+}
+
+//-----------------
+
+void CommandBuffer::clearImage(const ImageStorageRef& image, const Util::Color4f& color) {
+	WARN_AND_RETURN_IF(!image, "Cannot clear image. Invalid image.",);
+	vk::CommandBuffer vkCmd(handle);
+	auto format = image->getFormat();
+	vk::ImageSubresourceRange range = {};
+	range.levelCount = format.mipLevels;
+	range.layerCount = format.layers;
+	
+	imageBarrier(image, ResourceUsage::CopyDestination);
+	if(isDepthStencilFormat(image->getFormat())) {
+		vk::ClearDepthStencilValue clearValue{};
+		clearValue.depth = color.r();
+		clearValue.stencil = static_cast<uint32_t>(color.g());
+		range.aspectMask = vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil;
+		vkCmd.clearDepthStencilImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(image->getLastUsage()), clearValue, {range});
+	} else {
+		vk::ClearColorValue clearValue{};
+		clearValue.setFloat32({color.r(), color.g(), color.b(), color.a()});
+		range.aspectMask = vk::ImageAspectFlagBits::eColor;
+		vkCmd.clearColorImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(image->getLastUsage()), clearValue, {range});
+	}
+	boundResource.emplace_back(image->getApiHandle());
 }
 
 //-----------------
@@ -599,11 +660,17 @@ void CommandBuffer::blitImage(const ImageStorageRef& srcImage, const ImageStorag
 
 //-----------------
 
-void CommandBuffer::textureBarrier(const TextureRef& texture, ResourceUsage newUsage) {
+void CommandBuffer::imageBarrier(const TextureRef& texture, ResourceUsage newUsage) {
+	WARN_AND_RETURN_IF(!texture, "Cannot create image barrier. Invalid texture.",);
+	imageBarrier(texture->getImageView(), newUsage);
+}
+
+//-----------------
+
+void CommandBuffer::imageBarrier(const ImageViewRef& view, ResourceUsage newUsage) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	WARN_AND_RETURN_IF(!texture || !texture->isValid(), "Cannot create texture barrier. Invalid texture.",);
-	auto view = texture->getImageView();
-	auto image = texture->getImage();
+	WARN_AND_RETURN_IF(!view, "Cannot create image barrier. Invalid image.",);
+	auto image = view->getImage();
 	if(view->getLastUsage() == newUsage || view->getLastUsage() == ResourceUsage::General)
 		return;
 

@@ -101,6 +101,9 @@ public:
 	void clearDepth(float depth, const Geometry::Rect_i& rect={});
 	void clearStencil(uint32_t stencil, const Geometry::Rect_i& rect={});
 	void clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect={});
+	void clearImage(const TextureRef& texture, const Util::Color4f& color);
+	void clearImage(const ImageViewRef& view, const Util::Color4f& color);
+	void clearImage(const ImageStorageRef& image, const Util::Color4f& color);
 	//! @}
 
 	//! @name Draw commands
@@ -124,8 +127,9 @@ public:
 
 	//! @name Memory barriers
 	//! @{
-	void textureBarrier(const TextureRef& texture, ResourceUsage newUsage);
+	void imageBarrier(const TextureRef& texture, ResourceUsage newUsage);
 	void imageBarrier(const ImageStorageRef& image, ResourceUsage newUsage);
+	void imageBarrier(const ImageViewRef& image, ResourceUsage newUsage);
 	//void bufferBarrier(const BufferObjectRef& buffer, ResourceUsage newUsage);
 	//! @}
 

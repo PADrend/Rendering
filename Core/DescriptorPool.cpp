@@ -31,6 +31,7 @@ namespace Rendering {
 //-----------------
 
 vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
+vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 
 //-----------------
 
@@ -158,7 +159,7 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 	
 	std::vector<vk::WriteDescriptorSet> writes;
 
-	// need to keep data alive during creating
+	// need to keep data alive during creation
 	std::vector<std::vector<vk::DescriptorImageInfo>> imageBindings;
 	std::vector<std::vector<vk::DescriptorBufferInfo>> bufferBindings;
 	
@@ -169,11 +170,11 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 		auto descriptor = layout.getLayout(bIt.first);
 		
 		auto usage = getResourceUsage(descriptor.type);
-		auto vkImageLayout = getVkImageLayout(descriptor.type);
 		imageBindings.emplace_back();
 		bufferBindings.emplace_back();
 
 		for(auto& tex : binding.getTextures()) {
+			auto vkImageLayout = getVkImageLayout(tex->getLastUsage());
 			if(tex && tex->isValid()) {
 				imageBindings.back().emplace_back(
 					static_cast<vk::Sampler>(tex->getSampler()->getApiHandle()), 
@@ -185,14 +186,14 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 			}
 		}
 
-		for(auto& view : binding.getInputImages()) {
+		/*for(auto& view : binding.getInputImages()) {
 			if(view && view->getApiHandle()) {
 				imageBindings.back().emplace_back(nullptr, static_cast<vk::ImageView>(view->getApiHandle()), vkImageLayout);
 			} else {
 				WARN("Empty input image binding.");
 				imageBindings.back().emplace_back(nullptr, nullptr, vkImageLayout);
 			}
-		}
+		}*/
 
 		for(auto& buffer : binding.getBuffers()) {
 			if(buffer && buffer->isValid()) {

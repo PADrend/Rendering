@@ -116,6 +116,7 @@ public:
 
 	void applyChanges(bool forced = false);
 
+	const DeviceRef& getDevice() const;
 	CommandBufferRef getCommandBuffer() const;
 	const PipelineState& getPipelineState() const;
 	const RenderingState& getRenderingState() const;
@@ -595,21 +596,21 @@ public:
 	 \todo Move array of activeTextures to RenderingStatus to allow delayed binding
 	 */
 	//	@{
-	const TextureRef getTexture(uint8_t unit, uint8_t set=0) const;
+	const TextureRef getTexture(uint32_t unit, uint32_t set=0) const;
 	[[deprecated]]
-	TexUnitUsageParameter getTextureUsage(uint8_t unit) const;
-	void pushTexture(uint8_t unit, uint8_t set=0);
-	void pushAndSetTexture(uint8_t unit, const TextureRef& texture, uint8_t set=0);
+	TexUnitUsageParameter getTextureUsage(uint32_t unit) const;
+	void pushTexture(uint32_t unit, uint32_t set=0);
+	void pushAndSetTexture(uint32_t unit, const TextureRef& texture, uint32_t set=0);
 	[[deprecated]]
-	void pushAndSetTexture(uint8_t unit, const TextureRef& texture, TexUnitUsageParameter usage, uint8_t set=0) {
+	void pushAndSetTexture(uint32_t unit, const TextureRef& texture, TexUnitUsageParameter usage, uint32_t set=0) {
 		pushAndSetTexture(unit, texture, set);
 	}
-	void popTexture(uint8_t unit, uint8_t set=0);
+	void popTexture(uint32_t unit, uint32_t set=0);
 
 	//! \note texture may be nullptr
-	void setTexture(uint8_t unit, const TextureRef& texture, uint8_t set=0);
+	void setTexture(uint32_t unit, const TextureRef& texture, uint32_t set=0);
 	[[deprecated]]
-	void setTexture(uint8_t unit, const TextureRef& texture, TexUnitUsageParameter usage, uint8_t set=0) {
+	void setTexture(uint32_t unit, const TextureRef& texture, TexUnitUsageParameter usage, uint32_t set=0) {
 		setTexture(unit, texture, set);
 	}
 	// @}

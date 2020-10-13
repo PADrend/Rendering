@@ -47,6 +47,13 @@ using namespace Geometry;
   
 void addBox(MeshBuilder& mb, const Box& box) {
 	uint32_t nextIndex = mb.getNextIndex();
+
+	static const Vec2f uvs[4] = {
+		Vec2f(0, 0), // lower-left
+		Vec2f(1, 0), // lower-right
+		Vec2f(1, 1), // upper-right
+		Vec2f(0, 1), // upper-left
+	};
 	for (uint_fast8_t s = 0; s < 6; ++s) {
 		const side_t side = static_cast<side_t>(s);
 		const corner_t * corners = Helper::getCornerIndices(side);
@@ -55,6 +62,7 @@ void addBox(MeshBuilder& mb, const Box& box) {
 			const Vec3 & corner = box.getCorner(corners[v]);
 			mb.position(corner);
 			mb.normal(normal);
+			mb.texCoord0(uvs[v]);
 			mb.addVertex();
 		}
 		mb.addQuad(nextIndex + 0, nextIndex + 1, nextIndex + 2, nextIndex + 3);

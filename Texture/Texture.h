@@ -80,7 +80,7 @@ public:
 
 	~Texture();
 
-	uint32_t getDataSize() const { return 0; }
+	uint32_t getDataSize() const { return Rendering::getDataSize(format); }
 	const Format & getFormat() const { return format; }
 	uint32_t getNumLayers() const { return format.layers > 1 ? format.layers : format.extent.z(); }
 	uint32_t getHeight() const { return format.extent.y(); }
@@ -95,7 +95,9 @@ public:
 
 	/*! Returns a pointer to the local data.
 		\note if the texture has no local data, it is downloaded automatically */
-	uint8_t * openLocalData(RenderingContext & context);
+	uint8_t * openLocalData();
+	[[deprecated]]
+	uint8_t * openLocalData(RenderingContext & context) { return openLocalData(); }
 
 	uint8_t * getLocalData();
 	const uint8_t * getLocalData() const;
@@ -104,13 +106,16 @@ public:
 
 	Util::Bitmap* getLocalBitmap() const { return localBitmap.get(); }
 	
-	void upload();
+	void upload(ResourceUsage usage=ResourceUsage::ShaderResource);
+	void download();
+	void clear(const Util::Color4f& color={});
+	void release();
 	// @}
 
 	/*!	@name Mipmaps */
 	// @{
 	void planMipmapCreation() { mipmapCreationIsPlanned = true; }
-	void createMipmaps(RenderingContext & context);
+	void createMipmaps(RenderingContext& context);
 	bool getHasMipmaps() const { return hasMipmaps; }
 	// @}
 	
@@ -123,7 +128,7 @@ public:
 	/*!	@name Internal */
 	// @{
 	const ImageViewRef& getImageView() const { return imageView; }
-	const ImageStorageRef& getImage() const;
+	ImageStorageRef getImage() const;
 	const SamplerRef& getSampler() const { return sampler; }
 	ResourceUsage getLastUsage() const;
 	// @}
@@ -147,15 +152,15 @@ public:
 	[[deprecated]]
 	uint32_t getGLId() const { return glId; }
 	[[deprecated]]
-	void _createGLID(RenderingContext & context);
+	void _createGLID(RenderingContext & context) {}
 	[[deprecated]]
 	void _uploadGLTexture(RenderingContext & context, int level=0);
 	[[deprecated]]
-	void downloadGLTexture(RenderingContext & context);
+	void downloadGLTexture(RenderingContext & context) { download(); }
 	[[deprecated]]
-	void removeGLData();
+	void removeGLData() { release(); }
 	[[deprecated]]
-	void clearGLData(const Util::Color4f& color={});
+	void clearGLData(const Util::Color4f& color={}) { clear(color); }
 	[[deprecated]]
 	void _setGLId(uint32_t glId);
 	[[deprecated]]
@@ -167,7 +172,7 @@ private:
 	Texture(const DeviceRef& device, const Format& format, const SamplerRef& sampler);
 
 	DeviceRef device;
-	const Format format;
+	Format format;
 
 	TextureType tType;
 	uint32_t glId = 0;

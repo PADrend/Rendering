@@ -14,12 +14,13 @@
 	layout(location = 0) in vec3 sg_Position;
 	layout(location = 1) in vec3 sg_Normal;
 	layout(location = 2) in vec4 sg_Color;
+	layout(location = 3) in vec2 sg_TexCoord0;
 
 	layout(push_constant) uniform ObjectBuffer {
 		mat4 sg_matrix_modelToCamera;
 	};
 
-	layout(set=0,binding=0) uniform CameraBuffer {
+	layout(set=1,binding=0) uniform CameraBuffer {
 		mat4 sg_matrix_cameraToClipping;
 	};
 
@@ -29,6 +30,7 @@
 		vertex.position = (sg_matrix_modelToCamera * vec4(sg_Position, 1.0)).xyz;
 		vertex.normal = (sg_matrix_modelToCamera * vec4(sg_Normal, 0.0)).xyz;
 		vertex.color = sg_Color;
+		vertex.texCoord = sg_TexCoord0;
 		
 		gl_Position = sg_matrix_cameraToClipping * vec4(vertex.position, 1.0);
 		gl_Position.y = -gl_Position.y; // Vulkan uses right hand NDC
@@ -39,17 +41,20 @@
 	layout(location = 0) in VertexData vertex;
 	layout(location = 0) out vec4 finalColor;
 
-	layout(set=1,binding=0) uniform LightBuffer {
+	layout(set=2,binding=0) uniform LightBuffer {
 		LightData sg_Light[8];
 		uint sg_lightCount;
 	};
 
-	layout(set=2,binding=0) uniform MaterialBuffer {
+	layout(set=3,binding=0) uniform MaterialBuffer {
 		MaterialData sg_Material;
 	};
 	
+	layout(set=0, binding=0) uniform sampler2D sg_Texture0;
+	
 	void main() {
 		SurfaceSample surface = initSurface(vertex, sg_Material);
+		surface.diffuse *= texture(sg_Texture0, vertex.texCoord);
 		
 		vec4 color = vec4(0.0,0.0,0.0,1.0);
 		// Reflectance equation: L_o = integral_Omega{ f(L,V) * L_i(L) * (N dot V) } dw_i

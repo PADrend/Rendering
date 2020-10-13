@@ -125,11 +125,8 @@ enum class InternalFormat : std::uint8_t {
 	BC6HU16,
 	BC7Unorm,
 	BC7UnormSrgb,
+	ETC2RGB8Unorm,
 };
-
-//---------------------------
-
-InternalFormat toInternalFormat(const Util::AttributeFormat& attr);
 
 //---------------------------
 
@@ -189,9 +186,20 @@ struct ImageFormat {
 	uint32_t mipLevels = 1;
 	uint32_t layers = 1;
 	uint32_t samples = 1;
+
+	bool operator==(const ImageFormat& o) const {
+		return pixelFormat == o.pixelFormat && extent == o.extent && mipLevels == o.mipLevels && layers == o.layers && samples == o.samples;
+	}
+	bool operator!=(const ImageFormat& o) const { return !(*this == o); }
 };
 
 //---------------------------
+
+InternalFormat toInternalFormat(const Util::AttributeFormat& attr);
+Util::AttributeFormat toAttributeFormat(InternalFormat format);
+
+uint8_t getDataSize(InternalFormat format);
+size_t getDataSize(const ImageFormat& format);
 
 bool isDepthStencilFormat(InternalFormat format);
 inline bool isDepthStencilFormat(const ImageFormat& format) {

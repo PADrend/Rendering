@@ -32,6 +32,7 @@
 #include "../MeshUtils/MeshBuilder.h"
 #include "../State/RenderingState.h"
 #include "../Texture/Texture.h"
+#include "../Texture/TextureUtils.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
 #include <cstdint>
@@ -51,6 +52,8 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	REQUIRE(shader->isUniform({"sg_lightCount"}));
 	REQUIRE(shader->isUniform({"sg_Light[0].intensity"}));
 
+	//std::cout << toString(shader->getLayout()) << std::endl;
+
 	// --------------------------------------------
 	// meshes
 
@@ -64,17 +67,17 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	REQUIRE(mesh1);
 	mesh1->setDataStrategy(SimpleMeshDataStrategy::getDynamicVertexStrategy());
 	mesh1->_getVertexData().upload();
-	mesh1->_getVertexData().getBuffer()->getBuffer()->setDebugName("Vertex Buffer 1");
+	mesh1->_getVertexData().getBuffer()->getBuffer()->setDebugName("Box VB");
 	mesh1->_getIndexData().upload();
-	mesh1->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer 1");
+	mesh1->_getIndexData().getBuffer()->getBuffer()->setDebugName("Box IB");
 
 	Mesh::Ref mesh2 = MeshUtils::PlatonicSolids::createOctahedron(vd);
 	REQUIRE(mesh2);
 	mesh2->setDataStrategy(SimpleMeshDataStrategy::getStaticDrawReleaseLocalStrategy());
 	mesh2->_getVertexData().upload();
-	mesh2->_getVertexData().getBuffer()->getBuffer()->setDebugName("Vertex Buffer 2");
+	mesh2->_getVertexData().getBuffer()->getBuffer()->setDebugName("Octahedron VB");
 	mesh2->_getIndexData().upload();
-	mesh2->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer 2");
+	mesh2->_getIndexData().getBuffer()->getBuffer()->setDebugName("Octahedron IB");
 
 	// --------------------------------------------
 	// matrices
@@ -93,6 +96,9 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	// --------------------------------------------
 	// materials
 
+	auto chessTexture = TextureUtils::createChessTexture(device, 32, 32, 8, true, true);
+	REQUIRE(chessTexture);
+
 	MaterialData material1{};
 	material1.setDiffuse({1,0,0});
 	material1.setAmbient(material1.getDiffuse() * 0.1);
@@ -101,7 +107,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	MaterialData material2{};
 	material2.setDiffuse({0,1,0});
 	material2.setAmbient(material2.getDiffuse() * 0.1);
-	material1.setSpecular({1,1,1,1});
+	material2.setSpecular({0.5,0.5,0.5,1});
 
 	// --------------------------------------------
 	// light
@@ -131,7 +137,9 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 		
 		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera());
 		context.pushAndSetMaterial(material1);
+		context.pushAndSetTexture(0, chessTexture);
 		context.displayMesh(mesh1);
+		context.popTexture(0);
 		context.popMaterial();
 
 		context.setMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
@@ -145,7 +153,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 		context.present();
 		
 		mat.rotate_deg(0.1, {0,1,0});
-		lightMat.rotate_deg(-0.05, {0,1,0});
+		lightMat.rotate_deg(-0.1, {0,1,0});
 		for(auto& e : TestUtils::window->fetchEvents()) {
 			if(e.type == Util::UI::EVENT_KEYBOARD || e.type == Util::UI::EVENT_QUIT)
 				running = false;

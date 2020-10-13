@@ -89,7 +89,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 			message << std::endl;
 		}
 	}
-	std::cout << message.str() << std::endl;
+	Device* device = reinterpret_cast<Device*>(pUserData);
+	if(device->getConfig().throwOnError) {
+		throw std::runtime_error(message.str());
+	} else {
+		std::cerr << message.str() << std::endl;
+	}
 	return VK_FALSE;
 }
 
@@ -229,7 +234,8 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-			debugCallback
+			debugCallback,
+			reinterpret_cast<void*>(device.get())
 		});
 		
 	}

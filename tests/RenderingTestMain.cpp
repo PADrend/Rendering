@@ -36,6 +36,7 @@ int main( int argc, char* argv[] ) {
 		//"VK_LAYER_RENDERDOC_Capture"
 		"VK_LAYER_LUNARG_monitor"
 	};
+	config.throwOnError = true;
 	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), config);
 	
 	auto result = Catch::Session().run( argc, argv );

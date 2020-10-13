@@ -217,7 +217,7 @@ ShaderResourceList reflect(ShaderStage stage, const std::vector<uint32_t>& code)
 
 ShaderRef createDefaultShader(const DeviceRef& device) {
 	const auto& locator = getDataLocator();
-	auto result = locator.locateFile(Util::FileName("./shader/defaultShader.glsl"));
+	auto result = locator.locateFile(Util::FileName("./shader/DefaultShader.glsl"));
 	WARN_AND_RETURN_IF(!result.first, "Could not find default shader.", nullptr);
 	return Shader::loadShader(device, result.second, result.second);
 }

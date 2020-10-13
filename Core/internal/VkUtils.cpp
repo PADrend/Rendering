@@ -234,8 +234,7 @@ vk::ImageUsageFlags getVkImageUsage(const ResourceUsage& usage) {
 			vk::ImageUsageFlagBits::eDepthStencilAttachment |
 			vk::ImageUsageFlagBits::eInputAttachment |
 			vk::ImageUsageFlagBits::eSampled |
-			vk::ImageUsageFlagBits::eStorage |
-			vk::ImageUsageFlagBits::eTransientAttachment;
+			vk::ImageUsageFlagBits::eStorage;
 		default: break;
 	}
 	

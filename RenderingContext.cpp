@@ -66,7 +66,7 @@ public:
 	std::stack<ColorBlendState> colorBlendStack;
 
 	// binding stacks
-	std::unordered_map<uint32_t, std::stack<Texture::Ref>> textureStacks;
+	std::map<std::pair<uint32_t,uint32_t>, std::stack<Texture::Ref>> textureStacks;
 	std::unordered_map<uint32_t, std::stack<ImageView::Ref>> imageStacks;
 	
 	// transformation stack
@@ -89,6 +89,7 @@ public:
 
 	// dummy vertex buffer
 	MeshVertexData fallbackVertexBuffer;
+	Texture::Ref dummyTexture;
 
 	// deprecated
 	std::stack<AlphaTestParameters> alphaTestParameterStack;
@@ -126,6 +127,14 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->fallbackVertexBuffer.upload(MemoryUsage::GpuOnly);
 	internal->fallbackVertexBuffer.releaseLocalData();
 
+	// Initialize dummy texture
+	ImageFormat format{};
+	format.extent = {1,1,1};
+	internal->dummyTexture = Texture::create(device, format);
+	internal->dummyTexture->allocateLocalData();
+	internal->dummyTexture->clear({1,1,1,1});
+	internal->dummyTexture->upload(ResourceUsage::ShaderResource);
+
 	//// Initially enable the depth test.
 	internal->pipelineState.getDepthStencilState().setDepthTestEnabled(true);
 	setFBO(nullptr);
@@ -151,6 +160,10 @@ void RenderingContext::resetDisplayMeshFn() {
 
 void RenderingContext::displayMesh(Mesh * mesh) {
 	displayMeshFn(*this, mesh,0,mesh->isUsingIndexData()? mesh->getIndexCount() : mesh->getVertexCount());
+}
+
+const DeviceRef& RenderingContext::getDevice() const {
+	return internal->device;
 }
 
 CommandBufferRef RenderingContext::getCommandBuffer() const {
@@ -922,33 +935,36 @@ void RenderingContext::_setUniformOnShader(const ShaderRef& shader, const Unifor
 
 // TEXTURES **********************************************************************************
 
-const TextureRef RenderingContext::getTexture(uint8_t unit, uint8_t set) const {
+const TextureRef RenderingContext::getTexture(uint32_t unit, uint32_t set) const {
 	return internal->bindingState.getBoundTexture(set, unit);
 }
 
-TexUnitUsageParameter RenderingContext::getTextureUsage(uint8_t unit) const {
+TexUnitUsageParameter RenderingContext::getTextureUsage(uint32_t unit) const {
 	return TexUnitUsageParameter::TEXTURE_MAPPING;
 }
 
-void RenderingContext::pushTexture(uint8_t unit, uint8_t set) {
-	internal->textureStacks[unit].emplace(getTexture(unit, set));
+void RenderingContext::pushTexture(uint32_t unit, uint32_t set) {
+	internal->textureStacks[std::make_pair(unit,set)].emplace(getTexture(unit, set));
 }
 
-void RenderingContext::pushAndSetTexture(uint8_t unit, const TextureRef& texture, uint8_t set) {
+void RenderingContext::pushAndSetTexture(uint32_t unit, const TextureRef& texture, uint32_t set) {
 	pushTexture(unit, set);
 	setTexture(unit, texture, set);
 }
 
-void RenderingContext::popTexture(uint8_t unit, uint8_t set) {
-	WARN_AND_RETURN_IF(internal->textureStacks[unit].empty(), "popTexture: Empty Texture-Stack",);
-	setTexture(unit, internal->textureStacks[unit].top() );
-	internal->textureStacks[unit].pop();
+void RenderingContext::popTexture(uint32_t unit, uint32_t set) {
+	WARN_AND_RETURN_IF(internal->textureStacks[std::make_pair(unit,set)].empty(), "popTexture: Empty Texture-Stack",);
+	setTexture(unit, internal->textureStacks[std::make_pair(unit,set)].top(), set);
+	internal->textureStacks[std::make_pair(unit,set)].pop();
 }
 
-void RenderingContext::setTexture(uint8_t unit, const TextureRef& texture, uint8_t set) {
+void RenderingContext::setTexture(uint32_t unit, const TextureRef& texture, uint32_t set) {
 	if(texture)
 		texture->upload();
-	internal->bindingState.bindTexture(texture, set, unit, 0);
+	if(texture.isNotNull())
+		internal->bindingState.bindTexture(texture, set, unit, 0);
+	else
+		internal->bindingState.bindTexture(internal->dummyTexture, set, unit, 0);
 }
 
 // PROJECTION MATRIX *************************************************************************

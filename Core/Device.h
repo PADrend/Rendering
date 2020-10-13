@@ -45,11 +45,12 @@ public:
 
 	struct Configuration {
 		Configuration(std::string n, uint32_t apiMajor=1, uint32_t apiMinor=0, bool debug=false) :
-			name(n), apiVersionMajor(apiMajor), apiVersionMinor(apiMinor), debugMode(debug) { }
+			name(n), apiVersionMajor(apiMajor), apiVersionMinor(apiMinor), debugMode(debug), throwOnError(false) { }
 		std::string name;
 		uint32_t apiVersionMajor;
 		uint32_t apiVersionMinor;
 		bool debugMode;
+		bool throwOnError;
 		std::vector<std::string> validationLayers;
 	};
 	
