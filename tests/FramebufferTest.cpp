@@ -89,13 +89,12 @@ TEST_CASE("FramebufferTest_testDraw", "[FramebufferTest]") {
 
 	for(uint_fast32_t round = 0; round < 100; ++round) {		
 		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
-		cmdBuffer->begin();
 
 		cmdBuffer->beginRenderPass(nullptr, true, true, {{1,1,1,1}});
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
 		
-		cmdBuffer->end();
+		cmdBuffer->prepareForPresent();
 
 		graphicsQueue->submit(cmdBuffer);
 		graphicsQueue->present();

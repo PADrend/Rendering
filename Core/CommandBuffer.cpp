@@ -77,8 +77,10 @@ CommandBuffer::~CommandBuffer() {
 
 bool CommandBuffer::init() {
 	handle = queue->requestCommandBuffer(primary);
-	if(handle)
+	if(handle) {
 		state = State::Initial;
+		begin();
+	}
 	return handle.isNotNull();
 }
 
@@ -163,7 +165,8 @@ void CommandBuffer::begin() {
 //-----------------
 
 void CommandBuffer::end() {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	if(!isRecording())
+		return;
 	if(inRenderPass)
 		endRenderPass();
 	vk::CommandBuffer vkCmd(handle);
@@ -174,7 +177,7 @@ void CommandBuffer::end() {
 //-----------------
 
 void CommandBuffer::submit(bool wait) {
-	WARN_AND_RETURN_IF(isRecording(), "Command buffer is currently recording. Call end() first.",);
+	end();
 	vk::CommandBuffer vkCmd(handle);
 	queue->submit(this, wait);
 }
@@ -189,7 +192,7 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 	activeFBO = fbo ? fbo : device->getSwapchain()->getCurrentFBO();
 	pipeline.setFramebufferFormat(activeFBO);
 
-	auto renderPass = device->getResourceCache()->createRenderPass(activeFBO, clearColor, clearDepth, fbo.isNull());
+	auto renderPass = device->getResourceCache()->createRenderPass(activeFBO, clearColor, clearDepth);
 	auto framebuffer = device->getResourceCache()->createFramebuffer(activeFBO, renderPass);
 	WARN_AND_RETURN_IF(!framebuffer, "Failed to start render pass. Invalid framebuffer.",);
 
@@ -227,6 +230,16 @@ void CommandBuffer::endRenderPass() {
 
 	vkCmd.endRenderPass();
 	inRenderPass = false;
+}
+
+//-----------------
+
+void CommandBuffer::prepareForPresent() {
+	// TODO: We cannot guarantee that this command buffer uses the same FBO
+	auto& fbo = queue->getDevice()->getSwapchain()->getCurrentFBO();
+	auto att = fbo->getColorAttachment(0);
+	// explicitely transfer image to present layout
+	textureBarrier(att, ResourceUsage::Present);
 }
 
 //-----------------

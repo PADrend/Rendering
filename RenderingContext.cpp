@@ -106,7 +106,6 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->dummyVertexBuffer->allocate(16 * sizeof(float), ResourceUsage::VertexBuffer, MemoryUsage::GpuOnly);
 
 	internal->cmd = CommandBuffer::create(device->getQueue(QueueFamily::Graphics));
-	internal->cmd->begin();
 
 	setBlending(BlendingParameters());
 	setColorBuffer(ColorBufferParameters());
@@ -153,21 +152,23 @@ CommandBufferRef RenderingContext::getCommandBuffer() const {
 
 void RenderingContext::flush(bool wait) {
 	applyChanges();
-	internal->cmd->end();
 	internal->cmd->submit(wait);
 
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics));
-	internal->cmd->begin();
 }
 
 void RenderingContext::present() {
-	flush();
+	applyChanges();
+	internal->cmd->prepareForPresent();
+	internal->cmd->submit();
 
 	// clear lights
 	// TODO: do explicit clearing?
 	internal->renderingState.getLights().clear();
 
 	internal->device->getQueue(QueueFamily::Present)->present();
+
+	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics));
 }
 
 

@@ -120,7 +120,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	// draw
 
 	bool running = true;
-	while(running) {
+	for(uint_fast32_t round = 0; round < 1000 && running; ++round) {
 		context.clearScreen({0,0,0,1});
 
 		//mat.translate(-0.5,0,0);

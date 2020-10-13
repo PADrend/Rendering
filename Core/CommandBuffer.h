@@ -61,11 +61,9 @@ public:
 	void flush();
 	void submit(bool wait=false);
 
-	void begin();
-	void end();
-
 	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, const std::vector<Util::Color4f>& clearColors={}, float clearDepthValue=0, uint32_t clearStencilValue=0);
 	void endRenderPass();
+	void prepareForPresent();
 	//! @}
 
 	//! @name Binding commands
@@ -168,6 +166,8 @@ private:
 	friend class Queue;
 	explicit CommandBuffer(const QueueRef& queue, bool primary=true);
 	bool init();
+	void begin();
+	void end();
 
 	Util::WeakPointer<Queue> queue;
 	bool primary;

@@ -29,7 +29,7 @@ vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 
 //---------------
 
-ApiBaseHandle::Ref createRenderPassHandle(Device* device, const FramebufferFormat& state, bool clearColor, bool clearDepth, bool prepareForPresent, const std::vector<ResourceUsage>& lastColorUsages, ResourceUsage lastDepthUsage) {
+ApiBaseHandle::Ref createRenderPassHandle(Device* device, const FramebufferFormat& state, bool clearColor, bool clearDepth, const std::vector<ResourceUsage>& lastColorUsages, ResourceUsage lastDepthUsage) {
 	vk::Device vkDevice(device->getApiHandle());
 	
 	// Bind color buffers	
@@ -42,7 +42,6 @@ ApiBaseHandle::Ref createRenderPassHandle(Device* device, const FramebufferForma
 		auto& attachment = state.getColorAttachment(i);
 		if(attachment.samples > 0 && attachment.format != InternalFormat::Unknown) {
 			vk::ImageLayout srcLayout = (clearColor || i >= lastColorUsages.size()) ? vk::ImageLayout::eUndefined : getVkImageLayout(lastColorUsages[i]);
-			vk::ImageLayout tgtLayout = prepareForPresent ? vk::ImageLayout::ePresentSrcKHR : vk::ImageLayout::eColorAttachmentOptimal;
 			vk::AttachmentLoadOp loadOp = (srcLayout == vk::ImageLayout::eUndefined) ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
 
 			// Init color attachment descriptions
@@ -51,7 +50,7 @@ ApiBaseHandle::Ref createRenderPassHandle(Device* device, const FramebufferForma
 				static_cast<vk::SampleCountFlagBits>(attachment.samples),
 				loadOp, vk::AttachmentStoreOp::eStore,
 				vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-				srcLayout, tgtLayout
+				srcLayout, vk::ImageLayout::eColorAttachmentOptimal
 			);
 			attachmentRefs[i] = {attachmentCount++, vk::ImageLayout::eColorAttachmentOptimal};
 		}

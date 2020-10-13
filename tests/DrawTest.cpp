@@ -125,7 +125,6 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	auto angle = Geometry::Angle::deg(0);
 	for(uint_fast32_t round = 0; round < 1000; ++round) {		
 		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
-		cmdBuffer->begin();
 		cmdBuffer->setPipeline(state);
 
 		cmdBuffer->beginRenderPass(nullptr, true, true, {{1,1,1,1}});
@@ -134,8 +133,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
 				
-		cmdBuffer->end();
-
+		cmdBuffer->prepareForPresent();
 		graphicsQueue->submit(cmdBuffer);
 		graphicsQueue->present();
 

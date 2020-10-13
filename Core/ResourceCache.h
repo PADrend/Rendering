@@ -39,7 +39,7 @@ public:
 	DescriptorSetLayoutHandle createDescriptorSetLayout(const ShaderResourceLayoutSet& layout);
 	PipelineLayoutHandle createPipelineLayout(const ShaderLayout& layout);
 	RenderPassHandle createRenderPass(const FramebufferFormat& attachments);
-	RenderPassHandle createRenderPass(const FBORef& fbo, bool clearColor=false, bool clearDepth=false, bool prepareForPresent=false);
+	RenderPassHandle createRenderPass(const FBORef& fbo, bool clearColor=false, bool clearDepth=false);
 	FramebufferHandle createFramebuffer(const FBORef& fbo, const RenderPassHandle& renderPass);
 private:
 	ResourceCache(const DeviceRef& device);

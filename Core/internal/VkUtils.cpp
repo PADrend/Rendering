@@ -167,7 +167,7 @@ vk::ImageLayout getVkImageLayout(const ResourceUsage& usage) {
 		case ResourceUsage::ShaderWrite:
 		case ResourceUsage::General: return vk::ImageLayout::eGeneral;
 		case ResourceUsage::RenderTarget: return vk::ImageLayout::eColorAttachmentOptimal;
-		case ResourceUsage::DepthStencil: return vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal;
+		case ResourceUsage::DepthStencil: return vk::ImageLayout::eDepthStencilAttachmentOptimal;
 		case ResourceUsage::ShaderResource: return vk::ImageLayout::eShaderReadOnlyOptimal;
 		case ResourceUsage::CopySource: return vk::ImageLayout::eTransferSrcOptimal;
 		case ResourceUsage::CopyDestination: return vk::ImageLayout::eTransferDstOptimal;

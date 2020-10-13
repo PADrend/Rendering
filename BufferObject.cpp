@@ -169,9 +169,7 @@ void BufferObject::unmap() {
 	
 	stagingBuffer->unmap();
 	CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
-	cmds->begin();
 	cmds->copyBuffer(stagingBuffer, buffer, buffer->getSize());
-	cmds->end();
 	cmds->submit(true);
 }
 

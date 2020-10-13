@@ -28,7 +28,7 @@ ApiBaseHandle::Ref createPipelineLayoutHandle(Device*, const ShaderLayout&);
 ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device*, const ShaderResourceLayoutSet&);
 
 // defined in internal/VkFramebuffer.cpp
-ApiBaseHandle::Ref createRenderPassHandle(Device*, const FramebufferFormat&, bool, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage);
+ApiBaseHandle::Ref createRenderPassHandle(Device*, const FramebufferFormat&, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage);
 ApiBaseHandle::Ref createFramebufferHandle(Device*, FBO*, VkRenderPass);
 
 //----------------
@@ -69,19 +69,19 @@ PipelineLayoutHandle ResourceCache::createPipelineLayout(const ShaderLayout& lay
 //----------------
 
 RenderPassHandle ResourceCache::createRenderPass(const FramebufferFormat& attachments) {
-	return create<RenderPassHandle, const FramebufferFormat&, bool, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage>(RENDERPASS, attachments, false, false, false, {}, {});
+	return create<RenderPassHandle, const FramebufferFormat&, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage>(RENDERPASS, attachments, false, false, {}, {});
 }
 
 //----------------
 
-RenderPassHandle ResourceCache::createRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, bool prepareForPresent) {
+RenderPassHandle ResourceCache::createRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth) {
 	if(!fbo)
 		return nullptr;
 	std::vector<ResourceUsage> lastColorUsages;
 	for(auto& att : fbo->getColorAttachments())
 		lastColorUsages.emplace_back(att.isNotNull() ? att->getLastUsage() : ResourceUsage::Undefined);
 	ResourceUsage lastDepthUsage = fbo->getDepthStencilAttachment() ? fbo->getDepthStencilAttachment()->getLastUsage() : ResourceUsage::Undefined;
-	return create<RenderPassHandle, const FramebufferFormat&, bool, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage>(RENDERPASS, {fbo}, clearColor, clearDepth, prepareForPresent, lastColorUsages, lastDepthUsage);
+	return create<RenderPassHandle, const FramebufferFormat&, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage>(RENDERPASS, {fbo}, clearColor, clearDepth, lastColorUsages, lastDepthUsage);
 }
 
 //----------------
