@@ -39,6 +39,7 @@ template<> ApiHandle<VkDescriptorSetLayout, VkDevice>::~ApiHandle() { if(handle)
 template<> ApiHandle<VkDescriptorPool, VkDevice>::~ApiHandle() { if(handle) VULKAN_HPP_DEFAULT_DISPATCHER.vkDestroyDescriptorPool(parent, handle, nullptr); }
 template<> ApiHandle<VkSampler, VkDevice>::~ApiHandle() { if(handle) VULKAN_HPP_DEFAULT_DISPATCHER.vkDestroySampler(parent, handle, nullptr); }
 template<> ApiHandle<VkDescriptorSet, HandlePair<VkDevice,VkDescriptorPool>>::~ApiHandle() { if(handle) VULKAN_HPP_DEFAULT_DISPATCHER.vkFreeDescriptorSets(parent.first, parent.second, 1, &handle); }
+template<> ApiHandle<VkQueryPool, VkDevice>::~ApiHandle() { if(handle) VULKAN_HPP_DEFAULT_DISPATCHER.vkDestroyQueryPool(parent, handle, nullptr); }
 template<> ApiHandle<VmaAllocator, VkDevice>::~ApiHandle() { if(handle) vmaDestroyAllocator(handle); }
 template<> ApiHandle<VmaAllocation, VmaAllocator>::~ApiHandle() { if(handle) vmaFreeMemory(parent, handle); }
 

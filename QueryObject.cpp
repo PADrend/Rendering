@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -10,115 +11,118 @@
 */
 #include "QueryObject.h"
 #include "Helper.h"
+#include "Context/RenderingContext.h"
+#include "Core/Device.h"
+#include "Core/CommandBuffer.h"
+
 #include <Util/Macros.h>
 #include <algorithm>
 #include <deque>
 
+#include <vulkan/vulkan.hpp>
+
 namespace Rendering {
 
-bool QueryObject::isResultAvailable() const {
-#if defined(LIB_GL)
-	GLint result = 0;
-	glGetQueryObjectiv(id, GL_QUERY_RESULT_AVAILABLE, &result);
-	return result == GL_TRUE;
-#elif defined(LIB_GLESv2)
-	return true;
-#endif
+QueryObject::QueryObject(QueryType _queryType) {
+	query.type = _queryType;
+	query = Device::getDefault()->getQueryPool()->request(query.type);
+	if(query.type == QueryType::TimeElapsed)
+		endQuery = Device::getDefault()->getQueryPool()->request(query.type);
 }
 
-uint32_t QueryObject::getResult() const {
-#if defined(LIB_GL)
-	GLuint result = 0;
-	glGetQueryObjectuiv(id, GL_QUERY_RESULT, &result);
-	return result;
-#elif defined(LIB_GLESv2)
-	return 0;
-#endif
+QueryObject::~QueryObject() {
+	if(isValid())
+		query.pool->free(query);
 }
 
-#if defined(LIB_GL) and defined(LIB_GLEW)
-static bool is64BitQueryResultSupported(){
-	if(!isExtensionSupported("GL_ARB_timer_query")) {
-		WARN("QueryObject::getResult64(): GL_ARB_timer_query is not supported; using QueryObject::getResult() instead.");
+bool QueryObject::isResultAvailable(RenderingContext& rc) const {
+	if(!isValid())
 		return false;
+	auto pool = query.pool->getPoolHandle(query);
+	vk::Device vkDevice(pool);
+	vk::QueryPool vkPool(pool);
+	uint32_t result;
+	return vkDevice.getQueryPoolResults(vkPool, (query.type == QueryType::TimeElapsed) ? endQuery.id : query.id, 1, sizeof(result), &result, 0, {}) == vk::Result::eSuccess;
+}
+
+uint32_t QueryObject::getResult(RenderingContext& rc) const {
+	if(!isValid())
+		return 0;
+	if(!isResultAvailable(rc))
+		rc.flush();
+	auto pool = query.pool->getPoolHandle(query);
+	vk::Device vkDevice(pool);
+	vk::QueryPool vkPool(pool);
+	vk::QueryResultFlags flags = vk::QueryResultFlagBits::eWait;
+	uint32_t result;
+	vkDevice.getQueryPoolResults(vkPool, query.id, 1, sizeof(uint32_t), &result, sizeof(uint32_t), flags);
+	if(query.type == QueryType::TimeElapsed) {
+		uint32_t endResult;
+		vkDevice.getQueryPoolResults(vkPool, endQuery.id, 1, sizeof(uint32_t), &endResult, sizeof(uint32_t), flags);
+		result = endResult - result;
 	}
-	return true;
+	return result;
 }
-#endif
 
-uint64_t QueryObject::getResult64() const {
-#if defined(LIB_GLEW) and defined(LIB_GL) and defined(GL_ARB_timer_query)
-	static const bool supported = is64BitQueryResultSupported();
-	if(supported){
-		uint64_t result = 0;
-		glGetQueryObjectui64v(id, GL_QUERY_RESULT, &result);
-		return result;
+uint64_t QueryObject::getResult64(RenderingContext& rc) const {
+	if(!isValid())
+		return 0;
+	if(!isResultAvailable(rc))
+		rc.flush();
+	auto pool = rc.getDevice()->getQueryPool()->getPoolHandle(query);
+	vk::Device vkDevice(pool);
+	vk::QueryPool vkPool(pool);
+	vk::QueryResultFlags flags = vk::QueryResultFlagBits::eWait | vk::QueryResultFlagBits::e64;
+	uint64_t result;
+	vkDevice.getQueryPoolResults(vkPool, query.id, 1, sizeof(uint64_t), &result, sizeof(uint64_t), flags);
+	if(query.type == QueryType::TimeElapsed) {
+		uint64_t endResult;
+		vkDevice.getQueryPoolResults(vkPool, endQuery.id, 1, sizeof(uint64_t), &endResult, sizeof(uint64_t), flags);
+		result = endResult - result;
 	}
-#endif
-	return getResult();
+	return result;
 }
 
-void QueryObject::begin() const {
-#if defined(LIB_GL)
-	glBeginQuery(static_cast<GLenum>(queryType), id);
-#endif
-}
-
-void QueryObject::end() const {
-#if defined(LIB_GL)
-	glEndQuery(static_cast<GLenum>(queryType));
-#endif
-}
-
-void QueryObject::queryCounter() const {
-#if defined(LIB_GL)
-	if(queryType == GL_TIMESTAMP)
-		glQueryCounter(id, static_cast<GLenum>(queryType));
-#endif
-}
-
-static std::deque<uint32_t> freeIds;
-static const uint32_t batchSize = 500;
-
-//! (static)
-uint32_t QueryObject::getFreeId() {
-#if defined(LIB_GL)
-	if (freeIds.empty()) {
-		// Generate a batch of new identifiers.
-		GLuint ids[batchSize];
-		glGenQueries(batchSize, ids);
-
-		if (ids[0] == 0) {
-			WARN("Creation of occlusion query identifiers failed.");
-			FAIL();
-		}
-
-		// freeIds was empty before.
-		freeIds.assign(ids, ids + batchSize);
+void QueryObject::begin(RenderingContext& rc) const {
+	WARN_AND_RETURN_IF(query.type == QueryType::Timestamp, "QueryObject: begin() is not allowed for Timestamp queries.",);
+	rc.applyChanges();
+	auto cmd = rc.getCommandBuffer();
+	vk::CommandBuffer vkCmd(cmd->getApiHandle());
+	vk::QueryPool pool(rc.getDevice()->getQueryPool()->getPoolHandle(query));
+	vkCmd.resetQueryPool(pool, query.id, 1);
+	if(query.type == QueryType::TimeElapsed) {
+		vkCmd.resetQueryPool(pool, endQuery.id, 1);
+		vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, query.id);
+	} else {
+		vkCmd.beginQuery(pool, query.id, {});
 	}
-	uint32_t freeId = freeIds.front();
-	freeIds.pop_front();
-	return freeId;
-#elif defined(LIB_GLESv2)
-	return 0;
-#endif
 }
 
-//! (static)
-void QueryObject::freeId(uint32_t id) {
-#if defined(LIB_GL)
-	if(id!=0){
-		freeIds.push_back(id);
-
-		if (freeIds.size() >= batchSize) {
-			// Free a batch of identifiers.
-			GLuint ids[batchSize];
-			std::copy(freeIds.begin(), freeIds.begin() + batchSize, ids);
-			freeIds.erase(freeIds.begin(), freeIds.begin() + batchSize);
-			glDeleteQueries(batchSize, ids);
-		}
+void QueryObject::end(RenderingContext& rc) const {
+	WARN_AND_RETURN_IF(query.type == QueryType::Timestamp, "QueryObject: end() is not allowed for Timestamp queries.",);
+	if(!isValid())
+		return;
+	rc.applyChanges();
+	auto cmd = rc.getCommandBuffer();
+	cmd->flush();
+	vk::CommandBuffer vkCmd(cmd->getApiHandle());
+	vk::QueryPool pool(rc.getDevice()->getQueryPool()->getPoolHandle(query));
+	if(query.type == QueryType::TimeElapsed) {
+		vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, endQuery.id);
+	} else {
+		vkCmd.endQuery(pool, query.id);
 	}
-#endif
+}
+
+void QueryObject::queryCounter(RenderingContext& rc) const {
+	WARN_AND_RETURN_IF(query.type != QueryType::Timestamp, "QueryObject: queryCounter() is only allowed for Timestamp queries.",);
+	rc.applyChanges();
+	auto cmd = rc.getCommandBuffer();
+	cmd->flush();
+	vk::CommandBuffer vkCmd(cmd->getApiHandle());
+	vk::QueryPool pool(rc.getDevice()->getQueryPool()->getPoolHandle(query));
+	vkCmd.resetQueryPool(pool, query.id, 1);
+	vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, query.id);
 }
 
 }

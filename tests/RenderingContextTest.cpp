@@ -16,7 +16,7 @@
 #include <Geometry/Matrix4x4.h>
 #include <Geometry/SRT.h>
 
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 #include "../Draw.h"
 #include "../DrawCompound.h"
 #include "../FBO.h"
@@ -49,7 +49,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	
 	auto device = TestUtils::device;
 	REQUIRE(device);
-	RenderingContext context(device);
+	RenderingContext& context = *TestUtils::context.get();
 
 	auto shader = context.getFallbackShader();
 	REQUIRE(shader->init());

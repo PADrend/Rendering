@@ -15,7 +15,7 @@
 #include "../Core/Common.h"
 
 #include "ShaderObjectInfo.h"
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 
 #include <Util/ReferenceCounter.h>
 #include <Util/StringIdentifier.h>

@@ -12,7 +12,7 @@
 #include "Mesh.h"
 #include "MeshDataStrategy.h"
 #include "VertexDescription.h"
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 #include <Util/IO/FileName.h>
 #include <Util/ReferenceCounter.h>
 #include <Util/Macros.h>

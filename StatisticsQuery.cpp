@@ -1,6 +1,7 @@
 /*
 	This file is part of the Rendering library.
 	Copyright (C) 2016 Benjamin Eikel <benjamin@eikel.org>
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -13,114 +14,58 @@
 
 namespace Rendering {
 
-StatisticsQuery::StatisticsQuery(uint32_t statisticsType) : QueryObject(statisticsType) {
-	if (!isExtensionSupported("GL_ARB_pipeline_statistics_query")) {
-		throw std::runtime_error("Fatal error: OpenGL extension GL_ARB_pipeline_statistics_query is not supported.");
-	}
-}
+StatisticsQuery::StatisticsQuery(QueryType statisticsType) : QueryObject(statisticsType) { }
 
 StatisticsQuery StatisticsQuery::createVerticesSubmittedQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_VERTICES_SUBMITTED_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::InputAssemblyVertices);
 }
 
 StatisticsQuery StatisticsQuery::createPrimitivesSubmittedQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_PRIMITIVES_SUBMITTED_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::InputAssemblyPrimitives);
 }
 
 StatisticsQuery StatisticsQuery::createVertexShaderInvocationsQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::VertexShaderInvocations);
 }
 
 StatisticsQuery StatisticsQuery::createTessControlShaderPatchesQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_TESS_CONTROL_SHADER_PATCHES_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::TessellationControlShaderPatches);
 }
 
 StatisticsQuery StatisticsQuery::createTessEvaluationShaderInvocationsQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::TessellationEvaluationShaderInvocations);
 }
 
 StatisticsQuery StatisticsQuery::createGeometryShaderInvocationsQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_GEOMETRY_SHADER_INVOCATIONS);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::GeometryShaderInvocations);
 }
 
 StatisticsQuery StatisticsQuery::createGeometryShaderPrimitivesEmittedQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_GEOMETRY_SHADER_PRIMITIVES_EMITTED_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::GeometryShaderPrimitives);
 }
 
 StatisticsQuery StatisticsQuery::createFragmentShaderInvocationsQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::FragmentShaderInvocations);
 }
 
 StatisticsQuery StatisticsQuery::createComputeShaderInvocationsQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_COMPUTE_SHADER_INVOCATIONS_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::ComputeShaderInvocations);
 }
 
 StatisticsQuery StatisticsQuery::createClippingInputPrimitivesQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::ClippingInvocations);
 }
 
 StatisticsQuery StatisticsQuery::createClippingOutputPrimitivesQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::ClippingPrimitives);
 }
 
 StatisticsQuery StatisticsQuery::createTimeElapsedQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_TIME_ELAPSED);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::TimeElapsed);
 }
 
 StatisticsQuery StatisticsQuery::createTimestampQuery() {
-#if defined(LIB_GL)
-	return StatisticsQuery(GL_TIMESTAMP);
-#elif defined(LIB_GLESv2)
-	return StatisticsQuery(0);
-#endif
+	return StatisticsQuery(QueryType::Timestamp);
 }
 
 }

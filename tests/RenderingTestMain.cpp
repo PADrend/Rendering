@@ -19,6 +19,7 @@
 
 Util::Reference<Util::UI::Window> TestUtils::window;
 Rendering::Device::Ref TestUtils::device;
+std::unique_ptr<Rendering::RenderingContext> TestUtils::context;
 
 int main( int argc, char* argv[] ) {
   Util::init();
@@ -35,6 +36,7 @@ int main( int argc, char* argv[] ) {
 		//"VK_LAYER_RENDERDOC_Capture"
 		"VK_LAYER_LUNARG_monitor"
 	});
+	TestUtils::context.reset(new Rendering::RenderingContext(TestUtils::device));
 	
 	auto result = Catch::Session().run( argc, argv );
 	

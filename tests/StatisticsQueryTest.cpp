@@ -6,6 +6,8 @@
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
+#include "TestUtils.h"
+
 #include <catch2/catch.hpp>
 
 #include <Geometry/Box.h>
@@ -13,6 +15,7 @@
 #include <Rendering/RenderingContext/RenderingContext.h>
 #include <Rendering/Draw.h>
 #include <Rendering/StatisticsQuery.h>
+
 #define REQUIRE_EQUAL(a,b) REQUIRE((a) == (b))
 
 static const Geometry::Box box(Geometry::Vec3f(2.0f, 2.0f, 2.0f), 3.0f);
@@ -20,19 +23,24 @@ static const Geometry::Box box(Geometry::Vec3f(2.0f, 2.0f, 2.0f), 3.0f);
 using namespace Rendering;
 
 static void testEmptyStatisticsQuery(StatisticsQuery & query, const uint32_t expectedResult) {
-	REQUIRE(query.isValid());
-	query.begin();
-	query.end();
-	REQUIRE_EQUAL(expectedResult, query.getResult());
+	SECTION("testEmptyStatisticsQuery") {
+		RenderingContext& context = *TestUtils::context.get();
+		REQUIRE(query.isValid());
+		query.begin(context);
+		query.end(context);
+		REQUIRE_EQUAL(expectedResult, query.getResult(context));
+	}
 }
 
 static void testBoxStatisticsQuery(StatisticsQuery & query, const uint32_t expectedResult) {
-	REQUIRE(query.isValid());
-	query.begin();
-	RenderingContext context;
-	drawBox(context, box);
-	query.end();
-	REQUIRE_EQUAL(expectedResult, query.getResult());
+	SECTION("testBoxStatisticsQuery") {
+		RenderingContext& context = *TestUtils::context.get();
+		REQUIRE(query.isValid());
+		query.begin(context);
+		drawBox(context, box);
+		query.end(context);
+		REQUIRE_EQUAL(expectedResult, query.getResult(context));
+	}
 }
 
 TEST_CASE("StatisticsQueryTest_testVerticesSubmittedQuery", "[StatisticsQueryTest]") {
@@ -109,5 +117,15 @@ TEST_CASE("StatisticsQueryTest_testClippingOutputPrimitivesQuery", "[StatisticsQ
 	auto query = StatisticsQuery::createClippingOutputPrimitivesQuery();
 	testEmptyStatisticsQuery(query, 0);
 	// 4 triangles clipped (result of running this test)
-	testBoxStatisticsQuery(query, 8);
+	//testBoxStatisticsQuery(query, 8);
+
+	// cannot exactly predict result, only that the counter increases at least by one per visible primitive
+	SECTION("testBoxStatisticsQuery") {
+		RenderingContext& context = *TestUtils::context.get();
+		REQUIRE(query.isValid());
+		query.begin(context);
+		drawBox(context, box);
+		query.end(context);
+		REQUIRE(4 <= query.getResult(context));
+	}
 }

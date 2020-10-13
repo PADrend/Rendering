@@ -13,6 +13,7 @@
 #include "CommandBuffer.h"
 #include "ResourceCache.h"
 #include "DescriptorPool.h"
+#include "QueryPool.h"
 
 #include <Util/Macros.h>
 #include <Util/UI/Window.h>
@@ -115,6 +116,7 @@ struct Device::InternalData {
 	ResourceCache::Ref resourceCache;
 	PipelineCacheHandle pipelineCache;
 	DescriptorPool::Ref descriptorPool;
+	QueryPool::Ref queryPool;
 
 	vk::PhysicalDevice physicalDevice;
 	vk::DebugUtilsMessengerEXT debugMessenger = nullptr;	
@@ -367,6 +369,9 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device) {
 	// Create resource cache
 	resourceCache = ResourceCache::create(device);
 
+	// Create query pool
+	queryPool = QueryPool::create(device, 500);
+
 	return true;
 }
 
@@ -578,6 +583,12 @@ const SurfaceHandle& Device::getSurface() const {
 
 const DescriptorPoolRef& Device::getDescriptorPool() const {
 	return internal->descriptorPool;
+}
+
+//------------
+
+const QueryPoolRef& Device::getQueryPool() const {
+	return internal->queryPool;
 }
 
 //------------

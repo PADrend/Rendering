@@ -35,6 +35,8 @@ class ResourceCache;
 using ResourceCacheRef = Util::Reference<ResourceCache>;
 class DescriptorPool;
 using DescriptorPoolRef = Util::Reference<DescriptorPool>;
+class QueryPool;
+using QueryPoolRef = Util::Reference<QueryPool>;
 
 /** Represents a GPU Device	
 	@ingroup rendering_core
@@ -65,6 +67,7 @@ public:
 	const PipelineCacheHandle& getPipelineCache() const;
 	const ResourceCacheRef& getResourceCache() const;
 	const DescriptorPoolRef& getDescriptorPool() const;
+	const QueryPoolRef& getQueryPool() const;
 	bool isDebugModeEnabled() const;
 	
 	//! @name Internal

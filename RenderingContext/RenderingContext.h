@@ -12,6 +12,6 @@
 #ifndef RENDERING_RENDERINGCONTEXT_RENDERINCONTEXT_H_
 #define RENDERING_RENDERINGCONTEXT_RENDERINCONTEXT_H_
 
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 
 #endif /* RENDERING_RENDERINGCONTEXT_RENDERINCONTEXT_H_ */

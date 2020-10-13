@@ -12,7 +12,7 @@
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
 #include <Geometry/Angle.h>
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 #include "../State/PipelineState.h"
 #include "../Core/ApiHandles.h"
 #include "../Core/CommandBuffer.h"

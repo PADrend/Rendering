@@ -18,7 +18,7 @@
 #include "../Core/CommandBuffer.h"
 
 #include "../Helper.h"
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 
 #include "TextureUtils.h"
 #include <Util/Graphics/Bitmap.h>

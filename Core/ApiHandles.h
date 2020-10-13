@@ -73,6 +73,7 @@ API_HANDLE_DECLARE(DescriptorSet);
 API_HANDLE_DECLARE(DescriptorSetLayout);
 API_HANDLE_DECLARE(DescriptorPool);
 API_HANDLE_DECLARE(Sampler);
+API_HANDLE_DECLARE(QueryPool);
 API_HANDLE_DECLARE_MA(Allocator);
 API_HANDLE_DECLARE_MA(Allocation);
 
@@ -149,6 +150,7 @@ API_HANDLE(DescriptorSetLayout, Device);
 API_HANDLE(DescriptorPool, Device);
 API_HANDLE(Sampler, Device);
 API_HANDLE_DUAL_PARENT(DescriptorSet, Device, DescriptorPool);
+API_HANDLE(QueryPool, Device);
 API_HANDLE_MA(Allocator, Device);
 API_HANDLE_MA2(Allocation, Allocator);
 

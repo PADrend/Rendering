@@ -21,6 +21,7 @@ set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 add_library(Rendering SHARED
 	Buffer/BufferObject.cpp
 	Buffer/BufferPool.cpp
+	Context/RenderingContext.cpp
 	Core/internal/VkFramebuffer.cpp
 	Core/internal/VkPipeline.cpp
 	Core/internal/VkUtils.cpp
@@ -33,6 +34,7 @@ add_library(Rendering SHARED
 	Core/Fence.cpp
 	Core/ImageStorage.cpp
 	Core/ImageView.cpp
+	Core/QueryPool.cpp
 	Core/Queue.cpp
 	Core/ResourceCache.cpp
 	Core/Sampler.cpp
@@ -87,7 +89,6 @@ add_library(Rendering SHARED
 	Helper.cpp
 	OcclusionQuery.cpp
 	QueryObject.cpp
-	RenderingContext.cpp
 	StatisticsQuery.cpp
 	TextRenderer.cpp
 )
@@ -117,6 +118,10 @@ set_target_properties(Rendering PROPERTIES VERSION ${Rendering_VERSION}
 add_subdirectory(tests)
 
 # Install the header files
+file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Buffer/*.h")
+install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Buffer COMPONENT headers)
+file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Context/*.h")
+install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Context COMPONENT headers)
 file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Core/*.h")
 install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Core COMPONENT headers)
 file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Mesh/*.h")

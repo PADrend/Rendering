@@ -15,7 +15,7 @@
 #include <Geometry/Angle.h>
 #include <Geometry/Matrix4x4.h>
 
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 #include "../Core/Device.h"
 #include "../Shader/Shader.h"
 #include "../Shader/Uniform.h"

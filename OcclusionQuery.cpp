@@ -3,6 +3,7 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -35,6 +36,6 @@ void OcclusionQuery::disableTestMode(RenderingContext & renderingContext) {
 }
 
 
-OcclusionQuery::OcclusionQuery() : QueryObject(0) {}
+OcclusionQuery::OcclusionQuery() : QueryObject(QueryType::Occlusion) {}
 
 }

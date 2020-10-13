@@ -12,7 +12,7 @@
 #include "MeshIndexData.h"
 #include "../Core/Device.h"
 #include "../Core/BufferStorage.h"
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 #include <Util/Macros.h>
 #include <algorithm>
 #include <limits>

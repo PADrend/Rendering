@@ -21,8 +21,8 @@ if(RENDERING_BUILD_TESTS)
 		RenderingTestMain.cpp
 		ShaderTest.cpp
 		StateTest.cpp
-		#StatisticsQueryTest.cpp
-		#VertexAccessorTest.cpp
+		StatisticsQueryTest.cpp
+		VertexAccessorTest.cpp
 	)
 
 	target_link_libraries(RenderingTest LINK_PRIVATE Rendering)

@@ -13,7 +13,7 @@
 #include "Mesh.h"
 #include "MeshIndexData.h"
 #include "MeshVertexData.h"
-#include "../RenderingContext.h"
+#include "../Context/RenderingContext.h"
 #include "../Core/Common.h"
 #include <Util/Macros.h>
 #include <iostream>
