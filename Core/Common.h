@@ -14,6 +14,7 @@
 #include <Util/Utils.h>
 
 #include <Geometry/Vec3.h>
+#include <Geometry/Rect.h>
 
 #define HAS_DIRTY_FLAG private: \
 	bool dirty = true; \
@@ -280,5 +281,17 @@ template <> struct std::hash<Rendering::ImageFormat> {
 
 //---------------------------
 
+template <> struct std::hash<Geometry::Rect_i> {
+	std::size_t operator()(const Geometry::Rect_i &rect) const {
+		std::size_t result = 0;
+		Util::hash_combine(result, rect.getX());
+		Util::hash_combine(result, rect.getY());
+		Util::hash_combine(result, rect.getWidth());
+		Util::hash_combine(result, rect.getHeight());
+		return result;
+	}
+};
+
+//---------------------------
 
 #endif /* end of include guard: RENDERING_CORE_COMMON_H_ */

@@ -15,6 +15,7 @@
 #include <Geometry/Vec3.h>
 #include <Geometry/Vec4.h>
 #include <Geometry/Matrix4x4.h>
+#include <Geometry/Rect.h>
 
 #include <Util/Graphics/Color.h>
 #include <Util/References.h>
@@ -44,6 +45,7 @@ public:
 
 	void setMatrixCameraToWorld(const Geometry::Matrix4x4f& value);
 	void setMatrixCameraToClipping(const Geometry::Matrix4x4f& value);
+	void setViewport(const Geometry::Rect_i& value) { dirty |= (viewport != value); viewport = value; }
 
 	const Geometry::Matrix4x4f& getMatrixWorldToCamera() const { return matrix_worldToCamera; }
 	const Geometry::Matrix4x4f& getMatrixCameraToWorld() const { return matrix_cameraToWorld; }
@@ -54,8 +56,10 @@ public:
 	const Geometry::Vec3& getDirection() const { return direction; }
 	const Geometry::Vec3& getUp() const { return up; }
 
+	const Geometry::Rect_i& getViewport() const { return viewport; }
+
 	bool operator==(const CameraData& o) const {
-		return matrix_cameraToWorld == o.matrix_cameraToWorld && matrix_cameraToClipping == o.matrix_cameraToClipping;
+		return matrix_cameraToWorld == o.matrix_cameraToWorld && matrix_cameraToClipping == o.matrix_cameraToClipping && viewport == o.viewport;
 	}
 	bool operator!=(const CameraData& o) const { return !(*this == o); }
 private:
@@ -67,6 +71,8 @@ private:
 	Geometry::Vec3 position;
 	Geometry::Vec3 direction;
 	Geometry::Vec3 up;
+
+	Geometry::Rect_i viewport;
 };
 
 //==================================================================
@@ -373,6 +379,7 @@ template <> struct hash<Rendering::CameraData> {
 		std::size_t result = 0;
 		Util::hash_combine(result, data.getMatrixWorldToCamera());
 		Util::hash_combine(result, data.getMatrixCameraToClipping());
+		Util::hash_combine(result, data.getViewport());
 		return result;
 	}
 };

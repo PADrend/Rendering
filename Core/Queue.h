@@ -32,6 +32,7 @@ public:
 	~Queue();
 	
 	bool submit(const CommandBufferRef& commands);
+	bool submit(const FenceHandle& fence);
 	bool present();
 	void wait();
 

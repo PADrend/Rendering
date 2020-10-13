@@ -602,23 +602,23 @@ public:
 	 \todo Move array of activeTextures to RenderingStatus to allow delayed binding
 	 */
 	//	@{
-	const TextureRef getTexture(uint32_t unit, uint32_t set=0) const;
+	const TextureRef getTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0) const;
 	[[deprecated]]
 	TexUnitUsageParameter getTextureUsage(uint32_t unit) const;
-	void pushTexture(uint32_t unit, uint32_t set=0);
-	void pushAndSetTexture(uint32_t unit, const TextureRef& texture, uint32_t set=0);
+	void pushTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0);
+	void pushAndSetTexture(const TextureRef& texture, uint32_t index=0, uint32_t binding=0, uint32_t set=0);
 	[[deprecated]]
-	void pushAndSetTexture(uint32_t unit, const TextureRef& texture, TexUnitUsageParameter usage, uint32_t set=0) {
-		pushAndSetTexture(unit, texture, set);
-	}
-	void popTexture(uint32_t unit, uint32_t set=0);
+	void pushAndSetTexture(uint32_t unit, const TextureRef& texture, TexUnitUsageParameter usage) { pushAndSetTexture(texture, unit, 0, 0); }
+	[[deprecated]]
+	void pushAndSetTexture(uint32_t unit, const TextureRef& texture) { pushAndSetTexture(texture, unit, 0, 0); }
+	void popTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0);
 
 	//! \note texture may be nullptr
-	void setTexture(uint32_t unit, const TextureRef& texture, uint32_t set=0);
+	void setTexture(const TextureRef& texture, uint32_t index=0, uint32_t binding=0, uint32_t set=0);
 	[[deprecated]]
-	void setTexture(uint32_t unit, const TextureRef& texture, TexUnitUsageParameter usage, uint32_t set=0) {
-		setTexture(unit, texture, set);
-	}
+	void setTexture(uint32_t unit, const TextureRef& texture, TexUnitUsageParameter usage) { setTexture(texture, unit, 0, 0); }
+	[[deprecated]]
+	void setTexture(uint32_t unit, const TextureRef& texture) { setTexture(texture, unit, 0, 0); }
 	// @}
 	
 	// ------

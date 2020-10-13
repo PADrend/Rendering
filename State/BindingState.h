@@ -10,7 +10,6 @@
 #define RENDERING_RENDERINGCONTEXT_BINDINGSTATE_H_
 
 #include "../Core/Common.h"
-#include "../Shader/ShaderUtils.h"
 
 #include <Util/ReferenceCounter.h>
 
@@ -69,7 +68,7 @@ public:
 	bool bind(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
 	bool bind(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
 	void setArraySize(uint32_t binding, uint32_t arraySize);
-	void merge(const BindingSet& other);
+	void merge(const BindingSet& other, bool overwriteExisting=true);
 
 	const BindingMap& getBindings() const { return bindings; }
 	const Binding& getBinding(uint32_t binding, uint32_t arrayElement=0) const;
@@ -101,7 +100,7 @@ public:
 
 	bool bind(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	bool bind(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	void merge(const BindingState& other);
+	void merge(const BindingState& other, bool overwriteExisting=true);
 
 	const Binding& getBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;
 	bool hasBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;

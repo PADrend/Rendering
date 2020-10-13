@@ -16,6 +16,7 @@
 #include <Geometry/Vec2.h>
 #include <Geometry/Vec3.h>
 #include <Geometry/Vec4.h>
+#include <Geometry/Rect.h>
 #include <algorithm>
 #include <cstdint>
 #include <sstream>
@@ -314,6 +315,12 @@ Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec3i> & values)
 Uniform::Uniform(UniformName _name, const Geometry::Vec4i & value) :
 		name(std::move(_name)), type(UNIFORM_VEC4I), numValues(1),
 		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
+}
+
+//! (ctor) UNIFORM_VEC4I
+Uniform::Uniform(UniformName _name, const Geometry::Rect_i & value) :
+		name(std::move(_name)), type(UNIFORM_VEC4I), numValues(1),
+		data(reinterpret_cast<const uint8_t *>(&value), reinterpret_cast<const uint8_t *>(&value) + numValues * getValueSize(type)) {
 }
 
 //! (ctor) UNIFORM_VEC4I *

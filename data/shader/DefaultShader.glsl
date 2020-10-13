@@ -49,11 +49,11 @@
 		MaterialData sg_Material;
 	};
 	
-	layout(set=0, binding=0) uniform sampler2D sg_Texture0;
+	layout(set=0, binding=0) uniform sampler2D sg_Textures[MAX_TEXTURES];
 	
 	void main() {
 		SurfaceSample surface = initSurface(vertex, sg_Material);
-		surface.diffuse *= texture(sg_Texture0, vertex.texCoord);
+		surface.diffuse *= texture(sg_Textures[0], vertex.texCoord);
 		
 		vec4 color = vec4(0.0,0.0,0.0,1.0);
 		// Reflectance equation: L_o = integral_Omega{ f(L,V) * L_i(L) * (N dot V) } dw_i

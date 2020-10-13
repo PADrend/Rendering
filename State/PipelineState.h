@@ -921,19 +921,6 @@ template <> struct hash<Rendering::InputAssemblyState> {
 
 //-------------
 
-template <> struct hash<Geometry::Rect_i> {
-	std::size_t operator()(const Geometry::Rect_i &rect) const {
-		std::size_t result = 0;
-		Util::hash_combine(result, rect.getX());
-		Util::hash_combine(result, rect.getY());
-		Util::hash_combine(result, rect.getWidth());
-		Util::hash_combine(result, rect.getHeight());
-		return result;
-	}
-};
-
-//-------------
-
 template <> struct hash<Rendering::Viewport> {
 	std::size_t operator()(const Rendering::Viewport &vp) const {
 		std::size_t result = 0;

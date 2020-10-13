@@ -33,4 +33,6 @@ struct LightSample {
 	float LdotH;
 };
 
+#define MAX_TEXTURES 8
+
 #endif /* end of include guard: RENDERING_SHADER_COMMON_GLSL_ */

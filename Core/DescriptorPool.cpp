@@ -228,7 +228,7 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 		}*/
 
 		// TODO: handle unbound array elements
-		uint32_t count = std::max<uint32_t>(imageBindings.back().size(), bufferBindings.back().size());
+		uint32_t count = std::min(descriptor.elementCount, std::max<uint32_t>(imageBindings.back().size(), bufferBindings.back().size()));
 		writes.emplace_back(
 			vkDescriptorSet, bIt.first, 
 			0, count, getVkDescriptorType(descriptor.type, descriptor.dynamic), 

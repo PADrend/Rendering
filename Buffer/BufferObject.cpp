@@ -14,6 +14,7 @@
 #include "../Core/BufferStorage.h"
 #include "../Core/Queue.h"
 #include "../Core/CommandBuffer.h"
+#include "../Context/RenderThread.h"
 
 #include <Util/Macros.h>
 
@@ -199,7 +200,7 @@ void BufferObject::unmap() {
 	stagingBuffer->unmap();
 	CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
 	cmds->copyBuffer(stagingBuffer, buffer, buffer->getSize(), 0, offset);
-	cmds->submit(true);
+	cmds->submit();
 }
 
 //----------------

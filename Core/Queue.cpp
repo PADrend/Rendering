@@ -39,16 +39,24 @@ bool Queue::submit(const CommandBufferRef& commands) {
 	std::unique_lock<std::mutex> lock(submitMutex);
 	clearPending();
 	vk::Device vkDevice(handle);
-	vk::Queue vkQueue(handle);
 	vk::CommandBuffer vkCommandBuffer(commands->getApiHandle());
 	FenceHandle fence = FenceHandle::create(vkDevice.createFence({}), vkDevice);
 	pendingQueue.emplace_back(PendingEntry{commands, fence});
 	vk::Semaphore signalSemaphore(commands->getSignalSemaphore());
-	vkQueue.submit({{
+	static_cast<vk::Queue>(handle).submit({{
 		0, nullptr, nullptr,
 		1, &vkCommandBuffer,
 		1, &signalSemaphore
 	}}, static_cast<vk::Fence>(fence));
+	return true;
+}
+
+//-------------
+
+bool Queue::submit(const FenceHandle& fence) {
+	WARN_AND_RETURN_IF(!fence, "Queue: invalid fence.", false);
+	std::unique_lock<std::mutex> lock(submitMutex);
+	static_cast<vk::Queue>(handle).submit({}, static_cast<vk::Fence>(fence));
 	return true;
 }
 

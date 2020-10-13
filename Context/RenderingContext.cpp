@@ -44,6 +44,7 @@
 #include <stdexcept>
 #include <stack>
 #include <thread>
+#include <tuple>
 
 //#define PROFILING_ENABLED 1
 #include <Util/Profiling/Profiler.h>
@@ -80,8 +81,7 @@ public:
 	std::stack<ColorBlendState> colorBlendStack;
 
 	// binding stacks
-	std::map<std::pair<uint32_t,uint32_t>, std::stack<Texture::Ref>> textureStacks;
-	std::unordered_map<uint32_t, std::stack<ImageView::Ref>> imageStacks;
+	std::map<std::tuple<uint32_t,uint32_t,uint32_t>, std::stack<Texture::Ref>> textureStacks;
 	
 	// transformation stack
 	std::stack<Geometry::Matrix4x4> modelToCameraStack;
@@ -111,6 +111,8 @@ public:
 	std::stack<AlphaTestParameters> alphaTestParameterStack;
 	std::stack<PointParameters> pointParameterStack;
 };
+
+//----------------
 
 RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal(new InternalData), displayMeshFn() {
@@ -150,7 +152,6 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->dummyTexture->allocateLocalData();
 	internal->dummyTexture->clear({1,1,1,1});
 	internal->dummyTexture->upload(ResourceUsage::ShaderResource);
-	setTexture(0, nullptr);
 
 	//// Initially enable the depth test.
 	internal->cmd->getPipeline().getDepthStencilState().setDepthTestEnabled(true);
@@ -158,8 +159,6 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	// Set dynamic state
 	internal->cmd->getPipeline().getViewportState().setDynamicScissors(true);
 	internal->cmd->getPipeline().getRasterizationState().setDynamicLineWidth(true);
-
-	setFBO(nullptr);
 
 	MaterialData tmp;
 	tmp.setShadingModel(ShadingModel::Shadeless);
@@ -275,6 +274,8 @@ void RenderingContext::applyChanges(bool forced) {
 	if(shader != internal->cmd->getShader()) {
 		// Shader changed: force apply
 		internal->renderingState.apply(shader, true);
+		BindingState state = ShaderUtils::initBindingState(shader->getLayout(), internal->fallbackVertexBuffer.getBuffer(), internal->dummyTexture);
+		internal->cmd->getBindings().merge(state, false);
 	} else {
 		// apply rendering state
 		internal->renderingState.apply(shader, forced);
@@ -958,36 +959,37 @@ void RenderingContext::_setUniformOnShader(const ShaderRef& shader, const Unifor
 
 // TEXTURES **********************************************************************************
 
-const TextureRef RenderingContext::getTexture(uint32_t unit, uint32_t set) const {
-	return internal->cmd->getBindings().getBinding(set, unit, 0).getTexture();
+const TextureRef RenderingContext::getTexture(uint32_t index, uint32_t binding, uint32_t set) const {
+	return internal->cmd->getBindings().getBinding(set, binding, index).getTexture();
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint32_t unit) const {
 	return TexUnitUsageParameter::TEXTURE_MAPPING;
 }
 
-void RenderingContext::pushTexture(uint32_t unit, uint32_t set) {
-	internal->textureStacks[std::make_pair(unit,set)].emplace(getTexture(unit, set));
+void RenderingContext::pushTexture(uint32_t index, uint32_t binding, uint32_t set) {
+	internal->textureStacks[std::make_tuple(index,binding,set)].emplace(getTexture(index, binding, set));
 }
 
-void RenderingContext::pushAndSetTexture(uint32_t unit, const TextureRef& texture, uint32_t set) {
-	pushTexture(unit, set);
-	setTexture(unit, texture, set);
+void RenderingContext::pushAndSetTexture(const TextureRef& texture, uint32_t index, uint32_t binding, uint32_t set) {
+	pushTexture(index, binding, set);
+	setTexture(texture, index, binding, set);
 }
 
-void RenderingContext::popTexture(uint32_t unit, uint32_t set) {
-	WARN_AND_RETURN_IF(internal->textureStacks[std::make_pair(unit,set)].empty(), "popTexture: Empty Texture-Stack",);
-	setTexture(unit, internal->textureStacks[std::make_pair(unit,set)].top(), set);
-	internal->textureStacks[std::make_pair(unit,set)].pop();
+void RenderingContext::popTexture(uint32_t index, uint32_t binding, uint32_t set) {
+	auto key = std::make_tuple(index,binding,set);
+	WARN_AND_RETURN_IF(internal->textureStacks[key].empty(), "popTexture: Empty Texture-Stack",);
+	setTexture(internal->textureStacks[key].top(), index, binding, set);
+	internal->textureStacks[key].pop();
 }
 
-void RenderingContext::setTexture(uint32_t unit, const TextureRef& texture, uint32_t set) {
+void RenderingContext::setTexture(const TextureRef& texture, uint32_t index, uint32_t binding, uint32_t set) {
 	if(texture)
 		texture->upload();
 	if(texture.isNotNull())
-		internal->cmd->bindTexture(texture, set, unit, 0);
+		internal->cmd->bindTexture(texture, set, binding, index);
 	else
-		internal->cmd->bindTexture(internal->dummyTexture, set, unit, 0);
+		internal->cmd->bindTexture(internal->dummyTexture, set, binding, index);
 }
 
 // PROJECTION MATRIX *************************************************************************
@@ -1156,15 +1158,18 @@ void RenderingContext::pushViewport() {
 
 void RenderingContext::setViewport(const Geometry::Rect_i& viewport) {
 	internal->cmd->getPipeline().getViewportState().setViewport(viewport);
+	internal->renderingState.getCamera().setViewport(viewport);
 }
 
 void RenderingContext::setViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor) {
-	 internal->cmd->getPipeline().getViewportState().setViewport(viewport);
-	 internal->cmd->setScissor(scissor);
+	internal->cmd->getPipeline().getViewportState().setViewport(viewport);
+	internal->cmd->setScissor(scissor);
+	internal->renderingState.getCamera().setViewport(viewport);
 }
 
 void RenderingContext::setViewport(const ViewportState& viewport) {
 	internal->cmd->getPipeline().setViewportState(viewport);
+	internal->renderingState.getCamera().setViewport(viewport.getViewport().rect);
 }
 
 void RenderingContext::pushAndSetViewport(const Geometry::Rect_i& viewport) {

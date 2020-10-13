@@ -13,6 +13,9 @@
 #include "Shader.h"
 #include "../State/ShaderLayout.h"
 #include "../Helper.h"
+#include "../Core/Device.h"
+#include "../Texture/Texture.h"
+#include "../Buffer/BufferObject.h"
 #include <Util/References.h>
 #include <Util/StringUtils.h>
 #include <Util/TypeConstant.h>
@@ -235,30 +238,44 @@ ShaderRef createPassThroughShader(const DeviceRef& device) {
 
 //-------------
 
-ShaderRef createNormalToColorShader() {
-	const std::string vertexProgram(
-R"***(#version 110
-uniform mat4 sg_matrix_cameraToWorld;
-uniform mat4 sg_matrix_modelToCamera;
-varying vec3 normal;
-
-void main() {
-	normal = normalize((sg_matrix_cameraToWorld * sg_matrix_modelToCamera * vec4(gl_Normal, 0.0)).xyz);
-	gl_Position = ftransform();
-}
-)***");
-	const std::string fragmentProgram(
-R"***(#version 110
-varying vec3 normal;
-
-void main() {
-	gl_FragColor = vec4(0.5 * normalize(normal) + 0.5, 1.0);
-}
-)***");
-	return Shader::createShader(vertexProgram, fragmentProgram, Shader::USE_GL | Shader::USE_UNIFORMS);
+ShaderRef createNormalToColorShader(const DeviceRef& device) {
+	const auto& locator = getDataLocator();
+	auto result = locator.locateFile(Util::FileName("./shader/NormalToColorShader.glsl"));
+	WARN_AND_RETURN_IF(!result.first, "Could not find default shader.", nullptr);
+	return Shader::loadShader(device, result.second, result.second);
 }
 
 //-------------
 
+ShaderRef createNormalToColorShader() {
+	return createNormalToColorShader(Device::getDefault());
+}
+
+//-------------
+
+BindingState initBindingState(const ShaderLayout& layout, const BufferObjectRef& bo, const TextureRef& tex) {
+	BindingState state;
+	for(auto& set : layout.getLayoutSets()) {
+		for(auto& layout : set.second.getLayouts()) {
+			switch(layout.second.type) {
+				case ShaderResourceType::BufferStorage:
+				case ShaderResourceType::BufferUniform:
+					for(uint32_t i=0; i<layout.second.elementCount; ++i)
+						state.bind(bo, set.first, layout.first, i);
+				case ShaderResourceType::Image:
+				case ShaderResourceType::ImageSampler:
+				case ShaderResourceType::ImageStorage:
+				case ShaderResourceType::Sampler:
+					for(uint32_t i=0; i<layout.second.elementCount; ++i)
+						state.bind(tex, set.first, layout.first, i);
+				default:
+					break;
+			}
+		}
+	}
+	return state;
+}
+
+//-------------
 }
 }

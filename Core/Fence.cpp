@@ -10,6 +10,7 @@
 #include "Fence.h"
 #include "Device.h"
 #include "Queue.h"
+#include "../Context/RenderThread.h"
 
 #include <Util/Macros.h>
 
@@ -47,10 +48,9 @@ void Fence::wait() {
 uint64_t Fence::signal(const QueueRef& queue) {
 	WARN_AND_RETURN_IF(!queue || !queue->getApiHandle(), "Cannot signal fence. Invalid command queue.", 0);
 	vk::Device vkDevice(queue->getApiHandle());
-	vk::Queue vkQueue(queue->getApiHandle());
 	++cpuValue;
 	FenceHandle fence = FenceHandle::create(vkDevice.createFence({}), vkDevice);
-	vkQueue.submit({}, {fence});
+	queue->submit(fence);
 	fenceQueue.emplace_back(fence);
 	return cpuValue-1;
 }

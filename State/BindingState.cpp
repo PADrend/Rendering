@@ -68,11 +68,11 @@ static void mergeMap(std::map<Key,Value>& tgt, const std::map<Key,Value>& src, M
 //------------------
 
 template<class Value>
-static void mergeArray(std::vector<Value>& tgt, const std::vector<Value>& src) {
+static void mergeArray(std::vector<Value>& tgt, const std::vector<Value>& src, bool overwrite) {
 	auto tgtIt = tgt.begin();
 	auto srcIt = src.begin();
 	while(tgtIt != tgt.end() && srcIt != src.end()) {
-		if(*srcIt)
+		if(*srcIt && (overwrite || !(*tgtIt)))
 			*tgtIt = *srcIt;
 		++tgtIt; ++srcIt;
 	}
@@ -198,10 +198,10 @@ bool BindingSet::bind(const TextureRef& texture, uint32_t binding, uint32_t arra
 
 //------------------
 
-void BindingSet::merge(const BindingSet& other) {
+void BindingSet::merge(const BindingSet& other, bool overwriteExisting) {
 	dirty |= (*this != other);
-	mergeMap(bindings, other.bindings, [](std::vector<Binding>& tgt, const std::vector<Binding>& src) {
-		mergeArray(tgt, src);
+	mergeMap(bindings, other.bindings, [overwriteExisting](std::vector<Binding>& tgt, const std::vector<Binding>& src) {
+		mergeArray(tgt, src, overwriteExisting);
 	});
 }
 
@@ -264,10 +264,10 @@ bool BindingState::bind(const TextureRef& texture, uint32_t set, uint32_t bindin
 
 //------------------
 
-void BindingState::merge(const BindingState& other) {
+void BindingState::merge(const BindingState& other, bool overwriteExisting) {
 	dirty |= (*this != other);
-	mergeMap(bindingSets, other.bindingSets, [](BindingSet& tgt, const BindingSet& src) {
-		tgt.merge(src);
+	mergeMap(bindingSets, other.bindingSets, [overwriteExisting](BindingSet& tgt, const BindingSet& src) {
+		tgt.merge(src, overwriteExisting);
 	});
 }
 

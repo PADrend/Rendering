@@ -41,6 +41,7 @@ static const Uniform::UniformName UNIFORM_SG_MATRIX_CLIPPING_TO_CAMERA("sg_matri
 
 static const Uniform::UniformName UNIFORM_SG_LIGHT_COUNT("sg_lightCount");
 static const Uniform::UniformName UNIFORM_SG_POINT_SIZE("sg_pointSize");
+static const Uniform::UniformName UNIFORM_SG_VIEWPORT("sg_viewport");
 
 static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_POSITION(createNames("sg_Light[", MAX_LIGHTS, "].position"));
 static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_DIRECTION(createNames("sg_Light[", MAX_LIGHTS, "].direction"));
@@ -70,6 +71,7 @@ CameraData::CameraData(CameraData&& o) {
 	position = std::move(o.position);
 	direction = std::move(o.direction);
 	up = std::move(o.up);
+	viewport = std::move(o.viewport);
 	dirty = true;
 	o.dirty = true;
 }
@@ -84,6 +86,7 @@ CameraData::CameraData(const CameraData& o) {
 	position = o.position;
 	direction = o.direction;
 	up = o.up;
+	viewport = o.viewport;
 	dirty = true;
 }
 
@@ -97,6 +100,7 @@ CameraData& CameraData::operator=(CameraData&& o) {
 	position = std::move(o.position);
 	direction = std::move(o.direction);
 	up = std::move(o.up);
+	viewport = std::move(o.viewport);
 	dirty = o.dirty;
 	o.dirty = true;
 	return *this;
@@ -113,6 +117,7 @@ CameraData& CameraData::operator=(const CameraData& o) {
 	position = o.position;
 	direction = o.direction;
 	up = o.up;
+	viewport = o.viewport;
 	return *this;
 }
 
@@ -458,6 +463,7 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_WORLD, camera.getMatrixCameraToWorld());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING, corrected);
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CLIPPING_TO_CAMERA, correctedInv);
+		uniforms.emplace_back(UNIFORM_SG_VIEWPORT, camera.getViewport());
 		camera.clearDirty();
 	}
 
@@ -491,7 +497,7 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 	// modelview
 
 	if (forced || cc || instance.isDirty()) {
-		const auto m = camera.getMatrixCameraToClipping() * instance.getMatrixModelToCamera();
+		const auto m = ndcCorrection * camera.getMatrixCameraToClipping() * instance.getMatrixModelToCamera();
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CAMERA, instance.getMatrixModelToCamera());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CLIPPING, m);
 		uniforms.emplace_back(UNIFORM_SG_POINT_SIZE, instance.getPointSize());

@@ -22,7 +22,8 @@
 #include "../Mesh/VertexAttributeIds.h"
 #include "../Mesh/VertexDescription.h"
 #include "../RenderingContext/RenderingParameters.h"
-#include "../RenderingContext/RenderingContext.h"
+#include "../Context/RenderingContext.h"
+#include "../Context/RenderThread.h"
 #include "../Helper.h"
 #include "../FBO.h"
 #include <Geometry/Definitions.h>
@@ -330,7 +331,7 @@ void updateTextureFromScreen(const Device::Ref& device,Texture & t,const Geometr
 	
 	CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
 	cmds->blitImage(srcFBO->getColorAttachment()->getImage(), t.getImage(), srcRegion, tgtRegion, ImageFilter::Nearest);
-	cmds->submit(true);
+	cmds->submit();
 }
 
 //! [static]

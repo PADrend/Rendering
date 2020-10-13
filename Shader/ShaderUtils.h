@@ -12,6 +12,7 @@
 #define RENDERING_SHADERUTILS_H_
 
 #include "../State/ShaderLayout.h"
+#include "../State/BindingState.h"
 
 #include <Util/References.h>
 #include <Util/Utils.h>
@@ -26,6 +27,10 @@ class Device;
 using DeviceRef = Util::Reference<Device>;
 class Shader;
 using ShaderRef = Util::Reference<Shader>;
+class BufferObject;
+using BufferObjectRef = Util::Reference<BufferObject>;
+class Texture;
+using TextureRef = Util::Reference<Texture>;
 
 //! @addtogroup shader
 //! @{
@@ -47,7 +52,12 @@ ShaderRef createDefaultShader(const DeviceRef& device);
 ShaderRef createPassThroughShader(const DeviceRef& device);
 
 //! Create a shader that writes the pixel normal into the color buffer.
+ShaderRef createNormalToColorShader(const DeviceRef& device);
+[[deprecated]]
 ShaderRef createNormalToColorShader();
+
+//! initialized a binding state filled with dummy values for a given shader layout
+BindingState initBindingState(const ShaderLayout& layout, const BufferObjectRef& bo, const TextureRef& tex);
 
 }
 

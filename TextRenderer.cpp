@@ -41,7 +41,6 @@ out vec2 glyphPos;
 void main(void) {
 	glyphPos = sg_TexCoord0;
 	gl_Position = (sg_matrix_modelToClipping * vec4(sg_Position, 0.0, 1.0));
-	gl_Position.y = -gl_Position.y; // Vulkan uses right hand NDC
 }
 )***");
 

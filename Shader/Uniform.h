@@ -39,6 +39,9 @@ typedef _Vec4<float> Vec4f;
 typedef _Vec4<int32_t> Vec4i;
 typedef _Vec4<uint32_t> Vec4ui;
 
+template<typename _T> class _Rect;
+typedef _Rect<int32_t> Rect_i;
+
 template<typename _T> class _Matrix4x4;
 typedef _Matrix4x4<float> Matrix4x4;
 
@@ -144,6 +147,7 @@ class Uniform {
 		//! UNIFORM_VEC4I
 		Uniform(UniformName _name, const Geometry::Vec4i & value);
 		Uniform(UniformName _name, const std::vector<Geometry::Vec4i> & values);
+		Uniform(UniformName _name, const Geometry::Rect_i & value);
 
 		//! UNIFORM_UINT
 		Uniform(UniformName _name, uint32_t value);

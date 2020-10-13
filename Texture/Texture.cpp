@@ -19,6 +19,7 @@
 
 #include "../Helper.h"
 #include "../Context/RenderingContext.h"
+#include "../Context/RenderThread.h"
 
 #include "TextureUtils.h"
 #include <Util/Graphics/Bitmap.h>
@@ -148,8 +149,10 @@ void Texture::upload(ResourceUsage usage) {
 		tgtRegion.mipLevel = imageView->getMipLevel();
 		tgtRegion.extent = format.extent;
 		cmds->copyBufferToImage(stagingBuffer, getImage(), 0, tgtRegion);
-		cmds->imageBarrier(getImage(), usage);
-		cmds->submit(true);
+		cmds->imageBarrier(imageView, usage);
+		RenderThread::addTask([cmds]() {
+			cmds->submit();
+		});
 	}
 	dataHasChanged = false;
 }
@@ -200,7 +203,7 @@ void Texture::clear(const Util::Color4f& color) {
 	if(imageView) {
 		CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
 		cmds->clearImage(imageView, color);
-		cmds->submit(true);
+		cmds->submit();
 	}
 }
 
@@ -224,7 +227,7 @@ void Texture::download() {
 	srcRegion.layerCount = imageView->getLayerCount();
 	srcRegion.mipLevel = imageView->getMipLevel();
 	srcRegion.extent = format.extent;
-	cmds->copyImageToBuffer(getImage(), stagingBuffer, srcRegion, 0);
+	cmds->copyImageToBuffer(getImage(), stagingBuffer, srcRegion, 0);	
 	cmds->submit(true);
 	uint8_t* ptr = stagingBuffer->map();
 	std::copy(ptr, ptr+localBitmap->getDataSize(), localBitmap->data());
