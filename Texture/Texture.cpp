@@ -56,7 +56,7 @@ Texture::Ref Texture::create(const DeviceRef& device, const ImageViewRef& view, 
 
 //--------------
 
-Texture::Texture(const DeviceRef& device, const Format& format, const SamplerRef& sampler) : device(device), format(format), sampler(sampler) {
+Texture::Texture(const DeviceRef& device, const Format& format, const SamplerRef& sampler) : device(device.get()), format(format), sampler(sampler) {
 	
 	uint32_t dim = 0;
 	if(format.extent.x() >= 1)

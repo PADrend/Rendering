@@ -84,12 +84,21 @@ ImageStorage::Ref ImageStorage::create(const DeviceRef& device, const ImageStora
 ImageStorage::Ref ImageStorage::createFromHandle(const DeviceRef& device, const Configuration& config, ImageHandle&& handle) {
 	Ref image(new ImageStorage(device, config));
 	image->handle = std::move(handle);
+	image->isOwner = false;
 	return std::move(image);
 }
 
 //-------------
 
-ImageStorage::ImageStorage(const DeviceRef& device, const ImageStorage::Configuration& config) : device(device), config(config), type(getTextureType(config.format.extent)) { }
+ImageStorage::ImageStorage(const DeviceRef& device, const ImageStorage::Configuration& config) : device(device.get()), config(config), type(getTextureType(config.format.extent)) { }
+
+//-------------
+
+ImageStorage::~ImageStorage() {
+	if(!isOwner && handle) {
+		handle.detachAndDecrease();
+	}
+}
 
 //-------------
 

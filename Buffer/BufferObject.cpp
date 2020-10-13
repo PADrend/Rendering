@@ -78,7 +78,7 @@ BufferObject::BufferObject() : BufferObject(Device::getDefault()) { }
 //----------------
 
 
-BufferObject::BufferObject(const DeviceRef& device, BufferAllocator::Ref allocator) : device(device), allocator(allocator) { }
+BufferObject::BufferObject(const DeviceRef& device, BufferAllocator::Ref allocator) : device(device.get()), allocator(allocator) { }
 
 //----------------
 
@@ -89,7 +89,7 @@ BufferObject::~BufferObject() {
 //----------------
 
 void BufferObject::swap(BufferObject& other) {
-	device.swap(other.device);
+	std::swap(device, other.device);
 	buffer.swap(other.buffer);
 	stagingBuffer.swap(other.stagingBuffer);
 	std::swap(size, other.size);

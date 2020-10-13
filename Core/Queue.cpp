@@ -29,7 +29,7 @@ Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : de
 
 //-------------
 
-Queue::~Queue() = default;
+Queue::~Queue() { if(device->isDebugModeEnabled()) std::cout << "Destroying Queue " << index << " of family " << familyIndex << "..." << std::endl; }
 
 //-------------
 

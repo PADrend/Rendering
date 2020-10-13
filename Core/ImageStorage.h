@@ -35,7 +35,7 @@ public:
 	using Ref = Util::Reference<ImageStorage>;
 	ImageStorage(const ImageStorage&) = delete;
 	ImageStorage(ImageStorage&&) = default;
-	~ImageStorage() = default;
+	~ImageStorage();
 
 	/**
 	 * @brief Creates and allocates a new image storage.
@@ -81,7 +81,7 @@ public:
 
 	const ImageHandle& getApiHandle() const { return handle; }
 	const AllocationHandle& getAllocation() const { return allocation; }
-	const DeviceRef& getDevice() const { return device; }
+	DeviceRef getDevice() const { return device.get(); }
 	//! @}
 	
 	//! @name Debugging
@@ -92,10 +92,11 @@ private:
 	explicit ImageStorage(const DeviceRef& device, const Configuration& config);
 	bool init();
 
-	const DeviceRef device;
+	const Util::WeakPointer<Device> device;
 	const Configuration config;
 	const TextureType type;
 	ImageHandle handle;
+	bool isOwner = true;
 	AllocationHandle allocation;
 	size_t dataSize = 0;
 	ResourceUsage lastUsage = ResourceUsage::Undefined;

@@ -80,7 +80,7 @@ DescriptorPool::DescriptorPool(const DeviceRef& device, const Configuration& con
 
 //-----------------
 
-DescriptorPool::~DescriptorPool() = default;
+DescriptorPool::~DescriptorPool() { if(device->isDebugModeEnabled()) std::cout << "Destroying DescriptorPool..." << std::endl; }
 
 //-----------------
 

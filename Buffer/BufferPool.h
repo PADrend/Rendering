@@ -53,7 +53,7 @@ public:
 	}
 private:
 	BufferPool(const DeviceRef& device, const Configuration& config);
-	const DeviceRef device;
+	Device* device;
 	const Configuration config;
 	mutable std::mutex mutex;
 

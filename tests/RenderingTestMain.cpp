@@ -37,11 +37,13 @@ int main( int argc, char* argv[] ) {
 		//"VK_LAYER_RENDERDOC_Capture"
 		"VK_LAYER_LUNARG_monitor"
 	}, true);
-	TestUtils::context.reset(new Rendering::RenderingContext(TestUtils::device));
+	//TestUtils::context.reset(new Rendering::RenderingContext(TestUtils::device));
 	
 	auto result = Catch::Session().run( argc, argv );
 	
 	TestUtils::device->waitIdle();
+	std::cout << "Device References: " << TestUtils::device->countReferences() << std::endl;
+	TestUtils::device = nullptr;
 	TestUtils::window = nullptr;
 	return result;
 }

@@ -36,7 +36,7 @@ BufferStorage::Ref BufferStorage::create(const DeviceRef& device, const BufferSt
 
 //-------------
 
-BufferStorage::BufferStorage(const DeviceRef& device, const BufferStorage::Configuration& config) : device(device), config(config) { }
+BufferStorage::BufferStorage(const DeviceRef& device, const BufferStorage::Configuration& config) : device(device.get()), config(config) { }
 
 //-------------
 

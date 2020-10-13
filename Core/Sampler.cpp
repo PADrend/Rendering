@@ -37,7 +37,7 @@ Sampler::Ref Sampler::create(const DeviceRef& device, const Configuration& confi
 
 //---------------
 
-Sampler::Sampler(const DeviceRef& device, const Configuration& config) : device(device), config(config) { }
+Sampler::Sampler(const DeviceRef& device, const Configuration& config) : device(device.get()), config(config) { }
 
 //---------------
 

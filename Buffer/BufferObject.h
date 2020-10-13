@@ -249,7 +249,7 @@ public:
 private:
 	BufferObject(const DeviceRef& device, const BufferAllocator::Ref allocator=nullptr);
 
-	DeviceRef device;
+	Device* device;
 	size_t size=0;
 	size_t offset=0;
 

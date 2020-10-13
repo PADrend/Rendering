@@ -100,7 +100,7 @@ public:
 
 	//! @name Internal
 	//! @{
-	const DeviceRef& getDevice() const { return device; }
+	DeviceRef getDevice() const { return device.get(); }
 	const BufferHandle& getApiHandle() const { return handle; }
 	const AllocationHandle& getAllocation() const { return allocation; }
 	//! @}
@@ -113,7 +113,7 @@ private:
 	explicit BufferStorage(const DeviceRef& device, const Configuration& config);
 	bool init();
 
-	DeviceRef device;
+	Util::WeakPointer<Device> device;
 	Configuration config;
 	BufferHandle handle;
 	AllocationHandle allocation;

@@ -67,7 +67,7 @@ endif()
 FetchContent_Declare(
   spirv-headers
   GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
-  GIT_TAG        204cd131c42b90d129073719f2766293ce35c081
+  GIT_TAG        f8bf11a0253a32375c32cad92c841237b96696c0
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-headers"
 )
 
@@ -85,7 +85,7 @@ endif()
 FetchContent_Declare(
   spirv-tools
   GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
-  GIT_TAG        323a81fc5e30e43a04e5e22af4cba98ca2a161e6
+  GIT_TAG        e95fbfb1f509ad7a7fdfb72ac35fe412d72fc4a4
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-tools"
 )
 
@@ -96,6 +96,7 @@ if(NOT spirv-tools_POPULATED)
   set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
   set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
   set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
+  set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "" FORCE)  
   #add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
 endif()
 #target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
@@ -107,7 +108,7 @@ endif()
 FetchContent_Declare(
   glslang
   GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
-  GIT_TAG        b0ada80356ca7b560c600b93a596af1331442542
+  GIT_TAG        b5757b95005bbf6b0287096c5b708c5e25645311
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/glslang"
 )
 
@@ -149,14 +150,14 @@ set_target_properties(spirv-cross-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 FetchContent_Declare(
   shaderc
   GIT_REPOSITORY https://github.com/google/shaderc.git
-  GIT_TAG        v2019.1
+  GIT_TAG        v2020.0
 )
 
 FetchContent_GetProperties(shaderc)
 if(NOT shaderc_POPULATED)
   message(STATUS "Fetching shaderc...")
   FetchContent_Populate(shaderc)
-  #set(SHADERC_ENABLE_SPVC ON CACHE BOOL "" FORCE)
+  set(SHADERC_ENABLE_SPVC OFF CACHE BOOL "" FORCE)
   set(SHADERC_SKIP_INSTALL ON CACHE BOOL "" FORCE)
   set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
   set(SHADERC_THIRD_PARTY_ROOT_DIR "${FETCHCONTENT_BASE_DIR}" CACHE STRING "" FORCE)

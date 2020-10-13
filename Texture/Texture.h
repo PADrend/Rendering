@@ -170,7 +170,7 @@ public:
 private:
 	Texture(const DeviceRef& device, const Format& format, const SamplerRef& sampler);
 
-	DeviceRef device;
+	Device* device;
 	Format format;
 
 	TextureType tType;

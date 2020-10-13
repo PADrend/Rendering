@@ -8,6 +8,7 @@
 */
 
 #include "BindCommands.h"
+#include "../Device.h"
 #include "../DescriptorPool.h"
 #include "../ResourceCache.h"
 #include "../../Buffer/BufferObject.h"

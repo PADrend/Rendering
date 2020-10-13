@@ -180,6 +180,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	}
 	context.popMatrix_cameraToClipping();
 	context.popMatrix_modelToCamera();
+	
 	device->waitIdle();
 	
 }

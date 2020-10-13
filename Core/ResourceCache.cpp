@@ -8,6 +8,7 @@
 */
 
 #include "ResourceCache.h"
+#include "Device.h"
 #include "../FBO.h"
 #include "../Shader/Shader.h"
 #include "../Texture/Texture.h"
@@ -53,6 +54,9 @@ ResourceCache::ResourceCache(const DeviceRef& device) : device(device.get()) {
 	cache.registerType(FRAMEBUFFER, std::function<decltype(createFramebufferHandle)>(createFramebufferHandle));
 }
 
+//----------------
+
+ResourceCache::~ResourceCache() { if(device->isDebugModeEnabled()) std::cout << "Destroying ResourceCache..." << std::endl; }
 
 //----------------
 

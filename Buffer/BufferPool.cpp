@@ -32,7 +32,7 @@ BufferPool::~BufferPool() = default;
 
 //---------------
 
-BufferPool::BufferPool(const DeviceRef& device, const Configuration& config) : device(device), config(config) { }
+BufferPool::BufferPool(const DeviceRef& device, const Configuration& config) : device(device.get()), config(config) { }
 
 //---------------
 

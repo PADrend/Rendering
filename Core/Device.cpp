@@ -483,7 +483,7 @@ Device::Device(Util::UI::WindowRef window) : internal(new InternalData(std::move
 
 //------------
 
-Device::~Device() = default;
+Device::~Device() { std::cout << "Destroying Device..." << std::endl; };
 
 //------------
 
@@ -622,16 +622,19 @@ const DeviceHandle& Device::getApiHandle() const {
 //------------
 
 bool Device::init(std::vector<std::string> validationLayers, bool throwOnError) {
+	std::cout << "Device References init: " << countReferences() << std::endl;
 
 	if(!internal->createInstance(this, validationLayers, throwOnError)) {
 		WARN("Device: Could not create Vulkan instance.");
 		return false;
 	}
+	std::cout << "Device References createInstance: " << countReferences() << std::endl;
 
 	if(!internal->initPhysicalDevice(this)) {
 		WARN("Device: Could not create Vulkan physical device.");
 		return false;
 	}
+	std::cout << "Device References initPhysicalDevice: " << countReferences() << std::endl;
 
 	if(internal->config.debug)
 		std::cout << "Acquiring window surface..." << std::endl;
@@ -641,26 +644,31 @@ bool Device::init(std::vector<std::string> validationLayers, bool throwOnError) 
 		return false;
 	}
 	internal->surface = SurfaceHandle::create(surface, internal->instance);
+	std::cout << "Device References createSurface: " << countReferences() << std::endl;
 
 	if(!internal->createLogicalDevice(this)) {
 		WARN("Device: Could not create Vulkan device.");
 		return false;
 	}	
+	std::cout << "Device References createLogicalDevice: " << countReferences() << std::endl;
 	
 	if(!internal->createMemoryAllocator(this)) {
 		WARN("Device: Could not create memory allocator.");
 		return false;
 	}
+	std::cout << "Device References createMemoryAllocator: " << countReferences() << std::endl;
 		
 	if(!internal->createSwapchain(this)) {
 		WARN("Device: Could not create Swapchain.");
 		return false;
 	}
+	std::cout << "Device References createSwapchain: " << countReferences() << std::endl;
 		
 	if(!internal->createDescriptorPools(this)) {
 		WARN("Device: Could not create descriptor pools.");
 		return false;
 	}
+	std::cout << "Device References createDescriptorPools: " << countReferences() << std::endl;
 	
 	return true;
 }

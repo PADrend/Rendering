@@ -48,7 +48,7 @@ public:
 private:
 	Sampler(const DeviceRef& device, const Configuration& config);
 	bool init();
-	DeviceRef device;
+	Util::WeakPointer<Device> device;
 	Configuration config;
 	SamplerHandle handle;
 };

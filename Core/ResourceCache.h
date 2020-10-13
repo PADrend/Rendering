@@ -29,7 +29,7 @@ class ResourceCache : public Util::ReferenceCounter<ResourceCache> {
 public:
 	using Ref = Util::Reference<ResourceCache>;
 	static Ref create(const DeviceRef& device);
-	~ResourceCache() = default;
+	~ResourceCache();
 	ResourceCache(ResourceCache&& o) = default;
 	ResourceCache(const ResourceCache& o) = delete;
 	ResourceCache& operator=(ResourceCache&& o) = default;

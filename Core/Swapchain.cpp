@@ -27,6 +27,7 @@ namespace Rendering {
 //------------
 
 Swapchain::~Swapchain() {
+	if(device->isDebugModeEnabled()) std::cout << "Destroying Swapchain..." << std::endl;
 	// Wait for fences before destroying swapchain
 	vk::Device d(device->getApiHandle());
 	for(auto& fence : presentFences) {
@@ -159,7 +160,7 @@ void Swapchain::waitForIndex(uint32_t index) {
 //------------
 
 uint32_t Swapchain::acquireNextIndex() {
-	waitForIndex(currentIndex);	
+	waitForIndex(currentIndex);
 	vk::Device vkDevice(handle);
 	vk::SwapchainKHR vkSwapchain(handle);
 	currentFence = (currentFence + 1) % imageCount;
