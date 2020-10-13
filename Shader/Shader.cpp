@@ -179,13 +179,12 @@ bool Shader::init() {
 /*!	(internal) */
 bool Shader::compileProgram() {
 	shaderModules.clear();
-	//hash = 0;
 	vk::Device vkDevice(device->getApiHandle());
 	for(auto& shaderObject : shaderObjects) {
 		if(!shaderObject.compile(device))
 			return false;
 		auto& code = shaderObject.getCode();
-		//Util::hash_combine(hash, Util::calcHash(reinterpret_cast<const uint8_t*>(code.data()), code.size() * sizeof(uint32_t)));
+		// TODO: shader modules are only needed during pipeline creation and can then deleted. Maybe only don't store them here?
 		shaderModules.emplace(shaderObject.getType(), ShaderModuleHandle::create(vkDevice.createShaderModule({{}, static_cast<uint32_t>(code.size()) * sizeof(uint32_t), code.data()}), vkDevice));
 	}
 	return true;

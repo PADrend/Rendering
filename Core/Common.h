@@ -16,7 +16,7 @@
 #include <Geometry/Vec3.h>
 
 namespace Util {
-class ResourceAttribute;
+class AttributeFormat;
 } /* Util */
 
 namespace Geometry {
@@ -24,7 +24,6 @@ using Vec3ui = _Vec3<uint32_t>;
 } /* Geometry */
 
 namespace Rendering {
-class VertexAttribute;
 
 //---------------------------
 
@@ -137,11 +136,7 @@ enum class InternalFormat : std::uint8_t {
 
 //---------------------------
 
-InternalFormat toInternalFormat(const Util::ResourceAttribute& attr);
-
-//---------------------------
-
-InternalFormat toInternalFormat(const VertexAttribute& attr);
+InternalFormat toInternalFormat(const Util::AttributeFormat& attr);
 
 //---------------------------
 

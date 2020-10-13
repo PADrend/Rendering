@@ -39,10 +39,8 @@ add_library(Rendering SHARED
 	Mesh/MeshIndexData.cpp
 	Mesh/MeshVertexData.cpp
 	Mesh/VertexAccessor.cpp
-	Mesh/VertexAttribute.cpp
 	Mesh/VertexAttributeAccessors.cpp
 	Mesh/VertexAttributeIds.cpp
-	Mesh/VertexDescription.cpp
 	MeshUtils/ConnectivityAccessor.cpp
 	MeshUtils/LocalMeshDataHolder.cpp
 	MeshUtils/MarchingCubesMeshBuilder.cpp
@@ -74,6 +72,7 @@ add_library(Rendering SHARED
 	Shader/ShaderObjectInfo.cpp
 	Shader/ShaderUtils.cpp
 	Shader/Uniform.cpp
+	Shader/UniformBuffer.cpp
 	Shader/UniformRegistry.cpp
 	State/BindingState.cpp
 	State/PipelineState.cpp

@@ -12,7 +12,7 @@
 #ifndef VERTEXATTRIBUTE_H
 #define VERTEXATTRIBUTE_H
 
-#include <Util/Resources/ResourceFormat.h>
+#include <Util/Resources/AttributeFormat.h>
 namespace Rendering {
 using VertexAttribute = Util::AttributeFormat;
 } /* Rendering */

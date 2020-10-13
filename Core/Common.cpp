@@ -287,10 +287,10 @@ vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages) {
 
 //-----------------
 
-InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
+InternalFormat toInternalFormat(const Util::AttributeFormat& attr) {
 	switch(attr.getDataType()) {
 		case Util::TypeConstant::UINT8:
-			switch(attr.getNumValues()) {
+			switch(attr.getComponentCount()) {
 				case 1: return attr.isNormalized() ? InternalFormat::R8Unorm : InternalFormat::R8Uint;
 				case 2: return attr.isNormalized() ? InternalFormat::RG8Unorm : InternalFormat::RG8Uint;
 				case 4: return attr.isNormalized() ? InternalFormat::RGBA8Unorm : InternalFormat::RGBA8Uint;
@@ -298,7 +298,7 @@ InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
 			}
 			break;
 		case Util::TypeConstant::UINT16:
-			switch(attr.getNumValues()) {
+			switch(attr.getComponentCount()) {
 				case 1: return attr.isNormalized() ? InternalFormat::R16Unorm : InternalFormat::R16Uint;
 				case 2: return attr.isNormalized() ? InternalFormat::RG16Unorm : InternalFormat::RG16Uint;
 				case 3: return attr.isNormalized() ? InternalFormat::RGB16Unorm : InternalFormat::RGB16Uint;
@@ -307,7 +307,7 @@ InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
 			}
 			break;
 		case Util::TypeConstant::UINT32:
-			switch(attr.getNumValues()) {
+			switch(attr.getComponentCount()) {
 				case 1: return InternalFormat::R32Uint;
 				case 2: return InternalFormat::RG32Uint;
 				case 3: return InternalFormat::RGB32Uint;
@@ -316,7 +316,7 @@ InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
 			}
 			break;
 		case Util::TypeConstant::INT8:
-			switch(attr.getNumValues()) {
+			switch(attr.getComponentCount()) {
 				case 1: return attr.isNormalized() ? InternalFormat::R8Snorm : InternalFormat::R8Int;
 				case 2: return attr.isNormalized() ? InternalFormat::RG8Snorm : InternalFormat::RG8Int;
 				case 4: return attr.isNormalized() ? InternalFormat::RGBA8Snorm : InternalFormat::RGBA8Int;
@@ -324,7 +324,7 @@ InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
 			}
 			break;
 		case Util::TypeConstant::INT16:
-			switch(attr.getNumValues()) {
+			switch(attr.getComponentCount()) {
 				case 1: return attr.isNormalized() ? InternalFormat::R16Snorm : InternalFormat::R16Int;
 				case 2: return attr.isNormalized() ? InternalFormat::RG16Snorm : InternalFormat::RG16Int;
 				case 3: return attr.isNormalized() ? InternalFormat::RGB16Snorm : InternalFormat::RGB16Int;
@@ -333,7 +333,7 @@ InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
 			}
 			break;
 		case Util::TypeConstant::INT32:
-			switch(attr.getNumValues()) {
+			switch(attr.getComponentCount()) {
 				case 1: return InternalFormat::R32Int;
 				case 2: return InternalFormat::RG32Int;
 				case 3: return InternalFormat::RGB32Int;
@@ -342,7 +342,7 @@ InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
 			}
 			break;
 		case Util::TypeConstant::FLOAT:
-			switch(attr.getNumValues()) {
+			switch(attr.getComponentCount()) {
 				case 1: return attr.isNormalized() ? InternalFormat::R32Float : InternalFormat::R32Float;
 				case 2: return attr.isNormalized() ? InternalFormat::RG32Float : InternalFormat::RG32Float;
 				case 3: return attr.isNormalized() ? InternalFormat::RGB32Float : InternalFormat::RGB32Float;
@@ -351,7 +351,7 @@ InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
 			}
 			break;
 		case Util::TypeConstant::HALF:
-			switch(attr.getNumValues()) {
+			switch(attr.getComponentCount()) {
 				case 1: return InternalFormat::R16Float;
 				case 2: return InternalFormat::RG16Float;
 				case 3: return InternalFormat::RGB16Float;
@@ -362,12 +362,6 @@ InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
 		default: break;
 	}
 	return InternalFormat::Unknown;
-}
-
-//-----------------
-
-InternalFormat toInternalFormat(const VertexAttribute& attr) {
-	return toInternalFormat(Util::ResourceAttribute(attr.getNameId(), static_cast<Util::TypeConstant>(attr.getDataType()), attr.getNumValues(), attr.getNormalize(), attr.getOffset()));
 }
 
 //-----------------

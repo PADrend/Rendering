@@ -27,6 +27,7 @@ typedef _Rect<int> Rect_i;
 namespace Util {
 class Color4f;
 class StringIdentifier;
+class AttributeFormat;
 }
 namespace Rendering {
 class Device;
@@ -60,7 +61,6 @@ class StencilParameters;
 class Shader;
 class Uniform;
 class UniformRegistry;
-class VertexAttribute;
 class VertexDescription;
 enum class TexUnitUsageParameter : uint8_t;
 enum class PrimitiveTopology;
@@ -649,7 +649,7 @@ public:
 	 * @param stride Size of a vertex in bytes
 	 */
 	[[deprecated]]
-	void enableVertexAttribArray(const VertexAttribute& attr, const uint8_t * data, int32_t stride) {}
+	void enableVertexAttribArray(const Util::AttributeFormat& attr, const uint8_t * data, int32_t stride) {}
 
 	//! Disable all vertex attribute array.
 	[[deprecated]]
