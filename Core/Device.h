@@ -25,16 +25,14 @@ using WindowRef = Util::Reference<Window>;
 } /* Util */
 
 namespace Rendering {
-class RenderingContext;
 class FBO;
-class Swapchain;
-class CommandPool;
-class PipelineCache;
-using RenderingContextRef = Util::Reference<RenderingContext>;
 using FBORef = Util::Reference<FBO>;
+class Swapchain;
 using SwapchainRef = Util::Reference<Swapchain>;
+class CommandPool;
 using CommandPoolRef = Util::Reference<CommandPool>;
-using PipelineCacheRef = Util::Reference<PipelineCache>;
+class ResourceCache;
+using ResourceCacheRef = Util::Reference<ResourceCache>;
 
 /** Represents a GPU Device	
 	@ingroup rendering_core
@@ -70,7 +68,8 @@ public:
 	std::set<Queue::Ref> getQueues() const;
 	const CommandPoolRef& getCommandPool(QueueFamily family) const;
 	const CommandPoolRef& getCommandPool(uint32_t familyIndex) const;
-	const PipelineCacheRef& getPipelineCache() const;
+	const PipelineCacheHandle& getPipelineCache() const;
+	const ResourceCacheRef& getResourceCache() const;
 	
 	//! @name API Handles
 	//! @{

@@ -82,16 +82,26 @@ namespace Rendering {
 
 //----------------
 
+class ApiBaseHandle : public Util::ReferenceCounter<ApiBaseHandle> {
+public:
+	using Ref = Util::Reference<ApiBaseHandle>;
+	virtual ~ApiBaseHandle() = default;
+};
+
+//----------------
+
 template<class ApiType, class ParentApiType>
-class ApiHandle : public Util::ReferenceCounter<ApiHandle<ApiType,ParentApiType>> {
+class ApiHandle : public ApiBaseHandle {
 public:
 	class Ref : public Util::Reference<ApiHandle<ApiType,ParentApiType>> {
 	public:
+		using BaseType_t = ApiHandle<ApiType,ParentApiType>;
 		Ref() = default;
-		Ref(ApiHandle<ApiType,ParentApiType>* handle) : Util::Reference<ApiHandle<ApiType,ParentApiType>>(handle) {}
-		static Ref create(const ApiType& handle=nullptr, const ParentApiType& parent = nullptr) { return new ApiHandle<ApiType,ParentApiType>(handle, parent); }
-		operator const ApiType&() const { return this->get()->handle; }
-		operator const ParentApiType&() const { return this->get()->parent; }
+		Ref(BaseType_t* handle) : Util::Reference<BaseType_t>(handle) {}
+		Ref(const ApiBaseHandle::Ref& base) : Ref(dynamic_cast<BaseType_t*>(base.get())) {}
+		static Ref create(const ApiType& handle=nullptr, const ParentApiType& parent = nullptr) { return new BaseType_t(handle, parent); }
+		operator const ApiType() const { return this->get() ? this->get()->handle : nullptr; }
+		operator const ParentApiType() const { return this->get() ? this->get()->parent : nullptr; }
 	};
 	~ApiHandle() {};
 	ApiHandle(ApiHandle&& rhs) { parent = std::move(rhs.parent); handle = std::move(rhs.handle); rhs.parent = nullptr; rhs.handle = nullptr; };
@@ -110,7 +120,6 @@ private:
 };
 
 //----------------
-
 
 API_HANDLE(Instance, NullHandle);
 API_HANDLE(Device, PhysicalDevice);

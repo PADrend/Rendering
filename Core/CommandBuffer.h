@@ -10,7 +10,7 @@
 #define RENDERING_CORE_COMMANDBUFFER_H_
 
 #include "Common.h"
-#include "../RenderingContext/PipelineState.h"
+#include "Pipeline.h"
 #include "../RenderingContext/BindingState.h"
 
 #include <Util/ReferenceCounter.h>
@@ -27,10 +27,6 @@ class Texture;
 using TextureRef = Util::Reference<Texture>;
 class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
-class Pipeline;
-using PipelineRef = Util::Reference<Pipeline>;
-class Device;
-using DeviceRef = Util::Reference<Device>;
 class DescriptorSet;
 using DescriptorSetRef = Util::Reference<DescriptorSet>;
 
@@ -53,7 +49,7 @@ public:
 	
 	void reset();
 	void free();
-	void flush(PipelineType bindPoint = PipelineType::Graphics);
+	void flush();
 
 	void begin();
 	void end();
@@ -70,30 +66,30 @@ public:
 	void textureBarrier(const TextureRef& texture, ResourceUsage newUsage);
 	//void bufferBarrier(const BufferObjectRef& buffer, ResourceUsage newUsage);
 
-	PipelineState& getPipeline() { return pipelineState; }
-	void setPipeline(const PipelineState& value) { pipelineState = value; }
+	PipelineState& getPipelineState() { return pipeline->getState(); }
+	void setPipelineState(const PipelineState& value) { pipeline->setState(value); }
 	
-	void setVertexInputState(const VertexInputState& state) { pipelineState.setVertexInputState(state); }
-	void setInputAssemblyState(const InputAssemblyState& state) { pipelineState.setInputAssemblyState(state); }
-	void setViewportState(const ViewportState& state) { pipelineState.setViewportState(state); }
-	void setRasterizationState(const RasterizationState& state) { pipelineState.setRasterizationState(state); }
-	void setMultisampleState(const MultisampleState& state) { pipelineState.setMultisampleState(state); }
-	void setDepthStencilState(const DepthStencilState& state) { pipelineState.setDepthStencilState(state); }
-	void setColorBlendState(const ColorBlendState& state) { pipelineState.setColorBlendState(state); }
-	void setEntryPoint(const std::string& value) { pipelineState.setEntryPoint(value); }
-	void setShader(const ShaderRef& shader) { pipelineState.setShader(shader); }
-	void setFBO(const FBORef& fbo) { pipelineState.setFBO(fbo); }
+	void setVertexInputState(const VertexInputState& state) { pipeline->setVertexInputState(state); }
+	void setInputAssemblyState(const InputAssemblyState& state) { pipeline->setInputAssemblyState(state); }
+	void setViewportState(const ViewportState& state) { pipeline->setViewportState(state); }
+	void setRasterizationState(const RasterizationState& state) { pipeline->setRasterizationState(state); }
+	void setMultisampleState(const MultisampleState& state) { pipeline->setMultisampleState(state); }
+	void setDepthStencilState(const DepthStencilState& state) { pipeline->setDepthStencilState(state); }
+	void setColorBlendState(const ColorBlendState& state) { pipeline->setColorBlendState(state); }
+	void setEntryPoint(const std::string& value) { pipeline->setEntryPoint(value); }
+	void setShader(const ShaderRef& shader) { pipeline->setShader(shader); }
+	void setFBO(const FBORef& fbo) { pipeline->setFBO(fbo); }
 	
-	const VertexInputState& getVertexInputState() const { return pipelineState.getVertexInputState(); }
-	const InputAssemblyState& getInputAssemblyState() const { return pipelineState.getInputAssemblyState(); }
-	const ViewportState& getViewportState() const { return pipelineState.getViewportState(); }
-	const RasterizationState& getRasterizationState() const { return pipelineState.getRasterizationState(); }
-	const MultisampleState& getMultisampleState() const { return pipelineState.getMultisampleState(); }
-	const DepthStencilState& getDepthStencilState() const { return pipelineState.getDepthStencilState(); }
-	const ColorBlendState& getColorBlendState() const { return pipelineState.getColorBlendState(); }
-	const std::string& getEntryPoint() const { return pipelineState.getEntryPoint(); }
-	const ShaderRef& getShader() const { return pipelineState.getShader(); }
-	const FBORef& getFBO() const { return pipelineState.getFBO(); }
+	const VertexInputState& getVertexInputState() const { return pipeline->getVertexInputState(); }
+	const InputAssemblyState& getInputAssemblyState() const { return pipeline->getInputAssemblyState(); }
+	const ViewportState& getViewportState() const { return pipeline->getViewportState(); }
+	const RasterizationState& getRasterizationState() const { return pipeline->getRasterizationState(); }
+	const MultisampleState& getMultisampleState() const { return pipeline->getMultisampleState(); }
+	const DepthStencilState& getDepthStencilState() const { return pipeline->getDepthStencilState(); }
+	const ColorBlendState& getColorBlendState() const { return pipeline->getColorBlendState(); }
+	const std::string& getEntryPoint() const { return pipeline->getEntryPoint(); }
+	const ShaderRef& getShader() const { return pipeline->getShader(); }
+	const FBORef& getFBO() const { return pipeline->getFBO(); }
 
 	State getState() const { return state; }
 
@@ -110,8 +106,8 @@ private:
 	bool primary;
 	CommandBufferHandle handle;
 	State state = Invalid;
-	PipelineState pipelineState;
-	PipelineRef pipeline;
+	Pipeline::Ref pipeline;
+	PipelineHandle boundPipeline;
 	BindingState bindings;
 	std::map<uint32_t, size_t> layoutHashs;
 };

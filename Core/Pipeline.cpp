@@ -9,7 +9,7 @@
 
 #include "Pipeline.h"
 #include "Device.h"
-#include "PipelineCache.h"
+#include "ResourceCache.h"
 #include "../FBO.h"
 #include "../Shader/Shader.h"
 
@@ -198,31 +198,39 @@ static vk::PipelineColorBlendAttachmentState convertColorBlendAttachmentState(co
 
 //---------------
 
-Pipeline::~Pipeline() = default;
-
-//---------------
-
-Pipeline::Pipeline(PipelineType type, const PipelineState& state, const Ref& parent) : type(type), state(state), parent(parent) { }
-
-//---------------
-
-bool Pipeline::initGraphics(const PipelineCacheRef& cache) {
-	if(type != PipelineType::Graphics)
-		return false;
-
+ApiBaseHandle::Ref createComputePipelineHandle(Device* device, const PipelineState& state, VkPipeline parent) {
 	auto shader = state.getShader();
-	if(!shader || !shader->init())
-		return false;
 
-	auto fbo = state.getFBO();
-	if(!fbo || !fbo->validate())
-		return false;
-	
-	hash = state.getHash();
-	
 	// Create new pipeline
-	vk::Device vkDevice(cache->getApiHandle());
-	vk::PipelineCache vkCache(cache->getApiHandle());
+	vk::Device vkDevice(device->getApiHandle());
+	vk::PipelineCache vkCache(device->getPipelineCache());
+
+	vk::ComputePipelineCreateInfo info{};
+	info.layout = shader->getPipelineLayout();
+	info.stage.stage = vk::ShaderStageFlagBits::eCompute;
+	info.stage.pName = state.getEntryPoint().c_str();
+	info.stage.pSpecializationInfo = nullptr; // TODO
+	auto moduleEntry = shader->getShaderModules().find(ShaderStage::Compute);
+	if(moduleEntry == shader->getShaderModules().end() || !moduleEntry->second)
+		return nullptr;
+	info.stage.module = moduleEntry->second;
+
+	// Derived pipeline
+	info.basePipelineHandle = parent;
+		
+	// Create pipeline
+	return PipelineHandle::create(vkDevice.createComputePipeline(vkCache, info), vkDevice).get();
+}
+
+//---------------
+
+ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineState& state, VkPipeline parent) {
+	auto shader = state.getShader();
+	auto fbo = state.getFBO();
+
+	// Create new pipeline
+	vk::Device vkDevice(device->getApiHandle());
+	vk::PipelineCache vkCache(device->getPipelineCache());
 
 	vk::GraphicsPipelineCreateInfo info{};
 	info.layout = shader->getPipelineLayout();
@@ -300,7 +308,7 @@ bool Pipeline::initGraphics(const PipelineCacheRef& cache) {
 	// Convert blend state
 	auto& bs = state.getColorBlendState();
 	std::vector<vk::PipelineColorBlendAttachmentState> attachments;
-	for(uint32_t i=0; i<cache->getDevice()->getMaxFramebufferAttachments(); ++i) {
+	for(uint32_t i=0; i<device->getMaxFramebufferAttachments(); ++i) {
 		if(i<bs.getAttachmentCount())
 			attachments.emplace_back(convertColorBlendAttachmentState(bs.getAttachment(i)));
 		else
@@ -332,63 +340,98 @@ bool Pipeline::initGraphics(const PipelineCacheRef& cache) {
 	info.subpass = 0; // TODO: allow multiple subpasses
 
 	// Derived pipeline
-	if(parent)
-		info.basePipelineHandle = parent->handle;
+	info.basePipelineHandle = parent;
 
 	// Create pipeline
-	handle = PipelineHandle::create(vkDevice.createGraphicsPipeline(vkCache, info), vkDevice);
+	return PipelineHandle::create(vkDevice.createGraphicsPipeline(vkCache, info), vkDevice).get();
+}
+
+//---------------
+
+Pipeline::~Pipeline() = default;
+
+//---------------
+
+Pipeline::Pipeline(const DeviceRef& device) : device(device) { }
+
+//---------------
+
+Pipeline::Ref Pipeline::createCompute(const DeviceRef& device, const ShaderRef& shader, const std::string& entryPoint, const Ref& parent) {
+	Ref obj = new Pipeline(device);
+	obj->setType(PipelineType::Compute);
+	obj->setShader(shader);
+	obj->setEntryPoint(entryPoint);
+	obj->parent = parent;
+	return obj;
+}
+
+//---------------
+
+Pipeline::Ref Pipeline::createGraphics(const DeviceRef& device, const PipelineState& state, const Ref& parent) {
+	Ref obj = new Pipeline(device);
+	obj->setType(PipelineType::Graphics);
+	obj->setState(state);
+	obj->parent = parent;
+	return obj;
+}
+
+//---------------
+
+bool Pipeline::validate() {
+	if(isValid())
+		return true;
 	
+	hash = 0;
+	handle = nullptr;
+	auto shader = state.getShader();
+	if(!shader->init())
+		return false;
+	
+	auto parentHandle = (parent && parent->validate()) ? parent->getApiHandle() : nullptr;
+	
+	if(type == PipelineType::Graphics) {
+		auto fbo = state.getFBO();
+		if(!fbo->validate())
+			return false;
+			
+		handle = device->getResourceCache()->createGraphicsPipeline(state, parentHandle);
+		Util::hash_combine(hash, state);
+	} else if(type == PipelineType::Compute){
+		handle = device->getResourceCache()->createComputePipeline(state, parentHandle);
+		Util::hash_combine(hash, shader->getLayoutHash());
+		Util::hash_combine(hash, state.getEntryPoint());
+	}
+	Util::hash_combine(hash, parent ? parent->hash : 0);
+
 	return handle.isNotNull();
 }
 
 //---------------
 
-bool Pipeline::initCompute(const PipelineCacheRef& cache) {
-	if(type != PipelineType::Compute)
+bool Pipeline::isValid() const {
+	if(!handle)
 		return false;
 
 	auto shader = state.getShader();
-	if(!shader || !shader->init())
+	if(!shader || shader->getStatus() != Shader::LINKED)
 		return false;
 	
-	if(state.getEntryPoint().empty())
+	auto fbo = state.getFBO();
+	if(type == PipelineType::Graphics && (!fbo || !fbo->isValid()))
 		return false;
-
-	hash = 0;
-	Util::hash_combine(hash, shader->getLayoutHash());
-	Util::hash_combine(hash, state.getEntryPoint());
-
-	// Create new pipeline
-	vk::Device vkDevice(cache->getApiHandle());
-	vk::PipelineCache vkCache(cache->getApiHandle());
-
-	vk::ComputePipelineCreateInfo info{};
-	info.layout = shader->getPipelineLayout();
-	info.stage.stage = vk::ShaderStageFlagBits::eCompute;
-	info.stage.pName = state.getEntryPoint().c_str();
-	info.stage.pSpecializationInfo = nullptr; // TODO
-	auto moduleEntry = shader->getShaderModules().find(ShaderStage::Compute);	
-	if(moduleEntry == shader->getShaderModules().end() || !moduleEntry->second)
+	
+	if(parent && !parent->isValid())
 		return false;
-	info.stage.module = moduleEntry->second;
-
-	// Derived pipeline
-	if(parent)
-		info.basePipelineHandle = parent->handle;
-		
-	// Create pipeline
-	handle = PipelineHandle::create(vkDevice.createComputePipeline(vkCache, info), vkDevice);	
-	return handle.isNotNull();
-}
-
-//---------------
-
-bool Pipeline::init(const PipelineCacheRef& cache) {
-	switch(type) {
-		case PipelineType::Graphics: return initGraphics(cache);
-		case PipelineType::Compute: return initCompute(cache);
+	
+	size_t tmpHash = 0;
+	if(type == PipelineType::Graphics) {
+		Util::hash_combine(tmpHash, state);
+	} else {
+		Util::hash_combine(tmpHash, shader->getLayoutHash());
+		Util::hash_combine(tmpHash, state.getEntryPoint());
 	}
-	return false;
+	Util::hash_combine(tmpHash, parent ? parent->hash : 0);
+	return hash == tmpHash;
 }
 
 //---------------

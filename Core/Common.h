@@ -44,7 +44,7 @@ enum class QueueFamily : uint8_t {
 
 enum class PipelineType {
 	Graphics = 0,
-	Compute
+	Compute,
 };
 
 //---------------------------

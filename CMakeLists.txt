@@ -32,8 +32,8 @@ add_library(Rendering SHARED
 	Core/ImageStorage.cpp
 	Core/ImageView.cpp
 	Core/Pipeline.cpp
-	Core/PipelineCache.cpp
 	Core/Queue.cpp
+	Core/ResourceCache.cpp
 	Core/Sampler.cpp
 	Core/Swapchain.cpp
 	#Mesh/Mesh.cpp

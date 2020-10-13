@@ -12,11 +12,12 @@
 #include "Swapchain.h"
 #include "CommandBuffer.h"
 #include "CommandPool.h"
-#include "PipelineCache.h"
+#include "ResourceCache.h"
 
 #include <Util/Macros.h>
 #include <Util/UI/Window.h>
 #include <Util/StringUtils.h>
+#include <Util/Factory/ObjectCache.h>
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -60,7 +61,8 @@ struct Device::InternalData {
 	SurfaceHandle surface;
 	AllocatorHandle allocator;
 	Swapchain::Ref swapchain;
-	PipelineCache::Ref pipelineCache;
+	ResourceCache::Ref resourceCache;
+	PipelineCacheHandle pipelineCache;
 
 	vk::DispatchLoaderDynamic dldy;
 	vk::PhysicalDevice physicalDevice;
@@ -248,9 +250,10 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 	}
 
 	// Create pipeline cache
-	pipelineCache = new PipelineCache(device);
-	if(!pipelineCache->init())
-		return false;
+	pipelineCache = PipelineCacheHandle::create(vkDevice.createPipelineCache({}), vkDevice);
+
+	// Create resource cache
+	resourceCache = ResourceCache::create(device);
 
 	return true;
 }
@@ -434,8 +437,14 @@ const CommandPoolRef& Device::getCommandPool(uint32_t familyIndex) const {
 
 //------------
 
-const PipelineCacheRef& Device::getPipelineCache() const {
+const PipelineCacheHandle& Device::getPipelineCache() const {
 	return internal->pipelineCache;
+}
+
+//------------
+
+const ResourceCacheRef& Device::getResourceCache() const {
+	return internal->resourceCache;
 }
 
 //------------

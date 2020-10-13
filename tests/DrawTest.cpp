@@ -115,7 +115,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		cmdBuffer->begin();
 
 		state.setFBO(fbo);
-		cmdBuffer->setPipeline(state);
+		cmdBuffer->setPipelineState(state);
 		cmdBuffer->textureBarrier(attachment, ResourceUsage::RenderTarget);
 
 		cmdBuffer->beginRenderPass({{0,0,0,1}});

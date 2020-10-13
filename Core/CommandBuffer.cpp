@@ -13,7 +13,6 @@
 #include "DescriptorSet.h"
 #include "DescriptorPool.h"
 #include "Pipeline.h"
-#include "PipelineCache.h"
 #include "ImageStorage.h"
 #include "ImageView.h"
 #include "../Shader/Shader.h"
@@ -46,7 +45,9 @@ CommandBuffer::Ref CommandBuffer::request(const DeviceRef& device, QueueFamily f
 
 //-----------------
 
-CommandBuffer::CommandBuffer(CommandPool* pool, bool primary) : pool(pool), primary(primary) { }
+CommandBuffer::CommandBuffer(CommandPool* pool, bool primary) : pool(pool), primary(primary) {
+	pipeline = Pipeline::createGraphics(pool->getDevice());
+}
 
 //-----------------
 
@@ -80,7 +81,7 @@ void CommandBuffer::reset() {
 	if(state == State::Recording)
 		end();
 	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-	pipelineState.reset();
+	pipeline = Pipeline::createGraphics(pool->getDevice());
 	state = State::Initial;
 }
 
@@ -96,18 +97,18 @@ void CommandBuffer::free() {
 
 //-----------------
 
-void CommandBuffer::flush(PipelineType bindPoint) {
+void CommandBuffer::flush() {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	auto device = pool->getDevice();
 
 	// bind pipeline if it has changed
-	if(!pipeline || pipeline->getHash() != pipelineState.getHash()) {
-		pipeline = device->getPipelineCache()->requestPipeline(bindPoint, pipelineState);
-		WARN_AND_RETURN_IF(!pipeline, "CommandBuffer: Could not create pipeline.",);
-		vk::Pipeline vkPipeline(pipeline->getApiHandle());	
+	WARN_AND_RETURN_IF(!pipeline->validate(), "CommandBuffer: Invalid Pipeline.",);
+
+	if(!boundPipeline || boundPipeline != pipeline->getApiHandle()) {
+		vk::Pipeline vkPipeline(pipeline->getApiHandle());
 		vk::PipelineBindPoint vkBindPoint;
-		switch (bindPoint) {
+		switch (pipeline->getType()) {
 			case PipelineType::Compute:
 				vkBindPoint = vk::PipelineBindPoint::eCompute;
 				break;
@@ -124,9 +125,7 @@ void CommandBuffer::flush(PipelineType bindPoint) {
 	if(!bindings.isDirty())
 		return; // nothing has changed
 
-	auto shader = pipelineState.getShader();
-	WARN_AND_RETURN_IF(!shader || !shader->init(), "CommandBuffer: Could not bind descriptor sets. Invalid shader.",);
-
+	auto shader = getShader();
 	std::unordered_set<uint32_t> updateSets;
 
 	for(auto& poolIt : shader->getDescriptorPools()) {
@@ -146,7 +145,6 @@ void CommandBuffer::begin() {
 	WARN_AND_RETURN_IF(state == State::Free || state == State::Invalid, "Invalid command buffer.",);
 	vk::CommandBuffer vkCmd(handle);
 	state = State::Recording;
-	pipelineState.reset();
 	vkCmd.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
 }
 
@@ -164,7 +162,7 @@ void CommandBuffer::end() {
 void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColors) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
-	auto& fbo = pipelineState.getFBO();
+	auto& fbo = getFBO();
 	WARN_AND_RETURN_IF(!fbo || !fbo->validate(), "Cannot begin render pass. Invalid FBO.",);
 	vk::Framebuffer framebuffer(fbo->getApiHandle());
 	vk::RenderPass renderPass(fbo->getRenderPass());
@@ -213,8 +211,9 @@ void CommandBuffer::bindInputImage(const ImageViewRef& view, uint32_t set, uint3
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	if(instanceCount==0) return;
-	flush(PipelineType::Graphics);
 	vk::CommandBuffer vkCmd(handle);
+	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
+	flush();
 	vkCmd.draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 

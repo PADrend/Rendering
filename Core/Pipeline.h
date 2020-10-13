@@ -18,33 +18,61 @@
 namespace Rendering {
 class Device;
 using DeviceRef = Util::Reference<Device>;
-class PipelineCache;
-using PipelineCacheRef = Util::Reference<PipelineCache>;
+
+//---------------
+
+struct PipelineCreateInfo;
 
 //---------------
 
 class Pipeline : public Util::ReferenceCounter<Pipeline> {
 public:
-
 	using Ref = Util::Reference<Pipeline>;
+	static Ref createCompute(const DeviceRef& device, const ShaderRef& shader=nullptr, const std::string& entryPoint="main", const Ref& parent=nullptr);
+	static Ref createGraphics(const DeviceRef& device, const PipelineState& state={}, const Ref& parent=nullptr);
+
 	Pipeline(Pipeline &&) = default;
 	Pipeline(const Pipeline &) = delete;
 	~Pipeline();
 
+	bool validate();
+	bool isValid() const;
+
 	void setState(const PipelineState& value) { state = value; }
 	const PipelineState& getState() const { return state; }
+	PipelineState& getState() { return state; }
+	
+	void setVertexInputState(const VertexInputState& value) { state.setVertexInputState(value); }
+	void setInputAssemblyState(const InputAssemblyState& value) { state.setInputAssemblyState(value); }
+	void setViewportState(const ViewportState& value) { state.setViewportState(value); }
+	void setRasterizationState(const RasterizationState& value) { state.setRasterizationState(value); }
+	void setMultisampleState(const MultisampleState& value) { state.setMultisampleState(value); }
+	void setDepthStencilState(const DepthStencilState& value) { state.setDepthStencilState(value); }
+	void setColorBlendState(const ColorBlendState& value) { state.setColorBlendState(value); }
+	void setEntryPoint(const std::string& value) { state.setEntryPoint(value); }
+	void setShader(const ShaderRef& shader) { state.setShader(shader); }
+	void setFBO(const FBORef& fbo) { state.setFBO(fbo); }
+	
+	const VertexInputState& getVertexInputState() const { return state.getVertexInputState(); }
+	const InputAssemblyState& getInputAssemblyState() const { return state.getInputAssemblyState(); }
+	const ViewportState& getViewportState() const { return state.getViewportState(); }
+	const RasterizationState& getRasterizationState() const { return state.getRasterizationState(); }
+	const MultisampleState& getMultisampleState() const { return state.getMultisampleState(); }
+	const DepthStencilState& getDepthStencilState() const { return state.getDepthStencilState(); }
+	const ColorBlendState& getColorBlendState() const { return state.getColorBlendState(); }
+	const std::string& getEntryPoint() const { return state.getEntryPoint(); }
+	const ShaderRef& getShader() const { return state.getShader(); }
+	const FBORef& getFBO() const { return state.getFBO(); }
 
+	void setType(const PipelineType& value) { type = value; }
 	PipelineType getType() const { return type; }
-	const PipelineHandle& getApiHandle() const { return handle; }
 
-	size_t getHash() const { return hash; };
+	const PipelineHandle& getApiHandle() const { return handle; }
 private:
-	friend class PipelineCache;
-	explicit Pipeline(PipelineType type, const PipelineState& state, const Ref& parent = nullptr);
-	bool initGraphics(const PipelineCacheRef& cache);
-	bool initCompute(const PipelineCacheRef& cache);
-	bool init(const PipelineCacheRef& cache);
-	const PipelineType type;
+	explicit Pipeline(const DeviceRef& device);
+
+	const DeviceRef device;
+	PipelineType type = PipelineType::Graphics;
 	PipelineState state;
 	Ref parent;
 	PipelineHandle handle;
