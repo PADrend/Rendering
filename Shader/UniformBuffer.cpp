@@ -9,9 +9,13 @@
 
 #include "UniformBuffer.h"
 
+#include "Uniform.h"
 #include "../Core/Device.h"
+#include "../Core/CommandBuffer.h"
 #include "../BufferObject.h"
+#include "../State/ShaderLayout.h"
 
+#include <Util/Macros.h>
 #include <Util/Resources/ResourceFormat.h>
 #include <Util/Resources/ResourceAccessor.h>
 
@@ -19,9 +23,9 @@ namespace Rendering {
 
 //---------------
 
-UniformBuffer::Ref UniformBuffer::create(const DeviceRef& device, const Util::ResourceFormat& format) {
-	Ref obj = new UniformBuffer;
-	if(!obj->init(device, format)) {
+UniformBuffer::Ref UniformBuffer::create(const DeviceRef& device, const Util::ResourceFormat& format, uint32_t arraySize, bool pushConstant) {
+	Ref obj = new UniformBuffer(pushConstant);
+	if(!obj->init(device, format, arraySize)) {
 		return nullptr;
 	}
 	return obj;
@@ -29,11 +33,60 @@ UniformBuffer::Ref UniformBuffer::create(const DeviceRef& device, const Util::Re
 
 //---------------
 
-UniformBuffer::UniformBuffer() = default;
+UniformBuffer::Ref UniformBuffer::createFromShaderResource(const DeviceRef& device, const ShaderResource& resource) {
+	bool pushConstant = resource.layout.type == ShaderResourceType::PushConstant;
+	WARN_AND_RETURN_IF(!pushConstant && resource.layout.type != ShaderResourceType::BufferUniform, "UniformBuffer can only created from resource type 'PushConstant' or 'BufferUniform", nullptr);
+	
+	Ref obj = new UniformBuffer(pushConstant);
+	if(!obj->init(device, resource.format, resource.layout.elementCount)) {
+		return nullptr;
+	}
+	return obj;
+}
+
+//---------------
+
+UniformBuffer::UniformBuffer(bool pushConstant) : pushConstant(pushConstant), dataHasChanged(true) {}
 
 //---------------
 
 UniformBuffer::~UniformBuffer() = default;
+
+//---------------
+
+void UniformBuffer::applyUniform(const Uniform& uniform) {
+	const auto& format = accessor->getFormat();
+	uint32_t location = format.getAttributeLocation(uniform.getNameId());
+	if(location >= format.getSize())
+		return; // uniform does not exist
+	// TODO: check uniform format
+	accessor->writeRawValue(0, location, uniform.getData(), uniform.getDataSize());
+	dataHasChanged = true;
+}
+
+//---------------
+
+void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
+	WARN_AND_RETURN_IF(!cmd, "Uniform::flush: Invalud command buffer.",);
+	if(!force && !dataHasChanged)
+		return;
+	
+	if(pushConstant) {
+		cmd->pushConstants(cache);
+	} else {
+		cmd->updateBuffer(buffer->getBuffer(), cache.data(), cache.size());
+	}
+	dataHasChanged = false;
+}
+
+//---------------
+
+void UniformBuffer::bind(const CommandBufferRef& cmd, uint32_t binding, uint32_t set) {
+	WARN_AND_RETURN_IF(!cmd, "Uniform::flush: Invalud command buffer.",);
+	flush(cmd);
+	if(!pushConstant)
+		cmd->bindBuffer(buffer, set, binding);
+}
 
 //---------------
 
@@ -43,8 +96,20 @@ const Util::ResourceFormat& UniformBuffer::getFormat() const {
 
 //---------------
 
-bool UniformBuffer::init(const DeviceRef& device, const Util::ResourceFormat& format) {
-	buffer = BufferObject::create(device);
+bool UniformBuffer::init(const DeviceRef& device, const Util::ResourceFormat& format, uint32_t arraySize) {
+	// Create and allocate GPU buffer unless we use push constants
+	if(!pushConstant) {
+		// TODO: Allocate buffer from buffer pool?
+		buffer = BufferObject::create(device);
+		buffer->allocate(format.getSize() * arraySize, ResourceUsage::ShaderResource, MemoryUsage::GpuOnly);
+		WARN_AND_RETURN_IF(!buffer->isValid(), "Failed to allocate uniform buffer.", false);
+	}
+
+	// Allocate cache
+	cache.resize(format.getSize() * arraySize);
+
+	// Create accessor
+	accessor = Util::ResourceAccessor::create(cache.data(), cache.size(), format);
 
 	return true;
 }

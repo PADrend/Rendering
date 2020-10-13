@@ -40,6 +40,8 @@ class Texture;
 using TextureRef = Util::Reference<Texture>;
 class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
+class CommandBuffer;
+using CommandBufferRef = Util::Reference<CommandBuffer>;
 class AlphaTestParameters;
 class BlendingParameters;
 class ClipPlaneParameters;
@@ -110,6 +112,8 @@ public:
 	static bool getCompabilityMode() { return false; }
 
 	void applyChanges(bool forced = false);
+
+	CommandBufferRef getCommandBuffer() const;
 	//	@}
 
 	// -----------------------------------

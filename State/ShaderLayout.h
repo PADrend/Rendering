@@ -10,10 +10,9 @@
 #ifndef RENDERING_STATE_SHADERLAYOUT_H_
 #define RENDERING_STATE_SHADERLAYOUT_H_
 
-#include "../Shader/Uniform.h"
-
 #include <Util/Utils.h>
 #include <Util/TypeConstant.h>
+#include <Util/Resources/ResourceFormat.h>
 
 #include <vector>
 #include <map>
@@ -140,21 +139,6 @@ private:
 	std::vector<PushConstantRange> ranges;
 };
 
-//-------------
-
-struct ShaderResourceMember {
-	ShaderResourceMember() {}
-	ShaderResourceMember(const std::string& name, uint32_t offset, uint32_t count, Uniform::dataType_t type) : name(name), offset(offset), count(count), type(type) {}
-	Uniform::UniformName name;
-	uint32_t offset;
-	uint32_t count;
-	Uniform::dataType_t type;
-
-	bool operator==(const ShaderResourceMember& o) const {
-		return name == o.name && offset == o.offset && count == o.count && type == o.type;
-	}
-	bool operator!=(const ShaderResourceMember& o) const { return !(*this == o); }
-};
 
 //-------------
 
@@ -170,11 +154,11 @@ struct ShaderResource {
 	uint32_t constantId;
 	uint32_t offset;
 	uint32_t size;
-	std::vector<ShaderResourceMember> members;
+	Util::ResourceFormat format;
 
 	bool operator==(const ShaderResource& o) const {
 		return name == o.name && layout == o.layout && set == o.set && binding == o.binding && location == o.location && inputAttachmentIndex == o.inputAttachmentIndex
-			&& vecSize == o.vecSize && columns == o.columns && offset == o.offset && size == o.size && constantId == o.constantId && members == o.members;
+			&& vecSize == o.vecSize && columns == o.columns && offset == o.offset && size == o.size && constantId == o.constantId && format == o.format;
 	}
 	bool operator!=(const ShaderResource& o) const { return !(*this == o); }
 
@@ -186,7 +170,22 @@ using ShaderResourceList = std::vector<ShaderResource>;
 
 std::string toString(ShaderStage stage);
 std::string toString(ShaderResourceType type);
-std::string toString(const ShaderResource& resource);
+std::string toString(const ShaderResource& resource, bool formatted=false);
+
+//-------------
+
+static bool hasBindingPoint(const ShaderResourceType& type) {
+	switch (type) {
+		case ShaderResourceType::Input:
+		case ShaderResourceType::Output:
+		case ShaderResourceType::PushConstant:
+		case ShaderResourceType::SpecializationConstant:
+		case ShaderResourceType::ResourceTypeCount:
+			return false;
+		default: 
+			return true;
+	}
+}
 
 //-------------
 

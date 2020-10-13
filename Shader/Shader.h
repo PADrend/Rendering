@@ -44,6 +44,8 @@ class Device;
 using DeviceRef = Util::Reference<Device>;
 class DescriptorPool;
 using DescriptorPoolRef = Util::Reference<DescriptorPool>;
+class UniformBuffer;
+using UniformBufferRef = Util::Reference<UniformBuffer>;
 
 //! @defgroup shader Shader
 
@@ -164,8 +166,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	private:
 		ShaderLayout layout;
 		PipelineLayoutHandle layoutHandle;
-		std::unordered_map<Util::StringIdentifier, ShaderResource> resources;
-		
+		std::unordered_map<Util::StringIdentifier, ShaderResource> resources;		
 		std::map<uint32_t, DescriptorPoolRef> descriptorPools;
 	// @}
 
@@ -189,18 +190,11 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	// @{
 	private:
 		const std::unique_ptr<UniformRegistry> uniforms;
+		std::map<std::pair<uint32_t,uint32_t>, UniformBufferRef> uniformBuffers;
 
 		/*! (internal) Make sure that all uniforms declared in the shader are registered to the registry
 			with their current value. Called when a shader is linked successfully */
 		void initUniformRegistry();
-
-		/*! (internal) Really set a value to a uniform variable of the shader.
-			It is linked and that the uniform variable is used within the shader.
-			@note *** matrices are committed in transposed order ***
-			@param uniform Uniform variable.
-			@param uniformLocation Valid uniform location for the current shader.
-			@return @c true if successful, @c false if the uniform is invalid.	 */
-		static bool applyUniform(const Uniform & uniform, int32_t uniformLocation);
 
 	public:
 		//! (internal) should only be used by renderingContext

@@ -58,8 +58,12 @@ public:
 	
 	void flush();
 	
+	//! @name Extensions & limits
+	//! @{
 	bool isExtensionSupported(const std::string& extension) const;
 	uint32_t getMaxFramebufferAttachments() const;
+	uint32_t getMaxPushConstantSize() const;
+	//! @}
 	
 	const Util::UI::WindowRef& getWindow() const;	
 	const SwapchainRef& getSwapchain() const;

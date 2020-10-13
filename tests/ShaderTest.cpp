@@ -18,6 +18,7 @@
 #include "../RenderingContext.h"
 #include "../Core/Device.h"
 #include "../Shader/Shader.h"
+#include "../Shader/Uniform.h"
 #include "../Mesh/Mesh.h"
 #include "../Mesh/VertexDescription.h"
 #include "../MeshUtils/PrimitiveShapes.h"
@@ -63,12 +64,12 @@ const std::string fragmentShader = R"fs(
 	} test;
 
 	struct sg_LightSourceParameters {
-		int type;
 		vec3 position;
 		vec3 direction;
 		vec4 ambient, diffuse, specular;
 		float constant, linear, quadratic;
 		float exponent, cosCutoff;
+		int type;
 	};
 
 	layout(set=1, binding=1, std140) uniform LightData {
@@ -84,20 +85,21 @@ const std::string fragmentShader = R"fs(
 )fs";
 
 struct sg_LightSourceParameters {
-	int32_t type;	// 4
-	Geometry::Vec3 position; // 3*4 = 12
-	Geometry::Vec3 direction; // 3*4 = 12
+	Geometry::Vec4 position; // 4*4 = 16
+	Geometry::Vec4 direction; // 4*4 = 16
 	Geometry::Vec4 ambient, diffuse, specular; // 3*4*4 = 48
 	float constant, linear, quadratic; // 3*4 = 12
 	float exponent, cosCutoff; // 2*4 = 8
-}; // 4+12+12+48+12+8 = 96
+	int32_t type; // 4
+	uint32_t pad[2];
+}; // 16+16+48+12+8+4 = 104, aligned size: 112
 
 TEST_CASE("ShaderTest", "[ShaderTest]") {
 	using namespace Rendering;
 	using namespace Util;
 	std::cout << std::endl;
 	
-	REQUIRE(sizeof(sg_LightSourceParameters) == 96);
+	REQUIRE(sizeof(sg_LightSourceParameters) == 112);
 
 	auto device = TestUtils::device;
 	REQUIRE(device);
@@ -122,20 +124,42 @@ TEST_CASE("ShaderTest", "[ShaderTest]") {
 	REQUIRE(shader->getVertexAttributeLocation({"sg_Color"}) == 1);
 	REQUIRE(shader->getVertexAttributeLocation({"something"}) == -1);
 
-	for(auto& r : shader->getResources())
-		std::cout << toString(r.second) << std::endl;
+	//for(auto& r : shader->getResources())
+	//	std::cout << toString(r.second, true) << std::endl;
 
+	{
+		auto posAttr = shader->getResource({"Vertex_sg_Color"});
+		REQUIRE(posAttr);
+		REQUIRE(posAttr.name == "sg_Color");
+		REQUIRE(posAttr.location == 1);
+		REQUIRE(posAttr.vecSize == 4);
+	}
 
-	auto posAttr = shader->getResource({"Vertex_sg_Color"});
-	REQUIRE(posAttr);
-	REQUIRE(posAttr.name == "sg_Color");
-	REQUIRE(posAttr.location == 1);
-	REQUIRE(posAttr.vecSize == 4);
+	{
+		auto lightData = shader->getResource({"LightData"});
+		REQUIRE(lightData);
+		REQUIRE(lightData.set == 1);
+		REQUIRE(lightData.binding == 1);
+		REQUIRE(lightData.size == sizeof(sg_LightSourceParameters) * 8 );
+	}
 
-	auto lightData = shader->getResource({"LightData"});
-	REQUIRE(lightData);
-	REQUIRE(lightData.set == 1);
-	REQUIRE(lightData.binding == 1);
-	REQUIRE(lightData.size == sizeof(sg_LightSourceParameters) );
+	{
+		auto uniform = shader->getUniform({"sg_LightSource[2].constant"});
+		REQUIRE(!uniform.isNull());
+		REQUIRE(uniform.getType() == Uniform::UNIFORM_FLOAT);
+		REQUIRE(uniform.getNumValues() == 1);
+	}
+
+	{
+		auto uniform = shader->getUniform({"sg_LightSource[3].position"});
+		REQUIRE(!uniform.isNull());
+		REQUIRE(uniform.getType() == Uniform::UNIFORM_FLOAT);
+		REQUIRE(uniform.getNumValues() == 3);
+	}
+
+	{
+		auto uniform = shader->getUniform({"nonsense"});
+		REQUIRE(uniform.isNull());
+	}
 
 }

@@ -25,7 +25,7 @@ std::string toString(ShaderStage stage) {
 		case ShaderStage::Fragment: return "Fragment";
 		case ShaderStage::Compute: return "Compute";
 		case ShaderStage::All: return "All";
-		default: return "";
+		default: return "Unknown";
 	}
 }
 
@@ -50,7 +50,7 @@ std::string toString(ShaderResourceType type) {
 
 //-------------
 
-std::string toString(const ShaderResource& resource) {
+std::string toString(const ShaderResource& resource, bool formatted) {
 	std::stringstream ss;
 	ss << "ShaderResource(" << resource.name << ", ";
 	ss << "stage: " << toString(resource.layout.stages) << ", ";
@@ -66,9 +66,7 @@ std::string toString(const ShaderResource& resource) {
 	ss << "size: " << resource.size << ", ";
 	ss << "constantId: " << resource.constantId << ", ";
 	ss << "dynamic: " << resource.layout.dynamic << ", ";
-	if(!resource.members.empty()) ss << "members: " << std::endl;
-	for(auto& m : resource.members)
-		ss << "  " << m.name.getString() << ", off " << m.offset << ", count " << m.count << ", type " << Uniform::getTypeString(m.type) << std::endl;
+	ss << "format: " << resource.format.toString(formatted);
 	ss << ")";
 	return ss.str();
 }

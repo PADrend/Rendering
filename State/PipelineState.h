@@ -52,7 +52,7 @@ struct VertexInputAttribute {
 	uint32_t location = 0;
 	uint32_t binding = 0;
 	InternalFormat format = InternalFormat::RGBA32Float;
-	uint32_t offset = 0;
+	size_t offset = 0;
 };
 
 //-------------

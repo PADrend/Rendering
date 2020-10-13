@@ -80,11 +80,13 @@ public:
 
 	//! @name Push constants
 	//! @{
-	void pushConstants(const std::vector<uint8_t>& data, uint32_t offset=0);
-
+	void pushConstants(const uint8_t* data, size_t size, size_t offset=0);
+	void pushConstants(const std::vector<uint8_t>& data, size_t offset=0) {
+		pushConstants(data.data(), data.size(), offset);
+	}
 	template<typename T>
-	void pushConstants(const T& value, uint32_t offset=0) {
-		pushConstants({reinterpret_cast<const uint8_t *>(&value), reinterpret_cast<const uint8_t *>(&value) + sizeof(T)}, offset);
+	void pushConstants(const T& value, size_t offset=0) {
+		pushConstants(reinterpret_cast<const uint8_t*>(&value), sizeof(T), offset);
 	}
 	//! @}
 
@@ -103,6 +105,7 @@ public:
 	//! @{
 	void copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size, size_t srcOffset=0, size_t tgtOffset=0);
 	void copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size, size_t srcOffset=0, size_t tgtOffset=0);
+	void updateBuffer(const BufferStorageRef& buffer, const uint8_t* data, size_t size, size_t offset=0);
 	void copyImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion);
 	void copyBufferToImage(const BufferStorageRef& srcBuffer, const ImageStorageRef& tgtImage, size_t srcOffset, const ImageRegion& tgtRegion);
 	void copyImageToBuffer(const ImageStorageRef& srcImage, const BufferStorageRef& tgtBuffer, const ImageRegion& srcRegion, size_t tgtOffset);

@@ -11,6 +11,7 @@
 */
 #include "Shader.h"
 #include "Uniform.h"
+#include "UniformBuffer.h"
 #include "UniformRegistry.h"
 #include "../Core/Device.h"
 #include "../Core/DescriptorPool.h"
@@ -236,10 +237,12 @@ bool Shader::linkProgram() {
 	// Separate resources by set index
 	std::vector<PushConstantRange> pushConstantRanges;
 	std::map<uint32_t, ShaderResourceLayoutSet> layoutSets;
-	for(auto& res : resources) {
-		layoutSets[res.second.set].setLayout(res.second.binding, res.second.layout);
-		if(res.second.layout.type == ShaderResourceType::PushConstant) {
-			pushConstantRanges.emplace_back(PushConstantRange{res.second.offset, res.second.size, res.second.layout.stages});
+	for(const auto& it : resources) {
+		const auto& res = it.second;
+		if(hasBindingPoint(res.layout.type)) {
+			layoutSets[res.set].setLayout(res.binding, res.layout);
+		} else if(res.layout.type == ShaderResourceType::PushConstant) {
+			pushConstantRanges.emplace_back(PushConstantRange{res.offset, res.size, res.layout.stages});
 		}
 	}
 	layout.setLayoutSets(layoutSets);
@@ -276,13 +279,16 @@ bool Shader::_enable() {
 //-----------------
 
 bool Shader::enable(RenderingContext & rc) {
-	return getStatus() == LINKED || init();
+	if(!init())
+		return false;
+	rc.setShader(this);
+	return isActive(rc);
 }
 
 //-----------------
 
 bool Shader::isActive(RenderingContext & rc) {
-	return false;
+	return rc.getActiveShader().get() == this;
 }
 
 //-----------------
@@ -303,88 +309,32 @@ void Shader::applyUniforms(bool forced) {
 		return;
 
 	// apply the uniforms that have been changed since the last call (or all, if forced)
-	/*for(auto it=uniforms->orderedList.begin();
+	for(auto it=uniforms->orderedList.begin();
 			it!=uniforms->orderedList.end() && ( (*it)->stepOfLastSet > uniforms->stepOfLastApply || forced ); ++it ) {
 		UniformRegistry::entry_t * entry(*it);
 
 		// new uniform? --> query and store the location
 		if( entry->location==-1 ) {
-			entry->location = glGetUniformLocation( getShaderProg(), entry->uniform.getName().c_str());
-			if(entry->location==-1) {
+			// find uniform
+			const auto& rIt = resources.find(entry->uniform.getNameId());
+			if(rIt == resources.end()) {
 				entry->valid = false;
 				if(entry->warnIfUnused)
 					WARN(std::string("No uniform named: ") + entry->uniform.getName());
 				continue;
+			} else {
+				entry->location = static_cast<int32_t>(rIt->second.binding);
+				entry->set = static_cast<int32_t>(rIt->second.set); 
 			}
 		}
+
 		// set the data
-		applyUniform(entry->uniform,entry->location);
+		const auto& bIt = uniformBuffers.find({entry->set, entry->location});
+		if(bIt != uniformBuffers.end()) {
+			bIt->second->applyUniform(entry->uniform);
+		}
 	}
-	uniforms->stepOfLastApply = UniformRegistry::getNewGlobalStep();*/
-}
-
-//-----------------
-
-//! (internal)
-bool Shader::applyUniform(const Uniform & uniform, int32_t uniformLocation) {
-	/*switch (uniform.getType()) {
-		case Uniform::UNIFORM_FLOAT: {
-			glUniform1fv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLfloat *>(uniform.getData()));
-			break;
-		}
-		case Uniform::UNIFORM_VEC2F:{
-			glUniform2fv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLfloat *>(uniform.getData()));
-			break;
-		}
-		case Uniform::UNIFORM_VEC3F:{
-			glUniform3fv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLfloat *>(uniform.getData()));
-			break;
-		}
-		case Uniform::UNIFORM_VEC4F:{
-			glUniform4fv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLfloat *>(uniform.getData()));
-			break;
-		}
-
-		case Uniform::UNIFORM_INT:
-		case Uniform::UNIFORM_BOOL: {
-			glUniform1iv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLint *>(uniform.getData()));
-			break;
-		}
-		case Uniform::UNIFORM_VEC2B:
-		case Uniform::UNIFORM_VEC2I:{
-			glUniform2iv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLint *>(uniform.getData()));
-			break;
-		}
-		case Uniform::UNIFORM_VEC3B:
-		case Uniform::UNIFORM_VEC3I:{
-			glUniform3iv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLint *>(uniform.getData()));
-			break;
-		}
-		case Uniform::UNIFORM_VEC4B:
-		case Uniform::UNIFORM_VEC4I:{
-			glUniform4iv(uniformLocation, uniform.getNumValues(), reinterpret_cast<const GLint *>(uniform.getData()));
-			break;
-		}
-
-		case Uniform::UNIFORM_MATRIX_2X2F: {
-			glUniformMatrix2fv(uniformLocation, uniform.getNumValues(), GL_FALSE, reinterpret_cast<const GLfloat *> (uniform.getData()));
-			break;
-		}
-
-		case Uniform::UNIFORM_MATRIX_3X3F: {
-			glUniformMatrix3fv(uniformLocation, uniform.getNumValues(), GL_FALSE, reinterpret_cast<const GLfloat *> (uniform.getData()));
-			break;
-		}
-
-		case Uniform::UNIFORM_MATRIX_4X4F: {
-			glUniformMatrix4fv(uniformLocation, uniform.getNumValues(), GL_FALSE, reinterpret_cast<const GLfloat *> (uniform.getData()));
-			break;
-		}
-		default:
-			WARN("Unsupported data type of Uniform.");
-			return false;
-	}*/
-	return true;
+	uniforms->stepOfLastApply = UniformRegistry::getNewGlobalStep();
 }
 
 //-----------------
@@ -401,10 +351,34 @@ const Uniform & Shader::getUniform(const Util::StringIdentifier name) {
 //! (internal)
 void Shader::initUniformRegistry() {
 	std::vector<Uniform> activeUniforms;
+	uniformBuffers.clear();
 
-	getActiveUniforms(activeUniforms);
-	for(const auto & activeUniform : activeUniforms) {
-		uniforms->setUniform(activeUniform,true,false); // warn if the uniform is unused; though this should never happen
+	// allocate uniform buffers
+	for(const auto& it : resources) {
+		const auto& res = it.second;
+		auto key = std::make_pair(res.set, res.binding);
+		
+		if(res.layout.type == ShaderResourceType::PushConstant) {
+			key = std::make_pair<uint32_t,uint32_t>(std::numeric_limits<int32_t>::max(),std::numeric_limits<int32_t>::max());
+		} else if(res.layout.type != ShaderResourceType::BufferUniform) {
+			continue;
+		}
+
+		uniformBuffers[key] = UniformBuffer::createFromShaderResource(device, res);
+
+		for(const auto& attr : res.format.getAttributes()) {
+			Uniform::dataType_t type;
+			switch (attr.getDataType()) {
+				case Util::TypeConstant::INT32: type = Uniform::UNIFORM_INT; break;
+				case Util::TypeConstant::FLOAT: type = Uniform::UNIFORM_FLOAT; break;
+				case Util::TypeConstant::BOOL: type = Uniform::UNIFORM_BOOL; break;
+				default:
+					type = Uniform::UNIFORM_INT;
+			}
+			// TODO: There is currently no way to differentiate vector & matrix types. Maybe add to AttributeFormat?
+			std::vector<uint8_t> data(attr.getDataSize(), 0);
+			uniforms->setUniform({{attr.getNameId()}, type, attr.getComponentCount(), data},true,false);
+		}
 	}
 
 	// as the uniforms are initialized with their original values, we don't need to re-apply them
@@ -426,183 +400,19 @@ void Shader::getActiveUniforms(std::vector<Uniform> & activeUniforms) {
 	applyUniforms();
 	if(getStatus()!=LINKED)
 		return;
-
-	/*GLint uniformCount = 0;
-	glGetProgramiv(prog,GL_ACTIVE_UNIFORMS,&uniformCount);
-	GLint bufSize=0;
-	glGetProgramiv(prog,GL_ACTIVE_UNIFORM_MAX_LENGTH,&bufSize);
-	auto nameBuffer=new char[bufSize];
-
-	activeUniforms.reserve(uniformCount);
-
-	for(GLint i=0;i<uniformCount;++i) {
-		GLsizei nameLength=0;
-		GLint arraySize=0;
-		GLenum glType=0;
-		glGetActiveUniform(prog,i,bufSize,&nameLength,&arraySize,&glType,nameBuffer);
-
-		std::string name(nameBuffer,nameLength);
-
-		// name is the name of an array (name[index]) -> strip the index
-		if(name.length()>0&&name.at(name.length()-1) == ']')
-			name=name.substr(0,name.rfind('['));
-
-		// determine data type
-		Uniform::dataType_t dataType;
-		bool readFloats=false; // false :== read bool or int
-		switch(glType) {
-			// bool
-			case GL_BOOL:{
-				dataType = Uniform::UNIFORM_BOOL;
-				break;
-			}
-			case GL_BOOL_VEC2:{
-				dataType = Uniform::UNIFORM_VEC2B;
-				break;
-			}
-			case GL_BOOL_VEC3:{
-				dataType = Uniform::UNIFORM_VEC3B;
-				break;
-			}
-			case GL_BOOL_VEC4:{
-				dataType = Uniform::UNIFORM_VEC4B;
-				break;
-			}
-			// float
-			case GL_FLOAT:{
-				dataType = Uniform::UNIFORM_FLOAT;
-				readFloats = true;
-				break;
-			}
-			case GL_FLOAT_VEC2:{
-				dataType = Uniform::UNIFORM_VEC2F;
-				readFloats = true;
-				break;
-			}
-			case GL_FLOAT_VEC3:{
-				dataType = Uniform::UNIFORM_VEC3F;
-				readFloats = true;
-				break;
-			}
-			case GL_FLOAT_VEC4:{
-				dataType = Uniform::UNIFORM_VEC4F;
-				readFloats = true;
-				break;
-			}
-			// int
-			case GL_INT:
-			case GL_SAMPLER_2D:
-			case GL_SAMPLER_CUBE:
-
-
-			case GL_SAMPLER_1D:
-			case GL_SAMPLER_1D_ARRAY:
-			case GL_SAMPLER_2D_ARRAY:
-			case GL_SAMPLER_3D:
-			case GL_SAMPLER_1D_SHADOW:
-			case GL_SAMPLER_2D_SHADOW:
-			case GL_UNSIGNED_INT_SAMPLER_2D:
-			case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
-			case GL_INT_SAMPLER_2D:
-			case GL_IMAGE_1D:
-			case GL_IMAGE_2D:
-			case GL_IMAGE_3D:
-			case GL_INT_IMAGE_1D:
-			case GL_INT_IMAGE_2D:
-			case GL_INT_IMAGE_3D:
-			case GL_UNSIGNED_INT_IMAGE_1D:
-			case GL_UNSIGNED_INT_IMAGE_2D:
-			case GL_UNSIGNED_INT_IMAGE_3D:
-			case GL_UNSIGNED_INT_ATOMIC_COUNTER:
-			case GL_UNSIGNED_INT_IMAGE_BUFFER:
-			case GL_INT_IMAGE_BUFFER:
-			case GL_IMAGE_BUFFER:			
-			case GL_UNSIGNED_INT:
-			case GL_IMAGE_1D_ARRAY:
-			case GL_IMAGE_2D_ARRAY:
-			case GL_INT_IMAGE_1D_ARRAY:
-			case GL_INT_IMAGE_2D_ARRAY:
-			case GL_UNSIGNED_INT_IMAGE_1D_ARRAY:
-			case GL_UNSIGNED_INT_IMAGE_2D_ARRAY:
-
-			{
-				dataType = Uniform::UNIFORM_INT;
-				break;
-			}
-			case GL_INT_VEC2:{
-				dataType = Uniform::UNIFORM_VEC2I;
-				break;
-			}
-			case GL_INT_VEC3:{
-				dataType = Uniform::UNIFORM_VEC3I;
-				break;
-			}
-			case GL_INT_VEC4:{
-				dataType = Uniform::UNIFORM_VEC4I;
-				break;
-			}
-			// matrix
-			case GL_FLOAT_MAT2:{
-				dataType = Uniform::UNIFORM_MATRIX_2X2F;
-				readFloats = true;
-				break;
-			}
-			case GL_FLOAT_MAT3:{
-				dataType = Uniform::UNIFORM_MATRIX_3X3F;
-				readFloats = true;
-				break;
-			}
-			case GL_FLOAT_MAT4:{
-				dataType = Uniform::UNIFORM_MATRIX_4X4F;
-				readFloats = true;
-				break;
-			}
-			default:{
-				std::cout << "Uniform type: 0x" << std::hex << glType <<  std::dec<<"\n";
-				WARN("getActiveUniforms: Unimplemented uniform type '"+name+"'");
-				continue;
-			}
-
-		}
-		const size_t valueSize( Uniform::getValueSize(dataType) );
-
-		// reserve memory for all values in the array
-		std::vector<uint8_t> data(valueSize * arraySize);
-		bool valid=true;
-		// fetch the values
-		for(int index=0;index<arraySize;++index) {
-			// add '[index]' for index>0
-			const std::string name2(index==0? name : name+'['+Util::StringUtils::toString(index)+']');
-			// query location
-			const GLint location = glGetUniformLocation( getShaderProg(), name2.c_str() );
-			if(location==-1) {
-//				WARN(std::string("Uniform not found (should not be possible):")+name2);
-				valid=false;
-				break;
-			}
-
-			if(readFloats)
-				glGetUniformfv(prog,location,reinterpret_cast<GLfloat*>(data.data()+index*valueSize));
-			else
-				glGetUniformiv(prog,location,reinterpret_cast<GLint*>(data.data()+index*valueSize));
-		}
-		if(valid) {
-//				std::cout << name<<"\n";
-			activeUniforms.emplace_back(name, dataType, arraySize, data);
+	
+	for(const auto& it : uniforms->orderedList) {
+		if(it->valid) {
+			activeUniforms.emplace_back(it->uniform);
 		}
 	}
-
-	delete [] nameBuffer;*/
 }
 
 //-----------------
 
 void Shader::setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused, bool forced) {
-	if(!init()) {
-		WARN("setUniform: Shader not ready.");
-		return;
-	}
-	//rc._setUniformOnShader(this,uniform,warnIfUnused,forced);
+	WARN_AND_RETURN_IF(!init(), "setUniform: Shader not ready.",);
+	uniforms->setUniform(uniform, warnIfUnused, forced);
 }
 
 // --------------------------------

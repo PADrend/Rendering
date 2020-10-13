@@ -27,76 +27,81 @@ namespace ShaderUtils {
 
 //-------------
 
-static Uniform::dataType_t getUniformType(const spirv_cross::SPIRType& type) {
+static Util::TypeConstant getBaseType(const spirv_cross::SPIRType& type) {
 	switch(type.basetype) {
-		case spirv_cross::SPIRType::Boolean:
-			switch(type.vecsize) {
-				case 1: return Uniform::UNIFORM_BOOL;
-				case 2: return Uniform::UNIFORM_VEC2B;
-				case 3: return Uniform::UNIFORM_VEC3B;
-				case 4: return Uniform::UNIFORM_VEC4B;
-				default: return Uniform::UNIFORM_BOOL;
-			}
-		case spirv_cross::SPIRType::Int:
-			switch(type.vecsize) {
-				case 1: return Uniform::UNIFORM_INT;
-				case 2: return Uniform::UNIFORM_VEC2I;
-				case 3: return Uniform::UNIFORM_VEC3I;
-				case 4: return Uniform::UNIFORM_VEC4I;
-				default: return Uniform::UNIFORM_INT;
-			}
-		//case spirv_cross::SPIRType::UInt: return Uniform::UNIFORM_UINT;
-		case spirv_cross::SPIRType::Float:
-			switch(type.vecsize) {
-				case 1: return Uniform::UNIFORM_FLOAT;
-				case 2: return type.columns == 2 ? Uniform::UNIFORM_MATRIX_2X2F : Uniform::UNIFORM_VEC2F;
-				case 3: return type.columns == 3 ? Uniform::UNIFORM_MATRIX_3X3F : Uniform::UNIFORM_VEC3F;
-				case 4: return type.columns == 4 ? Uniform::UNIFORM_MATRIX_4X4F : Uniform::UNIFORM_VEC4F;
-				default: return Uniform::UNIFORM_FLOAT;
-			}			
-		default: return Uniform::UNIFORM_INT;
+		case spirv_cross::SPIRType::Boolean: return Util::TypeConstant::BOOL;
+		case spirv_cross::SPIRType::SByte: return Util::TypeConstant::INT8;
+		case spirv_cross::SPIRType::Char:
+		case spirv_cross::SPIRType::UByte: return Util::TypeConstant::UINT8;
+		case spirv_cross::SPIRType::Short: return Util::TypeConstant::INT16;
+		case spirv_cross::SPIRType::UShort: return Util::TypeConstant::UINT16;
+		case spirv_cross::SPIRType::Int: return Util::TypeConstant::INT32;
+		case spirv_cross::SPIRType::UInt: return Util::TypeConstant::UINT32;
+		case spirv_cross::SPIRType::Int64: return Util::TypeConstant::INT64;
+		case spirv_cross::SPIRType::UInt64: return Util::TypeConstant::UINT64;
+		case spirv_cross::SPIRType::Half: return Util::TypeConstant::HALF;
+		case spirv_cross::SPIRType::Float: return Util::TypeConstant::FLOAT;
+		case spirv_cross::SPIRType::Double: return Util::TypeConstant::DOUBLE;
+		default: return Util::TypeConstant::UINT32;
 	}
 }
 
 //-------------
 
-static std::vector<ShaderResourceMember> getResourceMembers(spirv_cross::Compiler& compiler, const spirv_cross::SPIRType& type) {
-	std::vector<ShaderResourceMember> result;
+static Util::ResourceFormat getResourceFormat(spirv_cross::Compiler& compiler, const spirv_cross::SPIRType& type) {
+	Util::ResourceFormat result;
 	uint32_t member_count = type.member_types.size();
 
 	for (uint32_t i = 0; i < member_count; ++i) {
 		auto &member_type = compiler.get_type(type.member_types[i]);
-		ShaderResourceMember m;
-		m.name = compiler.get_member_name(type.self, i);
-		m.offset = compiler.type_struct_member_offset(type, i);
-		m.count = 1;
-		m.type = getUniformType(member_type);
+		auto name = compiler.get_member_name(type.self, i);
+		auto offset = compiler.type_struct_member_offset(type, i);
+		uint32_t count = 1;
+		auto attrType = getBaseType(member_type);
 		uint32_t array_stride = 0;
 
 		if(!member_type.array.empty()) {
 			array_stride = compiler.type_struct_member_array_stride(type, i);
-			m.count = member_type.array[0];
+			count = member_type.array[0];
 		}
 
-		if(member_type.basetype == spirv_cross::SPIRType::Struct) {
-			auto struct_members = getResourceMembers(compiler, member_type);
-			std::vector<ShaderResourceMember> tmp;
+		if(member_type.vecsize > 0)
+			count *= member_type.vecsize;
+		if(member_type.columns > 0)
+			count *= member_type.columns;
 
-			if(m.count > 1) {
-				for(uint32_t j=0; j<m.count; ++j) {
-					for(auto& sm : struct_members) {
-						tmp.emplace_back(m.name.getString() + "[" + Util::StringUtils::toString(j) + "]." + sm.name.getString(), m.offset + j*array_stride + sm.offset, sm.count, sm.type);
+		if(member_type.basetype == spirv_cross::SPIRType::Struct) {
+			auto structFormat = getResourceFormat(compiler, member_type);
+
+			if(!member_type.array.empty()) {
+				// unroll arrays of struct
+				for(uint32_t j=0; j<member_type.array[0]; ++j) {
+					for(auto& attr : structFormat.getAttributes()) {
+						result._appendAttribute(
+							{name + "[" + Util::StringUtils::toString(j) + "]." + attr.getName()},
+							attr.getDataType(),
+							attr.getComponentCount(),
+							attr.isNormalized(),
+							attr.getInternalType(),
+							offset + j*array_stride + attr.getOffset()
+						);
 					}
 				}
 			} else {
-				for(auto& sm : struct_members) {
-					tmp.emplace_back(m.name.getString() + "." + sm.name.getString(), m.offset + sm.offset, sm.count, sm.type);
+				// unroll struct
+				for(auto& attr : structFormat.getAttributes()) {
+					result._appendAttribute(
+						{name + "." + attr.getName()},
+						attr.getDataType(),
+						attr.getComponentCount(),
+						attr.isNormalized(),
+						attr.getInternalType(),
+						offset + attr.getOffset()
+					);
 				}
-			}
-			
-			std::move(tmp.begin(), tmp.end(), std::back_inserter(result));
+			}			
 		} else {
-			result.emplace_back(std::move(m));
+			result._appendAttribute({name}, attrType, count, false, 0, offset);
 		}		
 	}
 	return result;
@@ -113,7 +118,7 @@ static ShaderResource readPushConstant(spirv_cross::Compiler& compiler, spirv_cr
 		result.offset = std::min(result.offset, compiler.get_member_decoration(spirvType.self, i, spv::DecorationOffset));
 	result.size -= result.offset;
 
-	result.members = getResourceMembers(compiler, compiler.get_type(resource.base_type_id)); // recursively get members of structs
+	result.format = getResourceFormat(compiler, compiler.get_type(resource.base_type_id));
 
 	return result;
 }
@@ -158,7 +163,7 @@ static ShaderResource readShaderResource(spirv_cross::Compiler& compiler, spirv_
 		case ShaderResourceType::BufferUniform:
 		case ShaderResourceType::BufferStorage:
 			result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
-			result.members = getResourceMembers(compiler, compiler.get_type(resource.base_type_id)); // recursively get members of structs
+			result.format = getResourceFormat(compiler, compiler.get_type(resource.base_type_id)); // recursively get members of structs
 			break;
 		default: break;
 	}

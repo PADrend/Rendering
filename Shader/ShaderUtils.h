@@ -46,9 +46,6 @@ ShaderRef createDefaultShader(const DeviceRef& device);
 //! Create a shader that writes the pixel normal into the color buffer.
 ShaderRef createNormalToColorShader();
 
-//! Create a simple shader without any effects.
-Util::Reference<Shader> createDefaultShader();
-
 }
 
 //! @}

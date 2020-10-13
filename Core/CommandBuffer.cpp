@@ -250,8 +250,9 @@ void CommandBuffer::bindInputImage(const ImageViewRef& view, uint32_t set, uint3
 
 //-----------------
 
-void CommandBuffer::pushConstants(const std::vector<uint8_t>& data, uint32_t offset) {
+void CommandBuffer::pushConstants(const uint8_t* data, size_t size, size_t offset) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(size+offset > queue->getDevice()->getMaxPushConstantSize(), "Push constant size exceeds maximum size",);
 	vk::CommandBuffer vkCmd(handle);
 	Shader::Ref shader = pipeline->getShader();
 	WARN_AND_RETURN_IF(!shader || !shader->init(), "Cannot set push constants. No bound shader.",);
@@ -259,12 +260,12 @@ void CommandBuffer::pushConstants(const std::vector<uint8_t>& data, uint32_t off
 	vk::PipelineLayout vkLayout(shader->getLayoutHandle());
 	vk::ShaderStageFlags stages{};
 	for(auto& range : layout.getPushConstantRanges()) {
-		if(offset >= range.offset && offset + data.size() <= range.offset + range.size) {
+		if(offset >= range.offset && offset + size <= range.offset + range.size) {
 			stages |= getVkStageFlags(range.stages);
 		}
 	}
 	if(stages)
-		vkCmd.pushConstants(vkLayout, stages, offset, static_cast<uint32_t>(data.size()), data.data());
+		vkCmd.pushConstants(vkLayout, stages, offset, static_cast<uint32_t>(size), data);
 }
 
 //-----------------
@@ -406,6 +407,16 @@ void CommandBuffer::copyBuffer(const BufferStorageRef& srcBuffer, const BufferSt
 void CommandBuffer::copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size, size_t srcOffset, size_t tgtOffset) {
 	if(srcBuffer && tgtBuffer)
 		copyBuffer(srcBuffer->getBuffer(), tgtBuffer->getBuffer(), size, srcOffset, tgtOffset);
+}
+
+//-----------------
+
+void CommandBuffer::updateBuffer(const BufferStorageRef& buffer, const uint8_t* data, size_t size, size_t offset) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!buffer || !data, "Cannot update buffer. Invalid buffer or data.",);
+	WARN_AND_RETURN_IF(size+offset > buffer->getSize(), "Cannot update buffer. Offset+size exceeds buffer size.",);
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.updateBuffer(static_cast<vk::Buffer>(buffer->getApiHandle()), offset, size, data);
 }
 
 //-----------------

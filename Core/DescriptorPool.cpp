@@ -22,7 +22,6 @@ namespace Rendering {
 
 //-----------------
 
-bool hasBindingPoint(const ShaderResourceType& type);
 vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
 
 //-----------------

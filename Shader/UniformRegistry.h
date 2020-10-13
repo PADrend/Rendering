@@ -47,11 +47,12 @@ class UniformRegistry {
 			bool warnIfUnused;
 			step_t stepOfLastSet;
 			int32_t location;
+			int32_t set;
 
 			orderedEntries_t::iterator positionInUpdateList;
 
 			//! (ctor)
-			entry_t(Uniform u,bool _warn,step_t step) : uniform(std::move(u)),valid(true),warnIfUnused(_warn),stepOfLastSet(step),location(-1) {}
+			entry_t(Uniform u,bool _warn,step_t step) : uniform(std::move(u)),valid(true),warnIfUnused(_warn),stepOfLastSet(step),location(-1),set(-1) {}
 			void reset(const Uniform & u,step_t step,bool warn,const orderedEntries_t::iterator & it) {
 				uniform = u;
 				valid = true;

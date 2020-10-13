@@ -37,7 +37,7 @@
 #include <Util/Macros.h>
 #include <Util/References.h>
 #include <Util/UI/Window.h>
-#include <array>
+#include <unordered_map>
 #include <stdexcept>
 #include <stack>
 
@@ -61,8 +61,8 @@ class RenderingContext::InternalData {
 		std::stack<ColorBlendState> colorBlendStack;
 
 		// binding stacks
-		std::array<std::stack<Texture::Ref>, MAX_TEXTURES> textureStacks;
-		std::array<std::stack<ImageView::Ref>, MAX_BOUND_IMAGES> imageStacks;
+		std::unordered_map<uint32_t, std::stack<Texture::Ref>> textureStacks;
+		std::unordered_map<uint32_t, std::stack<ImageView::Ref>> imageStacks;
 		
 		// transformation stack
 		std::stack<Geometry::Matrix4x4> matrixStack;
@@ -130,6 +130,11 @@ void RenderingContext::displayMesh(Mesh * mesh) {
 	displayMeshFn(*this, mesh,0,mesh->isUsingIndexData()? mesh->getIndexCount() : mesh->getVertexCount());
 }
 
+
+CommandBufferRef RenderingContext::getCommandBuffer() const {
+	return internal->cmd;
+}
+
 // helper ***************************************************************************
 
 void RenderingContext::flush(bool wait) {
@@ -179,17 +184,15 @@ void RenderingContext::applyChanges(bool forced) {
 	if(!internal->pipelineState.getFBO())
 		internal->cmd->setFBO(internal->device->getSwapchain()->getCurrentFBO());
 
-	// TODO: apply uniform buffers
-	// TODO: set dynamic state
-
-	//auto shader = internal->cmd->getShader();
+	auto shader = internal->cmd->getShader();
 
 	// transfer updated global uniforms to the shader
-	//shader->_getUniformRegistry()->performGlobalSync(internal->globalUniforms, false);
+	shader->_getUniformRegistry()->performGlobalSync(internal->globalUniforms, false);
 
 	// apply uniforms
-	//shader->applyUniforms(forced);
+	shader->applyUniforms(forced);
 
+	// TODO: set dynamic state
 }
 
 // Clear ***************************************************************************
@@ -814,7 +817,7 @@ void RenderingContext::pushAndSetTexture(uint8_t unit, const TextureRef& texture
 }
 
 void RenderingContext::popTexture(uint8_t unit, uint8_t set) {
-	WARN_AND_RETURN_IF(internal->textureStacks.at(unit).empty(), "popTexture: Empty Texture-Stack",);
+	WARN_AND_RETURN_IF(internal->textureStacks[unit].empty(), "popTexture: Empty Texture-Stack",);
 	setTexture(unit, internal->textureStacks[unit].top() );
 	internal->textureStacks[unit].pop();
 }

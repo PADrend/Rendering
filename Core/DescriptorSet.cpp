@@ -29,7 +29,6 @@ namespace Rendering {
 
 vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
 vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
-bool hasBindingPoint(const ShaderResourceType& type);
 
 //-----------------
 

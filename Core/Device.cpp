@@ -386,6 +386,12 @@ uint32_t Device::getMaxFramebufferAttachments() const {
 
 //------------
 
+uint32_t Device::getMaxPushConstantSize() const {
+	return internal->properties.limits.maxPushConstantsSize;
+}
+
+//------------
+
 const Util::UI::WindowRef& Device::getWindow() const {
 	return internal->window;
 }
