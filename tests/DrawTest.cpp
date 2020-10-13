@@ -22,7 +22,6 @@
 #include "../Core/ImageStorage.h"
 #include "../Core/ImageView.h"
 #include "../Core/Pipeline.h"
-#include "../Core/PipelineCache.h"
 #include "../FBO.h"
 #include "../Texture/Texture.h"
 #include "../Shader/Shader.h"
