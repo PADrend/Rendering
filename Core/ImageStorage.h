@@ -13,10 +13,10 @@
 #include "Common.h"
 #include "ImageFormat.h"
 
+#include "../Texture/TextureType.h"
+
 #include <Util/ReferenceCounter.h>
 
-#include <vector>
-#include <memory>
 
 namespace Rendering {
 class Device;
@@ -30,7 +30,7 @@ public:
 	struct Configuration {
 		ImageFormat format; //! internal format of the image storage.
 		MemoryUsage memoryUsage = MemoryUsage::CpuToGpu; //! memory usage flag
-		uint32_t usageFlags = 0x7fffffffu; //! additional, api dependend usage flags (e.g., VkBufferUsageFlags)
+		uint32_t usageFlags = 0x7fffffffu; //! additional (api dependend) usage flags (e.g., VkBufferUsageFlags)
 	};
 
 	using Ref = Util::Reference<ImageStorage>;
@@ -66,6 +66,11 @@ public:
 	const ImageFormat& getFormat() const { return config.format; };
 	
 	/**
+	 * @return The type of the image (1D, 2D, 3D)
+	 */
+	TextureType getType() const { return type; }
+
+	/**
 	 * @return The configuration the image was created with
 	 */
 	const Configuration& getConfig() const { return config; }
@@ -79,8 +84,9 @@ private:
 	explicit ImageStorage(const DeviceRef& device, const Configuration& config);
 	bool init();
 
-	DeviceRef device;
-	Configuration config;
+	const DeviceRef device;
+	const Configuration config;
+	const TextureType type;
 	ImageHandle handle;
 	AllocationHandle allocation;
 	size_t dataSize = 0;

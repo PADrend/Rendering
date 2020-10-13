@@ -27,6 +27,7 @@ add_library(Rendering SHARED
 	Core/Fence.cpp
 	Core/ImageFormat.cpp
 	Core/ImageStorage.cpp
+	Core/ImageView.cpp
 	Core/Pipeline.cpp
 	Core/Queue.cpp
 	Core/Swapchain.cpp
@@ -73,6 +74,7 @@ add_library(Rendering SHARED
 	#Shader/Uniform.cpp
 	#Shader/UniformRegistry.cpp
 	Texture/Texture.cpp
+	Texture/TextureType.cpp
 	#Texture/TextureUtils.cpp
 	#BufferObject.cpp
 	#Draw.cpp

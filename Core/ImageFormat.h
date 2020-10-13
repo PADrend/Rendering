@@ -13,6 +13,10 @@
 
 #include <Geometry/Vec3.h>
 
+namespace Geometry {
+using Vec3ui = _Vec3<uint32_t>;
+} /* Geometry */
+
 namespace Rendering {
 
 enum class PixelFormat : std::uint8_t {
@@ -95,13 +99,16 @@ enum class PixelFormat : std::uint8_t {
 	BC7UnormSrgb,
 };
 
+
 struct ImageFormat {
-	Geometry::Vec3i extent;
+	Geometry::Vec3ui extent;
 	PixelFormat pixelFormat = PixelFormat::RGBA8Unorm;
-	uint32_t mipLevels = 0;
-	uint32_t layers = 0;
+	uint32_t mipLevels = 1;
+	uint32_t layers = 1;
 	uint32_t samples = 1;
 };
+
+uint32_t convertToInternalFormat(const PixelFormat& format);
 
 } /* Rendering */
 

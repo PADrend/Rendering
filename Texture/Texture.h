@@ -33,6 +33,8 @@ class Device;
 using DeviceRef = Util::Reference<Device>;
 class ImageStorage;
 using ImageStorageRef = Util::Reference<ImageStorage>;
+class ImageView;
+using ImageViewRef = Util::Reference<ImageView>;
 
 //! @addtogroup rendering_resources
 //! @{
@@ -71,6 +73,7 @@ public:
 	
 	static Ref create(const DeviceRef& device, const Format& format);
 	static Ref create(const DeviceRef& device, const ImageStorageRef& image);
+	static Ref create(const DeviceRef& device, const ImageViewRef& image);
 
 	~Texture();
 
@@ -82,6 +85,7 @@ public:
 	TextureType getTextureType() const { return tType; }
 	bool getUseLinearMinFilter() const { return false; }
 	bool getUseLinearMagFilter() const { return false; }
+	bool isValid() const { return imageView; }
 
 	/*!	@name Image data manipulation */
 	// @{
@@ -99,6 +103,7 @@ public:
 
 	Util::Bitmap* getLocalBitmap() const { return localBitmap.get(); }
 	
+	void upload();
 	// @}
 
 	/*!	@name Mipmaps */
@@ -116,7 +121,8 @@ public:
 	
 	/*!	@name Internal */
 	// @{
-	const ImageStorageRef& getImage() { return image; }
+	const ImageViewRef& getImageView() const { return imageView; }
+	const ImageStorageRef& getImage() const;
 	// @}
 	
 	/*!	@name Deprecated */
@@ -132,9 +138,9 @@ public:
 		return glId;
 	}
 	[[deprecated]]
-	bool isGLTextureValid()const;
+	bool isGLTextureValid()const { return isValid(); }
 	[[deprecated]]
-	bool isGLTextureResident()const;
+	bool isGLTextureResident()const { return isValid(); }
 	[[deprecated]]
 	uint32_t getGLTextureType() const { return 0; }
 	[[deprecated]]
@@ -170,7 +176,7 @@ private:
 
 	Util::FileName fileName;
 	Util::Reference<Util::Bitmap> localBitmap;
-	ImageStorageRef image;
+	ImageViewRef imageView;
 };
 
 

@@ -35,7 +35,7 @@ Swapchain::~Swapchain() {
 
 //------------
 
-Swapchain::Swapchain(const DeviceRef& device, const Geometry::Vec2i& extent) : device(device), extent(extent) { }
+Swapchain::Swapchain(const DeviceRef& device, const Geometry::Vec2ui& extent) : device(device), extent(extent) { }
 
 //------------
 
@@ -121,7 +121,7 @@ bool Swapchain::updateFramebuffers() {
 	vk::SwapchainKHR vkSwapchain(handle);
 	auto swapchainImages = vkDevice.getSwapchainImagesKHR(vkSwapchain);
 	ImageFormat format{};
-	format.extent = {extent.x(), extent.y(), 1};
+	format.extent = {extent.x(), extent.y(), 1u};
 	format.pixelFormat = PixelFormat::BGRA8Unorm;
 
 	// Update FBOs
@@ -132,7 +132,7 @@ bool Swapchain::updateFramebuffers() {
 		auto texture = Texture::create(device.get(), image);
 		auto& fbo = fbos[i];
 		if(!fbo) fbo = FBO::create(device.get());
-		fbo->attachColorTexture(std::move(texture));
+		fbo->attachColorTexture(texture);
 		// TODO: create & add depth texture
 		if(!fbo || !fbo->isComplete()) {
 			WARN("Device: Could not create swap chain framebuffers.");

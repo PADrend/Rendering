@@ -22,8 +22,10 @@
 namespace Rendering {
 class Texture;
 using TextureRef = Util::Reference<Texture>;
-//class TextureView;
-//using TextureViewRef = Util::Reference<TextureView>;
+class ImageStorage;
+using ImageStorageRef = Util::Reference<ImageStorage>;
+class ImageView;
+using ImageViewRef = Util::Reference<ImageView>;
 class Device;
 using DeviceRef = Util::Reference<Device>;
 class RenderingContext;
@@ -66,28 +68,23 @@ class RenderingContext;
 */
 class FBO : public Util::ReferenceCounter<FBO> {
 public:
-	struct Attachment {
-		ImageViewHandle view;
-		TextureRef texture;
-		uint32_t mipLevel;
-		uint32_t baseLayer;
-		uint32_t layerCount;
-	};
 	using Ref = Util::Reference<FBO>;
 			
 	static Ref create(const DeviceRef& device);
 	~FBO();
 
-	//void attachColorTexture(const TextureViewRef& textureView, uint32_t index = 0);
-	void attachColorTexture(const TextureRef& texture, uint32_t index = 0, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=0);
+	void attachColorTexture(const TextureRef& texture, uint32_t index = 0);
+	void attachColorTexture(const ImageViewRef& view, uint32_t index = 0);
+	void attachColorTexture(const ImageStorageRef& image, uint32_t index = 0, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1);
 	void detachColorTexture(uint32_t index = 0);
 
-	//void attachDepthStencilTexture(const TextureViewRef& textureView);
-	void attachDepthStencilTexture(const TextureRef& texture, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=0);
+	void attachDepthStencilTexture(const TextureRef& texture);
+	void attachDepthStencilTexture(const ImageViewRef& view);
+	void attachDepthStencilTexture(const ImageStorageRef& image, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1);
 	void detachDepthStencilTexture();
 	
-	const Attachment& getColorTexture(uint32_t index = 0) const;
-	const Attachment& getDepthStencilTexture() const;
+	const TextureRef& getColorTexture(uint32_t index = 0) const;
+	const TextureRef& getDepthStencilTexture() const;
 	
 	uint32_t getWidth() const { return width; }
 	uint32_t getHeight() const { return height; }
@@ -105,8 +102,8 @@ private:
 	FramebufferHandle handle;
 	RenderPassHandle renderPass;
 	Util::WeakPointer<Device> device;
-	std::vector<Attachment> colorAttachments;
-	Attachment depthStencilAttachment;
+	std::vector<TextureRef> colorAttachments;
+	TextureRef depthStencilAttachment;
 	uint32_t width = 0;
 	uint32_t height = 0;
 	bool isValid = false;

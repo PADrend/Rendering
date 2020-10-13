@@ -11,6 +11,7 @@
 #include "Texture.h"
 #include "../Core/Device.h"
 #include "../Core/ImageStorage.h"
+#include "../Core/ImageView.h"
 
 #include "../GLHeader.h"
 #include "../BufferObject.h"
@@ -36,11 +37,17 @@ namespace Rendering {
 Texture::Ref Texture::create(const DeviceRef& device, const Format& format) {
 	return new Texture(device, format);
 }
+
 //--------------
 
 Texture::Ref Texture::create(const DeviceRef& device, const ImageStorageRef& image) {
-	Ref texture = new Texture(device, image->getFormat());
-	texture->image = image;
+	return create(device, ImageView::create(image, {image->getType(), 0u, image->getFormat().mipLevels, 0u, image->getFormat().layers}));
+}
+//--------------
+
+Texture::Ref Texture::create(const DeviceRef& device, const ImageViewRef& view) {
+	Ref texture = new Texture(device, view->getImage()->getFormat());
+	texture->imageView = view;
 	return texture;
 }
 
@@ -92,7 +99,7 @@ Texture::Texture(Format _format) : Texture(Device::getDefault(), format) { }
 Texture::~Texture() = default;
 
 void Texture::_createGLID(RenderingContext & context) {
-	if(image) {
+	if(imageView) {
 		//INFO ("Recreating Texture!");
 		if(isGLTextureValid()) {
 			WARN("Recreating valid Texture!");
@@ -105,17 +112,43 @@ void Texture::_createGLID(RenderingContext & context) {
 //---------------
 
 void Texture::createMipmaps(RenderingContext & context) {
-	if(!image || dataHasChanged)
+	if(!imageView || dataHasChanged)
 		_uploadGLTexture(context);
 	mipmapCreationIsPlanned = false;
 }
 
 //---------------
 
-void Texture::_uploadGLTexture(RenderingContext & context, int level/*=0*/) {
-	if(!image)
-		_createGLID(context);
+void Texture::upload() {
+	if(imageView && !dataHasChanged)
+		return;
+	
+	if(!imageView) {
+		// allocate new image storage & create view
+		auto image = ImageStorage::create(device, {format});
+		if(!image) {
+			WARN("Texture: Failed to allocate image storage.");
+			return;
+		}
+		imageView = ImageView::create(image, {tType, 0u, format.mipLevels, 0u, format.layers});
+		if(!imageView) {
+			WARN("Texture: Failed to create image view.");
+			return;
+		}
+	}
+
+	if(localBitmap && dataHasChanged) {
+		// TODO: upload data
+		WARN("Texture: data upload is currently not supported.");
+	}
 	dataHasChanged = false;
+}
+
+
+//---------------
+
+void Texture::_uploadGLTexture(RenderingContext & context, int level/*=0*/) {
+	upload();
 }
 
 //---------------
@@ -136,20 +169,8 @@ void Texture::allocateLocalData() {
 
 //---------------
 
-bool Texture::isGLTextureValid() const {
-	return image && image->getApiHandle();
-}
-
-//---------------
-
-bool Texture::isGLTextureResident() const {
-	return image && image->getApiHandle();
-}
-
-//---------------
-
 void Texture::removeGLData() {
-	image = nullptr;
+	imageView = nullptr;
 }
 
 //---------------
@@ -161,7 +182,7 @@ void Texture::clearGLData(const Util::Color4f& color) {
 //---------------
 
 void Texture::downloadGLTexture(RenderingContext & context) {
-	if(!image) {
+	if(!imageView) {
 		WARN("downloadGLTexture: No glTexture available.");
 		return;
 	}
@@ -190,6 +211,13 @@ uint8_t * Texture::openLocalData(RenderingContext & context) {
 			downloadGLTexture(context);
 	}
 	return getLocalData();
+}
+
+//---------------
+
+const ImageStorageRef& Texture::getImage() const {
+	static ImageStorageRef nullImage;
+	return imageView ? imageView->getImage() : nullImage;
 }
 
 //---------------

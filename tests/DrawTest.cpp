@@ -17,6 +17,7 @@
 #include "../Core/Queue.h"
 #include "../Core/Swapchain.h"
 #include "../Core/ImageStorage.h"
+#include "../Core/ImageView.h"
 #include "../FBO.h"
 #include "../Texture/Texture.h"
 #include <Util/Timer.h>
@@ -171,8 +172,8 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		vk::RenderPass renderPass(fbo->getRenderPass());
 		vk::Framebuffer framebuffer(fbo->getApiHandle());
 		auto& attachment = fbo->getColorTexture();
-		auto& texture = attachment.texture;
-		auto& image = texture->getImage();
+		auto& view = attachment->getImageView();
+		auto& image = attachment->getImage();
 		
 		pipelines.emplace_back(vkDevice.createGraphicsPipelineUnique({}, { {}, 
 			static_cast<uint32_t>(pipelineShaderStages.size()), pipelineShaderStages.data(),
@@ -191,8 +192,8 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		barrier.image = image->getApiHandle();
 		barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor,
-			attachment.mipLevel, 1,
-			attachment.baseLayer, attachment.layerCount
+			view->getMipLevel(), view->getMipLevelCount(),
+			view->getLayer(), view->getLayerCount()
 		};
 		
 		cmdBuffer->pipelineBarrier(

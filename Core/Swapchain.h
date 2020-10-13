@@ -17,6 +17,10 @@
 #include <memory>
 #include <vector>
 
+namespace Geometry {
+using Vec2ui = _Vec2<uint32_t>;
+} /* Geometry */
+
 namespace Util {
 namespace UI {
 class Window;
@@ -48,14 +52,14 @@ public:
 	const SwapchainHandle& getApiHandle() const { return handle; }
 private:
 	friend class Device;
-	explicit Swapchain(const DeviceRef& device, const Geometry::Vec2i& extent);
+	explicit Swapchain(const DeviceRef& device, const Geometry::Vec2ui& extent);
 	bool init();
 	bool updateFramebuffers();
 
 	Util::WeakPointer<Device> device;
 	SwapchainHandle handle;
 
-	Geometry::Vec2i extent;
+	Geometry::Vec2ui extent;
 	uint32_t imageCount;
 	uint32_t currentIndex = 0;
 	std::vector<FBORef> fbos;

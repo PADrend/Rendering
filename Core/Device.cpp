@@ -296,7 +296,7 @@ bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, cons
 bool Device::InternalData::createSwapchain(const Device::Ref& device, const Device::Configuration& config) {
 	if(config.debugMode)
 		std::cout << "Creating swapchain..." << std::endl;
-	swapchain = new Swapchain(device, {static_cast<int32_t>(window->getWidth()), static_cast<int32_t>(window->getHeight())});
+	swapchain = new Swapchain(device, {window->getWidth(), window->getHeight()});
 	if(!swapchain->init()) {
 		swapchain = nullptr;
 		return false;
