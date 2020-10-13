@@ -9,6 +9,9 @@
 
 #include "Pipeline.h"
 #include "Device.h"
+#include "PipelineCache.h"
+#include "../FBO.h"
+#include "../Shader/Shader.h"
 
 #include <Util/Macros.h>
 
@@ -16,28 +19,61 @@ namespace Rendering {
 
 //---------------
 
-Pipeline::Ref Pipeline::create(const DeviceRef& device, const Configuration& config) {
-	Ref obj = new Pipeline(device, config);
-	if(!obj->init()) {
-		WARN("Pipeline: Failed to create pipeline.");
-		return nullptr;
-	}
-	return obj;
-}
-
-//---------------
-
 Pipeline::~Pipeline() = default;
 
 //---------------
 
-Pipeline::Pipeline(const DeviceRef& device, const Configuration& config) : device(device), config(config) { }
+Pipeline::Pipeline(const DeviceRef& device, PipelineType type) : type(type), device(device) { }
 
 //---------------
 
-bool Pipeline::init() {
-	
-	return true;
+bool Pipeline::validate() {
+	switch(type) {
+		case PipelineType::Graphics:
+			handle = device->getPipelineCache()->requestGraphicsHandle(this, nullptr);
+			break;
+		case PipelineType::Compute:
+			handle = device->getPipelineCache()->requestComputeHandle(this, nullptr);
+			break;
+		default:
+			handle = nullptr;
+	}
+	return handle;
+}
+
+//---------------
+
+void Pipeline::setShader(const ShaderRef& value) { invalidate(); shader = value; }
+
+//---------------
+
+void GraphicsPipeline::setState(const PipelineState& value) { invalidate(); state = value; }
+
+//---------------
+
+void GraphicsPipeline::setFBO(const FBORef& value) { invalidate(); fbo = value; }
+
+//---------------
+
+void ComputePipeline::setEntryPoint(const std::string& value) { invalidate(); entryPoint = value; }
+
+//---------------
+
+GraphicsPipeline::Ref GraphicsPipeline::create(const DeviceRef& device, const PipelineState& state, const ShaderRef& shader, const FBORef& fbo) {
+	auto pipeline = new GraphicsPipeline(device);
+	pipeline->setState(state);
+	pipeline->setShader(shader);
+	pipeline->setFBO(fbo);
+	return pipeline;
+}
+
+//---------------
+
+ComputePipeline::Ref ComputePipeline::create(const DeviceRef& device, const ShaderRef& shader, const std::string& entryPoint) {
+	auto pipeline = new ComputePipeline(device);
+	pipeline->setShader(shader);
+	pipeline->setEntryPoint(entryPoint);
+	return pipeline;
 }
 
 //---------------

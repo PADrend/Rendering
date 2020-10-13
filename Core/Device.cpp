@@ -12,6 +12,7 @@
 #include "Swapchain.h"
 #include "CommandBuffer.h"
 #include "CommandPool.h"
+#include "PipelineCache.h"
 
 #include <Util/Macros.h>
 #include <Util/UI/Window.h>
@@ -59,6 +60,7 @@ struct Device::InternalData {
 	SurfaceHandle surface;
 	AllocatorHandle allocator;
 	Swapchain::Ref swapchain;
+	PipelineCache::Ref pipelineCache;
 
 	vk::DispatchLoaderDynamic dldy;
 	vk::PhysicalDevice physicalDevice;
@@ -245,6 +247,11 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 		commandPools[index] = new CommandPool(device, index);
 	}
 
+	// Create pipeline cache
+	pipelineCache = new PipelineCache(device);
+	if(!pipelineCache->init())
+		return false;
+
 	return true;
 }
 
@@ -423,6 +430,12 @@ const CommandPoolRef& Device::getCommandPool(uint32_t familyIndex) const {
 	if(familyIndex >= internal->commandPools.size())
 		return nullRef;
 	return internal->commandPools[familyIndex];
+}
+
+//------------
+
+const PipelineCacheRef& Device::getPipelineCache() const {
+	return internal->pipelineCache;
 }
 
 //------------

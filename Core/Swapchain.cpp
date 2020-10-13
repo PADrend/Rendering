@@ -122,7 +122,7 @@ bool Swapchain::updateFramebuffers() {
 	auto swapchainImages = vkDevice.getSwapchainImagesKHR(vkSwapchain);
 	ImageFormat format{};
 	format.extent = {extent.x(), extent.y(), 1u};
-	format.pixelFormat = PixelFormat::BGRA8Unorm;
+	format.pixelFormat = InternalFormat::BGRA8Unorm;
 
 	// Update FBOs
 	fbos.resize(imageCount);
@@ -134,7 +134,7 @@ bool Swapchain::updateFramebuffers() {
 		if(!fbo) fbo = FBO::create(device.get());
 		fbo->attachColorTexture(texture);
 		// TODO: create & add depth texture
-		if(!fbo || !fbo->isComplete()) {
+		if(!fbo || !fbo->validate()) {
 			WARN("Device: Could not create swap chain framebuffers.");
 			return false;
 		}

@@ -11,32 +11,81 @@
 #define RENDERING_CORE_PIPELINE_H_
 
 #include "Common.h"
+#include "../RenderingContext/PipelineState.h"
 
 #include <Util/ReferenceCounter.h>
 
 namespace Rendering {
 class Device;
 using DeviceRef = Util::Reference<Device>;
+class Shader;
+using ShaderRef = Util::Reference<Shader>;
+class FBO;
+using FBORef = Util::Reference<FBO>;
+
+enum PipelineType {
+	Graphics,
+	Compute
+};
+
+//---------------
 
 class Pipeline : public Util::ReferenceCounter<Pipeline> {
 public:
-	struct Configuration {
-
-	};
 	using Ref = Util::Reference<Pipeline>;
-	static Ref create(const DeviceRef& device, const Configuration& config);
 	Pipeline(Pipeline &&) = default;
 	Pipeline(const Pipeline &) = delete;
-	~Pipeline();
+	virtual ~Pipeline();
 
+	bool validate();
+	void invalidate() { handle = nullptr; }
+	bool isValid() const { return handle; }
+
+	const ShaderRef& getShader() const { return shader; }
+	void setShader(const ShaderRef& value);
+
+	PipelineType getType() const { return type; }
 	const PipelineHandle& getApiHandle() const { return handle; }
+protected:
+	explicit Pipeline(const DeviceRef& device, PipelineType type);
 private:
-	Pipeline(const DeviceRef& device, const Configuration& config);
-	bool init();
-	
+	const PipelineType type;
 	DeviceRef device;
-	Configuration config;
-	PipelineHandle handle;
+	PipelineHandle::Ref handle;
+	ShaderRef shader;
+};
+
+//---------------
+
+class GraphicsPipeline : public Pipeline {
+public:
+	using Ref = Util::Reference<GraphicsPipeline>;
+	static Ref create(const DeviceRef& device, const PipelineState& state, const ShaderRef& shader = nullptr, const FBORef& fbo = nullptr);
+
+	const PipelineState& getState() const { return state; }
+	void setState(const PipelineState& value);
+
+	const FBORef& getFBO() const { return fbo; }
+	void setFBO(const FBORef& value);
+private:
+	explicit GraphicsPipeline(const DeviceRef& device) : Pipeline(device, PipelineType::Graphics) {}
+
+	PipelineState state;
+	FBORef fbo;
+};
+
+//---------------
+
+class ComputePipeline : public Pipeline {
+public:
+	using Ref = Util::Reference<ComputePipeline>;
+	static Ref create(const DeviceRef& device, const ShaderRef& shader = nullptr, const std::string& entryPoint = "main");
+	
+	const std::string& getEntryPoint() const { return entryPoint; }
+	void setEntryPoint(const std::string& value);
+private:
+	explicit ComputePipeline(const DeviceRef& device) : Pipeline(device, PipelineType::Compute) {}
+	std::string entryPoint;
 };
 
 } /* Rendering */

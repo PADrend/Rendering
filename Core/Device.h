@@ -29,10 +29,12 @@ class RenderingContext;
 class FBO;
 class Swapchain;
 class CommandPool;
+class PipelineCache;
 using RenderingContextRef = Util::Reference<RenderingContext>;
 using FBORef = Util::Reference<FBO>;
 using SwapchainRef = Util::Reference<Swapchain>;
 using CommandPoolRef = Util::Reference<CommandPool>;
+using PipelineCacheRef = Util::Reference<PipelineCache>;
 
 /** Represents a GPU Device	
 	@ingroup rendering_core
@@ -68,6 +70,7 @@ public:
 	std::set<Queue::Ref> getQueues() const;
 	const CommandPoolRef& getCommandPool(Queue::Family family) const;
 	const CommandPoolRef& getCommandPool(uint32_t familyIndex) const;
+	const PipelineCacheRef& getPipelineCache() const;
 	
 	//! @name API Handles
 	//! @{

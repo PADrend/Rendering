@@ -23,7 +23,7 @@ ViewportState& ViewportState::setViewport(const Viewport& value, uint32_t index)
 
 //-------------
 
-ViewportState& ViewportState::setScissor(const Geometry::Rect& value, uint32_t index) { 
+ViewportState& ViewportState::setScissor(const Geometry::Rect_i& value, uint32_t index) { 
 	WARN_AND_RETURN_IF(scissors.size() > index, "Invalid scissor index " + std::to_string(index), *this); 
 	scissors[index] = value; 
 	return *this; 
@@ -37,6 +37,83 @@ ColorBlendState& ColorBlendState::setAttachment(const ColorBlendAttachmentState&
 	return *this; 
 }
 
+//---------------
+
+PipelineState::PipelineState() {
+	setVertexInputState({})
+		.setInputAssemblyState({})
+		.setViewportState({})
+		.setRasterizationState({})
+		.setMultisampleState({})
+		.setDepthStencilState({})
+		.setColorBlendState({});
+}
+
 //-------------
+
+PipelineState::PipelineState(PipelineState&& o) {
+	setVertexInputState(std::move(o.vertexInput))
+		.setInputAssemblyState(std::move(o.inputAssembly))
+		.setViewportState(std::move(o.viewport))
+		.setRasterizationState(std::move(o.rasterization))
+		.setMultisampleState(std::move(o.multisample))
+		.setDepthStencilState(std::move(o.depthStencil))
+		.setColorBlendState(std::move(o.colorBlend));
+	o.setVertexInputState({})
+		.setInputAssemblyState({})
+		.setViewportState({})
+		.setRasterizationState({})
+		.setMultisampleState({})
+		.setDepthStencilState({})
+		.setColorBlendState({});
+}
+
+//-------------
+
+PipelineState::PipelineState(const PipelineState& o) {
+	setVertexInputState(o.vertexInput)
+		.setInputAssemblyState(o.inputAssembly)
+		.setViewportState(o.viewport)
+		.setRasterizationState(o.rasterization)
+		.setMultisampleState(o.multisample)
+		.setDepthStencilState(o.depthStencil)
+		.setColorBlendState(o.colorBlend);
+}
+
+//-------------
+
+PipelineState& PipelineState::operator=(PipelineState&& o) {
+	setVertexInputState(std::move(o.vertexInput))
+		.setInputAssemblyState(std::move(o.inputAssembly))
+		.setViewportState(std::move(o.viewport))
+		.setRasterizationState(std::move(o.rasterization))
+		.setMultisampleState(std::move(o.multisample))
+		.setDepthStencilState(std::move(o.depthStencil))
+		.setColorBlendState(std::move(o.colorBlend));
+	o.setVertexInputState({})
+		.setInputAssemblyState({})
+		.setViewportState({})
+		.setRasterizationState({})
+		.setMultisampleState({})
+		.setDepthStencilState({})
+		.setColorBlendState({});
+	return *this;
+}
+
+//-------------
+
+PipelineState& PipelineState::operator=(const PipelineState& o) {
+	setVertexInputState(o.vertexInput)
+		.setInputAssemblyState(o.inputAssembly)
+		.setViewportState(o.viewport)
+		.setRasterizationState(o.rasterization)
+		.setMultisampleState(o.multisample)
+		.setDepthStencilState(o.depthStencil)
+		.setColorBlendState(o.colorBlend);
+	return *this;
+}
+
+//-------------
+
 
 } /* Rendering */

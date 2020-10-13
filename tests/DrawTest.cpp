@@ -12,12 +12,14 @@
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
 #include "../RenderingContext/RenderingContext.h"
+#include "../RenderingContext/PipelineState.h"
 #include "../Core/ApiHandles.h"
 #include "../Core/Device.h"
 #include "../Core/Queue.h"
 #include "../Core/Swapchain.h"
 #include "../Core/ImageStorage.h"
 #include "../Core/ImageView.h"
+#include "../Core/Pipeline.h"
 #include "../FBO.h"
 #include "../Texture/Texture.h"
 #include "../Shader/Shader.h"
@@ -41,8 +43,8 @@ const std::string vertexShader = R"vs(
 
 	vec2 positions[3] = vec2[](
 		vec2(0.0, -0.5),
-		vec2(0.5, 0.5),
-		vec2(-0.5, 0.5)
+		vec2(-0.5, 0.5),
+		vec2(0.5, 0.5)
 	);
 
 	vec3 colors[3] = vec3[](
@@ -69,18 +71,6 @@ const std::string fragmentShader = R"fs(
 	}
 )fs";
 
-vk::ShaderStageFlagBits convertShaderStage(Rendering::ShaderStage stage) {
-	switch(stage) {
-		case Rendering::ShaderStage::Undefined: return vk::ShaderStageFlagBits::eAll;
-		case Rendering::ShaderStage::Vertex: return vk::ShaderStageFlagBits::eVertex;
-		case Rendering::ShaderStage::TessellationControl: return vk::ShaderStageFlagBits::eTessellationControl;
-		case Rendering::ShaderStage::TessellationEvaluation: return vk::ShaderStageFlagBits::eTessellationEvaluation;
-		case Rendering::ShaderStage::Geometry: return vk::ShaderStageFlagBits::eGeometry;
-		case Rendering::ShaderStage::Fragment: return vk::ShaderStageFlagBits::eFragment;
-		case Rendering::ShaderStage::Compute: return vk::ShaderStageFlagBits::eCompute;
-	}
-}
-
 TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
@@ -94,44 +84,13 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	// compile shaders
 	auto shader = Shader::createShader(device, vertexShader, fragmentShader);
 	REQUIRE(shader->init());
-	std::vector<vk::PipelineShaderStageCreateInfo> pipelineShaderStages;
-	for(auto& sm : shader->getShaderModules())
-		pipelineShaderStages.emplace_back(vk::PipelineShaderStageCreateInfo{{}, convertShaderStage(sm.first), vk::ShaderModule(sm.second), "main" });
-	
-	// vertex input
-	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
-	vk::PipelineInputAssemblyStateCreateInfo inputAssembly { {}, vk::PrimitiveTopology::eTriangleList, false };
 
-	// rasterizer
-	vk::Viewport viewport { 0.0f, 0.0f, static_cast<float>(TestUtils::window->getWidth()), static_cast<float>(TestUtils::window->getHeight()), 0.0f, 1.0f };
-	vk::Rect2D scissor {{0, 0}, {TestUtils::window->getWidth(), TestUtils::window->getHeight()}};
-	vk::PipelineViewportStateCreateInfo viewportState { {}, 1, &viewport, 1, &scissor };
-
-	vk::PipelineRasterizationStateCreateInfo rasterizer;
-	rasterizer.frontFace = vk::FrontFace::eClockwise;
-	rasterizer.lineWidth = 1.0f;
-	
-	vk::PipelineMultisampleStateCreateInfo multisampling;
-
-	// color blending
-	std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments(device->getMaxFramebufferAttachments(), { 
-		false,  
-		vk::BlendFactor::eZero, vk::BlendFactor::eOne, vk::BlendOp::eAdd,
-		vk::BlendFactor::eZero, vk::BlendFactor::eOne, vk::BlendOp::eAdd,
-		vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-	});
-	
-	vk::PipelineColorBlendStateCreateInfo colorBlending { {}, false, vk::LogicOp::eCopy, static_cast<uint32_t>(colorBlendAttachments.size()), colorBlendAttachments.data() };
-	
-	// create pipeline	
-	auto pipelineLayout = vkDevice.createPipelineLayoutUnique({});
-	std::vector<vk::UniquePipeline> pipelines;
-	/*auto pipeline = vkDevice.createGraphicsPipelineUnique({}, { {}, 
-		static_cast<uint32_t>(pipelineShaderStages.size()), pipelineShaderStages.data(),
-		&vertexInputInfo, &inputAssembly, nullptr, &viewportState, &rasterizer, &multisampling,
-		nullptr, &colorBlending, nullptr, *pipelineLayout, renderPass, 0
-	});*/
-	
+	auto pipeline = GraphicsPipeline::create(device, {}, shader);
+	auto state = pipeline->getState();
+	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(TestUtils::window->getWidth()), static_cast<int32_t>(TestUtils::window->getHeight())};
+	state.setViewportState({windowRect, windowRect});
+	pipeline->setState(state);
+		
 	auto graphicsQueue = device->getQueue(Queue::Family::Graphics);
 	auto swapchain = device->getSwapchain();
 	
@@ -155,12 +114,9 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		auto& attachment = fbo->getColorTexture();
 		auto& view = attachment->getImageView();
 		auto& image = attachment->getImage();
-		
-		pipelines.emplace_back(vkDevice.createGraphicsPipelineUnique({}, { {}, 
-			static_cast<uint32_t>(pipelineShaderStages.size()), pipelineShaderStages.data(),
-			&vertexInputInfo, &inputAssembly, nullptr, &viewportState, &rasterizer, &multisampling,
-			nullptr, &colorBlending, nullptr, *pipelineLayout, renderPass, 0
-		}));
+		pipeline->setFBO(fbo);
+		REQUIRE(pipeline->validate());
+		vk::Pipeline vkPipeline(pipeline->getApiHandle());
 		
 		// record commands
 		auto& cmdBuffer = commandBuffers[i];
@@ -189,7 +145,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 			vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} },
 			1, &clearColor
 		}, vk::SubpassContents::eInline);
-		cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, *pipelines.back());
+		cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, vkPipeline);
 		cmdBuffer->draw(3, 1, 0, 0);
 		
 		cmdBuffer->endRenderPass();

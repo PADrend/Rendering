@@ -12,6 +12,7 @@
 #define RENDERING_SHADERUTILS_H_
 
 #include <Util/References.h>
+#include <Util/Utils.h>
 
 #include <cstdint>
 #include <string>
@@ -114,5 +115,28 @@ Util::Reference<Shader> createDefaultShader();
 
 //! @}
 }
+
+//-------------
+
+template <> struct std::hash<Rendering::ShaderResource> {
+	std::size_t operator()(const Rendering::ShaderResource &resource) const {
+		std::size_t result = 0;
+		Util::hash_combine(result, resource.name);
+		Util::hash_combine(result, resource.stages);
+		Util::hash_combine(result, resource.type);
+		Util::hash_combine(result, resource.set);
+		Util::hash_combine(result, resource.binding);
+		Util::hash_combine(result, resource.location);
+		Util::hash_combine(result, resource.input_attachment_index);
+		Util::hash_combine(result, resource.vec_size);
+		Util::hash_combine(result, resource.columns);
+		Util::hash_combine(result, resource.array_size);
+		Util::hash_combine(result, resource.offset);
+		Util::hash_combine(result, resource.size);
+		Util::hash_combine(result, resource.constant_id);
+		Util::hash_combine(result, resource.dynamic);
+		return result;
+	}
+};
 
 #endif /* RENDERING_SHADERUTILS_H_ */

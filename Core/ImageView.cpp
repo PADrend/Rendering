@@ -31,6 +31,7 @@ static vk::ImageViewType getViewType(TextureType type) {
 		case TextureType::TEXTURE_BUFFER: return vk::ImageViewType::e1D;
 		case TextureType::TEXTURE_2D_MULTISAMPLE: return vk::ImageViewType::e2D;
 	}
+	return vk::ImageViewType::e1D;
 };
 
 //---------------
@@ -114,7 +115,7 @@ bool ImageView::init() {
 	vk::Image vkImage(image->getApiHandle());
 
 	auto type = getViewType(config.type);
-	vk::Format format(static_cast<vk::Format>(convertToInternalFormat(image->getFormat().pixelFormat)));
+	vk::Format format(static_cast<vk::Format>(convertToApiFormat(image->getFormat().pixelFormat)));
 	
 	auto view = vkDevice.createImageView({{}, 
 		vkImage, type, format, {},

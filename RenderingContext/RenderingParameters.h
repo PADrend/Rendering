@@ -54,11 +54,11 @@ enum function_t {
 	GEQUAL,
 	ALWAYS
 };
-std::string functionToString(function_t function);
-function_t stringToFunction(const std::string & str);
+[[deprecated]] std::string functionToString(function_t function);
+[[deprecated]] function_t stringToFunction(const std::string & str);
 
-uint32_t functionToGL(function_t function);
-function_t glToFunction(uint32_t value);
+[[deprecated]] uint32_t functionToGL(function_t function);
+[[deprecated]] function_t glToFunction(uint32_t value);
 }
 
 /**
@@ -70,7 +70,7 @@ function_t glToFunction(uint32_t value);
  * @date 2012-02-23
  * @see function @c glAlphaFunc, and constant @c GL_ALPHA_TEST of function @c glEnable
  */
-class AlphaTestParameters {
+class [[deprecated]] AlphaTestParameters {
 	private:
 		bool enabled;
 		Comparison::function_t mode;
@@ -114,7 +114,7 @@ class AlphaTestParameters {
 
 // -------------------------------------------
 
-class BlendingParameters {
+class [[deprecated]] BlendingParameters {
 	public:
 		/**
 		 * @brief Type of blending function
@@ -286,7 +286,7 @@ class BlendingParameters {
 
 // -------------------------------------------
 
-class ClipPlaneParameters {
+class [[deprecated]] ClipPlaneParameters {
 	private:
 		Geometry::Plane plane;
 		bool enabled;
@@ -323,7 +323,7 @@ static const uint8_t MAX_CLIP_PLANES = 6;
  * @date 2012-02-16
  * @see @c glColorMask
  */
-class ColorBufferParameters {
+class [[deprecated]] ColorBufferParameters {
 	private:
 		//! @see parameter @c red of function @c glColorMask
 		bool enableRedWriting;
@@ -399,7 +399,7 @@ class ColorBufferParameters {
  * @date 2012-02-21
  * @see @c glCullFace, and constant @c GL_CULL_FACE of function @c glEnable
  */
-class CullFaceParameters {
+class [[deprecated]] CullFaceParameters {
 	public:
 		enum cullFaceMode_t {
 			CULL_BACK,
@@ -448,7 +448,7 @@ class CullFaceParameters {
  * @date 2012-02-14
  * @see @c glDepthFunc, @c glDepthMask, and constant @c GL_DEPTH_BUFFER_BIT of function @c glPushAttrib
  */
-class DepthBufferParameters {
+class [[deprecated]] DepthBufferParameters {
 	private:
 		//! @see constant @c GL_DEPTH_TEST of function @c glEnable
 		bool enableTest;
@@ -491,7 +491,7 @@ class DepthBufferParameters {
 
 // -------------------------------------------
 //! Controls the binding of an image (part of a texture) for load and store operations in the shader.
-class ImageBindParameters {
+class [[deprecated]] ImageBindParameters {
 	private:
 		Util::Reference<Texture> texture;
 		uint32_t layer,level;
@@ -537,7 +537,7 @@ static const uint8_t MAX_BOUND_IMAGES = 8;
  * @author Benjamin Eikel
  * @date 2012-02-16
  */
-class LightingParameters {
+class [[deprecated]] LightingParameters {
 	private:
 		//! @see constant @c GL_LIGHTING of function @c glEnable
 		bool enabled;
@@ -572,7 +572,7 @@ class LightingParameters {
 
 // -------------------------------------------
 
-class LightParameters {
+class [[deprecated]] LightParameters {
 	public:
 		enum lightType_t {
 			DIRECTIONAL = 1, POINT = 2, SPOT = 3
@@ -610,7 +610,7 @@ class LightParameters {
  * @date 2012-05-07
  * @see @c glLineWidth
  */
-class LineParameters {
+class [[deprecated]] LineParameters {
 	private:
 		//! Line width in pixels
 		float width;
@@ -635,7 +635,7 @@ class LineParameters {
 
 // -------------------------------------------
 
-class MaterialParameters {
+class [[deprecated]] MaterialParameters {
 	private:
 		bool colorMaterial;
 
@@ -722,7 +722,7 @@ class MaterialParameters {
  *
  * @see @c glPointSize
  */
-class PointParameters {
+class [[deprecated]] PointParameters {
 	private:
 		//! Point width in pixels
 		float size;
@@ -754,7 +754,7 @@ class PointParameters {
 };
 // -------------------------------------------
 
-class PolygonModeParameters {
+class [[deprecated]] PolygonModeParameters {
 	public:
 		enum polygonModeMode_t { POINT = 1, LINE = 2, FILL = 3 };
 
@@ -797,7 +797,7 @@ class PolygonModeParameters {
  * @author Benjamin Eikel
  * @date 2012-02-14
  */
-class PolygonOffsetParameters {
+class [[deprecated]] PolygonOffsetParameters {
 	private:
 		bool enabled;
 
@@ -862,7 +862,7 @@ class PolygonOffsetParameters {
 
 // -------------------------------------------
 
-class PrimitiveRestartParameters {
+class [[deprecated]] PrimitiveRestartParameters {
 	private:
 		uint32_t index;
 		bool enabled;
@@ -889,7 +889,7 @@ class PrimitiveRestartParameters {
 
 // -------------------------------------------
 
-class ScissorParameters {
+class [[deprecated]] ScissorParameters {
 	private:
 		Geometry::Rect_i rect;
 		bool enabled;
@@ -924,7 +924,7 @@ class ScissorParameters {
  * @author Benjamin Eikel
  * @date 2012-01-11
  */
-class StencilParameters {
+class [[deprecated]] StencilParameters {
 	public:
 		enum action_t {
 			KEEP,

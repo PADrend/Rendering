@@ -23,12 +23,13 @@ add_library(Rendering SHARED
 	Core/BufferStorage.cpp
 	Core/CommandBuffer.cpp
 	Core/CommandPool.cpp
+	Core/Common.cpp
 	Core/Device.cpp
 	Core/Fence.cpp
-	Core/ImageFormat.cpp
 	Core/ImageStorage.cpp
 	Core/ImageView.cpp
 	Core/Pipeline.cpp
+	Core/PipelineCache.cpp
 	Core/Queue.cpp
 	Core/Swapchain.cpp
 	#Mesh/Mesh.cpp
@@ -55,6 +56,7 @@ add_library(Rendering SHARED
 	#RenderingContext/internal/StatusHandler_glCompatibility.cpp
 	#RenderingContext/internal/StatusHandler_glCore.cpp
 	#RenderingContext/internal/StatusHandler_sgUniforms.cpp
+	RenderingContext/PipelineState.cpp
 	#RenderingContext/RenderingContext.cpp
 	#RenderingContext/RenderingParameters.cpp
 	#Serialization/GenericAttributeSerialization.cpp

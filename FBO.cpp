@@ -18,6 +18,7 @@
 #include "GLHeader.h"
 
 #include <Util/Macros.h>
+#include <Util/Utils.h>
 
 #include <vulkan/vulkan.hpp>
 
@@ -55,7 +56,7 @@ void FBO::attachColorTexture(const TextureRef& texture, uint32_t index) {
 	colorAttachments[index] = texture;
 	width = texture->getWidth();
 	height = texture->getHeight();
-	isValid = false;
+	invalidate();
 }
 
 //-----------------
@@ -90,7 +91,7 @@ void FBO::attachColorTexture(const ImageStorageRef& image, uint32_t index, uint3
 
 void FBO::detachColorTexture(uint32_t index) {
 	if(index < colorAttachments.size()) {
-		isValid = false;
+		invalidate();
 		colorAttachments[index] = nullptr;
 	}
 }
@@ -103,7 +104,7 @@ void FBO::attachDepthStencilTexture(const TextureRef& texture) {
 	if(texture) {
 		width = texture->getWidth();
 		height = texture->getHeight();
-		isValid = false;
+		invalidate();
 	}
 }
 
@@ -131,14 +132,15 @@ void FBO::attachDepthStencilTexture(const ImageStorageRef& image, uint32_t mipLe
 
 void FBO::detachDepthStencilTexture() {
 	depthStencilAttachment = nullptr;
-	isValid = false;
+	invalidate();
 }
 
 //-----------------
 
 const TextureRef& FBO::getColorTexture(uint32_t index) const {
+	static TextureRef nullRef;
 	if(index >= colorAttachments.size())
-		return nullptr;
+		return nullRef;
 	return colorAttachments[index];
 }
 
@@ -150,31 +152,24 @@ const TextureRef& FBO::getDepthStencilTexture() const {
 
 //-----------------
 
-bool FBO::isComplete() {
-	if(!isValid) {
-		if(!validate()) return false;
-		init();
-	}
-	return true;
-}
-
-//-----------------
-
-const std::string FBO::getStatusMessage() {
+const std::string FBO::getStatusMessage() const {
 	return "";
 }
 
 //-----------------
 
 bool FBO::validate() {
-	isValid = true;
-	return true;
+	if(!valid)
+		init();
+	valid = handle && renderPass;
+	return valid;
 }
 
 //-----------------
 
 void FBO::init() {
 	vk::Device vkDevice(device->getApiHandle());
+	hash = 0;
 	
 	// Bind color buffers	
 	uint32_t layerCount = 0;
@@ -191,12 +186,12 @@ void FBO::init() {
 			assert(layerCount == 0 || layerCount == attachment->getImageView()->getLayerCount());
 			layerCount = attachment->getImageView()->getLayerCount();
 			attachments.emplace_back(attachment->getImageView()->getApiHandle());
-			
-			// Init color attachment descriptions
-			vk::Format format = static_cast<vk::Format>(convertToInternalFormat(attachment->getFormat().pixelFormat));
-			vk::SampleCountFlagBits samples = static_cast<vk::SampleCountFlagBits>(attachment->getFormat().samples);
+			const auto& format = attachment->getFormat();
+
+						// Init color attachment descriptions
 			attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
-				format, samples,
+				static_cast<vk::Format>(convertToApiFormat(format.pixelFormat)),
+				static_cast<vk::SampleCountFlagBits>(format.samples),
 				vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 				vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
 				vk::ImageLayout::eColorAttachmentOptimal,
@@ -204,6 +199,10 @@ void FBO::init() {
 			);
 			
 			attachmentRefs[i] = {attachmentCount++, vk::ImageLayout::eColorAttachmentOptimal};
+
+			Util::hash_combine(hash, attachmentCount);
+			Util::hash_combine(hash, vk::ImageLayout::eColorAttachmentOptimal);
+			Util::hash_combine(hash, format);
 		}
 	}
 	bool hasColor = attachmentCount > 0;
@@ -216,18 +215,22 @@ void FBO::init() {
 		assert(layerCount == 0 || layerCount == depthStencilAttachment->getImageView()->getLayerCount());
 		if(layerCount == 0) layerCount = depthStencilAttachment->getImageView()->getLayerCount();
 		attachments.emplace_back(depthStencilAttachment->getImageView()->getApiHandle());
+		const auto& format = depthStencilAttachment->getFormat();
 		
 		// Init depth attachment descriptions. No need to attach if the texture is null
-		vk::Format format = static_cast<vk::Format>(convertToInternalFormat(depthStencilAttachment->getFormat().pixelFormat));
-		vk::SampleCountFlagBits samples = static_cast<vk::SampleCountFlagBits>(depthStencilAttachment->getFormat().samples);
 		attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
-			format, samples,
+			static_cast<vk::Format>(convertToApiFormat(format.pixelFormat)),
+			static_cast<vk::SampleCountFlagBits>(format.samples),
 			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 			vk::ImageLayout::eDepthStencilAttachmentOptimal,
 			vk::ImageLayout::eDepthStencilAttachmentOptimal
 		);
 		attachmentRefs.back() = {attachmentCount++, vk::ImageLayout::eDepthStencilAttachmentOptimal};
+
+		Util::hash_combine(hash, attachmentCount);
+		Util::hash_combine(hash, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		Util::hash_combine(hash, format);
 	}
 	
 	// Init Subpass info
@@ -268,7 +271,7 @@ void FBO::init() {
 
 FBO::FBO() : FBO(Device::getDefault()) { }
 
-void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Texture * texture,uint32_t level,int32_t layer) {
+void FBO::attachTexture(RenderingContext & context,uint32_t attachmentPoint,Texture * texture,uint32_t level,int32_t layer) {
 	if(attachmentPoint == GL_DEPTH_ATTACHMENT || attachmentPoint == GL_STENCIL_ATTACHMENT) {
 		attachDepthStencilTexture(context, texture, level, layer);
 	} else if(attachmentPoint >= GL_COLOR_ATTACHMENT0) {

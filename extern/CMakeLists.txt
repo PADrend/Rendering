@@ -24,6 +24,10 @@ endif()
 set(OLD_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
+# store state of CMAKE_BUILD_TYPE to later restore
+set(OLD_CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+
 # Dependency to pthread
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads)
@@ -92,10 +96,10 @@ if(NOT spirv-tools_POPULATED)
   set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
   set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
   set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
-  add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
+  #add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
 endif()
-target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
-set_target_properties(SPIRV-Tools-link PROPERTIES POSITION_INDEPENDENT_CODE ON)
+#target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
+#set_target_properties(SPIRV-Tools-link PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
 # glslang (required by shaderc)
@@ -157,28 +161,9 @@ if(NOT shaderc_POPULATED)
   set(SHADERC_THIRD_PARTY_ROOT_DIR "${FETCHCONTENT_BASE_DIR}" CACHE STRING "" FORCE)
   add_subdirectory(${shaderc_SOURCE_DIR} ${shaderc_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
-target_link_libraries(RenderingExtern INTERFACE shaderc)
+target_link_libraries(RenderingExtern INTERFACE shaderc_shared)
 #target_link_libraries(RenderingExtern INTERFACE shaderc_spvc)
-set_target_properties(shaderc PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-# ------------------------------------------------------------------------------
-# volk - Meta loader for Vulkan API
-
-#FetchContent_Declare(
-#  volk
-#  GIT_REPOSITORY https://github.com/zeux/volk.git
-#  GIT_TAG        b7ea0c3d15591a9c84f16b0c628443b1a06a302d
-#)
-#
-#FetchContent_GetProperties(volk)
-#if(NOT volk_POPULATED)
-#  message(STATUS "Fetching volk...")
-#  FetchContent_Populate(volk)
-#  set(VOLK_PULL_IN_VULKAN OFF)
-#  set(VOLK_INSTALL OFF)
-#  add_subdirectory(${volk_SOURCE_DIR} ${volk_BINARY_DIR} EXCLUDE_FROM_ALL)
-#endif()
-#target_link_libraries(RenderingExtern INTERFACE volk)
+#set_target_properties(shaderc PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
 # Vulkan memory allocator
@@ -195,24 +180,6 @@ if(NOT vma_POPULATED)
   FetchContent_Populate(vma)
 endif()
 target_include_directories(RenderingExtern INTERFACE ${vma_SOURCE_DIR}/src)
-
-# Fetch Spirv-Cross
-#include(FetchContent)
-#set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
-#set(SPIRV_CROSS_SHARED OFF CACHE BOOL "" FORCE)
-#set(SPIRV_CROSS_STATIC ON CACHE BOOL "" FORCE)
-#set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-#FetchContent_Declare(spirv_cross
-#	GIT_REPOSITORY      https://github.com/KhronosGroup/SPIRV-Cross.git
-#	GIT_TAG             2019-06-21
-#)
-#
-#FetchContent_GetProperties(spirv_cross)
-#if(NOT spirv_cross_POPULATED)
-#  FetchContent_Populate(spirv_cross)
-#  add_subdirectory(${spirv_cross_SOURCE_DIR} ${spirv_cross_BINARY_DIR})
-#endif()
-#target_link_libraries(RenderingExtern INTERFACE spirv_cross)
 
 # ------------------------------------------------------------------------------
 # OpenGL & glew (headers only - required for backwards compability)
@@ -238,3 +205,4 @@ target_include_directories(RenderingExtern INTERFACE ${glew_SOURCE_DIR}/include)
 # ------------------------------------------------------------------------------
 
 set(BUILD_SHARED_LIBS ${OLD_BUILD_SHARED_LIBS} CACHE INTERNAL "" FORCE)
+set(CMAKE_BUILD_TYPE ${OLD_CMAKE_BUILD_TYPE} CACHE INTERNAL "" FORCE)

@@ -10,7 +10,6 @@
 #define RENDERING_CORE_IMAGEVIEW_H_
 
 #include "Common.h"
-#include "ImageFormat.h"
 #include "../Texture/TextureType.h"
 
 #include <Util/ReferenceCounter.h>

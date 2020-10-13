@@ -14,7 +14,7 @@
 
 #include "TextureType.h"
 #include "PixelFormatGL.h"
-#include "../Core/ImageFormat.h"
+#include "../Core/Common.h"
 #include "../RenderingContext/RenderingParameters.h"
 
 #include <Util/Graphics/Color.h>

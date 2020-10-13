@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -131,13 +132,16 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		//! Try to transfer the shader into LINKED-state. Returns true on success.
 		bool init();
 
-		const PipelineLayoutHandle& getPipelineLayout() const { return pipelineLayout; }
+		const PipelineLayoutHandle& getPipelineLayout() const { return pipelineLayout; }		
+
+		size_t getLayoutHash() const { return hash; }
 	private:
 		PipelineLayoutHandle pipelineLayout;
 		std::unordered_map<std::string, ShaderResource> resources;
-		std::unordered_map<uint32_t, ShaderResourceList> setResources;
-		std::unordered_map<uint32_t, DescriptorSetLayoutHandle> setLayouts;
-		status_t status;
+		std::map<uint32_t, ShaderResourceList> setResources;
+		std::map<uint32_t, DescriptorSetLayoutHandle> setLayouts;
+		status_t status = UNKNOWN;
+		size_t hash = 0;
 
 		/*! (internal) Compile all objects and create the shader program.
 			If everything works fine, status is set to COMPILED and true is returned.
@@ -156,10 +160,10 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	// @{
 	private:
 		std::vector<ShaderObjectInfo> shaderObjects;
-		std::unordered_map<ShaderStage, ShaderModuleHandle> shaderModules;
+		std::map<ShaderStage, ShaderModuleHandle> shaderModules;
 	public:
 		void attachShaderObject(ShaderObjectInfo && obj);
-		const std::unordered_map<ShaderStage, ShaderModuleHandle>& getShaderModules() const { return shaderModules; }
+		const std::map<ShaderStage, ShaderModuleHandle>& getShaderModules() const { return shaderModules; }
 	// @}
 
 	// ------------------------

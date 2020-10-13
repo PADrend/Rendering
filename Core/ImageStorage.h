@@ -11,7 +11,6 @@
 #define RENDERING_CORE_IMAGESTORAGE_H_
 
 #include "Common.h"
-#include "ImageFormat.h"
 
 #include "../Texture/TextureType.h"
 

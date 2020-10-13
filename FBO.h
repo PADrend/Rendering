@@ -89,14 +89,16 @@ public:
 	uint32_t getWidth() const { return width; }
 	uint32_t getHeight() const { return height; }
 	
-	bool isComplete();
-	const std::string getStatusMessage();
+	bool isValid() const { return valid; }
+	void invalidate() { valid = false; hash = 0; }
+	bool validate();
+	const std::string getStatusMessage() const;
 	
 	const FramebufferHandle& getApiHandle() const { return handle; }
 	const RenderPassHandle& getRenderPass() const { return renderPass; }
+	size_t getLayoutHash() const { return hash; }
 private:
 	FBO(const DeviceRef& device);
-	bool validate();
 	void init();
 	
 	FramebufferHandle handle;
@@ -106,7 +108,8 @@ private:
 	TextureRef depthStencilAttachment;
 	uint32_t width = 0;
 	uint32_t height = 0;
-	bool isValid = false;
+	bool valid = false;
+	size_t hash = 0;
 
 public:
 	//! @name Deprecated
@@ -119,10 +122,10 @@ public:
 	static void _disable() { }
 
 	[[deprecated]]
-	void _enable() { isComplete(); }
+	void _enable() { validate(); }
 
 	[[deprecated]]
-	bool isComplete(RenderingContext & context) { return isComplete(); }
+	bool isComplete(RenderingContext & context) { return isValid(); }
 
 	[[deprecated]]
 	const char * getStatusMessage(RenderingContext & context) { return getStatusMessage().c_str(); }
