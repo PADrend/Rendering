@@ -29,8 +29,8 @@ namespace Serialization {
 RENDERINGAPI bool initGenericAttributeSerialization();
 
 typedef Util::ReferenceAttribute<Mesh> MeshAttribute_t;
-RENDERINGAPI const std::string GATypeNameMesh("Mesh");
-RENDERINGAPI const std::string embeddedMeshPrefix("$[mmf_b64]");
+const std::string GATypeNameMesh("Mesh");
+const std::string embeddedMeshPrefix("$[mmf_b64]");
 RENDERINGAPI std::pair<std::string, std::string> serializeGAMesh(const std::pair<const Util::GenericAttribute *,
 																	const Util::GenericAttributeMap *> & attributeAndContext);
 RENDERINGAPI MeshAttribute_t * unserializeGAMesh(const std::pair<std::string,
