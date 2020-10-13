@@ -156,7 +156,7 @@ public:
 	void setFramebufferFormat(const FBORef& fbo) { pipeline.setFramebufferFormat(fbo); }
 	void setEntryPoint(const std::string& value) { pipeline.setEntryPoint(value); }
 	void setShader(const ShaderRef& shader) { pipeline.setShader(shader); }
-	//void setFBO(const FBORef& fbo);
+	void setFBO(const FBORef& fbo);
 	
 	const VertexInputState& getVertexInputState() const { return pipeline.getVertexInputState(); }
 	const InputAssemblyState& getInputAssemblyState() const { return pipeline.getInputAssemblyState(); }
@@ -185,7 +185,7 @@ public:
 	bool isInRenderPass() const { return inRenderPass; }
 	bool isPrimary() const { return primary; }
 	State getState() const { return state; }
-	const FBORef& getActiveFBO() const { return activeFBO; }
+	uint32_t getCommandCount() const { return static_cast<uint32_t>(commands.size()); }
 	//! @}
 
 	//! @name Debugging

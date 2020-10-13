@@ -527,6 +527,13 @@ void CommandBuffer::imageBarrier(const ImageStorageRef& image, ResourceUsage new
 
 //-----------------
 
+void CommandBuffer::setFBO(const FBORef& fbo) {
+	endRenderPass();
+	activeFBO = fbo;
+}
+
+//-----------------
+
 void CommandBuffer::setScissor(const Geometry::Rect_i& scissor) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	if(pipeline.getViewportState().hasDynamicScissors())

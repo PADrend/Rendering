@@ -65,8 +65,8 @@ static const Util::StringIdentifier DUMMY_VERTEX_ATTR("dummy");
 class RenderingContext::InternalData {
 public:
 	DeviceRef device;
-	PipelineState pipelineState;
-	BindingState bindingState;
+	//PipelineState pipelineState;
+	//BindingState bindingState;
 	RenderingState renderingState;
 	CommandBuffer::Ref cmd;
 	uint64_t submissionIndex = 0;
@@ -94,7 +94,6 @@ public:
 
 	// fbo
 	std::stack<FBO::Ref> fboStack;
-	FBO::Ref activeFBO;
 	Geometry::Rect_i windowClientArea;
 
 	// shader
@@ -155,10 +154,10 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->dummyTexture->upload(ResourceUsage::ShaderResource);
 
 	//// Initially enable the depth test.
-	internal->pipelineState.getDepthStencilState().setDepthTestEnabled(true);
+	internal->cmd->getPipeline().getDepthStencilState().setDepthTestEnabled(true);
 
 	// Set dynamic state
-	internal->pipelineState.getViewportState().setDynamicScissors(true);
+	internal->cmd->getPipeline().getViewportState().setDynamicScissors(true);
 
 	setFBO(nullptr);
 
@@ -179,6 +178,7 @@ RenderingContext::~RenderingContext() {
 	#ifdef PROFILING_ENABLED
 		_out.flush();
 	#endif
+	RenderThread::sync(internal->submissionIndex);
 	internal->device->waitIdle();
 };
 
@@ -200,7 +200,7 @@ CommandBufferRef RenderingContext::getCommandBuffer() const {
 }
 
 const PipelineState& RenderingContext::getPipelineState() const {
-	return internal->pipelineState;
+	return internal->cmd->getPipeline();
 }
 
 const RenderingState& RenderingContext::getRenderingState() const{
@@ -209,6 +209,7 @@ const RenderingState& RenderingContext::getRenderingState() const{
 // helper ***************************************************************************
 
 void RenderingContext::flush(bool wait) {
+	SCOPED_PROFILING_COND("flush", PROFILING_CONDITION);
 	internal->activeVBOs.clear();
 	internal->activeIBO = nullptr;
 	auto cmd = internal->cmd;
@@ -220,6 +221,9 @@ void RenderingContext::flush(bool wait) {
 	}
 
 	auto newCmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
+	newCmd->setBindings(cmd->getBindings());
+	newCmd->setPipeline(cmd->getPipeline());
+	newCmd->setFBO(cmd->getFBO());
 	internal->cmd = newCmd;
 	applyChanges();
 }
@@ -250,11 +254,7 @@ void RenderingContext::barrier(uint32_t flags) {
 // Applying changes ***************************************************************************
 
 void RenderingContext::applyChanges(bool forced) {
-	if(internal->cmd->isInRenderPass() && internal->cmd->getActiveFBO() != internal->activeFBO) {
-		internal->cmd->insertDebugMarker("FBO changed");
-		// FBO has changed: end the active render pass
-		internal->cmd->endRenderPass();
-	}
+	SCOPED_PROFILING_COND("applyChanges", PROFILING_CONDITION);
 
 	// Set the shader
 	Shader::Ref shader;
@@ -265,40 +265,24 @@ void RenderingContext::applyChanges(bool forced) {
 		shader = internal->activeShader;
 	}
 
-	if(shader != internal->pipelineState.getShader()) {
+	if(shader != internal->cmd->getShader()) {
 		// Shader changed: force apply
 		internal->renderingState.apply(shader, true);
 	} else {
 		// apply rendering state
 		internal->renderingState.apply(shader, forced);
 	}
-	internal->pipelineState.setShader(shader);
+	internal->cmd->setShader(shader);
 
-	// Update state
-	{
-		SCOPED_PROFILING_COND("setPipeline", PROFILING_CONDITION);
-		internal->cmd->setPipeline(internal->pipelineState);
-	}
-	{
-		SCOPED_PROFILING_COND("updateBindings", PROFILING_CONDITION);
-		internal->cmd->updateBindings(internal->bindingState);
-	}
 	// transfer updated global uniforms to the shader
 	shader->_getUniformRegistry()->performGlobalSync(internal->globalUniforms, false);
 
 	// apply uniforms
-	{
-		SCOPED_PROFILING_COND("applyUniforms", PROFILING_CONDITION);
-		shader->applyUniforms(forced);
-	}
+	shader->applyUniforms(forced);
 
 	// bind uniform buffers
-	{
-		SCOPED_PROFILING_COND("bindUniforms", PROFILING_CONDITION);
-		for(auto& b : shader->getUniformBuffers()) {
-			if(!internal->bindingState.hasBinding(b.first.second, b.first.first)) //let rendering context overwrite uniform buffer bindings
-				b.second->bind(internal->cmd, b.first.second, b.first.first);
-		}
+	for(auto& b : shader->getUniformBuffers()) {
+		b.second->bind(internal->cmd, b.first.second, b.first.first);
 	}
 }
 
@@ -368,11 +352,11 @@ void RenderingContext::setAlphaTest(const AlphaTestParameters & p) {
 // Blending ************************************************************************************
 
 const BlendingParameters RenderingContext::getBlendingParameters() const {
-	return BlendingParameters(internal->pipelineState.getColorBlendState());
+	return BlendingParameters(internal->cmd->getPipeline().getColorBlendState());
 }
 
 const ColorBlendState& RenderingContext::getBlending() const {
-	return internal->pipelineState.getColorBlendState();
+	return internal->cmd->getPipeline().getColorBlendState();
 }
 
 void RenderingContext::pushAndSetBlending(const BlendingParameters& p) {
@@ -392,16 +376,16 @@ void RenderingContext::popBlending() {
 }
 
 void RenderingContext::pushBlending() {
-	internal->colorBlendStack.emplace(internal->pipelineState.getColorBlendState());
+	internal->colorBlendStack.emplace(internal->cmd->getPipeline().getColorBlendState());
 }
 
 void RenderingContext::setBlending(const BlendingParameters& p) {
-	auto& state = internal->pipelineState.getColorBlendState();
+	auto& state = internal->cmd->getPipeline().getColorBlendState();
 	state = p.toBlendState().setColorWriteMask(state.getColorWriteMask());
 }
 
 void RenderingContext::setBlending(const ColorBlendState& s) {
-	internal->pipelineState.setColorBlendState(s);
+	internal->cmd->getPipeline().setColorBlendState(s);
 }
 
 
@@ -412,7 +396,7 @@ const ClipPlaneParameters RenderingContext::getClipPlane(uint8_t index) const { 
 
 // ColorBuffer ************************************************************************************
 const ColorBufferParameters RenderingContext::getColorBufferParameters() const {
-	return ColorBufferParameters(internal->pipelineState.getColorBlendState().getColorWriteMask());
+	return ColorBufferParameters(internal->cmd->getPipeline().getColorBlendState().getColorWriteMask());
 }
 
 void RenderingContext::popColorBuffer() {
@@ -429,7 +413,7 @@ void RenderingContext::pushAndSetColorBuffer(const ColorBufferParameters& p) {
 }
 
 void RenderingContext::setColorBuffer(const ColorBufferParameters& p) {
-	internal->pipelineState.getColorBlendState().setColorWriteMask(p.getWriteMask());
+	internal->cmd->getPipeline().getColorBlendState().setColorWriteMask(p.getWriteMask());
 }
 
 // Compute ************************************************************************************
@@ -454,7 +438,7 @@ void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::v
 
 // Cull Face ************************************************************************************
 const CullFaceParameters RenderingContext::getCullFaceParameters() const {
-	return internal->pipelineState.getRasterizationState().getCullMode();
+	return internal->cmd->getPipeline().getRasterizationState().getCullMode();
 }
 void RenderingContext::popCullFace() {
 	popRasterization();
@@ -470,14 +454,14 @@ void RenderingContext::pushAndSetCullFace(const CullFaceParameters& p) {
 }
 
 void RenderingContext::setCullFace(const CullFaceParameters& p) {
-	internal->pipelineState.getRasterizationState().setCullMode(p.getCullMode());
+	internal->cmd->getPipeline().getRasterizationState().setCullMode(p.getCullMode());
 }
 
 
 // DepthStencil ************************************************************************************
 
 const DepthStencilState& RenderingContext::getDepthStencil() const {
-	return internal->pipelineState.getDepthStencilState();
+	return internal->cmd->getPipeline().getDepthStencilState();
 }
 
 void RenderingContext::popDepthStencil() {
@@ -487,7 +471,7 @@ void RenderingContext::popDepthStencil() {
 }
 
 void RenderingContext::pushDepthStencil() {
-	internal->depthStencilStack.emplace(internal->pipelineState.getDepthStencilState());
+	internal->depthStencilStack.emplace(internal->cmd->getPipeline().getDepthStencilState());
 }
 
 void RenderingContext::pushAndSetDepthStencil(const DepthStencilState& state) {
@@ -496,12 +480,12 @@ void RenderingContext::pushAndSetDepthStencil(const DepthStencilState& state) {
 }
 
 void RenderingContext::setDepthStencil(const DepthStencilState& state) {
-	internal->pipelineState.setDepthStencilState(state);
+	internal->cmd->getPipeline().setDepthStencilState(state);
 }
 
 // DepthBuffer ************************************************************************************
 const DepthBufferParameters RenderingContext::getDepthBufferParameters() const {
-	auto state = internal->pipelineState.getDepthStencilState();
+	auto state = internal->cmd->getPipeline().getDepthStencilState();
 	return DepthBufferParameters(state.isDepthTestEnabled(), state.isDepthWriteEnabled(), Comparison::comparisonFuncToFunction(state.getDepthCompareOp()));
 }
 void RenderingContext::popDepthBuffer() {
@@ -518,7 +502,7 @@ void RenderingContext::pushAndSetDepthBuffer(const DepthBufferParameters& p) {
 }
 
 void RenderingContext::setDepthBuffer(const DepthBufferParameters& p) {
-	auto& state = internal->pipelineState.getDepthStencilState();
+	auto& state = internal->cmd->getPipeline().getDepthStencilState();
 	state.setDepthTestEnabled(p.isTestEnabled());
 	state.setDepthWriteEnabled(p.isWritingEnabled());
 	state.setDepthCompareOp(p.isTestEnabled() ? Comparison::functionToComparisonFunc(p.getFunction()) : ComparisonFunc::Disabled);
@@ -573,7 +557,7 @@ void RenderingContext::bindVertexBuffers(const std::vector<BufferObjectRef>& buf
 		state.setBinding({bindingCount, 0, 1});
 		boundBuffers.emplace_back(internal->fallbackVertexBuffer.getBuffer());
 	}
-	internal->pipelineState.setVertexInputState(state);
+	internal->cmd->getPipeline().setVertexInputState(state);
 	if(boundBuffers != internal->activeVBOs) {
 		internal->cmd->bindVertexBuffers(0, boundBuffers);
 		internal->activeVBOs = boundBuffers;
@@ -603,17 +587,17 @@ void RenderingContext::drawIndirect(const BufferObjectRef& buffer, uint32_t draw
 }
 
 void RenderingContext::setPrimitiveTopology(PrimitiveTopology topology) {
-	internal->pipelineState.getInputAssemblyState().setTopology(topology);
+	internal->cmd->getPipeline().getInputAssemblyState().setTopology(topology);
 }
 
 // FBO ************************************************************************************
 
 FBO * RenderingContext::getActiveFBO() const {
-	return internal->activeFBO.get();
+	return internal->cmd->getFBO().get();
 }
 
 FBORef RenderingContext::getFBO() const {
-	return internal->activeFBO;
+	return internal->cmd->getFBO();
 }
 
 void RenderingContext::popFBO() {
@@ -623,7 +607,7 @@ void RenderingContext::popFBO() {
 }
 
 void RenderingContext::pushFBO() {
-	internal->fboStack.emplace(internal->activeFBO);
+	internal->fboStack.emplace(internal->cmd->getFBO());
 }
 
 void RenderingContext::pushAndSetFBO(const FBORef& fbo) {
@@ -632,8 +616,7 @@ void RenderingContext::pushAndSetFBO(const FBORef& fbo) {
 }
 
 void RenderingContext::setFBO(const FBORef& fbo) {
-	internal->pipelineState.setFramebufferFormat(fbo ? fbo : internal->device->getSwapchain()->getCurrentFBO());
-	internal->activeFBO = fbo;
+	internal->cmd->setFBO(fbo);
 }
 
 // ImageBinding ************************************************************************************
@@ -718,7 +701,7 @@ void RenderingContext::disableLight(size_t lightId) {
 
 // Line ************************************************************************************
 const LineParameters RenderingContext::getLineParameters() const {
-	return {internal->pipelineState.getRasterizationState().getLineWidth()};
+	return {internal->cmd->getPipeline().getRasterizationState().getLineWidth()};
 }
 
 void RenderingContext::popLine() {
@@ -735,7 +718,7 @@ void RenderingContext::pushAndSetLine(const LineParameters& p) {
 }
 
 void RenderingContext::setLine(const LineParameters& p) {
-	internal->pipelineState.getRasterizationState().setLineWidth(p.getWidth());
+	internal->cmd->getPipeline().getRasterizationState().setLineWidth(p.getWidth());
 }
 
 // Point ************************************************************************************
@@ -764,7 +747,7 @@ void RenderingContext::setPointParameters(const PointParameters& p) {
 
 // PolygonMode ************************************************************************************
 const PolygonModeParameters RenderingContext::getPolygonModeParameters() const {
-	return PolygonModeParameters(internal->pipelineState.getRasterizationState().getPolygonMode());
+	return PolygonModeParameters(internal->cmd->getPipeline().getRasterizationState().getPolygonMode());
 }
 
 void RenderingContext::popPolygonMode() {
@@ -781,14 +764,14 @@ void RenderingContext::pushAndSetPolygonMode(const PolygonModeParameters& p) {
 }
 
 void RenderingContext::setPolygonMode(const PolygonModeParameters& p) {
-	auto state = internal->pipelineState.getRasterizationState();
+	auto state = internal->cmd->getPipeline().getRasterizationState();
 	state.setPolygonMode(PolygonModeParameters::modeToPolygonMode(p.getMode()));
-	internal->pipelineState.setRasterizationState(state);
+	internal->cmd->getPipeline().setRasterizationState(state);
 }
 
 // PolygonOffset ************************************************************************************
 const PolygonOffsetParameters RenderingContext::getPolygonOffsetParameters() const {
-	const auto& state = internal->pipelineState.getRasterizationState();
+	const auto& state = internal->cmd->getPipeline().getRasterizationState();
 	PolygonOffsetParameters p(state.getDepthBiasSlopeFactor(), state.getDepthBiasConstantFactor());
 	if(!state.isDepthBiasEnabled()) p.disable();
 	return p;
@@ -808,7 +791,7 @@ void RenderingContext::pushAndSetPolygonOffset(const PolygonOffsetParameters& p)
 }
 
 void RenderingContext::setPolygonOffset(const PolygonOffsetParameters& p) {
-	internal->pipelineState.getRasterizationState()
+	internal->cmd->getPipeline().getRasterizationState()
 		.setDepthBiasEnabled(p.isEnabled())
 		.setDepthBiasConstantFactor(p.getUnits())
 		.setDepthBiasSlopeFactor(p.getFactor());
@@ -816,7 +799,7 @@ void RenderingContext::setPolygonOffset(const PolygonOffsetParameters& p) {
 
 // PrimitiveRestart ************************************************************************************
 const PrimitiveRestartParameters RenderingContext::getPrimitiveRestartParameters() const {
-	const auto& state = internal->pipelineState.getInputAssemblyState();
+	const auto& state = internal->cmd->getPipeline().getInputAssemblyState();
 	return state.isPrimitiveRestartEnabled() ? PrimitiveRestartParameters(0xffffffffu) : PrimitiveRestartParameters();
 }
 
@@ -837,13 +820,13 @@ void RenderingContext::pushAndSetPrimitiveRestart(const PrimitiveRestartParamete
 }
 
 void RenderingContext::setPrimitiveRestart(const PrimitiveRestartParameters& p) {
-	internal->pipelineState.getInputAssemblyState().setPrimitiveRestartEnabled(p.isEnabled());
+	internal->cmd->getPipeline().getInputAssemblyState().setPrimitiveRestartEnabled(p.isEnabled());
 }
 
 // Rasterization ************************************************************************************
 
 const RasterizationState& RenderingContext::getRasterization() const {
-	return internal->pipelineState.getRasterizationState();
+	return internal->cmd->getPipeline().getRasterizationState();
 }
 
 void RenderingContext::popRasterization() {
@@ -853,7 +836,7 @@ void RenderingContext::popRasterization() {
 }
 
 void RenderingContext::pushRasterization() {
-	internal->rasterizationStack.emplace(internal->pipelineState.getRasterizationState());
+	internal->rasterizationStack.emplace(internal->cmd->getPipeline().getRasterizationState());
 }
 
 void RenderingContext::pushAndSetRasterization(const RasterizationState& state) {
@@ -862,13 +845,13 @@ void RenderingContext::pushAndSetRasterization(const RasterizationState& state) 
 }
 
 void RenderingContext::setRasterization(const RasterizationState& state) {
-	internal->pipelineState.setRasterizationState(state);
+	internal->cmd->getPipeline().setRasterizationState(state);
 }
 
 // Scissor ************************************************************************************
 
 const ScissorParameters RenderingContext::getScissor() const {
-	const auto& state = internal->pipelineState.getViewportState();
+	const auto& state = internal->cmd->getPipeline().getViewportState();
 	return (state.getScissor() == state.getViewport().rect) ? ScissorParameters(state.getScissor()) : ScissorParameters();
 }
 
@@ -886,16 +869,16 @@ void RenderingContext::pushAndSetScissor(const ScissorParameters& scissorParamet
 }
 
 void RenderingContext::setScissor(const ScissorParameters& scissorParameters) {
-	Geometry::Rect_i scissor = scissorParameters.isEnabled() ? scissorParameters.getRect() : internal->pipelineState.getViewportState().getViewport().rect;
-	if(internal->pipelineState.getViewportState().hasDynamicScissors())
+	Geometry::Rect_i scissor = scissorParameters.isEnabled() ? scissorParameters.getRect() : internal->cmd->getPipeline().getViewportState().getViewport().rect;
+	if(internal->cmd->getPipeline().getViewportState().hasDynamicScissors())
 		internal->cmd->setScissor(scissor);
 	else
-		internal->pipelineState.getViewportState().setScissor(scissor);
+		internal->cmd->getPipeline().getViewportState().setScissor(scissor);
 }
 
 // Stencil ************************************************************************************
 const StencilParameters RenderingContext::getStencilParamters() const {
-	auto state = internal->pipelineState.getDepthStencilState();
+	auto state = internal->cmd->getPipeline().getDepthStencilState();
 	return state.isDepthTestEnabled() ? StencilParameters(state.getFront()) : StencilParameters();
 }
 
@@ -913,7 +896,7 @@ void RenderingContext::pushStencil() {
 }
 
 void RenderingContext::setStencil(const StencilParameters& p) {
-	internal->pipelineState.getDepthStencilState()
+	internal->cmd->getPipeline().getDepthStencilState()
 		.setStencilTestEnabled(p.isEnabled())
 		.setFront(p.getStencilOpState())
 		.setBack(p.getStencilOpState());
@@ -972,7 +955,7 @@ void RenderingContext::_setUniformOnShader(const ShaderRef& shader, const Unifor
 // TEXTURES **********************************************************************************
 
 const TextureRef RenderingContext::getTexture(uint32_t unit, uint32_t set) const {
-	return internal->bindingState.getBinding(set, unit, 0).getTexture();
+	return internal->cmd->getBindings().getBinding(set, unit, 0).getTexture();
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint32_t unit) const {
@@ -998,9 +981,9 @@ void RenderingContext::setTexture(uint32_t unit, const TextureRef& texture, uint
 	if(texture)
 		texture->upload();
 	if(texture.isNotNull())
-		internal->bindingState.bind(texture, set, unit, 0);
+		internal->cmd->bindTexture(texture, set, unit, 0);
 	else
-		internal->bindingState.bind(internal->dummyTexture, set, unit, 0);
+		internal->cmd->bindTexture(internal->dummyTexture, set, unit, 0);
 }
 
 // PROJECTION MATRIX *************************************************************************
@@ -1150,11 +1133,11 @@ const Geometry::Rect_i& RenderingContext::getWindowClientArea() const {
 }
 
 const Geometry::Rect_i& RenderingContext::getViewport() const {
-	return internal->pipelineState.getViewportState().getViewport().rect;
+	return internal->cmd->getPipeline().getViewportState().getViewport().rect;
 }
 
 const ViewportState& RenderingContext::getViewportState() const {
-	return internal->pipelineState.getViewportState();
+	return internal->cmd->getPipeline().getViewportState();
 }
 
 void RenderingContext::popViewport() {
@@ -1164,20 +1147,20 @@ void RenderingContext::popViewport() {
 }
 
 void RenderingContext::pushViewport() {
-	internal->viewportStack.emplace(internal->pipelineState.getViewportState());
+	internal->viewportStack.emplace(internal->cmd->getPipeline().getViewportState());
 }
 
 void RenderingContext::setViewport(const Geometry::Rect_i& viewport) {
-	internal->pipelineState.getViewportState().setViewport(viewport);
+	internal->cmd->getPipeline().getViewportState().setViewport(viewport);
 }
 
 void RenderingContext::setViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor) {
-	 internal->pipelineState.getViewportState().setViewport(viewport);
-	 internal->pipelineState.getViewportState().setScissor(scissor);
+	 internal->cmd->getPipeline().getViewportState().setViewport(viewport);
+	 internal->cmd->getPipeline().getViewportState().setScissor(scissor);
 }
 
 void RenderingContext::setViewport(const ViewportState& viewport) {
-	internal->pipelineState.setViewportState(viewport);
+	internal->cmd->getPipeline().setViewportState(viewport);
 }
 
 void RenderingContext::pushAndSetViewport(const Geometry::Rect_i& viewport) {
