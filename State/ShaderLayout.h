@@ -168,6 +168,7 @@ using ShaderResourceList = std::vector<ShaderResource>;
 
 //-------------
 
+std::string toString(const ShaderLayout& layout);
 std::string toString(ShaderStage stage);
 std::string toString(ShaderResourceType type);
 std::string toString(const ShaderResource& resource, bool formatted=false);

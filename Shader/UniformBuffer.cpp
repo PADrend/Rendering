@@ -48,6 +48,7 @@ UniformBuffer::Ref UniformBuffer::createFromShaderResource(const BufferPoolRef& 
 	if(!obj->init(resource.format)) {
 		return nullptr;
 	}
+	obj->pushConstantOffset = resource.offset;
 	return obj;
 }
 
@@ -86,7 +87,7 @@ void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
 	dataHasChanged = false;
 	
 	if(pushConstant) {
-		cmd->pushConstants(cache);
+		cmd->pushConstants(cache, pushConstantOffset);
 	} else {
 		// request new buffer from pool
 		buffer = pool->allocate(cache.size());

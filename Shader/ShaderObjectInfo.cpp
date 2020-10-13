@@ -15,6 +15,7 @@
 #include <Util/IO/FileUtils.h>
 #include <Util/IO/FileLocator.h>
 #include <Util/Macros.h>
+#include <Util/StringUtils.h>
 #include <cstddef>
 #include <vector>
 #include <memory>
@@ -34,7 +35,68 @@ const uint32_t ShaderObjectInfo::SHADER_STAGE_GEOMETRY = static_cast<uint32_t>(S
 const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_CONTROL = static_cast<uint32_t>(ShaderStage::TessellationControl);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_EVALUATION = static_cast<uint32_t>(ShaderStage::TessellationEvaluation);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_COMPUTE = static_cast<uint32_t>(ShaderStage::Compute);
-	
+
+//-------------
+
+static std::vector<std::string> split(const std::string & subject, const std::string & delimiter, int max=-1){
+	std::vector<std::string> result;
+	const size_t len = subject.length();
+	if(len>0){
+		const size_t delimiterLen = delimiter.length();
+		if(delimiterLen>len || delimiterLen==0){
+			result.emplace_back(subject);
+		}else{
+			size_t cursor = 0;
+			for( int i = 1 ; i!=max&&cursor<=len-delimiterLen ; ++i){
+				size_t pos = subject.find(delimiter,cursor);
+				if( pos==std::string::npos ) // no delimiter found? -> to the end
+					pos = len;
+				result.push_back( subject.substr(cursor,pos-cursor) );
+				cursor = pos+delimiterLen;
+
+				if(cursor==len){ // ending on delimiter? -> add empty part
+					result.push_back("");
+				}
+			}
+			if(cursor<len)
+				result.push_back( subject.substr(cursor,len-cursor) );
+		}
+	}
+	return result;
+}
+
+//-------------
+
+static std::string printErrorLines(const std::string& error, const std::string& source) {
+	std::stringstream ss;
+	std::vector<std::string> errLines = split(error, "\n");
+	std::vector<std::string> srcLines = split(source, "\n");
+	std::set<uint32_t> lines;
+	// collect lines
+	for(auto& err : errLines) {
+		// usual error format: <name>:<line>: error: ...
+		auto prefix = split(err, ":");
+		uint32_t line;
+		if(prefix.size() >= 2 && (line = Util::StringUtils::toNumber<uint32_t>(prefix[1])) > 0) {			
+			if(line > 1 && line <= srcLines.size())
+				lines.emplace(line-1);
+			if(line <= srcLines.size())
+				lines.emplace(line);
+			if(line+1 <= srcLines.size())
+				lines.emplace(line+1);
+		}
+	}
+
+	for(auto line : lines) {
+		if(lines.count(line-1) == 0)
+			ss << "  ..." << std::endl;
+		ss << "  " << line << ": " << srcLines[line-1] << std::endl;
+	}
+	if(!lines.empty())
+		ss << "  ..." << std::endl;
+	return ss.str();
+};
+
 //-------------
 
 class ShaderIncluder : public shaderc::CompileOptions::IncluderInterface {
@@ -139,10 +201,11 @@ bool ShaderObjectInfo::compile(const DeviceRef& device) {
 	
 	shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, kind, name.c_str(), options);
 	if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-		if(filename.empty())
-			WARN(std::string("Shader compile error:\n") + result.GetErrorMessage() + "\nShader code:\n" + source);
-		else
-			WARN(std::string("Shader compile error:\n") + result.GetErrorMessage() + "\nin shader file: " + filename.toShortString() + "\n");
+		std::stringstream ss;
+		ss << "Shader compile error:" << std::endl;
+		ss << result.GetErrorMessage();
+		ss << printErrorLines(result.GetErrorMessage(), source) << std::endl;
+		WARN(ss.str());
 		return false;
 	}
 	code.insert(code.end(), result.cbegin(), result.cend());

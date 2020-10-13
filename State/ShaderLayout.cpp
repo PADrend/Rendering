@@ -9,24 +9,47 @@
 
 #include "ShaderLayout.h"
 
+#include <Util/StringUtils.h>
+
 #include <sstream>
 
 namespace Rendering {
+//-------------
+
+std::string toString(const ShaderLayout& layout) {
+	std::stringstream ss;
+	ss << "ShaderLayout:" << std::endl;
+	for(auto& set : layout.getLayoutSets()) {
+		ss << "  set " << set.first << ": " << std::endl;
+		for(auto& binding : set.second.getLayouts() ) {
+			ss << "    binding " << binding.first << ": ";
+			ss << toString(binding.second.type);
+			ss << "[" << binding.second.elementCount << "] ";
+			if(binding.second.dynamic)
+				ss << "(dynamic) ";
+			ss << "{" << toString(binding.second.stages) << "}" << std::endl;
+		}
+	}
+	if(layout.getPushConstantCount() > 0) {
+		ss << "  push constant ranges: " << std::endl;
+		for(auto& range : layout.getPushConstantRanges()) {
+			ss << "    [" << range.offset << ", " << (range.offset+range.size) << "] " << toString(range.stages) << std::endl;
+		}
+	}
+	return ss.str();
+}
 
 //-------------
 
 std::string toString(ShaderStage stage) {
-	switch(stage) {
-		case ShaderStage::Undefined: return "Undefined";
-		case ShaderStage::Vertex: return "Vertex";
-		case ShaderStage::TessellationControl: return "TessellationControl";
-		case ShaderStage::TessellationEvaluation: return "TessellationEvaluation";
-		case ShaderStage::Geometry: return "Geometry";
-		case ShaderStage::Fragment: return "Fragment";
-		case ShaderStage::Compute: return "Compute";
-		case ShaderStage::All: return "All";
-		default: return "Unknown";
-	}
+	std::vector<std::string> stages;
+	if((stage & ShaderStage::Vertex) == ShaderStage::Vertex) stages.emplace_back("Vertex");
+	if((stage & ShaderStage::TessellationControl) == ShaderStage::TessellationControl) stages.emplace_back("TessControl");
+	if((stage & ShaderStage::TessellationEvaluation) == ShaderStage::TessellationEvaluation) stages.emplace_back("TessEvaluation");
+	if((stage & ShaderStage::Geometry) == ShaderStage::Geometry) stages.emplace_back("Geometry");
+	if((stage & ShaderStage::Fragment) == ShaderStage::Fragment) stages.emplace_back("Fragment");
+	if((stage & ShaderStage::Compute) == ShaderStage::Compute) stages.emplace_back("Compute");
+	return Util::StringUtils::implode(stages.begin(), stages.end(), "|");
 }
 
 //-------------

@@ -37,45 +37,46 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross.hpp>
 
-const std::string vertexShader = R"vs(
-	#version 450
+const std::string shaderSource = R"vs(
+#version 450
+
+#ifdef SG_VERTEX_SHADER
 
 	layout(location = 0) in vec3 sg_Position;
 	layout(location = 1) in vec4 sg_Color;
-
-	layout(location = 0) out vec3 fragColor;
 
 	layout(push_constant) uniform ObjectData {
 		mat4 sg_matrix_modelToClipping;
 	};
 
+	layout(location = 0) out vec3 fragColor;
 	void main() {
 		gl_Position = sg_matrix_modelToClipping * vec4(sg_Position, 1.0);
 		gl_Position.y = -gl_Position.y; // Vulkan uses right hand NDC
 		fragColor = sg_Color.rgb;
 	}
-)vs";
-
-const std::string fragmentShader = R"fs(
-	#version 450
+#endif
+#ifdef SG_FRAGMENT_SHADER
 
 	layout(location = 0) in vec3 fragColor;
-	layout(location = 0) out vec4 outColor;
 
 	struct sg_MaterialParameters {
 		vec4 ambient, diffuse, specular, emission;
 		float shininess;
 	};
 
-	layout(set=1, binding=0) uniform MaterialData {
+	layout(set=0,binding=0) uniform MaterialData {
 		sg_MaterialParameters sg_Material;
 	};
+
+	layout(location = 0) out vec4 outColor;
 
 	void main() {
 		outColor = sg_Material.diffuse;
 		//outColor = vec4(fragColor, 1);
 	}
-)fs";
+#endif
+)vs";
 
 TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	using namespace Rendering;
@@ -109,8 +110,9 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	mesh2->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer 2");
 	
 	// compile shaders
-	auto shader = Shader::createShader(device, vertexShader, fragmentShader);
+	auto shader = Shader::createShader(device, shaderSource, shaderSource);
 	REQUIRE(shader->init());
+	std::cout << toString(shader->getLayout()) << std::endl;
 
 	context.setShader(shader);
 	REQUIRE(context.isShaderEnabled(shader));

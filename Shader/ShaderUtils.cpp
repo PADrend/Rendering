@@ -158,21 +158,22 @@ static ShaderResource readShaderResource(spirv_cross::Compiler& compiler, spirv_
 	ShaderResource result{resource.name, 0, 0, {type, stage}};
 	const auto& spirvType = compiler.get_type_from_variable(resource.id);
 	result.layout.elementCount = spirvType.array.size() ? spirvType.array[0] : 1;
-	result.vecSize = spirvType.vecsize;
 
 	switch(type) {
 		case ShaderResourceType::BufferUniform:
 		case ShaderResourceType::BufferStorage:
-			result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
-			result.format = getResourceFormat(compiler.get_name(resource.id), compiler, compiler.get_type(resource.base_type_id)); // recursively get members of structs
+			result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0);
+			result.format = getResourceFormat(compiler.get_name(resource.id), compiler, compiler.get_type(resource.base_type_id));
 			break;
 		default: break;
 	}
-	
+		
 	result.location = compiler.get_decoration(resource.id, spv::DecorationLocation);
 	result.set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 	result.binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 	result.inputAttachmentIndex = compiler.get_decoration(resource.id, spv::DecorationInputAttachmentIndex);
+	
+	result.vecSize = spirvType.vecsize;
 	result.columns = spirvType.columns;
 	return result;
 }

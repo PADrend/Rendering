@@ -125,7 +125,6 @@ struct Device::InternalData {
 	bool createInstance(const Device::Ref& device, const Device::Configuration& config);
 	bool initPhysicalDevice(const Device::Ref& device, const Device::Configuration& config);
 	bool createLogicalDevice(const Device::Ref& device, const Device::Configuration& config);
-	bool createAllocator(const Device::Ref& device, const Device::Configuration& config);
 	bool createMemoryAllocator(const Device::Ref& device, const Device::Configuration& config);
 	bool createSwapchain(const Device::Ref& device, const Device::Configuration& config);
 	bool createDescriptorPools(const Device::Ref& device, const Device::Configuration& config);

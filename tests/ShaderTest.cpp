@@ -129,7 +129,7 @@ TEST_CASE("ShaderTest", "[ShaderTest]") {
 	REQUIRE(shader->getVertexAttributeLocation({"something"}) == -1);
 
 	for(auto& r : shader->getResources())
-		std::cout << toString(r.second, true) << std::endl;
+		std::cout << r.first.toString() << ": " << toString(r.second, true) << std::endl;
 
 	auto& layout = shader->getLayout();
 	REQUIRE(layout.hasLayoutSet(0));
@@ -147,11 +147,11 @@ TEST_CASE("ShaderTest", "[ShaderTest]") {
 	REQUIRE(layout.getLayoutSet(1).getLayout(2).stages == ShaderStage::Fragment);
 
 	{
-		auto posAttr = shader->getResource({"Vertex_sg_Color"});
-		REQUIRE(posAttr);
-		REQUIRE(posAttr.name == "sg_Color");
-		REQUIRE(posAttr.location == 1);
-		REQUIRE(posAttr.vecSize == 4);
+		auto colAttr = shader->getResource({"Vertex_sg_Color"});
+		REQUIRE(colAttr);
+		REQUIRE(colAttr.name == "sg_Color");
+		REQUIRE(colAttr.location == 1);
+		REQUIRE(colAttr.vecSize == 4);
 	}
 
 	{

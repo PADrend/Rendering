@@ -66,6 +66,7 @@ private:
 	BufferObjectRef buffer;
 	std::vector<uint8_t> cache;
 	uint32_t arraySize;
+	uint32_t pushConstantOffset=0;
 	bool pushConstant;
 	bool dataHasChanged;
 };
