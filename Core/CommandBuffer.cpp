@@ -22,11 +22,17 @@
 
 #include <Util/Macros.h>
 
+//#define PROFILING_ENABLED 1
+#include <Util/Profiling/Profiler.h>
+#include <Util/Profiling/Logger.h>
+
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 #include <unordered_set>
 #include <algorithm>
+
+INIT_PROFILING_TIME(std::cout);
 
 namespace Rendering {
 
@@ -102,6 +108,7 @@ void CommandBuffer::reset() {
 //-----------------
 
 void CommandBuffer::flush() {
+	SCOPED_PROFILING(CommandBuffer::flush);
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	auto device = queue->getDevice();
@@ -159,6 +166,7 @@ void CommandBuffer::flush() {
 //-----------------
 
 void CommandBuffer::begin() {
+	BEGIN_PROFILING(CommandBuffer);
 	WARN_AND_RETURN_IF(state == State::Recording, "Command buffer is already recording.",);
 	WARN_AND_RETURN_IF(state == State::Invalid, "Invalid command buffer.",);
 	reset();
@@ -176,11 +184,13 @@ void CommandBuffer::end() {
 	vk::CommandBuffer vkCmd(handle);
 	state = State::Executable;
 	vkCmd.end();
+	END_PROFILING(CommandBuffer);
 }
 
 //-----------------
 
 void CommandBuffer::submit(bool wait) {
+	SCOPED_PROFILING(CommandBuffer::submit);
 	WARN_AND_RETURN_IF(!primary, "Cannot submit secondary command buffer.",);
 	end();
 	vk::CommandBuffer vkCmd(handle);
@@ -203,6 +213,7 @@ void CommandBuffer::execute(const Ref& buffer) {
 //-----------------
 
 void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, bool clearStencil) {
+	SCOPED_PROFILING(CommandBuffer::beginRenderPass);
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(inRenderPass, "Command buffer is already in a render pass. Call endRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);

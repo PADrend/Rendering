@@ -12,6 +12,12 @@
 #include "../Shader/Shader.h"
 #include "../Texture/Texture.h"
 
+//#define PROFILING_ENABLED 1
+#include <Util/Profiling/Profiler.h>
+#include <Util/Profiling/Logger.h>
+
+INIT_PROFILING_TIME(std::cout);
+
 namespace Rendering {
 
 static const Util::StringIdentifier PIPELINE("Pipeline");
@@ -51,30 +57,35 @@ ResourceCache::ResourceCache(const DeviceRef& device) : device(device.get()) {
 //----------------
 
 PipelineHandle ResourceCache::createPipeline(const PipelineState& state, const PipelineHandle& parent) {
+	SCOPED_PROFILING(ResourceCache::createPipeline);
 	return create<PipelineHandle, const PipelineState&, VkPipeline>(PIPELINE, state, parent);
 }
 
 //----------------
 
 DescriptorSetLayoutHandle ResourceCache::createDescriptorSetLayout(const ShaderResourceLayoutSet& layout) {
+	SCOPED_PROFILING(ResourceCache::createDescriptorSetLayout);
 	return create<DescriptorSetLayoutHandle, const ShaderResourceLayoutSet&>(DESCRIPTORSET_LAYOUT, layout);
 }
 
 //----------------
 
 PipelineLayoutHandle ResourceCache::createPipelineLayout(const ShaderLayout& layout) {
+	SCOPED_PROFILING(ResourceCache::createPipelineLayout);
 	return create<PipelineLayoutHandle, const ShaderLayout&>(PIPELINE_LAYOUT, layout);
 }
 
 //----------------
 
 RenderPassHandle ResourceCache::createRenderPass(const FramebufferFormat& attachments) {
+	SCOPED_PROFILING(ResourceCache::createRenderPass);
 	return create<RenderPassHandle, const FramebufferFormat&, bool, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage>(RENDERPASS, attachments, false, false, false, {}, {});
 }
 
 //----------------
 
 RenderPassHandle ResourceCache::createRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, bool clearStencil) {
+	SCOPED_PROFILING(ResourceCache::createRenderPass);
 	if(!fbo)
 		return nullptr;
 	std::vector<ResourceUsage> lastColorUsages;
@@ -87,6 +98,7 @@ RenderPassHandle ResourceCache::createRenderPass(const FBORef& fbo, bool clearCo
 //----------------
 
 FramebufferHandle ResourceCache::createFramebuffer(const FBORef& fbo, const RenderPassHandle& renderPass) {
+	SCOPED_PROFILING(ResourceCache::createFramebuffer);
 	return create<FramebufferHandle, FBO*, VkRenderPass>(FRAMEBUFFER, fbo.get(), renderPass);
 }
 
