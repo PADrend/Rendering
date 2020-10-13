@@ -465,7 +465,7 @@ struct StencilOpState {
 //! Pipeline state controlling the depth bounds tests, stencil test, and depth test.
 class DepthStencilState {
 public:
-	DepthStencilState() = default;
+	DepthStencilState(bool depthTest=false, bool depthWrite=true, ComparisonFunc compareOp=ComparisonFunc::Less) : depthTestEnable(depthTest), depthWriteEnable(depthWrite), depthCompareOp(compareOp) {}
 	DepthStencilState(const DepthStencilState& o) : depthTestEnable(o.depthTestEnable), depthWriteEnable(o.depthWriteEnable), depthCompareOp(o.depthCompareOp),
 		depthBoundsTestEnable(o.depthBoundsTestEnable), stencilTestEnable(o.stencilTestEnable), front(o.front), back(o.back), minDepthBounds(o.minDepthBounds),
 		maxDepthBounds(o.maxDepthBounds), dynamicDepthBounds(o.dynamicDepthBounds), dynamicCompareMask(o.dynamicCompareMask), dynamicWriteMask(o.dynamicWriteMask),
@@ -642,6 +642,9 @@ struct ColorBlendAttachmentState {
 class ColorBlendState {
 public:
 	ColorBlendState() = default;
+	ColorBlendState(BlendFactor srcFactor, BlendFactor dstFactor) {
+		setAttachment({true, srcFactor, dstFactor, BlendOp::Add, srcFactor, dstFactor, BlendOp::Add});
+	}
 	ColorBlendState(const ColorBlendState& o) : logicOpEnable(o.logicOpEnable), logicOp(o.logicOp), attachments(o.attachments),
 		constantColor(o.constantColor), dynamicBlendConstant(o.dynamicBlendConstant), dirty(true) {}
 	ColorBlendState& operator=(const ColorBlendState& o) {

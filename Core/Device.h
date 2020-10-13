@@ -77,6 +77,7 @@ public:
 	const PipelineCacheHandle& getPipelineCache() const;
 	const ResourceCacheRef& getResourceCache() const;
 	const DescriptorPoolRef& getDescriptorPool() const;
+	bool isDebugModeEnabled() const { return config.debugMode; }
 	
 	//! @name Internal
 	//! @{	

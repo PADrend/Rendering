@@ -22,35 +22,42 @@
 #include <Util/Graphics/Color.h>
 #include <Util/Graphics/FontRenderer.h>
 #include <Util/References.h>
+#include <Util/Macros.h>
 #include <cstdint>
 #include <string>
 
 namespace Rendering {
 
-static const std::string vertexProgram(R"***(#version 130
+static const std::string vertexProgram(R"***(#version 450
 
-uniform mat4 sg_matrix_modelToClipping;
+layout(push_constant) uniform ObjectBuffer {
+	mat4 sg_matrix_modelToClipping;
+};
 
-in vec2 sg_Position;
-in vec2 sg_TexCoord0;
+layout(location = 0) in vec2 sg_Position;
+layout(location = 1) in vec2 sg_TexCoord0;
 out vec2 glyphPos;
 
 void main(void) {
 	glyphPos = sg_TexCoord0;
 	gl_Position = (sg_matrix_modelToClipping * vec4(sg_Position, 0.0, 1.0));
+	gl_Position.y = -gl_Position.y; // Vulkan uses right hand NDC
 }
 )***");
 
-static const std::string fragmentProgram(R"***(#version 130
+static const std::string fragmentProgram(R"***(#version 450
+#extension GL_EXT_samplerless_texture_functions : require
 
-uniform sampler2D sg_texture0;
-uniform vec4 textColor;
+layout(set=0, binding=0) uniform utexture2D sg_Texture0;
+layout(set=1, binding=0) uniform TextColor {
+	vec4 textColor;
+};
 
 in vec2 glyphPos;
 out vec4 fragColor;
 
 void main(void) {
-	fragColor = vec4(1.0, 1.0, 1.0, texelFetch(sg_texture0, ivec2(glyphPos), 0).r) * textColor;
+	fragColor = vec4(1.0, 1.0, 1.0, texelFetch(sg_Texture0, ivec2(glyphPos), 0).r) * textColor;
 }
 )***");
 
@@ -75,15 +82,14 @@ TextRenderer::TextRenderer(const TextRenderer & other) :
 
 TextRenderer::TextRenderer(TextRenderer &&) = default;
 
-void TextRenderer::draw(RenderingContext & context,
-						const std::u32string & text,
-						const Geometry::Vec2i & textPosition,
-						const Util::Color4f & textColor) const {
+void TextRenderer::draw(RenderingContext & context, const std::u32string & text, const Geometry::Vec2i & textPosition, const Util::Color4f & textColor) const {
 	if(impl->shader.isNull()) {
 		impl->shader = Shader::createShader(vertexProgram, fragmentProgram, Shader::USE_UNIFORMS);
+		WARN_AND_RETURN_IF(!impl->shader || !impl->shader->init(), "TextRenderer: Failed to create shader.",);
 	}
-	context.pushAndSetBlending(BlendingParameters(BlendingParameters::SRC_ALPHA, BlendingParameters::ONE_MINUS_SRC_ALPHA));
-	context.pushAndSetDepthBuffer(DepthBufferParameters(false, false, Comparison::LESS));
+	
+	context.pushAndSetBlending(ColorBlendState(BlendFactor::SrcAlpha, BlendFactor::OneMinusSrcAlpha));
+	context.pushAndSetDepthStencil(DepthStencilState(false, false));
 	context.pushAndSetShader(impl->shader.get());
 	context.pushAndSetTexture(0, impl->texture.get());
 
@@ -140,7 +146,7 @@ void TextRenderer::draw(RenderingContext & context,
 
 	context.popTexture(0);
 	context.popShader();
-	context.popDepthBuffer();
+	context.popDepthStencil();
 	context.popBlending();
 }
 

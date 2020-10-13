@@ -15,12 +15,15 @@
 #include "Core/ImageView.h"
 #include "Core/Sampler.h"
 #include "Texture/Texture.h"
-#include "GLHeader.h"
 
 #include <Util/Macros.h>
 #include <Util/Utils.h>
 
 #include <stdexcept>
+
+#define GL_COLOR_ATTACHMENT0 0x8CE0
+#define GL_DEPTH_ATTACHMENT 0x8D00
+#define GL_STENCIL_ATTACHMENT 0x8D20
 
 namespace Rendering {
 

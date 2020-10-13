@@ -182,27 +182,6 @@ endif()
 target_include_directories(RenderingExtern INTERFACE ${vma_SOURCE_DIR}/src)
 
 # ------------------------------------------------------------------------------
-# OpenGL & glew (headers only - required for backwards compability)
-
-find_package(OpenGL REQUIRED)
-target_compile_definitions(RenderingExtern INTERFACE LIB_GL)
-target_include_directories(RenderingExtern INTERFACE ${OPENGL_INCLUDE_DIR})
-
-FetchContent_Declare(
-  glew
-  URL http://downloads.sourceforge.net/project/glew/glew/2.1.0/glew-2.1.0.tgz
-	URL_MD5 "b2ab12331033ddfaa50dc39345343980"
-)
-
-FetchContent_GetProperties(glew)
-if(NOT glew_POPULATED)
-  message(STATUS "Fetching glew...")
-  FetchContent_Populate(glew)
-endif()
-target_compile_definitions(RenderingExtern INTERFACE LIB_GLEW GLEW_NO_GLU)
-target_include_directories(RenderingExtern INTERFACE ${glew_SOURCE_DIR}/include)
-
-# ------------------------------------------------------------------------------
 
 set(BUILD_SHARED_LIBS ${OLD_BUILD_SHARED_LIBS} CACHE INTERNAL "" FORCE)
 set(CMAKE_BUILD_TYPE ${OLD_CMAKE_BUILD_TYPE} CACHE INTERNAL "" FORCE)

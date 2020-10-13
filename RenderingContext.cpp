@@ -145,6 +145,7 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 
 	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(device->getWindow()->getWidth()), static_cast<int32_t>(device->getWindow()->getHeight())};
 	setViewport({windowRect}, {windowRect});
+	setWindowClientArea(windowRect);
 
 	applyChanges();
 }

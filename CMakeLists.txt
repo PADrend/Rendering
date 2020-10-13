@@ -8,7 +8,7 @@
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
 cmake_minimum_required(VERSION 3.1.0)
-project(Rendering VERSION 0.4.0)
+project(Rendering VERSION 1.3.0)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -86,11 +86,10 @@ add_library(Rendering SHARED
 	FBO.cpp
 	Helper.cpp
 	#OcclusionQuery.cpp
-	#PBO.cpp
 	#QueryObject.cpp
 	RenderingContext.cpp
 	#StatisticsQuery.cpp
-	#TextRenderer.cpp
+	TextRenderer.cpp
 )
 
 # Dependency to Geometry
@@ -101,7 +100,7 @@ target_link_libraries(Rendering LINK_PUBLIC Geometry)
 
 # Dependency to Util
 if(NOT TARGET Util)
-	find_package(Util 0.3.0 REQUIRED NO_MODULE)
+	find_package(Util 1.3.0 REQUIRED NO_MODULE)
 endif()
 target_link_libraries(Rendering LINK_PUBLIC Util)
 

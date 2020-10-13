@@ -13,7 +13,6 @@
 #include "../Mesh/VertexDescription.h"
 #include "../Mesh/VertexAttributeAccessors.h"
 #include "../Mesh/VertexAttributeIds.h"
-#include "../GLHeader.h"
 #include "../Helper.h"
 #include "../Texture/Texture.h"
 #include "../Texture/TextureUtils.h"
@@ -212,55 +211,53 @@ RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, cons
 		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
 			switch (attr.getDataType()) {
 			case Util::TypeConstant::FLOAT: {
-				GLfloat f = (reinterpret_cast<const GLfloat *> (rwa.getData() + attr.getOffset()))[j];
-				f += (reinterpret_cast<const GLfloat *> (rwb.getData() + attr.getOffset()))[j];
-				(reinterpret_cast<GLfloat *> (data + attr.getOffset()))[j] = f / 2;
+				float f = (reinterpret_cast<const float *> (rwa.getData() + attr.getOffset()))[j];
+				f += (reinterpret_cast<const float *> (rwb.getData() + attr.getOffset()))[j];
+				(reinterpret_cast<float *> (data + attr.getOffset()))[j] = f / 2;
 			}
 				break;
 			case Util::TypeConstant::UINT8: {
-				uint32_t ub = (reinterpret_cast<const GLubyte *> (rwa.getData() + attr.getOffset() + j * sizeof(GLubyte)))[0];
-				ub += (reinterpret_cast<const GLubyte *> (rwb.getData() + attr.getOffset() + j * sizeof(GLubyte)))[0];
-				(reinterpret_cast<GLubyte *> (data + attr.getOffset() + j * sizeof(GLubyte)))[0] = ub / 2;
+				uint32_t ub = (reinterpret_cast<const uint8_t *> (rwa.getData() + attr.getOffset() + j * sizeof(uint8_t)))[0];
+				ub += (reinterpret_cast<const uint8_t *> (rwb.getData() + attr.getOffset() + j * sizeof(uint8_t)))[0];
+				(reinterpret_cast<uint8_t *> (data + attr.getOffset() + j * sizeof(uint8_t)))[0] = ub / 2;
 			}
 				break;
 			case Util::TypeConstant::INT8: {
-				int32_t sb = (reinterpret_cast<const GLbyte *> (rwa.getData() + attr.getOffset() + j * sizeof(GLbyte)))[0];
-				sb += (reinterpret_cast<const GLbyte *> (rwb.getData() + attr.getOffset() + j * sizeof(GLbyte)))[0];
-				(reinterpret_cast<GLbyte *> (data + attr.getOffset() + j * sizeof(GLbyte)))[0] = sb / 2;
+				int32_t sb = (reinterpret_cast<const int8_t *> (rwa.getData() + attr.getOffset() + j * sizeof(int8_t)))[0];
+				sb += (reinterpret_cast<const int8_t *> (rwb.getData() + attr.getOffset() + j * sizeof(int8_t)))[0];
+				(reinterpret_cast<int8_t *> (data + attr.getOffset() + j * sizeof(int8_t)))[0] = sb / 2;
 			}
 				break;
 			case Util::TypeConstant::UINT16: {
-				uint32_t us = (reinterpret_cast<const GLushort *> (rwa.getData() + attr.getOffset() + j * sizeof(GLushort)))[0];
-				us += (reinterpret_cast<const GLushort *> (rwb.getData() + attr.getOffset() + j * sizeof(GLushort)))[0];
-				(reinterpret_cast<GLushort *> (data + attr.getOffset() + j * sizeof(GLushort)))[0] = us / 2;
+				uint32_t us = (reinterpret_cast<const uint16_t *> (rwa.getData() + attr.getOffset() + j * sizeof(uint16_t)))[0];
+				us += (reinterpret_cast<const uint16_t *> (rwb.getData() + attr.getOffset() + j * sizeof(uint16_t)))[0];
+				(reinterpret_cast<uint16_t *> (data + attr.getOffset() + j * sizeof(uint16_t)))[0] = us / 2;
 			}
 				break;
 			case Util::TypeConstant::INT16: {
-				int32_t ss = (reinterpret_cast<const GLshort *> (rwa.getData() + attr.getOffset() + j * sizeof(GLshort)))[0];
-				ss += (reinterpret_cast<const GLshort *> (rwb.getData() + attr.getOffset() + j * sizeof(GLshort)))[0];
-				(reinterpret_cast<GLshort *> (data + attr.getOffset() + j * sizeof(GLshort)))[0] = ss / 2;
+				int32_t ss = (reinterpret_cast<const int16_t *> (rwa.getData() + attr.getOffset() + j * sizeof(int16_t)))[0];
+				ss += (reinterpret_cast<const int16_t *> (rwb.getData() + attr.getOffset() + j * sizeof(int16_t)))[0];
+				(reinterpret_cast<int16_t *> (data + attr.getOffset() + j * sizeof(int16_t)))[0] = ss / 2;
 			}
 				break;
 			case Util::TypeConstant::UINT32: {
-				uint64_t ui = (reinterpret_cast<const GLuint *> (rwa.getData() + attr.getOffset() + j * sizeof(GLuint)))[0];
-				ui += (reinterpret_cast<const GLuint *> (rwb.getData() + attr.getOffset() + j * sizeof(GLuint)))[0];
-				(reinterpret_cast<GLuint *> (data + attr.getOffset() + j * sizeof(GLuint)))[0] = ui / 2;
+				uint64_t ui = (reinterpret_cast<const uint32_t *> (rwa.getData() + attr.getOffset() + j * sizeof(uint32_t)))[0];
+				ui += (reinterpret_cast<const uint32_t *> (rwb.getData() + attr.getOffset() + j * sizeof(uint32_t)))[0];
+				(reinterpret_cast<uint32_t *> (data + attr.getOffset() + j * sizeof(uint32_t)))[0] = ui / 2;
 			}
 				break;
 			case Util::TypeConstant::INT32: {
-				int64_t si = (reinterpret_cast<const GLint *> (rwa.getData() + attr.getOffset() + j * sizeof(GLint)))[0];
-				si += (reinterpret_cast<const GLint *> (rwb.getData() + attr.getOffset() + j * sizeof(GLint)))[0];
-				(reinterpret_cast<GLint *> (data + attr.getOffset() + j * sizeof(GLint)))[0] = si / 2;
+				int64_t si = (reinterpret_cast<const int32_t *> (rwa.getData() + attr.getOffset() + j * sizeof(int32_t)))[0];
+				si += (reinterpret_cast<const int32_t *> (rwb.getData() + attr.getOffset() + j * sizeof(int32_t)))[0];
+				(reinterpret_cast<int32_t *> (data + attr.getOffset() + j * sizeof(int32_t)))[0] = si / 2;
 			}
 				break;
-#ifdef LIB_GL
-				case Util::TypeConstant::DOUBLE: {
-					GLdouble d = (reinterpret_cast<const GLdouble *> (rwa.getData() + attr.getOffset() + j * sizeof(GLdouble)))[0];
-					d += (reinterpret_cast<const GLdouble *> (rwb.getData() + attr.getOffset() + j * sizeof(GLdouble)))[0];
-					(reinterpret_cast<GLdouble *> (data + attr.getOffset() + j * sizeof(GLdouble)))[0] = d / 2;
-				}
+			case Util::TypeConstant::DOUBLE: {
+				double d = (reinterpret_cast<const double *> (rwa.getData() + attr.getOffset() + j * sizeof(double)))[0];
+				d += (reinterpret_cast<const double *> (rwb.getData() + attr.getOffset() + j * sizeof(double)))[0];
+				(reinterpret_cast<double *> (data + attr.getOffset() + j * sizeof(double)))[0] = d / 2;
+			}
 				break;
-#endif /* LIB_GL */
 			default:
 				continue;
 			}
@@ -271,12 +268,12 @@ RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, cons
 
 // -----------------------------------------------------------------------------
 
-template<typename GLType>
+template<typename Type>
 inline
 void interpolateValue(uint8_t* data, const RawVertex & rwa, const RawVertex & rwb, const VertexAttribute& attr, unsigned j, float a, float a_inv) {
-	float f = static_cast<float>((reinterpret_cast<const GLType *> (rwa.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a_inv;
-	f += static_cast<float>((reinterpret_cast<const GLType *> (rwb.getData() + attr.getOffset() + j * sizeof(GLType)))[0]) * a;
-	(reinterpret_cast<GLType *> (data + attr.getOffset() + j * sizeof(GLType)))[0] = static_cast<GLType>(f);
+	float f = static_cast<float>((reinterpret_cast<const Type *> (rwa.getData() + attr.getOffset() + j * sizeof(Type)))[0]) * a_inv;
+	f += static_cast<float>((reinterpret_cast<const Type *> (rwb.getData() + attr.getOffset() + j * sizeof(Type)))[0]) * a;
+	(reinterpret_cast<Type *> (data + attr.getOffset() + j * sizeof(Type)))[0] = static_cast<Type>(f);
 }
 
 // -----------------------------------------------------------------------------
@@ -293,30 +290,28 @@ RawVertex RawVertex::interpolate(const RawVertex & rwa, const RawVertex & rwb, f
 		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
 			switch (attr.getDataType()) {
 			case Util::TypeConstant::FLOAT:
-				interpolateValue<GLfloat>(data, rwa, rwb, attr, j, a, a_inv);
+				interpolateValue<float>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
 			case Util::TypeConstant::UINT8:
-				interpolateValue<GLubyte>(data, rwa, rwb, attr, j, a, a_inv);
+				interpolateValue<uint8_t>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
 			case Util::TypeConstant::INT8:
 				break;
 			case Util::TypeConstant::UINT16:
-				interpolateValue<GLushort>(data, rwa, rwb, attr, j, a, a_inv);
+				interpolateValue<uint16_t>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
 			case Util::TypeConstant::INT16:
-				interpolateValue<GLshort>(data, rwa, rwb, attr, j, a, a_inv);
+				interpolateValue<int16_t>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
 			case Util::TypeConstant::UINT32:
-				interpolateValue<GLuint>(data, rwa, rwb, attr, j, a, a_inv);
+				interpolateValue<uint32_t>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
 			case Util::TypeConstant::INT32:
-				interpolateValue<GLint>(data, rwa, rwb, attr, j, a, a_inv);
+				interpolateValue<int32_t>(data, rwa, rwb, attr, j, a, a_inv);
 				break;
-#ifdef LIB_GL
-				case Util::TypeConstant::DOUBLE:
-					interpolateValue<GLdouble>(data, rwa, rwb, attr, j, a, a_inv);
-					break;
-#endif /* LIB_GL */
+			case Util::TypeConstant::DOUBLE:
+				interpolateValue<double>(data, rwa, rwb, attr, j, a, a_inv);
+				break;
 			default:
 				continue;
 			}
@@ -1491,7 +1486,7 @@ void optimizeIndices(Mesh * mesh, const uint_fast8_t _cacheSize) {
 
 void reverseWinding(Mesh * mesh) {
 	if (mesh->getDrawMode() != Mesh::DRAW_TRIANGLES) {
-		WARN("GL_TRIANGLES is the only supported mode.");
+		WARN("TRIANGLES is the only supported mode.");
 		return;
 	}
 	MeshIndexData & id = mesh->openIndexData();

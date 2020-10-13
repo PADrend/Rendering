@@ -17,6 +17,7 @@
 #include <Geometry/SRT.h>
 
 #include "../RenderingContext.h"
+#include "../Draw.h"
 #include "../DrawCompound.h"
 #include "../FBO.h"
 #include "../Core/Device.h"
@@ -33,8 +34,12 @@
 #include "../State/RenderingState.h"
 #include "../Texture/Texture.h"
 #include "../Texture/TextureUtils.h"
+#include "../TextRenderer.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
+#include <Util/Graphics/FontRenderer.h>
+#include <Util/Graphics/EmbeddedFont.h>
+#include <Util/Graphics/Bitmap.h>
 #include <cstdint>
 #include <iostream>
 
@@ -93,6 +98,9 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 
 	Geometry::Matrix4x4 mat;
 
+	Geometry::Matrix4x4 textScaleMat;
+	textScaleMat.scale(2);
+
 	// --------------------------------------------
 	// materials
 
@@ -124,13 +132,21 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 		REQUIRE(context.getRenderingState().getLights().getLightCount() == 0);
 	}
 	
+	
+	// --------------------------------------------
+	// text
+
+	const auto result = Util::EmbeddedFont::getFont();
+	TextRenderer textRenderer(result.first, result.second);
+
+
 	// --------------------------------------------
 	// draw
 
 	bool running = true;
 	for(uint_fast32_t round = 0; round < 10000000 && running; ++round) {
 
-		context.clearScreen({0,0,0,1});
+		REQUIRE_NOTHROW(context.clearScreen({0,0,0,1}));
 
 		light.setPosition(lightMat.transformPosition({2,1,2}));
 		auto lightId = context.enableLight(light);
@@ -138,19 +154,25 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera());
 		context.pushAndSetMaterial(material1);
 		context.pushAndSetTexture(0, chessTexture);
-		context.displayMesh(mesh1);
+		REQUIRE_NOTHROW(context.displayMesh(mesh1));
 		context.popTexture(0);
 		context.popMaterial();
 
 		context.setMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
 		context.pushAndSetMaterial(material2);
-		context.displayMesh(mesh2);
+		REQUIRE_NOTHROW(context.displayMesh(mesh2));
 		context.popMaterial();
 		context.popMatrix_modelToCamera();
 
 		context.disableLight(lightId);
 
-		context.present();
+		enable2DMode(context);
+		context.setMatrix_modelToCamera(textScaleMat);
+		auto wideText = Util::StringUtils::utf8_to_utf32("Hello World!");
+		REQUIRE_NOTHROW(textRenderer.draw(context, wideText, {0, 0}, {1,1,1,1}));
+		disable2DMode(context);
+
+		REQUIRE_NOTHROW(context.present());
 		
 		mat.rotate_deg(0.1, {0,1,0});
 		lightMat.rotate_deg(-0.1, {0,1,0});

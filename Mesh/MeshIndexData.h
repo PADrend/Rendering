@@ -74,6 +74,7 @@ public:
 	/*! (internal) */
 	bool download();
 	void downloadTo(std::vector<uint32_t> & destination) const;
+	void release() { bufferObject->destroy(); }
 
 	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfIndices);
 
@@ -86,7 +87,7 @@ public:
 	[[deprecated]]
 	bool upload(uint32_t usageHint) { return upload(); }
 	[[deprecated]]
-	void removeGlBuffer() { bufferObject->destroy(); }
+	void removeGlBuffer() { release(); }
 	[[deprecated]]
 	void drawElements(bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfIndices) { }
 //! @}

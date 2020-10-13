@@ -8,7 +8,6 @@
 */
 #include "StatisticsQuery.h"
 #include "Helper.h"
-#include "GLHeader.h"
 #include <cstdint>
 #include <stdexcept>
 

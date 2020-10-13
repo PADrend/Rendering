@@ -51,8 +51,7 @@ class TextRenderer {
 		 * characters to information about the glyphs
 		 * @see Util::BitmapFont
 		 */
-		TextRenderer(const Util::Bitmap & glyphBitmap, 
-					 const Util::FontInfo & fontInfo);
+		TextRenderer(const Util::Bitmap & glyphBitmap, const Util::FontInfo & fontInfo);
 
 		//! Free resources
 		~TextRenderer();
@@ -74,10 +73,7 @@ class TextRenderer {
 		 * @param textColor Color that is used to draw the text
 		 * @note the 2D-rendering mode must be enabled ( @see Draw::enable2DMode(...) )
 		 */
-		void draw(RenderingContext & context,
-				  const std::u32string & text,
-				  const Geometry::Vec2i & textPosition,
-				  const Util::Color4f & textColor) const;
+		void draw(RenderingContext & context, const std::u32string & text, const Geometry::Vec2i & textPosition, const Util::Color4f & textColor) const;
 
 		/**
 		 * Calculate the size that would be needed by the text when it was

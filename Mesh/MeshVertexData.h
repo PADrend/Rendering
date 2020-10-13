@@ -107,6 +107,7 @@ public:
 
 	void bind(RenderingContext & context);
 	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfElements);
+	void release() { bufferObject->destroy(); }
 
 	const BufferObject::Ref& getBuffer() { return bufferObject; }
 	//! @}
@@ -122,7 +123,7 @@ public:
 	[[deprecated]]
 	bool upload(uint32_t usageHint) { return upload(); }
 	[[deprecated]]
-	void removeGlBuffer() { bufferObject->destroy(); }
+	void removeGlBuffer() { release(); }
 	[[deprecated]]
 	void drawArray(RenderingContext & context,bool useVBO,uint32_t drawMode,uint32_t startIndex,uint32_t numberOfElements) {
 		draw(context, startIndex, numberOfElements);

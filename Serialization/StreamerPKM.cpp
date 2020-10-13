@@ -10,7 +10,6 @@
 */
 #include "StreamerPKM.h"
 #include "../Texture/Texture.h"
-#include "../GLHeader.h"
 #include <algorithm>
 #include <cstdint>
 
@@ -67,10 +66,6 @@ Util::Reference<Texture> StreamerPKM::loadTexture(std::istream & input, TextureT
 
 	Texture::Format format;
 	format.extent = {activeWidth, activeHeight, 1};
-#ifdef LIB_GLESv2
-	// FIXME Set it where now?
-	// format.glInternalFormat = GL_ETC1_RGB8_OES;
-#endif /* LIB_GLESv2 */
 	format.pixelFormat = InternalFormat::ETC2RGB8Unorm;
 	size_t compressedImageSize = 8 * ((width + 3) >> 2) * ((height + 3) >> 2);
 

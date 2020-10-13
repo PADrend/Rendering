@@ -11,7 +11,6 @@
 #include "OcclusionQuery.h"
 #include "RenderingContext/RenderingParameters.h"
 #include "RenderingContext/RenderingContext.h"
-#include "GLHeader.h"
 #include <cstdint>
 
 namespace Rendering {

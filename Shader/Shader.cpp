@@ -183,7 +183,11 @@ bool Shader::compileProgram() {
 			return false;
 		auto& code = shaderObject.getCode();
 		// TODO: shader modules are only needed during pipeline creation and can then deleted. Maybe only don't store them here?
-		shaderModules.emplace(shaderObject.getType(), ShaderModuleHandle::create(vkDevice.createShaderModule({{}, static_cast<uint32_t>(code.size()) * sizeof(uint32_t), code.data()}), vkDevice));
+		auto module = ShaderModuleHandle::create(vkDevice.createShaderModule({{}, static_cast<uint32_t>(code.size()) * sizeof(uint32_t), code.data()}), vkDevice);
+		if(device->isDebugModeEnabled()) {
+			vkDevice.setDebugUtilsObjectNameEXT({ vk::ShaderModule::objectType, module, shaderObject.getFileName().toShortString().c_str()});
+		}
+		shaderModules.emplace(shaderObject.getType(), module);
 	}
 	return true;
 }

@@ -14,7 +14,6 @@
 #include "../Mesh/VertexAttributeIds.h"
 #include "../Mesh/VertexDescription.h"
 #include "../MeshUtils/MeshUtils.h"
-#include "../GLHeader.h"
 #include <Util/GenericAttribute.h>
 #include <Util/StringUtils.h>
 #include <list>

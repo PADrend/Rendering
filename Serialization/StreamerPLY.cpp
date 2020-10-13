@@ -13,7 +13,6 @@
 #include "../Mesh/Mesh.h"
 #include "../Mesh/VertexAttributeIds.h"
 #include "../Mesh/VertexDescription.h"
-#include "../GLHeader.h"
 #include "../Helper.h"
 #include <Geometry/Convert.h>
 #include <Util/Graphics/Color.h>
@@ -524,20 +523,20 @@ Mesh * StreamerPLY::loadMesh(std::istream & input) {
 				*((reinterpret_cast<float *>(vCursor+posOffset))+2)=e.getProperty(zIndex).getCurrentValue<float>();
 				if(useVertexNormals) {
 
-					GLbyte nx,ny,nz;
+					int8_t nx,ny,nz;
 					if(e.getProperty(nxIndex).dataType==PLY_Element::TYPE_CHAR){
-						nx=e.getProperty(nxIndex).getCurrentValue<GLbyte>();
-						ny=e.getProperty(nyIndex).getCurrentValue<GLbyte>();
-						nz=e.getProperty(nzIndex).getCurrentValue<GLbyte>();
+						nx=e.getProperty(nxIndex).getCurrentValue<int8_t>();
+						ny=e.getProperty(nyIndex).getCurrentValue<int8_t>();
+						nz=e.getProperty(nzIndex).getCurrentValue<int8_t>();
 //                        normal=Geometry::Vec3(values[indices[nxIndex]],values[indices[nyIndex]],values[indices[nzIndex]]);
 					}else{
 						nx= Geometry::Convert::toSigned<int8_t>(e.getProperty(nxIndex).getCurrentValue<float>());
 						ny= Geometry::Convert::toSigned<int8_t>(e.getProperty(nyIndex).getCurrentValue<float>());
 						nz= Geometry::Convert::toSigned<int8_t>(e.getProperty(nzIndex).getCurrentValue<float>());
 					}
-					*((reinterpret_cast<GLbyte *>(vCursor+normalsOffset))+0)=nx;
-					*((reinterpret_cast<GLbyte *>(vCursor+normalsOffset))+1)=ny;
-					*((reinterpret_cast<GLbyte *>(vCursor+normalsOffset))+2)=nz;
+					*((reinterpret_cast<int8_t *>(vCursor+normalsOffset))+0)=nx;
+					*((reinterpret_cast<int8_t *>(vCursor+normalsOffset))+1)=ny;
+					*((reinterpret_cast<int8_t *>(vCursor+normalsOffset))+2)=nz;
 				}
 				if(useVertexColor) {
 					Util::Color4ub color;
@@ -553,19 +552,19 @@ Mesh * StreamerPLY::loadMesh(std::istream & input) {
 						}
 						color = Util::Color4ub(floatColor);
 					} else { // most likely = TYPE_UCHAR
-						color.setR(e.getProperty(redIndex).getCurrentValue<GLubyte>());
-						color.setG(e.getProperty(greenIndex).getCurrentValue<GLubyte>());
-						color.setB(e.getProperty(blueIndex).getCurrentValue<GLubyte>());
+						color.setR(e.getProperty(redIndex).getCurrentValue<uint8_t>());
+						color.setG(e.getProperty(greenIndex).getCurrentValue<uint8_t>());
+						color.setB(e.getProperty(blueIndex).getCurrentValue<uint8_t>());
 						if(alphaIndex > 0) {
-							color.setA(e.getProperty(alphaIndex).getCurrentValue<GLubyte>());
+							color.setA(e.getProperty(alphaIndex).getCurrentValue<uint8_t>());
 						} else {
 							color.setA(255);
 						}
 					}
-					*((reinterpret_cast<GLubyte *> (vCursor + colorOffset)) + 0) = color.getR();
-					*((reinterpret_cast<GLubyte *> (vCursor + colorOffset)) + 1) = color.getG();
-					*((reinterpret_cast<GLubyte *> (vCursor + colorOffset)) + 2) = color.getB();
-					*((reinterpret_cast<GLubyte *> (vCursor + colorOffset)) + 3) = color.getA();
+					*((reinterpret_cast<uint8_t *> (vCursor + colorOffset)) + 0) = color.getR();
+					*((reinterpret_cast<uint8_t *> (vCursor + colorOffset)) + 1) = color.getG();
+					*((reinterpret_cast<uint8_t *> (vCursor + colorOffset)) + 2) = color.getB();
+					*((reinterpret_cast<uint8_t *> (vCursor + colorOffset)) + 3) = color.getA();
 				}
 				if(useTex0){
 					*((reinterpret_cast<float *>(vCursor+tex0Offset))+0)=e.getProperty(sIndex).getCurrentValue<float>();
