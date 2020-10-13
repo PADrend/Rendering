@@ -1,16 +1,16 @@
 #
 # This file is part of the Rendering library.
 # Copyright (C) 2009-2013 Benjamin Eikel <benjamin@eikel.org>
-# Copyright (C) 2014-2019 Sascha Brandt <sascha@brandt.graphics>
+# Copyright (C) 2014-2020 Sascha Brandt <sascha@brandt.graphics>
 #
 # This library is subject to the terms of the Mozilla Public License, v. 2.0.
 # You should have received a copy of the MPL along with this library; see the 
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
 cmake_minimum_required(VERSION 3.1.0)
-project(Rendering VERSION 0.3.0)
+project(Rendering VERSION 0.4.0)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -19,58 +19,71 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
 add_library(Rendering SHARED
-	Mesh/Mesh.cpp
-	Mesh/MeshDataStrategy.cpp
-	Mesh/MeshIndexData.cpp
-	Mesh/MeshVertexData.cpp
-	Mesh/VertexAccessor.cpp
-	Mesh/VertexAttributeAccessors.cpp
-	Mesh/VertexAttributeIds.cpp
-	MeshUtils/ConnectivityAccessor.cpp
-	MeshUtils/LocalMeshDataHolder.cpp
-	MeshUtils/MarchingCubesMeshBuilder.cpp
-	MeshUtils/MeshBuilder.cpp
-	MeshUtils/MeshUtils.cpp
-	MeshUtils/PlatonicSolids.cpp
-	MeshUtils/PrimitiveShapes.cpp
-	MeshUtils/QuadtreeMeshBuilder.cpp
-	MeshUtils/QuadtreeMeshBuilderDebug.cpp
-	MeshUtils/Simplification.cpp
-	MeshUtils/TriangleAccessor.cpp
-	MeshUtils/WireShapes.cpp
-	RenderingContext/internal/StatusHandler_glCompatibility.cpp
-	RenderingContext/internal/StatusHandler_glCore.cpp
-	RenderingContext/internal/StatusHandler_sgUniforms.cpp
-	RenderingContext/RenderingContext.cpp
-	RenderingContext/RenderingParameters.cpp
-	Serialization/GenericAttributeSerialization.cpp
-	Serialization/Serialization.cpp
-	Serialization/StreamerMD2.cpp
-	Serialization/StreamerMMF.cpp
-	Serialization/StreamerMTL.cpp
-	Serialization/StreamerMVBO.cpp
-	Serialization/StreamerNGC.cpp
-	Serialization/StreamerOBJ.cpp
-	Serialization/StreamerPKM.cpp
-	Serialization/StreamerPLY.cpp
-	Serialization/StreamerXYZ.cpp
-	Shader/Shader.cpp
-	Shader/ShaderObjectInfo.cpp
-	Shader/ShaderUtils.cpp
-	Shader/Uniform.cpp
-	Shader/UniformRegistry.cpp
+	Core/ApiHandles.cpp
+	Core/BufferStorage.cpp
+	Core/CommandBuffer.cpp
+	Core/CommandPool.cpp
+	Core/Device.cpp
+	Core/Fence.cpp
+	Core/ImageFormat.cpp
+	Core/ImageStorage.cpp
+	Core/Pipeline.cpp
+	Core/Queue.cpp
+	Core/Swapchain.cpp
+	#Mesh/Mesh.cpp
+	#Mesh/MeshDataStrategy.cpp
+	#Mesh/MeshIndexData.cpp
+	#Mesh/MeshVertexData.cpp
+	#Mesh/VertexAccessor.cpp
+	#Mesh/VertexAttribute.cpp
+	#Mesh/VertexAttributeAccessors.cpp
+	#Mesh/VertexAttributeIds.cpp
+	#Mesh/VertexDescription.cpp
+	#MeshUtils/ConnectivityAccessor.cpp
+	#MeshUtils/LocalMeshDataHolder.cpp
+	#MeshUtils/MarchingCubesMeshBuilder.cpp
+	#MeshUtils/MeshBuilder.cpp
+	#MeshUtils/MeshUtils.cpp
+	#MeshUtils/PlatonicSolids.cpp
+	#MeshUtils/PrimitiveShapes.cpp
+	#MeshUtils/QuadtreeMeshBuilder.cpp
+	#MeshUtils/QuadtreeMeshBuilderDebug.cpp
+	#MeshUtils/Simplification.cpp
+	#MeshUtils/TriangleAccessor.cpp
+	#MeshUtils/WireShapes.cpp
+	#RenderingContext/internal/StatusHandler_glCompatibility.cpp
+	#RenderingContext/internal/StatusHandler_glCore.cpp
+	#RenderingContext/internal/StatusHandler_sgUniforms.cpp
+	#RenderingContext/RenderingContext.cpp
+	#RenderingContext/RenderingParameters.cpp
+	#Serialization/GenericAttributeSerialization.cpp
+	#Serialization/Serialization.cpp
+	#Serialization/StreamerMD2.cpp
+	#Serialization/StreamerMMF.cpp
+	#Serialization/StreamerMTL.cpp
+	#Serialization/StreamerMVBO.cpp
+	#Serialization/StreamerNGC.cpp
+	#Serialization/StreamerOBJ.cpp
+	#Serialization/StreamerPKM.cpp
+	#Serialization/StreamerPLY.cpp
+	#Serialization/StreamerXYZ.cpp
+	#Shader/Shader.cpp
+	#Shader/ShaderObjectInfo.cpp
+	#Shader/ShaderUtils.cpp
+	#Shader/Uniform.cpp
+	#Shader/UniformRegistry.cpp
 	Texture/Texture.cpp
-	Texture/TextureUtils.cpp
-	BufferObject.cpp
-	Draw.cpp
-	DrawCompound.cpp
+	#Texture/TextureUtils.cpp
+	#BufferObject.cpp
+	#Draw.cpp
+	#DrawCompound.cpp
 	FBO.cpp
-	Helper.cpp
-	OcclusionQuery.cpp
-	PBO.cpp
-	QueryObject.cpp
-	StatisticsQuery.cpp
-	TextRenderer.cpp
+	#Helper.cpp
+	#OcclusionQuery.cpp
+	#PBO.cpp
+	#QueryObject.cpp
+	#StatisticsQuery.cpp
+	#TextRenderer.cpp
 )
 
 # Dependency to Geometry
@@ -86,12 +99,6 @@ endif()
 target_link_libraries(Rendering LINK_PUBLIC Util)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-# Dependency to an OpenGL implementation
-#find_package(GLImplementation REQUIRED)
-#target_compile_definitions(Rendering PRIVATE "${GLIMPLEMENTATION_DEFINITIONS}")
-#target_include_directories(Rendering PRIVATE ${GLIMPLEMENTATION_INCLUDE_DIRS})
-#target_link_libraries(Rendering LINK_PRIVATE ${GLIMPLEMENTATION_LIBRARIES})
 
 # Extern libraries
 add_subdirectory(extern)

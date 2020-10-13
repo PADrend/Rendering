@@ -1,7 +1,7 @@
 #
 # This file is part of the Rendering library.
 # Copyright (C) 2013 Benjamin Eikel <benjamin@eikel.org>
-# Copyright (C) 2019 Sascha Brandt <sascha@brandt.graphics>
+# Copyright (C) 2019-2020 Sascha Brandt <sascha@brandt.graphics>
 #
 # This library is subject to the terms of the Mozilla Public License, v. 2.0.
 # You should have received a copy of the MPL along with this library; see the 
@@ -13,11 +13,12 @@ project(RenderingTest)
 option(RENDERING_BUILD_TESTS "Defines if CppUnit tests for the Rendering library are built.")
 if(RENDERING_BUILD_TESTS)
 	add_executable(RenderingTest 
-		BufferObjectTest.cpp
+		#BufferObjectTest.cpp
+		DeviceTest.cpp
 		DrawTest.cpp
 		RenderingTestMain.cpp
-		StatisticsQueryTest.cpp
-		VertexAccessorTest.cpp
+		#StatisticsQueryTest.cpp
+		#VertexAccessorTest.cpp
 	)
 
 	target_link_libraries(RenderingTest LINK_PRIVATE Rendering)
@@ -25,7 +26,7 @@ if(RENDERING_BUILD_TESTS)
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake)
 	
 	target_link_libraries(RenderingTest PRIVATE RenderingExtern)
-		
+	
 	# ------------------------------------------------------------------------------
 	# Catch2
 	if(${CMAKE_VERSION} VERSION_LESS "3.11.0") 
@@ -55,9 +56,10 @@ if(RENDERING_BUILD_TESTS)
 		set(CATCH_INSTALL_HELPERS OFF CACHE INTERNAL "" FORCE)
 		add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR} EXCLUDE_FROM_ALL)
 	endif()
-	target_link_libraries(RenderingTest PRIVATE Catch2::Catch2)
-
-
+	target_link_libraries(RenderingTest PRIVATE Catch2::Catch2)	
+	
+	# ------------------------------------------------------------------------------
+	
 	install(TARGETS RenderingTest
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT tests
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT tests

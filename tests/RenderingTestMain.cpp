@@ -7,8 +7,6 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "TestUtils.h"
-#include <Rendering/RenderingContext/RenderingContext.h>
-#include <Rendering/Helper.h>
 #include <Util/UI/UI.h>
 #include <Util/UI/Window.h>
 #include <Util/Util.h>
@@ -30,8 +28,6 @@ int main( int argc, char* argv[] ) {
 	properties.title = "Rendering Test";
 	properties.compatibilityProfile = true;
 	TestUtils::window = Util::UI::createWindow(properties);
-	Rendering::enableGLErrorChecking();
-	Rendering::RenderingContext::initGLState();
 	
 	auto result = Catch::Session().run( argc, argv );
 	
