@@ -50,14 +50,11 @@ bool CommandBuffer::init() {
 
 //-----------------
 
-bool CommandBuffer::ready() {
-	return true;
-}
-
-//-----------------
-
 void CommandBuffer::reset() {
-	return;
+	vk::CommandBuffer vkBuffer(handle);
+	if(state == State::Recording)
+		end();
+	vkBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 }
 
 //-----------------

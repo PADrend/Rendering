@@ -19,17 +19,38 @@
 
 namespace Rendering {
 class CommandPool;
+class Pipeline;
+using PipelineRef = Util::Reference<Pipeline>;
 
 //-------------------------------------------------------
 
 class CommandBuffer : public Util::ReferenceCounter<CommandBuffer> {
 public:
 	using Ref = Util::Reference<CommandBuffer>;
+	enum State {
+		Invalid,
+		Initial,
+		Recording,
+		Executable,
+	};
 	
 	~CommandBuffer();
 	
-	bool ready();
 	void reset();
+	void flush();
+
+	void begin();
+	void end();
+
+	void beginRenderPass();
+	void endRenderPass();
+
+	const PipelineRef& getPipeline() const { return pipeline; }
+	void setPipeline(const PipelineRef& value) { pipeline = value; }
+
+	State getState() const { return state; }
+
+	bool isRecording() const { return state == State::Recording; }
 	bool isPrimary() const { return primary; }
 	const CommandBufferHandle& getApiHandle() const { return handle; };
 private:
@@ -40,6 +61,8 @@ private:
 	Util::WeakPointer<CommandPool> pool;
 	CommandBufferHandle handle;
 	bool primary;
+	State state;
+	PipelineRef pipeline;
 };
 
 } /* Rendering */

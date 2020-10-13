@@ -47,6 +47,13 @@ void Pipeline::setShader(const ShaderRef& value) { invalidate(); shader = value;
 
 //---------------
 
+void Pipeline::reset() { 
+	invalidate();
+	shader = nullptr;
+}
+
+//---------------
+
 void GraphicsPipeline::setState(const PipelineState& value) { invalidate(); state = value; }
 
 //---------------
@@ -55,7 +62,22 @@ void GraphicsPipeline::setFBO(const FBORef& value) { invalidate(); fbo = value; 
 
 //---------------
 
+void GraphicsPipeline::reset() {
+	Pipeline::reset();
+	fbo = nullptr;
+	state = {};
+}
+
+//---------------
+
 void ComputePipeline::setEntryPoint(const std::string& value) { invalidate(); entryPoint = value; }
+
+//---------------
+
+void ComputePipeline::reset() {
+	Pipeline::reset();
+	entryPoint = "main";
+}
 
 //---------------
 

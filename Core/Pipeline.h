@@ -46,6 +46,8 @@ public:
 
 	PipelineType getType() const { return type; }
 	const PipelineHandle& getApiHandle() const { return handle; }
+
+	virtual void reset();
 protected:
 	explicit Pipeline(const DeviceRef& device, PipelineType type);
 private:
@@ -67,6 +69,8 @@ public:
 
 	const FBORef& getFBO() const { return fbo; }
 	void setFBO(const FBORef& value);
+
+	virtual void reset();
 private:
 	explicit GraphicsPipeline(const DeviceRef& device) : Pipeline(device, PipelineType::Graphics) {}
 
@@ -83,9 +87,11 @@ public:
 	
 	const std::string& getEntryPoint() const { return entryPoint; }
 	void setEntryPoint(const std::string& value);
+	
+	virtual void reset();
 private:
 	explicit ComputePipeline(const DeviceRef& device) : Pipeline(device, PipelineType::Compute) {}
-	std::string entryPoint;
+	std::string entryPoint = "main";
 };
 
 } /* Rendering */

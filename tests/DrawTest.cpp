@@ -106,6 +106,9 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		vk::CommandBufferLevel::ePrimary, 
 		swapchainSize
 	});
+	pipeline->setFBO(swapchain->getFBO(0));
+	REQUIRE(pipeline->validate());
+	vk::Pipeline vkPipeline(pipeline->getApiHandle());
 	
 	for(uint32_t i=0; i<swapchainSize; ++i) {
 		auto& fbo = swapchain->getFBO(i);
@@ -114,9 +117,6 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		auto& attachment = fbo->getColorTexture();
 		auto& view = attachment->getImageView();
 		auto& image = attachment->getImage();
-		pipeline->setFBO(fbo);
-		REQUIRE(pipeline->validate());
-		vk::Pipeline vkPipeline(pipeline->getApiHandle());
 		
 		// record commands
 		auto& cmdBuffer = commandBuffers[i];
