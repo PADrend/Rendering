@@ -43,6 +43,9 @@ ShaderResourceList reflect(ShaderStage stage, const std::vector<uint32_t>& code)
 //! Creates the default fallback shader.
 ShaderRef createDefaultShader(const DeviceRef& device);
 
+//! Creates a simple pass-through shader.
+ShaderRef createPassThroughShader(const DeviceRef& device);
+
 //! Create a shader that writes the pixel normal into the color buffer.
 ShaderRef createNormalToColorShader();
 

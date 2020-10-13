@@ -29,5 +29,17 @@ private:
 
 //------------------------------------------
 
+class DynamicLineWidthCommand : public Command {
+PROVIDES_TYPE_NAME(DynamicLineWidthCommand)
+public:
+	DynamicLineWidthCommand(float width) : width(width) {}
+	~DynamicLineWidthCommand() = default;
+	bool compile(CompileContext& context) override;
+private:
+	float width;
+};
+
+//------------------------------------------
+
 } /* Rendering */
 #endif /* end of include guard: RENDERING_CORE_COMMANDS_DYNAMICSTATECOMMANDS_H_ */

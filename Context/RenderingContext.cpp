@@ -65,8 +65,6 @@ static const Util::StringIdentifier DUMMY_VERTEX_ATTR("dummy");
 class RenderingContext::InternalData {
 public:
 	DeviceRef device;
-	//PipelineState pipelineState;
-	//BindingState bindingState;
 	RenderingState renderingState;
 	CommandBuffer::Ref cmd;
 	uint64_t submissionIndex = 0;
@@ -159,6 +157,7 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 
 	// Set dynamic state
 	internal->cmd->getPipeline().getViewportState().setDynamicScissors(true);
+	internal->cmd->getPipeline().getRasterizationState().setDynamicLineWidth(true);
 
 	setFBO(nullptr);
 
@@ -726,7 +725,7 @@ void RenderingContext::pushAndSetLine(const LineParameters& p) {
 }
 
 void RenderingContext::setLine(const LineParameters& p) {
-	internal->cmd->getPipeline().getRasterizationState().setLineWidth(p.getWidth());
+	internal->cmd->setLineWidth(p.getWidth());
 }
 
 // Point ************************************************************************************
@@ -878,10 +877,7 @@ void RenderingContext::pushAndSetScissor(const ScissorParameters& scissorParamet
 
 void RenderingContext::setScissor(const ScissorParameters& scissorParameters) {
 	Geometry::Rect_i scissor = scissorParameters.isEnabled() ? scissorParameters.getRect() : internal->cmd->getPipeline().getViewportState().getViewport().rect;
-	if(internal->cmd->getPipeline().getViewportState().hasDynamicScissors())
-		internal->cmd->setScissor(scissor);
-	else
-		internal->cmd->getPipeline().getViewportState().setScissor(scissor);
+	internal->cmd->setScissor(scissor);
 }
 
 // Stencil ************************************************************************************
@@ -1164,7 +1160,7 @@ void RenderingContext::setViewport(const Geometry::Rect_i& viewport) {
 
 void RenderingContext::setViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor) {
 	 internal->cmd->getPipeline().getViewportState().setViewport(viewport);
-	 internal->cmd->getPipeline().getViewportState().setScissor(scissor);
+	 internal->cmd->setScissor(scissor);
 }
 
 void RenderingContext::setViewport(const ViewportState& viewport) {

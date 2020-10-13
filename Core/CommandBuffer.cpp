@@ -181,6 +181,8 @@ void CommandBuffer::flush() {
 		commands.emplace_back(new BindPipelineCommand(pipeline));
 		if(pipeline.getViewportState().hasDynamicScissors() && pipeline.getViewportState().isDirty())
 			setScissor(pipeline.getViewportState().getScissor());
+		if(pipeline.getRasterizationState().hasDynamicLineWidth() && pipeline.getRasterizationState().isDirty())
+			setLineWidth(pipeline.getRasterizationState().getLineWidth());
 		pipeline.clearDirty();
 	}
 
@@ -544,8 +546,16 @@ void CommandBuffer::setScissor(const Geometry::Rect_i& scissor) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	if(pipeline.getViewportState().hasDynamicScissors())
 		commands.emplace_back(new DynamicScissorCommand({scissor}));
-	else
-		pipeline.getViewportState().setScissor(scissor);
+	pipeline.getViewportState().setScissor(scissor);
+}
+
+//-----------------
+
+void CommandBuffer::setLineWidth(float width) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
+	if(pipeline.getRasterizationState().hasDynamicLineWidth())
+		commands.emplace_back(new DynamicLineWidthCommand(width));
+	pipeline.getRasterizationState().setLineWidth(width);
 }
 
 //-----------------

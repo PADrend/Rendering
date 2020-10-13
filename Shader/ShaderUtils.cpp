@@ -224,6 +224,17 @@ ShaderRef createDefaultShader(const DeviceRef& device) {
 
 //-------------
 
+ShaderRef createPassThroughShader(const DeviceRef& device) {
+	const auto& locator = getDataLocator();
+	auto result = locator.locateFile(Util::FileName("./shader/PassThroughShader.glsl"));
+	WARN_AND_RETURN_IF(!result.first, "Could not find pass thorugh shader.", nullptr);
+	auto shader = Shader::createShader();
+	shader->attachShaderObject(ShaderObjectInfo::loadVertex(result.second));
+	return shader;
+}
+
+//-------------
+
 ShaderRef createNormalToColorShader() {
 	const std::string vertexProgram(
 R"***(#version 110

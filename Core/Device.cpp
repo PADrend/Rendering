@@ -344,6 +344,7 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device) {
 
 	vk::PhysicalDeviceFeatures features;
 	features.pipelineStatisticsQuery = true;
+	features.wideLines = true;	
 
 	// create logical device
 	auto vkDevice = physicalDevice.createDevice({ {}, 

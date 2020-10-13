@@ -34,4 +34,11 @@ bool DynamicScissorCommand::compile(CompileContext& context) {
 
 //--------------
 
+bool DynamicLineWidthCommand::compile(CompileContext& context) {
+	static_cast<vk::CommandBuffer>(context.cmd).setLineWidth(width);
+	return true;
+}
+
+//--------------
+
 } /* Rendering */

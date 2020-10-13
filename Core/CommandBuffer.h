@@ -176,6 +176,7 @@ public:
 	//! @name Dynamic state
 	//! @{
 	void setScissor(const Geometry::Rect_i& scissor);
+	void setLineWidth(float width);
 	//! @}
 
 
