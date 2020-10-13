@@ -12,13 +12,14 @@
 #include "../Core/Device.h"
 #include "../Core/Swapchain.h"
 #include "../State/PipelineState.h"
+#include "../State/RenderingState.h"
 #include "../FBO.h"
 #include "../Shader/Shader.h"
+#include "../Texture/Texture.h"
+
+using namespace Rendering;
 
 TEST_CASE("StateTest_testPipelineState", "[StateTest]") {
-	using namespace Rendering;
-	std::cout << std::endl;
-	
 	auto device = TestUtils::device;
 	REQUIRE(device);
 
@@ -47,5 +48,29 @@ TEST_CASE("StateTest_testPipelineState", "[StateTest]") {
 	state2 = state1;
 	REQUIRE(!state2.hasChanged());
 
+
+	state1.getDepthStencilState().setDepthTestEnabled(false);
+	REQUIRE(!state1.hasChanged());
+	state1.getDepthStencilState().setDepthTestEnabled(true);
+	REQUIRE(state1.hasChanged());
+
 	device->waitIdle();
+}
+
+TEST_CASE("StateTest_testRenderingState", "[StateTest]") {
+
+	Geometry::Matrix4x4 mat;
+	mat.rotate_deg(45, {1,0,0});
+	mat.rotate_deg(45, {0,0,1});
+
+	RenderingState state{};
+	REQUIRE(state.getInstance().hasChanged());
+	state.getInstance().markAsUnchanged();
+	REQUIRE(!state.getInstance().hasChanged());
+	state.getInstance().setMatrixModelToCamera(mat);
+	REQUIRE(state.getInstance().hasChanged());
+	state.getInstance().markAsUnchanged();
+	REQUIRE(!state.getInstance().hasChanged());
+	state.getInstance().setMatrixModelToCamera(mat);
+	REQUIRE(!state.getInstance().hasChanged());
 }

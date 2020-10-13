@@ -250,6 +250,7 @@ public:
 
 	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
 	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
+	void markAsChanged() { hash = 0; dirty = true; }
 private:
 	Geometry::Matrix4x4f matrix_modelToCamera;
 	uint32_t materialId = 0;

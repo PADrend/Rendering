@@ -67,6 +67,7 @@ class UniformRegistry;
 class VertexDescription;
 class VertexInputState;
 class ViewportState;
+class PipelineState;
 enum class PrimitiveTopology;
 enum class TexUnitUsageParameter : uint8_t;
 using BufferObjectRef = Util::Reference<BufferObject>;
@@ -115,6 +116,7 @@ public:
 	void applyChanges(bool forced = false);
 
 	CommandBufferRef getCommandBuffer() const;
+	const PipelineState& getPipelineState() const;
 	//	@}
 
 	// -----------------------------------
@@ -157,7 +159,7 @@ public:
 	void clearDepth(float clearValue);
 	void clearStencil(uint32_t clearValue);
 	void clearScreen(const Util::Color4f& color);
-	void clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool clearDepth=true);
+	void clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool clearDepth=true, bool clearStencil=true);
 	// @}
 	// --------------------------------------------------------------------
 	// --------------------------------------------------------------------

@@ -355,7 +355,7 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineSt
 	auto& bs = state.getColorBlendState();
 	
 	std::vector<vk::PipelineColorBlendAttachmentState> attachments;	
-	for(uint32_t i=0; i<device->getMaxFramebufferAttachments(); ++i) {
+	for(uint32_t i=0; i<state.getFramebufferFormat().getColorAttachmentCount(); ++i) {
 		if(i<bs.getAttachmentCount())
 			attachments.emplace_back(convertColorBlendAttachmentState(bs.getAttachment(i)));
 		else

@@ -53,7 +53,7 @@ public:
 	};
 
 	static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool transient=true, bool primary=true);
-	static Ref create(const QueueRef& queue, bool transient=false, bool primary=true);
+	static Ref create(const QueueRef& queue, bool transient=true, bool primary=true);
 	
 	~CommandBuffer();
 	
@@ -64,7 +64,7 @@ public:
 	void submit(bool wait=false);
 	void execute(const Ref& buffer);
 
-	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepthStencil=true);
+	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, bool clearStencil=true);
 	void endRenderPass();
 	void prepareForPresent();
 	//! @}
@@ -199,7 +199,7 @@ private:
 	BindingState bindings;
 
 	std::vector<Util::Color4f> clearColors;
-	float clearDepthValue=0;
+	float clearDepthValue=1;
 	uint32_t clearStencilValue=0;
 
 	// Keep as long as command buffer is used

@@ -201,7 +201,7 @@ void CommandBuffer::execute(const Ref& buffer) {
 
 //-----------------
 
-void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool clearDepthStencil) {
+void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, bool clearStencil) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(inRenderPass, "Command buffer is already in a render pass. Call endRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
@@ -209,7 +209,7 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 	activeFBO = fbo ? fbo : device->getSwapchain()->getCurrentFBO();
 	pipeline.setFramebufferFormat(activeFBO);
 
-	auto renderPass = device->getResourceCache()->createRenderPass(activeFBO, clearColor, clearDepthStencil);
+	auto renderPass = device->getResourceCache()->createRenderPass(activeFBO, clearColor, clearDepth, clearStencil);
 	auto framebuffer = device->getResourceCache()->createFramebuffer(activeFBO, renderPass);
 	WARN_AND_RETURN_IF(!framebuffer, "Failed to start render pass. Invalid framebuffer.",);
 

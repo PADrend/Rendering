@@ -17,6 +17,7 @@
 
 #include "../RenderingContext.h"
 #include "../DrawCompound.h"
+#include "../FBO.h"
 #include "../Core/Device.h"
 #include "../Core/BufferStorage.h"
 #include "../Core/CommandBuffer.h"
@@ -70,8 +71,7 @@ const std::string fragmentShader = R"fs(
 	};
 
 	void main() {
-		outColor = vec4(1.0);
-		//outColor = sg_Material.diffuse;
+		outColor = sg_Material.diffuse;
 	}
 )fs";
 
@@ -92,6 +92,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 
 	Mesh::Ref mesh = MeshUtils::createBox(vd, {-0.5,0.5,-0.5,0.5,-0.5,0.5});
 	REQUIRE(mesh);
+	mesh->setDataStrategy(SimpleMeshDataStrategy::getDynamicVertexStrategy());
 	mesh->_getVertexData().upload();
 	mesh->_getVertexData().getBuffer()->getBuffer()->setDebugName("Vertex Buffer");
 	mesh->_getIndexData().upload();
@@ -122,29 +123,24 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	// draw
 
 	bool running = true;
-	for(uint_fast32_t round = 0; round < 10 && running; ++round) {
-		//context.clearScreen({0,0,0,1});
+	for(uint_fast32_t round = 0; round < 1000 && running; ++round) {
 
-		//mat.translate(-0.5,0,0);
-		//drawCoordSys(context, 2);
+		context.clearScreen({0,0,0,1});
 		
 		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera());
 		context.pushAndSetColorMaterial({1,0,0,1});
 		context.displayMesh(mesh);
 		context.popMaterial();
-		context.popMatrix_modelToCamera();
 
-		//mat.translate(1,0,0);
-		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
+		context.setMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
 		context.pushAndSetColorMaterial({0,1,0,1});
 		context.displayMesh(mesh);
 		context.popMaterial();
 		context.popMatrix_modelToCamera();
 
 		context.present();
-		//mat.rotate_deg(0.1, {0,1,0});
-		//if(round == 500)
-		//	context.setShader(nullptr);
+		
+		mat.rotate_deg(0.1, {0,1,0});
 		for(auto& e : TestUtils::window->fetchEvents()) {
 			if(e.type == Util::UI::EVENT_KEYBOARD || e.type == Util::UI::EVENT_QUIT)
 				running = false;

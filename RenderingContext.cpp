@@ -108,18 +108,8 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	internal->cmd = CommandBuffer::create(device->getQueue(QueueFamily::Graphics));
 	internal->cmd->setDebugName("RenderingContext primary command buffer.");
 
-	setBlending(BlendingParameters());
-	setColorBuffer(ColorBufferParameters());
-	// Initially enable the back-face culling
-	setCullFace(CullFaceParameters::CULL_BACK);
-	// Initially enable the depth test.
-	setDepthBuffer(DepthBufferParameters(true, true, Comparison::LESS));
-	// Initially enable the lighting.
-	setLighting(LightingParameters(true));
-	setLine(LineParameters());
-	setPointParameters(PointParameters());
-	setPolygonOffset(PolygonOffsetParameters());
-	setStencil(StencilParameters());
+	//// Initially enable the depth test.
+	internal->pipelineState.getDepthStencilState().setDepthTestEnabled(true);
 	setFBO(nullptr);
 
 	MaterialData tmp;
@@ -149,6 +139,10 @@ CommandBufferRef RenderingContext::getCommandBuffer() const {
 	return internal->cmd;
 }
 
+const PipelineState& RenderingContext::getPipelineState() const {
+	return internal->pipelineState;
+}
+
 // helper ***************************************************************************
 
 void RenderingContext::flush(bool wait) {
@@ -164,9 +158,10 @@ void RenderingContext::present() {
 	internal->cmd->prepareForPresent();
 	internal->cmd->submit(true);
 
-	// clear lights
+	// reset rendering state
 	// TODO: do explicit clearing?
 	internal->renderingState.getLights().clear();
+	internal->renderingState.getInstance().markAsChanged();
 
 	internal->device->present();
 
@@ -216,7 +211,6 @@ void RenderingContext::applyChanges(bool forced) {
 	internal->cmd->setPipeline(internal->pipelineState);
 	internal->cmd->setBindings(internal->bindingState);
 
-
 	// transfer updated global uniforms to the shader
 	shader->_getUniformRegistry()->performGlobalSync(internal->globalUniforms, false);
 
@@ -238,7 +232,7 @@ void RenderingContext::clearColor(const Util::Color4f& color) {
 	applyChanges();
 	internal->cmd->setClearColor({color});
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, false);
+		internal->cmd->beginRenderPass(internal->activeFBO, true, false, false);
 	} else {
 		internal->cmd->clear(true, false, false);
 	}
@@ -248,19 +242,19 @@ void RenderingContext::clearScreen(const Util::Color4f& color) {
 	applyChanges();
 	internal->cmd->setClearColor({color});
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, true);
+		internal->cmd->beginRenderPass(internal->activeFBO, true, true, true);
 	} else {
 		internal->cmd->clear(true, true, true);
 	}
 }
 
-void RenderingContext::clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool _clearDepth) {
+void RenderingContext::clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool _clearDepth, bool _clearStencil) {
 	applyChanges();
 	internal->cmd->setClearColor({color});
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, true, _clearDepth);
+		internal->cmd->beginRenderPass(internal->activeFBO, true, _clearDepth, _clearStencil);
 	} else {
-		internal->cmd->clear(true, _clearDepth, _clearDepth, rect);
+		internal->cmd->clear(true, _clearDepth, _clearStencil, rect);
 	}
 }
 
@@ -268,7 +262,7 @@ void RenderingContext::clearDepth(float clearValue) {
 	applyChanges();
 	internal->cmd->setClearDepthValue(clearValue);
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, false, true);
+		internal->cmd->beginRenderPass(internal->activeFBO, false, true, false);
 	} else {
 		internal->cmd->clear(false, true, false);
 	}
@@ -278,7 +272,7 @@ void RenderingContext::clearStencil(uint32_t clearValue) {
 	applyChanges();
 	internal->cmd->setClearStencilValue(clearValue);
 	if(!internal->cmd->isInRenderPass()) {
-		internal->cmd->beginRenderPass(internal->activeFBO, false, true);
+		internal->cmd->beginRenderPass(internal->activeFBO, false, false, true);
 	} else {
 		internal->cmd->clear(false, false, true);
 	}
@@ -492,7 +486,7 @@ void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const Ver
 
 	VertexInputState state;	
 	state.setBinding({0, static_cast<uint32_t>(vd.getVertexSize()), 0});
-	state.setBinding({1, 0, 1});
+	bool hasUnusedAttributes = false;
 	for(auto& location : shader->getVertexAttributeLocations()) {
 		auto attr = vd.getAttribute(location.first);
 		if(!attr.empty()) {
@@ -500,12 +494,18 @@ void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const Ver
 		} else {
 			// bind dummy attribute
 			state.setAttribute({static_cast<uint32_t>(location.second), 1, InternalFormat::RGBA32Float, 0});
+			hasUnusedAttributes = true;
 		}
 	}
 
-	internal->pipelineState.setVertexInputState(state);
-
-	internal->cmd->bindVertexBuffers(0, {buffer,internal->dummyVertexBuffer});
+	if(hasUnusedAttributes) {
+		state.setBinding({1, 0, 1});
+		internal->pipelineState.setVertexInputState(state);
+		internal->cmd->bindVertexBuffers(0, {buffer,internal->dummyVertexBuffer});
+	} else {
+		internal->pipelineState.setVertexInputState(state);
+		internal->cmd->bindVertexBuffers(0, {buffer});
+	}
 }
 
 void RenderingContext::bindIndexBuffer(const BufferObjectRef& buffer) {
@@ -515,14 +515,14 @@ void RenderingContext::bindIndexBuffer(const BufferObjectRef& buffer) {
 void RenderingContext::draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount, uint32_t firstInstance) {
 	applyChanges();
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass(internal->activeFBO);
+		internal->cmd->beginRenderPass(internal->activeFBO, false, false, false);
 	internal->cmd->draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void RenderingContext::drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount, uint32_t firstInstance) {
 	applyChanges();
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass(internal->activeFBO);
+		internal->cmd->beginRenderPass(internal->activeFBO, false, false, false);
 	internal->cmd->drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 

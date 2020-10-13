@@ -303,13 +303,14 @@ void Shader::applyUniforms(bool forced) {
 		// new uniform? --> query and store the location
 		if( entry->location==-1 ) {
 			// find uniform
-			entry->valid = false;
 			for(const auto& rIt : uniformBuffers) {
 				if(rIt.second->getFormat().hasAttribute(entry->uniform.getNameId())) {
 					entry->set = static_cast<int32_t>(rIt.first.first); 
 					entry->location = static_cast<int32_t>(rIt.first.second);
 				}
 			}
+			if(entry->location==-1)
+				entry->valid = false;
 		}
 
 		// set the data

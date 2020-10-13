@@ -26,11 +26,11 @@ namespace Rendering {
 
 //-----------------
 
-FBO::Ref FBO::create(uint32_t maxAttachments) { return new FBO(maxAttachments); }
+FBO::Ref FBO::create() { return new FBO(); }
 
 //-----------------
 
-FBO::FBO(uint32_t maxAttachments) : colorAttachments(maxAttachments, nullptr) {}
+FBO::FBO() {}
 
 //-----------------
 
@@ -39,11 +39,17 @@ FBO::~FBO() = default;
 //-----------------
 
 void FBO::attachColorTexture(const TextureRef& texture, uint32_t index) {
-	WARN_AND_RETURN_IF(index >= colorAttachments.size(),"FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".",);
 	if(!texture) {
 		detachColorTexture(index);
 		return;
 	}
+	const auto& device = texture->getImage()->getDevice();
+	WARN_AND_RETURN_IF(index >= device->getMaxFramebufferAttachments(),
+		"FBO: invalid attachment index " + std::to_string(index) +
+		". Maximum number of attachments is " + std::to_string(device->getMaxFramebufferAttachments()) + ".",
+	);
+	if(index >= colorAttachments.size())
+		colorAttachments.resize(index+1);
 	colorAttachments[index] = texture;
 	width = texture->getWidth();
 	height = texture->getHeight();
@@ -52,30 +58,42 @@ void FBO::attachColorTexture(const TextureRef& texture, uint32_t index) {
 //-----------------
 
 void FBO::attachColorTexture(const ImageViewRef& view, uint32_t index) {
-	WARN_AND_RETURN_IF(index >= colorAttachments.size(),"FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".",);
 	if(!view) {
 		detachColorTexture(index);
 		return;
 	}
+	const auto& device = view->getImage()->getDevice();
+	WARN_AND_RETURN_IF(index >= device->getMaxFramebufferAttachments(),
+		"FBO: invalid attachment index " + std::to_string(index) +
+		". Maximum number of attachments is " + std::to_string(device->getMaxFramebufferAttachments()) + ".",
+	);
 	attachColorTexture(Texture::create(view->getImage()->getDevice(), view), index);
 }
 
 //-----------------
 
 void FBO::attachColorTexture(const ImageStorageRef& image, uint32_t index, uint32_t mipLevel, uint32_t baseLayer, uint32_t layerCount) {
-	WARN_AND_RETURN_IF(index >= colorAttachments.size(),"FBO: invalid attachment index " + std::to_string(index) + ". Maximum number of attachments is " + std::to_string(colorAttachments.size()) + ".",);
 	if(!image) {
 		detachColorTexture(index);
 		return;
 	}
+	const auto& device = image->getDevice();
+	WARN_AND_RETURN_IF(index >= device->getMaxFramebufferAttachments(),
+		"FBO: invalid attachment index " + std::to_string(index) +
+		". Maximum number of attachments is " + std::to_string(device->getMaxFramebufferAttachments()) + ".",
+	);
 	attachColorTexture(ImageView::create(image, {image->getType(), mipLevel, 1u, baseLayer, layerCount}), index);
 }
 
 //-----------------
 
 void FBO::detachColorTexture(uint32_t index) {
-	if(index < colorAttachments.size())
+	if(index < colorAttachments.size()) {
 		colorAttachments[index] = nullptr;
+		// Remove empty elements from back of attachments
+		while(!colorAttachments.empty() && colorAttachments.back() == nullptr)
+			colorAttachments.pop_back();
+	}
 }
 
 //-----------------

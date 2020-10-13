@@ -69,9 +69,9 @@ class RenderingContext;
 class FBO : public Util::ReferenceCounter<FBO> {
 public:
 	using Ref = Util::Reference<FBO>;
-	static Ref create(uint32_t maxAttachments=8);
+	static Ref create();
 
-	FBO(uint32_t maxAttachments=8);
+	FBO();
 	~FBO();
 
 	void attachColorTexture(const TextureRef& texture, uint32_t index = 0);
@@ -104,9 +104,6 @@ public:
 	//! @name Deprecated
 	//! @{
 	
-	[[deprecated]]
-	FBO();
-
 	[[deprecated]]
 	static void _disable() { }
 

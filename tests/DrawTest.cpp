@@ -135,10 +135,10 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		cmdBuffer->endRenderPass();
 				
 		cmdBuffer->prepareForPresent();
-		graphicsQueue->submit(cmdBuffer);
-		graphicsQueue->present();
+		cmdBuffer->submit();
+		device->present();
 
-		angle += Geometry::Angle::deg(1);
+		angle += Geometry::Angle::deg(0.01);
 	}
 	device->waitIdle();
 }

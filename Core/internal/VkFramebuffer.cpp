@@ -30,7 +30,7 @@ vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 
 //---------------
 
-ApiBaseHandle::Ref createRenderPassHandle(Device* device, const FramebufferFormat& state, bool clearColor, bool clearDepth, const std::vector<ResourceUsage>& lastColorUsages, ResourceUsage lastDepthUsage) {
+ApiBaseHandle::Ref createRenderPassHandle(Device* device, const FramebufferFormat& state, bool clearColor, bool clearDepth, bool clearStencil, const std::vector<ResourceUsage>& lastColorUsages, ResourceUsage lastDepthUsage) {
 	vk::Device vkDevice(device->getApiHandle());
 	
 	// Bind color buffers	
@@ -60,15 +60,16 @@ ApiBaseHandle::Ref createRenderPassHandle(Device* device, const FramebufferForma
 	// Bind depth buffer
 	if(state.hasDepthStencilAttachment()) {
 		auto& attachment = state.getDepthStencilAttachment();
-		vk::ImageLayout srcLayout = clearDepth ? vk::ImageLayout::eUndefined : getVkImageLayout(lastDepthUsage);
-		vk::AttachmentLoadOp loadOp = (srcLayout == vk::ImageLayout::eUndefined) ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
+		vk::ImageLayout srcLayout = (clearDepth && clearStencil) ? vk::ImageLayout::eUndefined : getVkImageLayout(lastDepthUsage);
+		vk::AttachmentLoadOp depthLoadOp = (srcLayout == vk::ImageLayout::eUndefined || clearDepth) ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
+		vk::AttachmentLoadOp stencilLoadOp = (srcLayout == vk::ImageLayout::eUndefined || clearStencil) ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad;
 		
 		// Init depth attachment descriptions.
 		attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
 			static_cast<vk::Format>(getVkFormat(attachment.format)),
 			static_cast<vk::SampleCountFlagBits>(attachment.samples),
-			vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-			loadOp, vk::AttachmentStoreOp::eStore,
+			depthLoadOp, vk::AttachmentStoreOp::eStore,
+			stencilLoadOp, vk::AttachmentStoreOp::eStore,
 			srcLayout, vk::ImageLayout::eDepthStencilAttachmentOptimal
 		);
 		attachmentRefs.back() = {attachmentCount++, vk::ImageLayout::eDepthStencilAttachmentOptimal};
