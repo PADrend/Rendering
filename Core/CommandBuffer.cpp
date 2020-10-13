@@ -14,6 +14,7 @@
 #include "Pipeline.h"
 #include "ImageStorage.h"
 #include "ImageView.h"
+#include "BufferStorage.h"
 #include "../Shader/Shader.h"
 #include "../Texture/Texture.h"
 #include "../BufferObject.h"
@@ -79,16 +80,8 @@ void CommandBuffer::reset() {
 	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 	pipeline = Pipeline::createGraphics(queue->getDevice());
 	descriptorSets.clear();
+	boundPipeline = nullptr;
 	state = State::Initial;
-}
-
-//-----------------
-
-void CommandBuffer::free() {
-	vk::CommandBuffer vkCmd(handle);
-	if(state == State::Recording)
-		end();
-	state = State::Free;
 }
 
 //-----------------
@@ -130,7 +123,7 @@ void CommandBuffer::flush() {
 			++it;
 		}
 	}
-	
+
 	// bindings did not change
 	if(!bindings.isDirty())
 		return;
@@ -166,7 +159,7 @@ void CommandBuffer::flush() {
 
 void CommandBuffer::begin() {
 	WARN_AND_RETURN_IF(state == State::Recording, "Command buffer is already recording.",);
-	WARN_AND_RETURN_IF(state == State::Free || state == State::Invalid, "Invalid command buffer.",);
+	WARN_AND_RETURN_IF(state == State::Invalid, "Invalid command buffer.",);
 	vk::CommandBuffer vkCmd(handle);
 	state = State::Recording;
 	vkCmd.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
@@ -183,11 +176,20 @@ void CommandBuffer::end() {
 
 //-----------------
 
+void CommandBuffer::submit(bool wait) {
+	WARN_AND_RETURN_IF(isRecording(), "Command buffer is currently recording. Call end() first.",);
+	vk::CommandBuffer vkCmd(handle);
+	queue->submit(this, wait);
+}
+
+//-----------------
+
 void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColors) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	auto& fbo = getFBO();
 	WARN_AND_RETURN_IF(!fbo || !fbo->validate(), "Cannot begin render pass. Invalid FBO.",);
+
 	vk::Framebuffer framebuffer(fbo->getApiHandle());
 	vk::RenderPass renderPass(fbo->getRenderPass());
 
@@ -229,6 +231,28 @@ void CommandBuffer::bindTexture(const TextureRef& texture, uint32_t set, uint32_
 void CommandBuffer::bindInputImage(const ImageViewRef& view, uint32_t set, uint32_t binding, uint32_t arrayElement) {
 	bindings.bindInputImage(view, set, binding, arrayElement);
 }
+
+//-----------------
+
+void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets) {
+	vk::CommandBuffer vkCmd(handle);
+	std::vector<vk::Buffer> vkBuffers;
+	std::vector<vk::DeviceSize> vkOffsets(offsets.begin(), offsets.end());
+	vkOffsets.resize(buffers.size(), 0);
+	for(auto& bo : buffers) {
+		vkBuffers.emplace_back((bo && bo->isValid()) ? bo->getBuffer()->getApiHandle() : nullptr);
+	}
+	vkCmd.bindVertexBuffers(firstBinding, vkBuffers, offsets);
+}
+
+//-----------------
+
+void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer, size_t offset) {
+	vk::CommandBuffer vkCmd(handle);
+	vk::Buffer vkBuffer((buffer && buffer->isValid()) ? buffer->getBuffer()->getApiHandle() : nullptr);
+	vkCmd.bindIndexBuffer(vkBuffer, offset, vk::IndexType::eUint32);
+}
+
 //-----------------
 
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
@@ -238,6 +262,22 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
 	pipeline->setType(PipelineType::Graphics); // ensure we have a graphics pipeline
 	flush();
 	vkCmd.draw(vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+//-----------------
+
+void CommandBuffer::copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size) {
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!srcBuffer || !tgtBuffer, "Cannot copy buffers. Invalid buffers.",);
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.copyBuffer(static_cast<vk::Buffer>(srcBuffer->getApiHandle()), static_cast<vk::Buffer>(tgtBuffer->getApiHandle()), {{0,0,size}});
+}
+
+//-----------------
+
+void CommandBuffer::copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size) {
+	if(srcBuffer && tgtBuffer)
+		copyBuffer(srcBuffer->getBuffer(), tgtBuffer->getBuffer(), size);
 }
 
 //-----------------

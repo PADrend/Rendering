@@ -27,6 +27,8 @@ class Texture;
 using TextureRef = Util::Reference<Texture>;
 class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
+class BufferStorage;
+using BufferStorageRef = Util::Reference<BufferStorage>;
 class DescriptorSet;
 using DescriptorSetRef = Util::Reference<DescriptorSet>;
 class Queue;
@@ -42,7 +44,6 @@ public:
 		Initial,
 		Recording,
 		Executable,
-		Free,
 	};
 
 	static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool primary=true);
@@ -51,8 +52,8 @@ public:
 	~CommandBuffer();
 	
 	void reset();
-	void free();
 	void flush();
+	void submit(bool wait=false);
 
 	void begin();
 	void end();
@@ -64,7 +65,13 @@ public:
 	void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 
+	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets={});
+	void bindIndexBuffer(const BufferObjectRef& buffer, size_t offset=0);
+
 	void draw(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0);
+
+	void copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size);
+	void copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size);
 
 	void textureBarrier(const TextureRef& texture, ResourceUsage newUsage);
 	//void bufferBarrier(const BufferObjectRef& buffer, ResourceUsage newUsage);
@@ -102,7 +109,7 @@ public:
 	const CommandBufferHandle& getApiHandle() const { return handle; };
 private:
 	friend class Queue;
-	explicit CommandBuffer(const QueueRef& queue, bool primary=true); 
+	explicit CommandBuffer(const QueueRef& queue, bool primary=true);
 	bool init();
 
 	Util::WeakPointer<Queue> queue;

@@ -23,15 +23,21 @@ namespace Rendering {
 
 //-------------
 
-bool Queue::submit(const CommandBufferRef& commands) {
+bool Queue::submit(const CommandBufferRef& commands, bool wait) {
 	WARN_AND_RETURN_IF(!commands || !commands->isExecutable(), "Queue: command buffer is not executable.", false);
+	clearPending();
+	vk::Device vkDevice(handle);
 	vk::Queue vkQueue(handle);
 	vk::CommandBuffer vkCommandBuffer(commands->getApiHandle());
+	FenceHandle fence = FenceHandle::create(vkDevice.createFence({}), vkDevice);
+	pendingQueue.emplace_back(PendingEntry{commands, fence});
 	vkQueue.submit({{
 		0, nullptr, nullptr,
 		1, &vkCommandBuffer,
 		0, nullptr
-	}}, {});
+	}}, static_cast<vk::Fence>(fence));
+	if(wait)
+		this->wait();
 	return true;
 }
 
@@ -42,6 +48,7 @@ bool Queue::present() {
 		WARN("Queue: Present is not supported by queue " + Util::StringUtils::toString(index) + " of family " + Util::StringUtils::toString(familyIndex) + ".");
 		return false;
 	}
+	clearPending();
 	auto& swapchain = device->getSwapchain();
 	vk::SwapchainKHR vkSwapchain(swapchain->getApiHandle());
 	vk::Queue vkQueue(handle);
@@ -54,6 +61,37 @@ bool Queue::present() {
 	swapchain->acquireNextIndex();
 	return true;
 }
+
+//-------------
+
+void Queue::wait() {
+	vk::Device vkDevice(handle);
+	std::vector<vk::Fence> fences;
+	for(auto& pending : pendingQueue) {
+		fences.emplace_back(pending.fence);
+	}
+	vkDevice.waitForFences(fences, true, std::numeric_limits<uint64_t>::max());
+	for(auto& pending : pendingQueue) {
+		pending.cmd->state = CommandBuffer::State::Executable;
+	}
+	pendingQueue.clear();
+}
+
+//-------------
+
+void Queue::clearPending() {
+	vk::Device vkDevice(handle);
+	while(!pendingQueue.empty()) {
+		vk::Fence fence(pendingQueue.front().fence);
+		if(vkDevice.getFenceStatus(fence) == vk::Result::eSuccess ) {
+			pendingQueue.front().cmd->state = CommandBuffer::State::Executable;
+			pendingQueue.pop_front(); // fence is signaled
+		} else {
+			break;
+		}
+	}
+}
+
 
 //-------------
 

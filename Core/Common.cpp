@@ -202,8 +202,15 @@ vk::BufferUsageFlags getVkBufferUsage(const ResourceUsage& usage) {
 		case ResourceUsage::IndexBuffer: flags |= vk::BufferUsageFlagBits::eIndexBuffer; break;
 		case ResourceUsage::VertexBuffer: flags |= vk::BufferUsageFlagBits::eVertexBuffer; break;
 		case ResourceUsage::IndirectBuffer: flags |= vk::BufferUsageFlagBits::eIndirectBuffer; break;
-		default: flags |= vk::BufferUsageFlags(VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM);
+		default: flags |= vk::BufferUsageFlagBits::eUniformBuffer |
+			vk::BufferUsageFlagBits::eUniformTexelBuffer |
+			vk::BufferUsageFlagBits::eStorageBuffer |
+			vk::BufferUsageFlagBits::eStorageTexelBuffer |
+			vk::BufferUsageFlagBits::eIndexBuffer |
+			vk::BufferUsageFlagBits::eVertexBuffer |
+			vk::BufferUsageFlagBits::eIndirectBuffer;
 	}
+	
 	return flags;
 }
 

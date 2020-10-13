@@ -11,6 +11,7 @@
 #include "Queue.h"
 #include "ImageStorage.h"
 #include "Sampler.h"
+#include "CommandBuffer.h"
 
 #include "../FBO.h"
 #include "../Texture/Texture.h"

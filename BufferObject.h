@@ -137,11 +137,11 @@ public:
 	 * copy <tt>data.size()</tt> times <tt>sizeof(T)</tt> bytes from the vector to the buffer object,
 	 * and unbind the buffer object.
 	 */
-	void upload(const uint8_t* data, size_t numBytes);
+	void upload(const uint8_t* data, size_t numBytes, size_t offset = 0);
 
 	template<typename T>
-	void upload(const std::vector<T>& data) {
-		upload(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
+	void upload(const std::vector<T>& data, size_t offset = 0) {
+		upload(reinterpret_cast<const uint8_t*>(data.data()), data.size() * sizeof(T), offset);
 	}
 
 	template<typename T>
@@ -164,11 +164,11 @@ public:
 	template<typename T>
 	[[deprecated]]
 	void uploadSubData(uint32_t bufferTarget, const std::vector<T> & data, size_t offset=0) {
-		upload(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
+		upload(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T), offset);
 	}
 	[[deprecated]]
 	void uploadSubData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, size_t offset=0) {
-		upload(data, numBytes);
+		upload(data, numBytes, offset);
 	}
 	
 	/**
@@ -179,6 +179,14 @@ public:
 	 * and unbind the buffer object.
 	 */
 	std::vector<uint8_t> download(size_t range, size_t offset=0);
+
+	template<typename T>
+	std::vector<T> download(size_t numberOfElements, size_t offset=0) {
+		const T* bufferData = reinterpret_cast<const T*>(map());
+		const std::vector<T> result(bufferData + offset, bufferData + offset + numberOfElements);
+		unmap();
+		return result;
+	}
 
 	template<typename T>
 	[[deprecated]]
@@ -218,6 +226,8 @@ public:
 	 */
 	void unmap();
 
+	size_t getSize() const;
+
 	/*!	@name Internal */
 	// @{
 	const BufferStorageRef& getBuffer() const { return buffer; }
@@ -229,6 +239,7 @@ private:
 	DeviceRef device;
 	//! Internal device buffer storage
 	BufferStorageRef buffer;
+	BufferStorageRef stagingBuffer;
 };
 
 typedef BufferObject::Ref CountedBufferObject;

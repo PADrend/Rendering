@@ -12,6 +12,8 @@
 #include "BufferObject.h"
 #include "Core/Device.h"
 #include "Core/BufferStorage.h"
+#include "Core/Queue.h"
+#include "Core/CommandBuffer.h"
 
 #include <Util/Macros.h>
 
@@ -95,22 +97,26 @@ bool BufferObject::allocate(size_t size, ResourceUsage usage, MemoryUsage access
 
 //----------------
 
-void BufferObject::upload(const uint8_t* data, size_t numBytes) {
+void BufferObject::upload(const uint8_t* data, size_t numBytes, size_t offset) {
 	WARN_AND_RETURN_IF(!isValid(), "BufferObject: Cannot upload data. Buffer is not allocated.",);
-	WARN_AND_RETURN_IF(buffer->getSize() > numBytes, "BufferObject: Cannot upload data. Range out of bounds.",);
-	buffer->upload(data, numBytes);
-	// TODO: use staging buffer if buffer is not client accessible
+	WARN_AND_RETURN_IF(buffer->getSize() < offset+numBytes, "BufferObject: Cannot upload data. Range out of bounds.",);
+	if(buffer->isMappable()) {
+		buffer->upload(data, numBytes, offset);
+	} else {
+		uint8_t* ptr = map();
+		std::copy(data, data+numBytes, ptr+offset);
+		unmap();
+	}
 }
 
 //----------------
 
 std::vector<uint8_t> BufferObject::download(size_t range, size_t offset) {
 	WARN_AND_RETURN_IF(!isValid(), "BufferObject: Cannot download data. Buffer is not allocated.", {});
-	WARN_AND_RETURN_IF(buffer->getSize() > range+offset, "BufferObject: Cannot download data. Range out of bounds.", {});
+	WARN_AND_RETURN_IF(buffer->getSize() < range+offset, "BufferObject: Cannot download data. Range out of bounds.", {});
 	const uint8_t* ptr = map();
 	const std::vector<uint8_t> result(ptr + offset, ptr + offset + range);
 	unmap();
-	// TODO: use staging buffer if buffer is not client accessible
 	return result;
 }
 
@@ -138,7 +144,17 @@ void BufferObject::copy(const BufferObject& source, uint32_t sourceOffset, uint3
 uint8_t* BufferObject::map() {
 	if(!buffer)
 		return nullptr;
-	return buffer->map();
+	if(buffer->isMappable())
+		return buffer->map();
+	
+	// Create & map staging buffer
+	if(!stagingBuffer) {
+		stagingBuffer = BufferStorage::create(device, {buffer->getSize(), MemoryUsage::CpuOnly, false, ResourceUsage::CopySource});
+		if(!stagingBuffer)
+			return nullptr;
+	}
+	
+	return stagingBuffer->map();
 }
 
 //----------------
@@ -146,9 +162,24 @@ uint8_t* BufferObject::map() {
 void BufferObject::unmap() {
 	if(!buffer)
 		return;
-	buffer->unmap();
+	if(buffer->isMappable())
+		return buffer->unmap();
+	if(!stagingBuffer)
+		return;
+	
+	stagingBuffer->unmap();
+	CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
+	cmds->begin();
+	cmds->copyBuffer(stagingBuffer, buffer, buffer->getSize());
+	cmds->end();
+	cmds->submit(true);
 }
 
 //----------------
 
+size_t BufferObject::getSize() const {
+	return buffer ? buffer->getSize() : 0;
+}
+
+//----------------
 }

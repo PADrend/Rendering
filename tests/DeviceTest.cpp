@@ -23,7 +23,7 @@ TEST_CASE("DeviceTest_test", "[DeviceTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
 	
-	auto device = Device::create(TestUtils::window.get(), {"Test", 0u, 0u, true});
+	auto device = TestUtils::device;
 	REQUIRE(device);
 	vk::Device vkDevice(device->getApiHandle());
 	REQUIRE(vkDevice);

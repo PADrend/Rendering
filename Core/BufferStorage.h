@@ -84,6 +84,11 @@ public:
 	}
 
 	/**
+	 * @return @p true, iff the buffer can be mapped to CPU memory
+	 */
+	bool isMappable() const { return config.access != MemoryUsage::GpuOnly && config.access != MemoryUsage::Unknown; };
+
+	/**
 	 * @return The size of the buffer
 	 */
 	size_t getSize() const { return config.size; };

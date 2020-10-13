@@ -61,7 +61,7 @@ struct VertexInputAttribute {
 class VertexInputState {
 public:
 	//! Sets the vertex binding description of the binding given by @p index.
-	VertexInputState& setBinding(const VertexInputBinding& value, uint32_t index=0);
+	VertexInputState& setBinding(const VertexInputBinding& value, uint32_t index=0) { bindings[index] = value; return *this; }
 	//! Simultaneously sets all vertex binding descriptions.
 	VertexInputState& setBindings(const std::vector<VertexInputBinding>& values) { bindings = values; return *this; }
 	//! Sets the number of bindings used by the pipeline.
@@ -75,7 +75,7 @@ public:
 	uint32_t getBindingCount() const { return bindings.size(); }
 	
 	//! Sets the vertex attribute description of the attribute given by @p index.
-	VertexInputState& setAttribute(const VertexInputAttribute& value, uint32_t index=0);
+	VertexInputState& setAttribute(const VertexInputAttribute& value, uint32_t index=0) { attributes[index] = value; return *this; }
 	//! Simultaneously sets all vertex attribute descriptions.
 	VertexInputState& setAttributes(const std::vector<VertexInputAttribute>& values) { attributes = values; return *this; }
 	//! Sets the number of attributes used by the pipeline.

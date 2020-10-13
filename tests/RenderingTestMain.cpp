@@ -17,6 +17,7 @@
 #include <memory>
 
 Util::Reference<Util::UI::Window> TestUtils::window;
+Rendering::Device::Ref TestUtils::device;
 
 int main( int argc, char* argv[] ) {
   Util::init();
@@ -28,6 +29,7 @@ int main( int argc, char* argv[] ) {
 	properties.title = "Rendering Test";
 	properties.compatibilityProfile = true;
 	TestUtils::window = Util::UI::createWindow(properties);
+	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), {"Test", 0u, 0u, true});
 	
 	auto result = Catch::Session().run( argc, argv );
 	

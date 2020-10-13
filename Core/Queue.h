@@ -14,7 +14,7 @@
 #include <Util/ReferenceCounter.h>
 #include <Util/Factory/ObjectPool.h>
 
-#include <memory>
+#include <deque>
 
 namespace Rendering {
 class Device;
@@ -30,8 +30,10 @@ public:
 	
 	~Queue() = default;
 	
-	bool submit(const CommandBufferRef& commands);
+	bool submit(const CommandBufferRef& commands, bool wait=false);
 	bool present();
+	void wait();
+
 	bool supports(QueueFamily type) const;
 
 	uint32_t getIndex() const { return index; }
@@ -47,6 +49,7 @@ private:
 	friend class Device;
 	explicit Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index);
 	bool init();
+	void clearPending();
 	CommandBufferHandle createCommandBuffer(bool primary);
 
 	Util::WeakPointer<Device> device;
@@ -56,6 +59,12 @@ private:
 	QueueFamily capabilities;
 	CommandPoolHandle commandPoolHandle;
 	Util::ObjectPool<CommandBufferHandle, uint32_t> commandPool;
+
+	struct PendingEntry {
+		CommandBufferRef cmd;
+		FenceHandle fence;
+	};
+	std::deque<PendingEntry> pendingQueue;
 };
 
 inline QueueFamily operator | (QueueFamily lhs, QueueFamily rhs) {

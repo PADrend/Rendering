@@ -9,6 +9,7 @@
 #define TESTUTILS_H_
 
 #include <Util/UI/Window.h>
+#include "../Core/Device.h"
 
 #include <memory>
 

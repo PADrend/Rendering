@@ -95,9 +95,9 @@ void BufferStorage::upload(const uint8_t* data, size_t size, size_t offset) {
 bool BufferStorage::init() {
 	VkBuffer vkBuffer = nullptr;
 	VkBufferCreateInfo bufferCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-	bufferCreateInfo.usage = static_cast<uint32_t>(getVkBufferUsage(config.usage));
+	bufferCreateInfo.usage = static_cast<VkBufferUsageFlags>(getVkBufferUsage(config.usage));
 	bufferCreateInfo.size = config.size;
-	bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	VmaAllocationCreateInfo allocCreateInfo{};
 	switch(config.access) {

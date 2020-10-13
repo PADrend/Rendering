@@ -24,6 +24,7 @@
 #include "../FBO.h"
 #include "../Texture/Texture.h"
 #include "../Shader/Shader.h"
+#include "../BufferObject.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
 #include <cstdint>
@@ -37,26 +38,17 @@ const std::string vertexShader = R"vs(
 	#version 450
 
 	out gl_PerVertex {
-			vec4 gl_Position;
+		vec4 gl_Position;
 	};
+
+	layout(location = 0) in vec2 position;
+	layout(location = 1) in vec4 color;
 
 	layout(location = 0) out vec3 fragColor;
 
-	vec2 positions[3] = vec2[](
-		vec2(0.0, -0.5),
-		vec2(-0.5, 0.5),
-		vec2(0.5, 0.5)
-	);
-
-	vec3 colors[3] = vec3[](
-		vec3(1.0, 0.0, 0.0),
-		vec3(0.0, 1.0, 0.0),
-		vec3(0.0, 0.0, 1.0)
-	);
-
 	void main() {
-		gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
-		fragColor = colors[gl_VertexIndex];
+		gl_Position = vec4(position, 0.0, 1.0);
+		fragColor = color.rgb;
 	}
 )vs";
 
@@ -64,7 +56,6 @@ const std::string fragmentShader = R"fs(
 	#version 450
 
 	layout(location = 0) in vec3 fragColor;
-
 	layout(location = 0) out vec4 outColor;
 
 	void main() {
@@ -76,11 +67,34 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
 	
-	auto device = Device::create(TestUtils::window.get(), {"Test", 0u, 0u, true});
+	auto device = TestUtils::device;
+	REQUIRE(device);
 	vk::Device vkDevice(device->getApiHandle());
+	REQUIRE(vkDevice);
 	
 	auto graphicsQueue = device->getQueue(QueueFamily::Graphics);
+	REQUIRE(graphicsQueue->supports(QueueFamily::Present));
 	auto swapchain = device->getSwapchain();
+
+	// --------------------------------------------
+	// input
+
+	std::vector<Geometry::Vec2> positions {
+		{0.0, -0.5},
+		{-0.5, 0.5},
+		{0.5, 0.5}
+	};
+
+	std::vector<Util::Color4f> colors {
+		{1.0, 0.0, 0.0},
+		{0.0, 1.0, 0.0},
+		{0.0, 0.0, 1.0}
+	};
+
+	auto vertexBuffer = BufferObject::create(device);
+	vertexBuffer->allocate(positions.size() * sizeof(Geometry::Vec2) + colors.size() * sizeof(Util::Color4f), ResourceUsage::VertexBuffer);
+	vertexBuffer->upload(positions);
+	vertexBuffer->upload(colors, positions.size() * sizeof(Geometry::Vec2));
 
 	// --------------------------------------------
 	// create graphics pipeline
@@ -92,43 +106,39 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	PipelineState state{};
 	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(TestUtils::window->getWidth()), static_cast<int32_t>(TestUtils::window->getHeight())};
 	state.setViewportState({windowRect, windowRect});
-		
-	// --------------------------------------------
-	// command queue
+
+	VertexInputState inputState;
+	inputState.setBindingCount(2);
+	inputState.setBinding({0, sizeof(Geometry::Vec2)}, 0);
+	inputState.setBinding({1, sizeof(Util::Color4f)}, 1);
+	inputState.setAttributeCount(2);
+	inputState.setAttribute({0, 0, InternalFormat::RG32Float, 0}, 0);
+	inputState.setAttribute({1, 1, InternalFormat::RGBA32Float, 0}, 1);
+	state.setVertexInputState(inputState);
 	
-	// create command buffers
-	auto swapchainSize = swapchain->getSize();
-
-
-	std::vector<CommandBuffer::Ref> commandBuffers;
-	for(uint32_t i=0; i<swapchainSize; ++i) {
-		auto& fbo = swapchain->getFBO(i);
+	// --------------------------------------------
+	// draw
+	
+	for(uint_fast32_t round = 0; round < 100; ++round) {
+		auto& fbo = swapchain->getFBO(swapchain->getCurrentIndex());
 		auto& attachment = fbo->getColorTexture();
-
-		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
-		commandBuffers.emplace_back(cmdBuffer);
 		
-		// record commands
+		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
 		cmdBuffer->begin();
-
-		state.setFBO(fbo);
-		cmdBuffer->setShader(shader);
 		cmdBuffer->setPipelineState(state);
+		cmdBuffer->setShader(shader);
+		cmdBuffer->setFBO(fbo);
 		cmdBuffer->textureBarrier(attachment, ResourceUsage::RenderTarget);
 
 		cmdBuffer->beginRenderPass({{0,0,0,1}});
+		cmdBuffer->bindVertexBuffers(0, {vertexBuffer, vertexBuffer}, {0, positions.size() * sizeof(Geometry::Vec2)});
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
 				
 		cmdBuffer->textureBarrier(attachment, ResourceUsage::Present);
 		cmdBuffer->end();
-	}
-	// --------------------------------------------
-	// draw
-	
-	for(uint_fast32_t round = 0; round < 100; ++round) {
-		auto index = swapchain->getCurrentIndex();
-		graphicsQueue->submit(commandBuffers[index]);		
+
+		graphicsQueue->submit(cmdBuffer);		
 		graphicsQueue->present();
 	}
 	vkDevice.waitIdle();

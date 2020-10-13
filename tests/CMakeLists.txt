@@ -13,7 +13,7 @@ project(RenderingTest)
 option(RENDERING_BUILD_TESTS "Defines if CppUnit tests for the Rendering library are built.")
 if(RENDERING_BUILD_TESTS)
 	add_executable(RenderingTest 
-		#BufferObjectTest.cpp
+		BufferObjectTest.cpp
 		DeviceTest.cpp
 		DrawTest.cpp
 		RenderingTestMain.cpp
