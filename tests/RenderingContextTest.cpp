@@ -29,6 +29,8 @@
 #include "../MeshUtils/PrimitiveShapes.h"
 #include "../MeshUtils/PlatonicSolids.h"
 #include "../MeshUtils/MeshBuilder.h"
+#include "../State/RenderingState.h"
+#include "../Texture/Texture.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
 #include <cstdint>
@@ -36,47 +38,6 @@
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross.hpp>
-
-const std::string shaderSource = R"vs(
-#version 450
-
-#ifdef SG_VERTEX_SHADER
-
-	layout(location = 0) in vec3 sg_Position;
-	layout(location = 1) in vec4 sg_Color;
-
-	layout(push_constant) uniform ObjectData {
-		mat4 sg_matrix_modelToClipping;
-	};
-
-	layout(location = 0) out vec3 fragColor;
-	void main() {
-		gl_Position = sg_matrix_modelToClipping * vec4(sg_Position, 1.0);
-		gl_Position.y = -gl_Position.y; // Vulkan uses right hand NDC
-		fragColor = sg_Color.rgb;
-	}
-#endif
-#ifdef SG_FRAGMENT_SHADER
-
-	layout(location = 0) in vec3 fragColor;
-
-	struct sg_MaterialParameters {
-		vec4 ambient, diffuse, specular, emission;
-		float shininess;
-	};
-
-	layout(set=0,binding=0) uniform MaterialData {
-		sg_MaterialParameters sg_Material;
-	};
-
-	layout(location = 0) out vec4 outColor;
-
-	void main() {
-		outColor = sg_Material.diffuse;
-		//outColor = vec4(fragColor, 1);
-	}
-#endif
-)vs";
 
 TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	using namespace Rendering;
@@ -86,8 +47,14 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	REQUIRE(device);
 	RenderingContext context(device);
 
+	auto shader = context.getFallbackShader();
+	REQUIRE(shader->init());
+	REQUIRE(shader->isUniform({"sg_matrix_modelToCamera"}));
+	REQUIRE(shader->isUniform({"sg_lightCount"}));
+	REQUIRE(shader->isUniform({"sg_Light[0].intensity"}));
+
 	// --------------------------------------------
-	// input
+	// meshes
 
 	VertexDescription vd;
 	vd.appendPosition3D();
@@ -109,14 +76,8 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	mesh2->_getIndexData().upload();
 	mesh2->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer 2");
 	
-	// compile shaders
-	auto shader = Shader::createShader(device, shaderSource, shaderSource);
-	REQUIRE(shader->init());
-	std::cout << toString(shader->getLayout()) << std::endl;
-
-	context.setShader(shader);
-	REQUIRE(context.isShaderEnabled(shader));
-	REQUIRE(!shader->getUniform({"sg_matrix_modelToClipping"}).isNull());
+	// --------------------------------------------
+	// matrices
 
 	auto projection = Geometry::Matrix4x4::perspectiveProjection( Geometry::Angle::deg(60), 1, 0.1, 10 );
 	context.setMatrix_cameraToClipping(projection);
@@ -130,27 +91,60 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	Geometry::Matrix4x4 mat;
 
 	// --------------------------------------------
+	// materials
+
+	MaterialData material1{};
+	material1.setDiffuse({1,0,0});
+	material1.setAmbient(material1.getDiffuse() * 0.1);
+
+	MaterialData material2{};
+	material2.setDiffuse({0,1,0});
+	material2.setAmbient(material2.getDiffuse() * 0.1);
+
+
+	// --------------------------------------------
+	// light
+	LightData light{};
+	light.setIntensity({30,30,30});
+	Geometry::Matrix4x4 lightMat;
+
+	{
+		REQUIRE(context.getRenderingState().getLights().getLightCount() == 0);
+		auto lightId = context.enableLight(light);
+		REQUIRE(lightId > 0);
+		REQUIRE(context.getRenderingState().getLights().getLightCount() == 1);
+		context.disableLight(lightId);
+		REQUIRE(context.getRenderingState().getLights().getLightCount() == 0);
+	}
+	
+	// --------------------------------------------
 	// draw
 
 	bool running = true;
 	for(uint_fast32_t round = 0; round < 10000000 && running; ++round) {
 
 		context.clearScreen({0,0,0,1});
+
+		light.setPosition(lightMat.transformPosition({2,1,2}));
+		auto lightId = context.enableLight(light);
 		
 		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera());
-		context.pushAndSetColorMaterial({1,0,0,1});
+		context.pushAndSetMaterial(material1);
 		context.displayMesh(mesh1);
 		context.popMaterial();
 
 		context.setMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
-		context.pushAndSetColorMaterial({0,1,0,1});
+		context.pushAndSetMaterial(material2);
 		context.displayMesh(mesh2);
 		context.popMaterial();
 		context.popMatrix_modelToCamera();
 
+		context.disableLight(lightId);
+
 		context.present();
 		
 		mat.rotate_deg(0.1, {0,1,0});
+		lightMat.rotate_deg(-0.1, {0,1,0});
 		for(auto& e : TestUtils::window->fetchEvents()) {
 			if(e.type == Util::UI::EVENT_KEYBOARD || e.type == Util::UI::EVENT_QUIT)
 				running = false;

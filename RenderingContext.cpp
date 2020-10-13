@@ -27,6 +27,7 @@
 #include "BufferObject.h"
 #include "Mesh/Mesh.h"
 #include "Mesh/VertexDescription.h"
+#include "Mesh/VertexAccessor.h"
 #include "Shader/Shader.h"
 #include "Shader/UniformRegistry.h"
 #include "Shader/UniformBuffer.h"
@@ -45,6 +46,7 @@
 
 namespace Rendering {
 
+static const Util::StringIdentifier DUMMY_VERTEX_ATTR("dummy");
 
 class RenderingContext::InternalData {
 public:
@@ -86,7 +88,7 @@ public:
 	UniformRegistry globalUniforms;
 
 	// dummy vertex buffer
-	BufferObjectRef dummyVertexBuffer;
+	MeshVertexData fallbackVertexBuffer;
 
 	// deprecated
 	std::stack<AlphaTestParameters> alphaTestParameterStack;
@@ -102,11 +104,27 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	
 	internal->fallbackShader = ShaderUtils::createDefaultShader(device);
 
-	internal->dummyVertexBuffer = BufferObject::create(device);
-	internal->dummyVertexBuffer->allocate(16 * sizeof(float), ResourceUsage::VertexBuffer, MemoryUsage::GpuOnly);
-
 	internal->cmd = CommandBuffer::create(device->getQueue(QueueFamily::Graphics));
 	internal->cmd->setDebugName("RenderingContext primary command buffer.");
+
+	// Initialize dummy vertex buffer
+	VertexDescription vd;
+	vd.appendPosition3D();
+	vd.appendNormalByte();
+	vd.appendColorRGBAByte();
+	vd.appendTexCoord();
+	vd.appendFloat(DUMMY_VERTEX_ATTR, 4, false);
+
+	internal->fallbackVertexBuffer.allocate(1, vd);
+	{
+		auto acc = VertexAccessor::create(internal->fallbackVertexBuffer);
+		acc->setPosition(0, {0,0,0});
+		acc->setNormal(0, {0,1,0});
+		acc->setColor(0, Util::Color4f(1,1,1,1));
+		acc->setTexCoord(0, {0,0});
+	}
+	internal->fallbackVertexBuffer.upload(MemoryUsage::GpuOnly);
+	internal->fallbackVertexBuffer.releaseLocalData();
 
 	//// Initially enable the depth test.
 	internal->pipelineState.getDepthStencilState().setDepthTestEnabled(true);
@@ -143,6 +161,9 @@ const PipelineState& RenderingContext::getPipelineState() const {
 	return internal->pipelineState;
 }
 
+const RenderingState& RenderingContext::getRenderingState() const{
+	return internal->renderingState;
+}
 // helper ***************************************************************************
 
 void RenderingContext::flush(bool wait) {
@@ -487,13 +508,17 @@ void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const Ver
 	VertexInputState state;	
 	state.setBinding({0, static_cast<uint32_t>(vd.getVertexSize()), 0});
 	bool hasUnusedAttributes = false;
+	const auto& fallbackVD = internal->fallbackVertexBuffer.getVertexDescription();
 	for(auto& location : shader->getVertexAttributeLocations()) {
 		auto attr = vd.getAttribute(location.first);
 		if(!attr.empty()) {
 			state.setAttribute({static_cast<uint32_t>(location.second), 0, toInternalFormat(attr), attr.getOffset()});
 		} else {
-			// bind dummy attribute
-			state.setAttribute({static_cast<uint32_t>(location.second), 1, InternalFormat::RGBA32Float, 0});
+			// bind default attribute
+			auto fallbackAttr = fallbackVD.getAttribute(location.first);
+			if(fallbackAttr.empty())
+				fallbackAttr = vd.getAttribute(DUMMY_VERTEX_ATTR);
+			state.setAttribute({static_cast<uint32_t>(location.second), 1, toInternalFormat(fallbackAttr), fallbackAttr.getOffset()});
 			hasUnusedAttributes = true;
 		}
 	}
@@ -501,7 +526,7 @@ void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const Ver
 	if(hasUnusedAttributes) {
 		state.setBinding({1, 0, 1});
 		internal->pipelineState.setVertexInputState(state);
-		internal->cmd->bindVertexBuffers(0, {buffer,internal->dummyVertexBuffer});
+		internal->cmd->bindVertexBuffers(0, {buffer, internal->fallbackVertexBuffer.getBuffer()});
 	} else {
 		internal->pipelineState.setVertexInputState(state);
 		internal->cmd->bindVertexBuffers(0, {buffer});
@@ -605,7 +630,7 @@ void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iP
 // Lighting ************************************************************************************
 const LightingParameters RenderingContext::getLightingParameters() const { return LightingParameters(true); }
 
-uint32_t RenderingContext::enableLight(const LightParameters& _light) {
+size_t RenderingContext::enableLight(const LightParameters& _light) {
 	LightData light;
 	switch(_light.type) {
 		case LightParameters::POINT:
@@ -633,12 +658,12 @@ uint32_t RenderingContext::enableLight(const LightParameters& _light) {
 	return enableLight(light);
 }
 
-uint32_t RenderingContext::enableLight(const LightData& light) {
+size_t RenderingContext::enableLight(const LightData& light) {
 	return internal->renderingState.getLights().addLight(light);
 }
 
-void RenderingContext::disableLight(uint32_t lightNumber) {
-	// not needed(?)
+void RenderingContext::disableLight(size_t lightId) {
+	internal->renderingState.getLights().removeLight(lightId);
 }
 
 // Line ************************************************************************************
@@ -885,6 +910,10 @@ bool RenderingContext::isShaderEnabled(const ShaderRef& shader) {
 
 const ShaderRef& RenderingContext::getActiveShader() const {
 	return internal->activeShader;
+}
+
+const ShaderRef& RenderingContext::getFallbackShader() const {
+	return internal->fallbackShader;
 }
 
 void RenderingContext::_setUniformOnShader(const ShaderRef& shader, const Uniform& uniform, bool warnIfUnused, bool forced) {

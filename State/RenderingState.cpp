@@ -13,6 +13,9 @@
 #include "../Shader/Uniform.h"
 #include "../Shader/UniformBuffer.h"
 #include "../Shader/UniformRegistry.h"
+#include <Util/Macros.h>
+
+#include <algorithm>
 
 namespace Rendering {
 
@@ -39,17 +42,12 @@ static const Uniform::UniformName UNIFORM_SG_MATRIX_CLIPPING_TO_CAMERA("sg_matri
 static const Uniform::UniformName UNIFORM_SG_LIGHT_COUNT("sg_lightCount");
 static const Uniform::UniformName UNIFORM_SG_POINT_SIZE("sg_pointSize");
 
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_POSITION(createNames("sg_LightSource[", MAX_LIGHTS, "].position"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_DIRECTION(createNames("sg_LightSource[", MAX_LIGHTS, "].direction"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_TYPE(createNames("sg_LightSource[", MAX_LIGHTS, "].type"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_CONSTANT(createNames("sg_LightSource[", MAX_LIGHTS, "].constant"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_LINEAR(createNames("sg_LightSource[", MAX_LIGHTS, "].linear"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_QUADRATIC(createNames("sg_LightSource[", MAX_LIGHTS, "].quadratic"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_AMBIENT(createNames("sg_LightSource[", MAX_LIGHTS, "].ambient"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_DIFFUSE(createNames("sg_LightSource[", MAX_LIGHTS, "].diffuse"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_SPECULAR(createNames("sg_LightSource[", MAX_LIGHTS, "].specular"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_EXPONENT(createNames("sg_LightSource[", MAX_LIGHTS, "].exponent"));
-static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_COSCUTOFF(createNames("sg_LightSource[", MAX_LIGHTS, "].cosCutoff"));
+static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_POSITION(createNames("sg_Light[", MAX_LIGHTS, "].position"));
+static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_DIRECTION(createNames("sg_Light[", MAX_LIGHTS, "].direction"));
+static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_TYPE(createNames("sg_Light[", MAX_LIGHTS, "].type"));
+static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_INTENSITY(createNames("sg_Light[", MAX_LIGHTS, "].intensity"));
+static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_RANGE(createNames("sg_Light[", MAX_LIGHTS, "].range"));
+static const UniformNameArray_t UNIFORM_SG_LIGHT_SOURCES_COSCONEANGLE(createNames("sg_Light[", MAX_LIGHTS, "].cosConeAngle"));
 
 static const Uniform::UniformName UNIFORM_SG_TEXTURE_ENABLED("sg_textureEnabled");
 static const UniformNameArray_t UNIFORM_SG_TEXTURES(createNames("sg_texture", MAX_TEXTURES, ""));
@@ -58,7 +56,6 @@ static const Uniform::UniformName UNIFORM_SG_MATERIAL_AMBIENT("sg_Material.ambie
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_DIFFUSE("sg_Material.diffuse");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_SPECULAR("sg_Material.specular");
 static const Uniform::UniformName UNIFORM_SG_MATERIAL_EMISSION("sg_Material.emission");
-static const Uniform::UniformName UNIFORM_SG_MATERIAL_SHININESS("sg_Material.shininess");
 
 //----------------
 
@@ -115,35 +112,48 @@ MaterialData& MaterialSet::getMaterial(uint32_t materialId) {
 
 //----------------
 
-uint32_t LightSet::addLight(const LightData& light) {
-	auto key = std::hash<LightData>{}(light);
+size_t LightSet::addLight(const LightData& light) {
+	auto key = Util::hash(light);
 	const auto& it = lightByHash.find(key);
 	if(it != lightByHash.end())
 		return it->second;
 	uint32_t lightId = static_cast<uint32_t>(lights.size());
 	lightByHash[key] = lightId;
 	lights.emplace_back(light);
-	return lightId;
+	dirty = true;
+	return key;
 }
 
 //----------------
 
-bool LightSet::hasLight(uint32_t lightId) const {
-	return lightId < lights.size();
+void LightSet::removeLight(size_t lightId) {
+	const auto& it = lightByHash.find(lightId);
+	if(it == lightByHash.end())
+		return;
+	if(it->second < lights.size()-1) {
+		// swap with last light in lights vector an pop
+		auto it2 = lightByHash.find(Util::hash(lights.back()));
+		WARN_AND_RETURN_IF(it2 == lightByHash.end(), "Should not happen!",);
+		std::iter_swap(lights.begin() + it->second, lights.begin() + it2->second);
+		lights.pop_back();
+		it2->second = it->second;
+	}
+	lightByHash.erase(it);
+	lights.pop_back();
+	dirty = true;
 }
 
 //----------------
 
-bool LightSet::hasLight(const LightData& light) const {
-	auto key = std::hash<LightData>{}(light);
-	const auto& it = lightByHash.find(key);
+bool LightSet::hasLight(size_t lightId) const {
+	const auto& it = lightByHash.find(lightId);
 	return it != lightByHash.end();
 }
 
 //----------------
 
-const LightData& LightSet::getLight(uint32_t lightId) const {
-	return lights[lightId];
+const LightData& LightSet::getLight(size_t lightId) const {
+	return lights[lightByHash.at(lightId)];
 }
 
 //----------------
@@ -163,50 +173,19 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 	}
 
 	// lights
-	/*if (forced || cc || target.lightsChanged(actual)) {
+	if (forced || cc || lights.hasChanged()) {
 
-		target.updateLights(actual);
+		uniforms.emplace_back(UNIFORM_SG_LIGHT_COUNT, lights.getLightCount());
+		for (uint32_t i = 0; i < lights.getLightCount() && i < MAX_LIGHTS; ++i) {
+			const auto& light = lights.getLights()[i];
 
-		uniforms.emplace_back(UNIFORM_SG_LIGHT_COUNT, static_cast<int> (actual.getNumEnabledLights()));
-
-		const uint_fast8_t numEnabledLights = actual.getNumEnabledLights();
-		for (uint_fast8_t i = 0; i < numEnabledLights; ++i) {
-			const LightParameters & params = actual.getEnabledLight(i);
-
-			target.updateLightParameter(i, params);
-
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], actual.getMatrix_worldToCamera().transformPosition(params.position) );
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], actual.getMatrix_worldToCamera().transformDirection(params.direction) );
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_TYPE[i], static_cast<int> (params.type));
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_CONSTANT[i], params.constant);
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_LINEAR[i], params.linear);
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_QUADRATIC[i], params.quadratic);
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_AMBIENT[i], params.ambient);
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIFFUSE[i], params.diffuse);
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_SPECULAR[i], params.specular);
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_EXPONENT[i], params.exponent);
-			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_COSCUTOFF[i], params.cosCutoff);
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], camera.getMatrixWorldToCamera().transformPosition(light.getPosition()));
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], camera.getMatrixWorldToCamera().transformDirection(light.getDirection()));
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_TYPE[i], static_cast<uint32_t>(light.getType()));
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_INTENSITY[i], light.getIntensity());
+			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_COSCONEANGLE[i], light.getCosConeAngle());
 		}
-
-		if (forced) { // reset all non-enabled light values
-			LightParameters params;
-			for (uint_fast8_t i = numEnabledLights; i < MAX_LIGHTS; ++i) {
-				target.updateLightParameter(i, params);
-
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_POSITION[i], actual.getMatrix_worldToCamera().transformPosition(params.position) );
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIRECTION[i], actual.getMatrix_worldToCamera().transformDirection(params.direction) );
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_TYPE[i], static_cast<int> (params.type));
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_CONSTANT[i], params.constant);
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_LINEAR[i], params.linear);
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_QUADRATIC[i], params.quadratic);
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_AMBIENT[i], params.ambient);
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_DIFFUSE[i], params.diffuse);
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_SPECULAR[i], params.specular);
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_EXPONENT[i], params.exponent);
-				uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_COSCUTOFF[i], params.cosCutoff);
-			}
-		}
-	}*/
+	}
 
 	// materials
 	if (forced || material.hasChanged()) {
@@ -215,7 +194,6 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_DIFFUSE, material.getDiffuse());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_SPECULAR, material.getSpecular());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_EMISSION, material.getEmission());
-		uniforms.emplace_back(UNIFORM_SG_MATERIAL_SHININESS, material.getSpecular().a());
 
 		material.markAsUnchanged();
 	}

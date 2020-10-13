@@ -68,6 +68,7 @@ class VertexDescription;
 class VertexInputState;
 class ViewportState;
 class PipelineState;
+class RenderingState;
 enum class PrimitiveTopology;
 enum class TexUnitUsageParameter : uint8_t;
 using BufferObjectRef = Util::Reference<BufferObject>;
@@ -117,6 +118,7 @@ public:
 
 	CommandBufferRef getCommandBuffer() const;
 	const PipelineState& getPipelineState() const;
+	const RenderingState& getRenderingState() const;
 	//	@}
 
 	// -----------------------------------
@@ -375,16 +377,16 @@ public:
 	 * @param light Parameters of a light source.
 	 * @return Light number that was used for this light. This number has to be used to deactivate the light.
 	 */
-	uint32_t enableLight(const LightData& light);
+	size_t enableLight(const LightData& light);
 	[[deprecated]]
-	uint32_t enableLight(const LightParameters& light);
+	size_t enableLight(const LightParameters& light);
 
 	/**
 	 * Deactivate a previuosly activated light.
 	 *
 	 * @param lightNumber Light number that was returned by @a enableLight.
 	 */
-	void disableLight(uint32_t lightNumber);
+	void disableLight(size_t lightNumber);
 	// @}
 
 	// ------
@@ -546,6 +548,7 @@ public:
 	void popShader();
 	bool isShaderEnabled(const ShaderRef& shader);
 	const ShaderRef& getActiveShader() const;
+	const ShaderRef& getFallbackShader() const;
 	void setShader(const ShaderRef& shader);
 
 	//! (internal) called by Shader::setUniform(...)

@@ -368,6 +368,7 @@ void Shader::initUniformRegistry() {
 			Uniform::dataType_t type;
 			switch (attr.getDataType()) {
 				case Util::TypeConstant::INT32: type = Uniform::UNIFORM_INT; break;
+				case Util::TypeConstant::UINT32: type = Uniform::UNIFORM_UINT; break;
 				case Util::TypeConstant::FLOAT: type = Uniform::UNIFORM_FLOAT; break;
 				case Util::TypeConstant::BOOL: type = Uniform::UNIFORM_BOOL; break;
 				default:

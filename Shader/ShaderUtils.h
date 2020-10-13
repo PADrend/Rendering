@@ -40,7 +40,7 @@ namespace ShaderUtils {
  */
 ShaderResourceList reflect(ShaderStage stage, const std::vector<uint32_t>& code);
 
-//! Create a simple shader.
+//! Creates the default fallback shader.
 ShaderRef createDefaultShader(const DeviceRef& device);
 
 //! Create a shader that writes the pixel normal into the color buffer.

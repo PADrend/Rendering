@@ -11,9 +11,11 @@
 #include "ShaderUtils.h"
 #include "Shader.h"
 #include "../State/ShaderLayout.h"
+#include "../Helper.h"
 #include <Util/References.h>
 #include <Util/StringUtils.h>
 #include <Util/TypeConstant.h>
+#include <Util/Macros.h>
 #include <string>
 
 #include <spirv_cross.hpp>
@@ -213,26 +215,10 @@ ShaderResourceList reflect(ShaderStage stage, const std::vector<uint32_t>& code)
 //-------------
 
 ShaderRef createDefaultShader(const DeviceRef& device) {
-	const std::string vertexShader = R"vs(
-		#version 450
-		layout(location = 0) in vec3 sg_Position;
-		layout(location = 1) in vec4 sg_Color;
-		layout(location = 0) out vec4 fragColor;
-		void main() {
-			gl_Position = vec4(sg_Position, 1.0);
-			fragColor = sg_Color;
-		}
-	)vs";
-
-	const std::string fragmentShader = R"fs(
-		#version 450
-		layout(location = 0) in vec4 fragColor;
-		layout(location = 0) out vec4 outColor;
-		void main() {
-			outColor = fragColor;
-		}
-	)fs";
-	return Shader::createShader(device, vertexShader, fragmentShader);
+	const auto& locator = getDataLocator();
+	auto result = locator.locateFile(Util::FileName("./shader/defaultShader.glsl"));
+	WARN_AND_RETURN_IF(!result.first, "Could not find default shader.", nullptr);
+	return Shader::loadShader(device, result.second, result.second);
 }
 
 //-------------

@@ -84,7 +84,7 @@ add_library(Rendering SHARED
 	Draw.cpp
 	DrawCompound.cpp
 	FBO.cpp
-	#Helper.cpp
+	Helper.cpp
 	#OcclusionQuery.cpp
 	#PBO.cpp
 	#QueryObject.cpp
@@ -136,6 +136,15 @@ file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Texture/*.h")
 install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Texture COMPONENT headers)
 file(GLOB RENDERING_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 install(FILES ${RENDERING_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering COMPONENT headers)
+
+
+# Set data directory to the directory inside the sources
+target_compile_definitions(Rendering PRIVATE COMPILE_DEFINITIONS RENDERING_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
+
+# Install the data directory and rename it to Rendering
+install(DIRECTORY data/
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/Rendering COMPONENT data
+)
 
 # Install the library
 install(TARGETS Rendering EXPORT LibraryExport

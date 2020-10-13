@@ -37,7 +37,7 @@ const size_t Uniform::dataSizeIndex[] = {
 	//	UNIFORM_MATRIX_2X2F = 12,	UNIFORM_MATRIX_3X3F = 13, 	UNIFORM_MATRIX_4X4F = 14
 	sizeof(float) * 4,				sizeof(float) * 9,			sizeof(float) * 16,
 	//	UNIFORM_UINT = 15, 	UNIFORM_VEC2UI = 16,		UNIFORM_VEC3UI = 17,		UNIFORM_VEC4UI = 18,
-	//sizeof(uint32_t) * 1,	sizeof(uint32_t) * 2,	sizeof(uint32_t) * 3,	sizeof(uint32_t) * 4
+	sizeof(uint32_t) * 1,	sizeof(uint32_t) * 2,	sizeof(uint32_t) * 3,	sizeof(uint32_t) * 4
 };
 
 std::string Uniform::getTypeString(const dataType_t t) {
@@ -57,6 +57,10 @@ std::string Uniform::getTypeString(const dataType_t t) {
 		case UNIFORM_MATRIX_2X2F: return "mat2x2f";
 		case UNIFORM_MATRIX_3X3F: return "mat3x3f";
 		case UNIFORM_MATRIX_4X4F: return "mat4x4f";
+		case UNIFORM_UINT: return "uint";
+		case UNIFORM_VEC2UI: return "vec2ui";
+		case UNIFORM_VEC3UI: return "vec3ui";
+		case UNIFORM_VEC4UI: return "vec4ui";
 		default: return "unknown";
 	}
 }
@@ -133,6 +137,22 @@ Uniform::Uniform(UniformName _name, dataType_t _type, const std::vector<int32_t>
 		INVALID_ARGUMENT_EXCEPTION("wrong value count for type");
 
 	int32_t * ptr = reinterpret_cast<int32_t *>(data.data());
+	std::copy(std::begin(values), std::end(values), ptr);
+}
+
+//! (ctor) UNIFORM_UINT | UNIFORM_VEC(2|3|4)UI *
+Uniform::Uniform(UniformName _name, dataType_t _type, const std::vector<uint32_t> & values) :
+		name(std::move(_name)), type(_type),
+		numValues( (values.size()*sizeof(int32_t)) /getValueSize(type)),
+		data(numValues * getValueSize(type)) {
+	// check type
+	if( type!=UNIFORM_UINT && type!=UNIFORM_VEC2UI && type!=UNIFORM_VEC3UI && type!=UNIFORM_VEC4UI)
+		INVALID_ARGUMENT_EXCEPTION("Only uint-types accepted here");
+	// check size
+	if(values.size()*sizeof(int32_t) != numValues * getValueSize(type))
+		INVALID_ARGUMENT_EXCEPTION("wrong value count for type");
+
+	uint32_t * ptr = reinterpret_cast<uint32_t *>(data.data());
 	std::copy(std::begin(values), std::end(values), ptr);
 }
 
@@ -311,6 +331,81 @@ Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec4i> & values)
 	}
 }
 
+// uint ---------------------------------------------------------------
+
+//! (ctor) UNIFORM_UINT
+Uniform::Uniform(UniformName _name, uint32_t value) :
+		name(std::move(_name)), type(UNIFORM_UINT), numValues(1),
+		data(reinterpret_cast<const uint8_t *>(&value), reinterpret_cast<const uint8_t *>(&value) + sizeof(uint32_t)) {
+}
+
+//! (ctor) UNIFORM_UINT *
+Uniform::Uniform(UniformName _name, const std::vector<uint32_t> & values) :
+		name(std::move(_name)), type(UNIFORM_UINT), numValues(values.size()),
+		data(reinterpret_cast<const uint8_t *>(&values[0]), reinterpret_cast<const uint8_t *>(&values[0]) + numValues * getValueSize(type)) {
+}
+
+//! (ctor) UNIFORM_VEC2UI
+Uniform::Uniform(UniformName _name, const Geometry::Vec2ui & value) :
+		name(std::move(_name)), type(UNIFORM_VEC2UI), numValues(1),
+		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
+}
+
+//! (ctor) UNIFORM_VEC2UI *
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec2ui> & values) :
+		name(std::move(_name)), type(UNIFORM_VEC2UI), numValues(values.size()),
+		data(numValues * getValueSize(type)) {
+
+	uint32_t * ptr = reinterpret_cast<uint32_t *>(data.data());
+	size_t idx = 0;
+	for(const auto & vec : values) {
+		ptr[idx++] = vec.getX();
+		ptr[idx++] = vec.getY();
+	}
+}
+
+//! (ctor) UNIFORM_VEC3UI
+Uniform::Uniform(UniformName _name, const Geometry::Vec3ui & value) :
+		name(std::move(_name)), type(UNIFORM_VEC3UI), numValues(1),
+		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
+}
+
+//! (ctor) UNIFORM_VEC3UI *
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec3ui> & values) :
+		name(std::move(_name)), type(UNIFORM_VEC3UI), numValues(values.size()),
+		data(numValues * getValueSize(type)) {
+
+	uint32_t * ptr = reinterpret_cast<uint32_t *>(data.data());
+	size_t idx = 0;
+	for(const auto & vec : values) {
+		ptr[idx++] = vec.getX();
+		ptr[idx++] = vec.getY();
+		ptr[idx++] = vec.getZ();
+	}
+}
+
+//! (ctor) UNIFORM_VEC4UI
+Uniform::Uniform(UniformName _name, const Geometry::Vec4ui & value) :
+		name(std::move(_name)), type(UNIFORM_VEC4UI), numValues(1),
+		data(reinterpret_cast<const uint8_t *>(value.getVec()), reinterpret_cast<const uint8_t *>(value.getVec()) + numValues * getValueSize(type)) {
+}
+
+//! (ctor) UNIFORM_VEC4UI *
+Uniform::Uniform(UniformName _name, const std::vector<Geometry::Vec4ui> & values) :
+		name(std::move(_name)), type(UNIFORM_VEC4UI), numValues(values.size()),
+		data(numValues * getValueSize(type)) {
+
+	uint32_t * ptr = reinterpret_cast<uint32_t *>(data.data());
+	size_t idx = 0;
+	for(const auto & vec : values) {
+		ptr[idx++] = vec.getX();
+		ptr[idx++] = vec.getY();
+		ptr[idx++] = vec.getZ();
+		ptr[idx++] = vec.getW();
+	}
+}
+
+
 
 // float matrixes -------------------------------------------------------------------------------
 
@@ -466,6 +561,45 @@ std::string Uniform::toString() const {
 			s << "vec4i["<<numValues<<"]";
 
 			const int32_t * ptr = reinterpret_cast<const int32_t *> (data.data());
+			for (size_t i = 0; i < numValues; ++i) {
+				s << " (" << ptr[0] << "," << ptr[1] << "," << ptr[2] << "," << ptr[3] << ")";
+				ptr+=4;
+			}
+			break;
+		}
+		case UNIFORM_UINT: {
+			s << "uint["<<numValues<<"]";
+
+			const uint32_t * ptr = reinterpret_cast<const uint32_t *> (data.data());
+			for (size_t i = 0; i < numValues; ++i)
+				s << " " << ptr[i];
+			break;
+		}
+
+		case UNIFORM_VEC2UI: {
+			s << "vec2ui["<<numValues<<"]";
+
+			const uint32_t * ptr = reinterpret_cast<const uint32_t *> (data.data());
+			for (size_t i = 0; i < numValues; ++i) {
+				s << " (" << ptr[0] << "," << ptr[1] << ")";
+				ptr+=2;
+			}
+			break;
+		}
+		case UNIFORM_VEC3UI: {
+			s << "vec3ui["<<numValues<<"]";
+
+			const uint32_t * ptr = reinterpret_cast<const uint32_t *> (data.data());
+			for (size_t i = 0; i < numValues; ++i) {
+				s << " (" << ptr[0] << "," << ptr[1] << "," << ptr[2] << ")";
+				ptr+=3;
+			}
+			break;
+		}
+		case UNIFORM_VEC4UI: {
+			s << "vec4ui["<<numValues<<"]";
+
+			const uint32_t * ptr = reinterpret_cast<const uint32_t *> (data.data());
 			for (size_t i = 0; i < numValues; ++i) {
 				s << " (" << ptr[0] << "," << ptr[1] << "," << ptr[2] << "," << ptr[3] << ")";
 				ptr+=4;

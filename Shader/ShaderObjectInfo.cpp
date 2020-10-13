@@ -196,13 +196,14 @@ bool ShaderObjectInfo::compile(const DeviceRef& device) {
 		options.AddMacroDefinition(define.first, define.second);
 
 	std::string name = toString(stage);
-	if(!filename.empty())
-		name = filename.toString();
 	
 	shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, kind, name.c_str(), options);
 	if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
 		std::stringstream ss;
-		ss << "Shader compile error:" << std::endl;
+		ss << "Shader compile error";
+	if(!filename.empty())
+		ss << " in file '" << filename.toString() << "'";
+		ss << ":" << std::endl;
 		ss << result.GetErrorMessage();
 		ss << printErrorLines(result.GetErrorMessage(), source) << std::endl;
 		WARN(ss.str());

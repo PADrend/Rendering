@@ -25,16 +25,19 @@ template<typename _T> class _Vec2;
 typedef _Vec2<float> Vec2;
 typedef _Vec2<float> Vec2f;
 typedef _Vec2<int32_t> Vec2i;
+typedef _Vec2<uint32_t> Vec2ui;
 
 template<typename _T> class _Vec3;
 typedef _Vec3<float> Vec3;
 typedef _Vec3<float> Vec3f;
 typedef _Vec3<int32_t> Vec3i;
+typedef _Vec3<uint32_t> Vec3ui;
 
 template<typename _T> class _Vec4;
 typedef _Vec4<float> Vec4;
 typedef _Vec4<float> Vec4f;
 typedef _Vec4<int32_t> Vec4i;
+typedef _Vec4<uint32_t> Vec4ui;
 
 template<typename _T> class _Matrix4x4;
 typedef _Matrix4x4<float> Matrix4x4;
@@ -42,11 +45,8 @@ typedef _Matrix4x4<float> Matrix4x4;
 template<typename _T> class _Matrix3x3;
 typedef _Matrix3x3<float> Matrix3x3;
 
-
-
-
-
 }
+
 namespace Util {
 class Color4f;
 }
@@ -70,7 +70,7 @@ class Uniform {
 			UNIFORM_FLOAT = 4, 		UNIFORM_VEC2F = 5,	UNIFORM_VEC3F = 6,	UNIFORM_VEC4F = 7,
 			UNIFORM_INT = 8, 		UNIFORM_VEC2I = 9,	UNIFORM_VEC3I = 10,	UNIFORM_VEC4I = 11,
 			UNIFORM_MATRIX_2X2F = 12,	UNIFORM_MATRIX_3X3F = 13, UNIFORM_MATRIX_4X4F = 14,
-	//	UNIFORM_UINT = 15, 	UNIFORM_VEC2UI = 16,		UNIFORM_VEC3UI = 17,		UNIFORM_VEC4UI = 18,
+			UNIFORM_UINT = 15, 	UNIFORM_VEC2UI = 16,		UNIFORM_VEC3UI = 17,		UNIFORM_VEC4UI = 18,
 		};
 
 		//! returns the size in bytes of a value of the given type
@@ -104,6 +104,9 @@ class Uniform {
 		/*! Generic int-constructor (use another contructor whenever possible)
 			\throw may throw an invalid_argument-exception	*/
 		Uniform(UniformName _name, dataType_t _type, const std::vector<int32_t> & values);
+		/*! Generic uint-constructor (use another contructor whenever possible)
+			\throw may throw an invalid_argument-exception	*/
+		Uniform(UniformName _name, dataType_t _type, const std::vector<uint32_t> & values);
 
 		//! UNIFORM_BOOL
 		Uniform(UniformName _name, bool value);
@@ -141,6 +144,22 @@ class Uniform {
 		//! UNIFORM_VEC4I
 		Uniform(UniformName _name, const Geometry::Vec4i & value);
 		Uniform(UniformName _name, const std::vector<Geometry::Vec4i> & values);
+
+		//! UNIFORM_UINT
+		Uniform(UniformName _name, uint32_t value);
+		Uniform(UniformName _name, const std::vector<uint32_t> & values);
+
+		//! UNIFORM_VEC2UI
+		Uniform(UniformName _name, const Geometry::Vec2ui & value);
+		Uniform(UniformName _name, const std::vector<Geometry::Vec2ui> & values);
+
+		//! UNIFORM_VEC3UI
+		Uniform(UniformName _name, const Geometry::Vec3ui & value);
+		Uniform(UniformName _name, const std::vector<Geometry::Vec3ui> & values);
+
+		//! UNIFORM_VEC4UI
+		Uniform(UniformName _name, const Geometry::Vec4ui & value);
+		Uniform(UniformName _name, const std::vector<Geometry::Vec4ui> & values);
 
 		/**
 		 * Create a uniform containing a matrix.

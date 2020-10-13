@@ -197,7 +197,7 @@ public:
 	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
 	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
-	LightType type;
+	LightType type = LightType::Point;
 	Geometry::Vec3 position = {0,0,0};
 	Geometry::Vec3 direction = {0,-1,0};
 	Util::Color4f intensity = {1,1,1,1};
@@ -213,18 +213,35 @@ private:
 
 class LightSet {
 public:
-	uint32_t addLight(const LightData& light);
-	bool hasLight(uint32_t lightId) const;
-	bool hasLight(const LightData& light) const;
-	const LightData& getLight(uint32_t lightId) const;
+	size_t addLight(const LightData& light);
+	void removeLight(size_t lightId);
+	void removeLight(const LightData& light) { removeLight(Util::hash(light)); }
+	bool hasLight(size_t lightId) const;
+	bool hasLight(const LightData& light) const { return hasLight(Util::hash(light)); }
+	const LightData& getLight(size_t lightId) const;
 	void clear() { lights.clear(); lightByHash.clear(); }
 	const std::vector<LightData>& getLights() const { return lights; }
+	uint32_t getLightCount() const { return static_cast<uint32_t>(lights.size()); }
 
 	bool operator==(const LightSet& o) const { return lights == o.lights; }
 	bool operator!=(const LightSet& o) const { return lights != o.lights; }
 private:
 	std::vector<LightData> lights;
 	std::map<size_t,uint32_t> lightByHash;
+
+public:
+	void markAsUnchanged() { hash = calcHash(); dirty = false; }
+	bool hasChanged() const { return dirty ? hash != calcHash() : false; }
+	void markAsChanged() { hash = 0; dirty = true; }
+	size_t calcHash() const {
+		size_t result = 0;
+		for(const auto& it : lightByHash)
+			Util::hash_combine(result, it.first);
+		return result;
+	}
+private:
+	bool dirty = true;
+	size_t hash = 0;
 };
 
 //==================================================================
@@ -271,6 +288,12 @@ public:
 	MaterialData& getMaterial() { return material; }
 	LightSet& getLights() { return lights; }
 	InstanceData& getInstance() { return instance; }
+
+	const CameraData& getCamera() const { return camera; }
+	//const MaterialSet& getMaterials() const { return materials; }
+	const MaterialData& getMaterial() const { return material; }
+	const LightSet& getLights() const { return lights; }
+	const InstanceData& getInstance() const { return instance; }
 
 	void setMaterial(const MaterialData& mat) { material = mat; }
 
@@ -379,6 +402,14 @@ template <> struct hash<Rendering::LightData> {
 		if(data.getType() == Rendering::LightType::Spot)
 			Util::hash_combine(result, data.getConeAngle().deg());
 		return result;
+	}
+};
+
+//-------------
+
+template <> struct hash<Rendering::LightSet> {
+	std::size_t operator()(const Rendering::LightSet& data) const {
+		return data.calcHash();
 	}
 };
 
