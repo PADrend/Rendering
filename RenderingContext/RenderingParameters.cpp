@@ -371,37 +371,77 @@ PolygonModeParameters::polygonModeMode_t PolygonModeParameters::stringToMode(con
 	throw std::invalid_argument("Invalid string representation of PolygonModeParameters::polygonModeMode_t enumerator");
 }
 
-uint32_t PolygonModeParameters::modeToGL(PolygonModeParameters::polygonModeMode_t mode) {
-#ifdef LIB_GL
+PolygonMode PolygonModeParameters::modeToPolygonMode(PolygonModeParameters::polygonModeMode_t mode) {
 	switch(mode) {
-		case POINT:
-			return GL_POINT;
-		case LINE:
-			return GL_LINE;
-		case FILL:
-			return GL_FILL;
+		case POINT: return PolygonMode::Point;
+		case LINE: return PolygonMode::Line;
+		case FILL: return PolygonMode::Fill;
 		default:
 			break;
 	}
-#endif /* LIB_GL */
-	throw std::invalid_argument("Invalid PolygonModeParameters::polygonModeMode_t enumerator");
 }
 
-PolygonModeParameters::polygonModeMode_t PolygonModeParameters::glToMode(uint32_t value) {
-#ifdef LIB_GL
+
+PolygonModeParameters::polygonModeMode_t PolygonModeParameters::polygonModeToMode(PolygonMode value) {
 	switch(value) {
-		case GL_POINT:
-			return POINT;
-		case GL_LINE:
-			return LINE;
-		case GL_FILL:
-			return FILL;
+		case PolygonMode::Point: return POINT;
+		case PolygonMode::Line: return LINE;
+		case PolygonMode::Fill: return FILL;
 		default:
 			break;
 	}
-#endif /* LIB_GL */
-	throw std::invalid_argument("Invalid GLenum value for PolygonModeParameters::polygonModeMode_t enumerator");
 }
 
+PolygonModeParameters::PolygonModeParameters(const PolygonMode _mode) : mode(polygonModeToMode(_mode)) {}
+
+StencilOp StencilParameters::actionToStencilOp(StencilParameters::action_t action) {
+	switch(action) {
+		case KEEP: return StencilOp::Keep;
+		case ZERO: return StencilOp::Zero;
+		case REPLACE: return StencilOp::Replace;
+		case INCR: return StencilOp::IncrementAndClamp;
+		case DECR: return StencilOp::DecrementAndClamp;
+		case INVERT: return StencilOp::Invert;
+		case INCR_WRAP: return StencilOp::IncrementAndWrap;
+		case DECR_WRAP: return StencilOp::DecrementAndWrap;
+		default: return StencilOp::Keep;
+	}
+}
+
+StencilParameters::action_t StencilParameters::stencilOpToAction(StencilOp op) {
+	switch(op) {
+		case StencilOp::Keep: return KEEP;
+		case StencilOp::Zero: return ZERO;
+		case StencilOp::Replace: return REPLACE;
+		case StencilOp::IncrementAndClamp: return INCR;
+		case StencilOp::DecrementAndClamp: return DECR;
+		case StencilOp::Invert: return INVERT;
+		case StencilOp::IncrementAndWrap: return INCR_WRAP;
+		case StencilOp::DecrementAndWrap: return DECR_WRAP;
+		default: return KEEP;
+	}
+}
+
+StencilParameters::StencilParameters(const StencilOpState& s) :
+	enabled(s.compareOp != ComparisonFunc::Disabled),
+	function(Comparison::comparisonFuncToFunction(s.compareOp)),
+	referenceValue(std::min<int32_t>(s.reference, std::numeric_limits<int32_t>::max())),
+	bitMask(s.compareMask | s.writeMask),
+	failAction(stencilOpToAction(s.failOp)),
+	depthTestFailAction(stencilOpToAction(s.depthFailOp)),
+	depthTestPassAction(stencilOpToAction(s.passOp)) {
+}
+
+StencilOpState StencilParameters::getStencilOpState() const {
+	return {
+		actionToStencilOp(failAction),
+		actionToStencilOp(depthTestPassAction),
+		actionToStencilOp(depthTestFailAction),
+		Comparison::functionToComparisonFunc(function),
+		bitMask.to_ulong(),
+		bitMask.to_ulong(),
+		std::max<uint32_t>(referenceValue, 0)
+	};
+}
 
 }

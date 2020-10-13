@@ -281,9 +281,9 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, 
 	std::vector<vk::VertexInputBindingDescription> bindings;
 	std::vector<vk::VertexInputAttributeDescription> attributes;
 	for(auto& b : state.getVertexInputState().getBindings())
-		bindings.emplace_back(b.binding, b.stride, static_cast<vk::VertexInputRate>(b.inputRate));
+		bindings.emplace_back(b.second.binding, b.second.stride, static_cast<vk::VertexInputRate>(b.second.inputRate));
 	for(auto& a : state.getVertexInputState().getAttributes())
-		attributes.emplace_back(a.location, a.binding, getVkFormat(a.format), a.offset);
+		attributes.emplace_back(a.second.location, a.second.binding, getVkFormat(a.second.format), a.second.offset);
 	vk::PipelineVertexInputStateCreateInfo vertexInput{{}, 
 		static_cast<uint32_t>(bindings.size()), bindings.data(), 
 		static_cast<uint32_t>(attributes.size()), attributes.data()

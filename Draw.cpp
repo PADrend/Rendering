@@ -21,7 +21,6 @@
 #include "MeshUtils/WireShapes.h"
 #include "Shader/Shader.h"
 #include "Shader/Uniform.h"
-#include "GLHeader.h"
 #include "Helper.h"
 #include "RenderingContext/RenderingContext.h"
 #include <Geometry/Box.h>
@@ -43,8 +42,6 @@
 namespace Rendering {
 
 void drawFullScreenRect(RenderingContext & rc){
-	GET_GL_ERROR();
-
 	static Geometry::Matrix4x4f projectionMatrix(Geometry::Matrix4x4f::orthographicProjection(-1, 1, -1, 1, -1, 1));
 	static Geometry::Matrix4x4f modelViewMatrix;
 	static Util::Reference<Mesh> mesh;
@@ -72,8 +69,6 @@ void drawFullScreenRect(RenderingContext & rc){
 
 	rc.popMatrix_modelToCamera();
 	rc.popMatrix_cameraToClipping();
-
-	GET_GL_ERROR();
 }
 
 void drawAbsBox(RenderingContext & renderingContext, const Geometry::Box & box) {
@@ -120,50 +115,7 @@ void drawBox(RenderingContext & rc, const Geometry::Box & box) {
 }
 
 void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & b){
-	#ifdef LIB_GL
-	if(RenderingContext::getCompabilityMode()) {
-		rc.pushAndSetShader(nullptr);
-
-	//  Too slow:
-	//	rc.pushMatrix_modelToCamera();
-	//	rc.resetMatrix();
-	//	rc.applyChanges();
-
-		glPushMatrix();
-		glLoadTransposeMatrixf( rc.getMatrix_worldToCamera().getData());
-
-		static const unsigned int indices[]={
-			1,3,2,0,
-			5,7,3,1,
-			4,6,7,5,
-			0,2,6,4,
-			7,6,2,3,
-			4,5,1,0
-		};
-		float corners[8][3] = {{b.getMaxX(), b.getMaxY(), b.getMaxZ()},
-						{b.getMinX(), b.getMaxY(), b.getMaxZ()},
-						{b.getMaxX(), b.getMinY(), b.getMaxZ()},
-						{b.getMinX(), b.getMinY(), b.getMaxZ()},
-						{b.getMaxX(), b.getMaxY(), b.getMinZ()},
-						{b.getMinX(), b.getMaxY(), b.getMinZ()},
-						{b.getMaxX(), b.getMinY(), b.getMinZ()},
-						{b.getMinX(), b.getMinY(), b.getMinZ()}};
-
-		glBegin(GL_QUADS);
-		for(auto & index : indices){
-			glVertex3fv(corners[index]);
-		}
-		glEnd();
-
-		glPopMatrix();
-	//	rc.popMatrix_modelToCamera();
-		rc.popShader();
-	} else {
-		drawAbsBox(rc,b);
-	}
-	#else
 	drawAbsBox(rc,b);
-	#endif
 }
 
 void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color) {
@@ -501,91 +453,12 @@ void disable2DMode(RenderingContext & rc) {
 	rc.popMatrix_cameraToClipping();
 }
 
-void enableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements) {	
-	if(location < 0)
-		return;
-		
-#if defined(LIB_GL) && defined(GL_VERSION_3_3)
-	instanceBuffer.bind(GL_ARRAY_BUFFER);	
-	
-	if(elements == 16) {
-		// Matrix4x4
-		for(uint_fast8_t i=0; i<elements/4; ++i) {
-			GLuint attribLocation = static_cast<GLuint> (location + i);
-			uint8_t * data = 0;
-			data += i*4*sizeof(GLfloat);
-			glVertexAttribPointer(attribLocation, 4, GL_FLOAT, GL_FALSE, elements*sizeof(GLfloat), data);
-			glEnableVertexAttribArray(attribLocation);
-			glVertexAttribDivisor(attribLocation, 1);
-		}
-	} else if(elements <= 4) {
-		GLuint attribLocation = static_cast<GLuint> (location);
-		glVertexAttribPointer(attribLocation, elements, GL_FLOAT, GL_FALSE, elements*sizeof(GLfloat), nullptr);
-		glEnableVertexAttribArray(attribLocation);
-		glVertexAttribDivisor(attribLocation, 1);
-	} else {
-		WARN("Invalid number of elements for instancing (supported are 1,2,3,4 or 16 elements).");
-		return;
-	}
-#endif
-}
+void enableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements) {}
 
-void disableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements) {
-	if(location < 0)
-		return;
-		
-#if defined(LIB_GL) && defined(GL_VERSION_3_3)
-	if(elements == 16) {
-		// Matrix4x4
-		for(uint_fast8_t i=0; i<elements/4; ++i) {
-			GLuint attribLocation = static_cast<GLuint> (location + i);
-			glDisableVertexAttribArray(attribLocation);
-			glVertexAttribDivisor(attribLocation, 0);
-		}
-	} else {
-		glVertexAttribDivisor(static_cast<GLuint> (location), 0);
-	}
-	
-	instanceBuffer.unbind(GL_ARRAY_BUFFER);
-#endif
-}
+void disableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements) {}
 
-void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32_t elementCount, uint32_t instanceCount) {		
-		if( m->empty())
-			return;		
-			
-#if defined(LIB_GL) && defined(GL_VERSION_3_3)
-
-		rc.applyChanges();
-
-		MeshVertexData & vd=m->_getVertexData();		
-		if(!vd.isUploaded())
-			vd.upload();			
-			
-		vd.bind(rc, vd.isUploaded());			
-		
-		if(m->isUsingIndexData()) {			
-			MeshIndexData & id=m->_getIndexData();								
-			if(!id.isUploaded())
-				id.upload();	
-							
-			BufferObject indexBuffer;
-			id._swapBufferObject(indexBuffer);
-			indexBuffer.bind(GL_ELEMENT_ARRAY_BUFFER);
-			
-			glDrawElementsInstanced(m->getGLDrawMode(), elementCount > 0 ? std::min(elementCount,id.getIndexCount()) : id.getIndexCount(), 
-					GL_UNSIGNED_INT, reinterpret_cast<void*>(sizeof(GLuint)*firstElement), instanceCount);
-					
-			indexBuffer.unbind(GL_ELEMENT_ARRAY_BUFFER);
-			id._swapBufferObject(indexBuffer);
-		} else {
-			glDrawArraysInstanced(m->getGLDrawMode(), firstElement, elementCount, instanceCount);
-		}
-		
-		vd.unbind(rc, vd.isUploaded());
-#else
+void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32_t elementCount, uint32_t instanceCount) {
 	WARN("Instancing is not supported.");
-#endif
 }
 
 }

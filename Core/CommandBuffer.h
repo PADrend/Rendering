@@ -75,6 +75,7 @@ public:
 	void bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers, const std::vector<size_t>& offsets={});
 	void bindIndexBuffer(const BufferObjectRef& buffer, size_t offset=0);
+	void setBindings(const BindingState& state) { bindings = state; }
 	//! @}
 
 	//! @name Push constants
@@ -91,7 +92,7 @@ public:
 	//! @name Draw commands
 	//! @{
 	void clearColor(const std::vector<Util::Color4f>& clearColors, const Geometry::Rect_i& rect={});
-	void clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect={});
+	void clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect={}, bool clearDepth=true, bool clearStencil=true);
 	void draw(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0);
 	void drawIndexed(uint32_t indexCount, uint32_t instanceCount=1, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t firstInstance=0);
 	void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);

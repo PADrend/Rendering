@@ -61,36 +61,36 @@ struct VertexInputAttribute {
 class VertexInputState {
 public:
 	//! Sets the vertex binding description of the binding given by @p index.
-	VertexInputState& setBinding(const VertexInputBinding& value, uint32_t index=0) { bindings[index] = value; return *this; }
+	VertexInputState& setBinding(const VertexInputBinding& value) { bindings[value.binding] = value; return *this; }
 	//! Simultaneously sets all vertex binding descriptions.
-	VertexInputState& setBindings(const std::vector<VertexInputBinding>& values) { bindings = values; return *this; }
-	//! Sets the number of bindings used by the pipeline.
-	VertexInputState& setBindingCount(uint32_t value) { bindings.resize(value); return *this; }
+	VertexInputState& setBindings(const std::map<uint32_t, VertexInputBinding>& values) { bindings = values; return *this; }
 
 	//! @see{setBinding()}
-	const VertexInputBinding& getBinding(uint32_t index=0) const { return bindings[index]; }
+	const VertexInputBinding& getBinding(uint32_t binding=0) const { return bindings.at(binding); }
+	//! @see{setBinding()}
+	bool hasBinding(uint32_t binding=0) const { return bindings.find(binding) != bindings.end(); }
 	//! @see{setBindings()}
-	const std::vector<VertexInputBinding>& getBindings() const { return bindings; }
+	const std::map<uint32_t, VertexInputBinding>& getBindings() const { return bindings; }
 	//! @see{setBindingCount()}
 	uint32_t getBindingCount() const { return bindings.size(); }
 	
 	//! Sets the vertex attribute description of the attribute given by @p index.
-	VertexInputState& setAttribute(const VertexInputAttribute& value, uint32_t index=0) { attributes[index] = value; return *this; }
+	VertexInputState& setAttribute(const VertexInputAttribute& value) { attributes[value.location] = value; return *this; }
 	//! Simultaneously sets all vertex attribute descriptions.
-	VertexInputState& setAttributes(const std::vector<VertexInputAttribute>& values) { attributes = values; return *this; }
-	//! Sets the number of attributes used by the pipeline.
-	VertexInputState& setAttributeCount(uint32_t value) { attributes.resize(value); return *this; }
+	VertexInputState& setAttributes(const std::map<uint32_t, VertexInputAttribute>& values) { attributes = values; return *this; }
 
 	//! @see{setAttribute()}
-	const VertexInputAttribute& getAttribute(uint32_t index=0) const { return attributes[index]; }
+	const VertexInputAttribute& getAttribute(uint32_t location=0) const { return attributes.at(location); }
+	//! @see{setAttribute()}
+	bool hasAttribute(uint32_t location=0) const { return attributes.find(location) != attributes.end(); }
 	//! @see{setAttributes()}
-	const std::vector<VertexInputAttribute>& getAttributes() const { return attributes; }
+	const std::map<uint32_t, VertexInputAttribute>& getAttributes() const { return attributes; }
 	//! @see{setAttributeCount()}
 	uint32_t getAttributeCount() const { return attributes.size(); }
 
 private:
-	std::vector<VertexInputBinding> bindings;
-	std::vector<VertexInputAttribute> attributes;
+	std::map<uint32_t, VertexInputBinding> bindings;
+	std::map<uint32_t, VertexInputAttribute> attributes;
 };
 
 //==================================================================
@@ -155,27 +155,24 @@ public:
 	//! Sets the viewport transform of the viewport given by @p index.
 	ViewportState& setViewport(const Viewport& value, uint32_t index=0);
 	//! Simultaneously sets all viewports.
-	ViewportState& setViewports(const std::vector<Viewport>& values) { viewports = values; return *this; }
-	//! Sets the number of viewports used by the pipeline.
-	ViewportState& setViewportCount(uint32_t value) { viewports.resize(value); return *this; }
+	ViewportState& setViewports(const std::vector<Viewport>& values);
 	//! Controls if the viewport state is dynamic. If the viewport state is dynamic, all viewports in this state are ignored.
 	ViewportState& setDynamicViewports(bool value) { dynamicViewports = value; return *this; }
 
 	//! Sets the rectangular bounds of the scissor for the corresponding viewport given by @p index.
 	ViewportState& setScissor(const Geometry::Rect_i& value, uint32_t index=0);
 	//! Simultaneously sets all scissors.
-	ViewportState& setScissors(const std::vector<Geometry::Rect_i>& values) { scissors = values; return *this; }
-	//! Sets the number of scissors used by the pipeline.
-	ViewportState& setScissorCount(uint32_t value) { scissors.resize(value); return *this; }
+	ViewportState& setScissors(const std::vector<Geometry::Rect_i>& values);
 	//! Controls if the scissor state is dynamic. If the scissor state is dynamic, all scissors in this state are ignored.
 	ViewportState& setDynamicScissors(bool value) { dynamicScissors = value; return *this; }
+
+	//! Sets the number of viewports and scissors used by the pipeline.
+	ViewportState& setViewportScissorCount(uint32_t value) { viewports.resize(value); scissors.resize(value); return *this; }
 
 	//! @see{setViewport()}
 	const Viewport& getViewport(uint32_t index=0) const { return viewports[index]; }
 	//! @see{setViewports()}
 	const std::vector<Viewport>& getViewports() const { return viewports; }
-	//! @see{setViewportCount()}
-	uint32_t getViewportCount() const { return viewports.size(); }
 	//! @see{setDynamicViewports()}
 	bool hasDynamicViewports() const { return dynamicViewports; }
 
@@ -183,10 +180,11 @@ public:
 	const Geometry::Rect_i& getScissor(uint32_t index=0) const { return scissors[index]; }
 	//! @see{setScissors()}
 	const std::vector<Geometry::Rect_i>& getScissors() const { return scissors; }
-	//! @see{setScissorCount()}
-	uint32_t getScissorCount() const { return scissors.size(); }
 	//! @see{setDynamicScissors()}
 	bool hasDynamicScissors() const { return dynamicScissors; }
+	
+	//! @see{setViewportScissorCount()}
+	uint32_t getViewportScissorCount() const { return viewports.size(); }
 private:
 	std::vector<Viewport> viewports{{}};
 	std::vector<Geometry::Rect_i> scissors{{0,0,1,1}};
@@ -347,8 +345,8 @@ enum class StencilOp {
 
 struct StencilOpState {
 	StencilOp failOp = StencilOp::Keep; //! Value specifying the action performed on samples that fail the stencil test.
-	StencilOp passOp = StencilOp::Keep; //! Calue specifying the action performed on samples that pass both the depth and stencil tests.
-	StencilOp depthFailOp = StencilOp::Keep; //! Calue specifying the action performed on samples that pass the stencil test and fail the depth test.
+	StencilOp passOp = StencilOp::Keep; //! Value specifying the action performed on samples that pass both the depth and stencil tests.
+	StencilOp depthFailOp = StencilOp::Keep; //! Value specifying the action performed on samples that pass the stencil test and fail the depth test.
 	ComparisonFunc compareOp = ComparisonFunc::Never; //! Value specifying the comparison operator used in the stencil test.
 	uint32_t compareMask = 0; //! Selects the bits of the unsigned integer stencil values participating in the stencil test.
 	uint32_t writeMask = 0; //! Selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment.
@@ -653,10 +651,10 @@ template <> struct hash<VertexInputState> {
 		std::size_t result = 0;
 		Util::hash_combine(result, state.getBindingCount());
 		for(const auto& b : state.getBindings())
-			Util::hash_combine(result, b);
+			Util::hash_combine(result, b.second);
 		Util::hash_combine(result, state.getAttributeCount());
 		for(const auto& a : state.getAttributes())
-			Util::hash_combine(result, a);
+			Util::hash_combine(result, a.second);
 		return result;
 	}
 };
@@ -703,12 +701,12 @@ template <> struct hash<ViewportState> {
 	std::size_t operator()(const ViewportState& state) const {
 		std::size_t result = 0;
 		if(!state.hasDynamicViewports()) {
-			Util::hash_combine(result, state.getViewportCount());
+			Util::hash_combine(result, state.getViewportScissorCount());
 			for(const auto& vp : state.getViewports())
 				Util::hash_combine(result, vp);
 		}
 		if(!state.hasDynamicScissors()) {
-			Util::hash_combine(result, state.getScissorCount());
+			Util::hash_combine(result, state.getViewportScissorCount());
 			for(const auto& r : state.getScissors())
 				Util::hash_combine(result, r);
 		}

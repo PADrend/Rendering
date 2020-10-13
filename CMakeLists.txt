@@ -82,8 +82,8 @@ add_library(Rendering SHARED
 	Texture/TextureType.cpp
 	#Texture/TextureUtils.cpp
 	BufferObject.cpp
-	#Draw.cpp
-	#DrawCompound.cpp
+	Draw.cpp
+	DrawCompound.cpp
 	FBO.cpp
 	#Helper.cpp
 	#OcclusionQuery.cpp

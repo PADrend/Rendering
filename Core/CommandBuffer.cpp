@@ -25,6 +25,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include <unordered_set>
+#include <algorithm>
 
 namespace Rendering {
 
@@ -207,7 +208,7 @@ void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColor
 	vk::RenderPass renderPass(fbo->getRenderPass());
 
 	std::vector<vk::ClearValue> clearValues(fbo->getColorAttachmentCount(), vk::ClearColorValue{});
-	for(uint32_t i=0; i<std::min(clearValues.size(), clearColors.size()); ++i) {
+	for(uint32_t i=0; i<std::min<size_t>(clearValues.size(), clearColors.size()); ++i) {
 		auto& c = clearColors[i];
 		clearValues[i].color.setFloat32({c.r(), c.g(), c.b(), c.a()});
 	}
@@ -246,6 +247,7 @@ void CommandBuffer::bindTexture(const TextureRef& texture, uint32_t set, uint32_
 void CommandBuffer::bindInputImage(const ImageViewRef& view, uint32_t set, uint32_t binding, uint32_t arrayElement) {
 	bindings.bindInputImage(view, set, binding, arrayElement);
 }
+
 //-----------------
 
 void CommandBuffer::pushConstants(const std::vector<uint8_t>& data, uint32_t offset) {
@@ -295,7 +297,7 @@ void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors, co
 	auto& fbo = getFBO();
 	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Cannot clear color. Invalid FBO.",);
 	std::vector<vk::ClearAttachment> clearAttachments(clearColors.size(), vk::ClearAttachment{});
-	for(uint32_t i=0; i<std::min(clearAttachments.size(), clearColors.size()); ++i) {
+	for(uint32_t i=0; i<std::min<size_t>(clearAttachments.size(), clearColors.size()); ++i) {
 		auto& c = clearColors[i];
 		clearAttachments[i].clearValue.color.setFloat32({c.r(), c.g(), c.b(), c.a()});
 		clearAttachments[i].colorAttachment = i;
@@ -318,11 +320,15 @@ void CommandBuffer::clearColor(const std::vector<Util::Color4f>& clearColors, co
 
 //-----------------
 
-void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect) {
+void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect, bool clearDepth, bool clearStencil) {
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	auto& fbo = getFBO();
 	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Cannot clear depth stencil. Invalid FBO.",);
-	vk::ClearAttachment clearAttachment{vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0};
+	vk::ClearAttachment clearAttachment;
+	if(clearDepth)
+		clearAttachment.aspectMask |= vk::ImageAspectFlagBits::eDepth;
+	if(clearStencil)
+		clearAttachment.aspectMask |= vk::ImageAspectFlagBits::eStencil;
 	clearAttachment.clearValue.depthStencil.depth = depth;
 	clearAttachment.clearValue.depthStencil.stencil = stencil;
 	vk::ClearRect clearRect;

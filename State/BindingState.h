@@ -62,6 +62,8 @@ public:
 	void clearDirty(uint32_t binding);
 
 	const BindingMap& getBindings() const { return bindings; }
+	const Binding& getBinding(uint32_t binding) const { return bindings.at(binding); }
+	bool hasBinding(uint32_t binding) const { return bindings.find(binding) != bindings.end(); }
 private:
 	BindingMap bindings;
 	bool dirty = true;
@@ -72,10 +74,23 @@ private:
 class BindingState : public Util::ReferenceCounter<BindingState> {
 public:
 	using Ref = Util::Reference<BindingState>;
+	BindingState() = default;
+	~BindingState() = default;
+	BindingState(BindingState&& o);
+	BindingState(const BindingState& o);
+	BindingState& operator=(BindingState&& o);
+	BindingState& operator=(const BindingState& o);
 
 	void bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	void bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+
+	BufferObjectRef getBoundBuffer(uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	TextureRef getBoundTexture(uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	ImageViewRef getBoundInputImage(uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+
+	const Binding& getBinding(uint32_t set, uint32_t binding) const { return bindingSets.at(set).getBinding(binding); }
+	bool hasBinding(uint32_t set, uint32_t binding) const { return hasBindingSet(set) && bindingSets.at(set).hasBinding(binding); }
 
 	void reset();
 	bool isDirty() const { return dirty; }
@@ -83,6 +98,8 @@ public:
 	void clearDirty(uint32_t set);
 
 	const std::unordered_map<uint32_t, BindingSet>& getBindingSets() const { return bindingSets; }
+	const BindingSet& getBindingSet(uint32_t set) const { return bindingSets.at(set); }
+	bool hasBindingSet(uint32_t set) const { return bindingSets.find(set) != bindingSets.end(); }
 private:
 	std::unordered_map<uint32_t, BindingSet> bindingSets;
 	bool dirty = true;

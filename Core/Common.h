@@ -13,14 +13,18 @@
 #include "ApiHandles.h"
 #include <Util/Utils.h>
 
+#include <Geometry/Vec3.h>
+
+namespace Util {
+class ResourceAttribute;
+} /* Util */
+
 namespace Geometry {
-template<typename _T> class _Rect;
-using Rect_i = _Rect<int>;
-template<typename _T> class _Vec3;
 using Vec3ui = _Vec3<uint32_t>;
 } /* Geometry */
 
 namespace Rendering {
+class VertexAttribute;
 
 //---------------------------
 
@@ -131,6 +135,13 @@ enum class InternalFormat : std::uint8_t {
 	BC7UnormSrgb,
 };
 
+//---------------------------
+
+InternalFormat toInternalFormat(const Util::ResourceAttribute& attr);
+
+//---------------------------
+
+InternalFormat toInternalFormat(const VertexAttribute& attr);
 
 //---------------------------
 

@@ -122,8 +122,11 @@ void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect);
 //! Reset the projection and modelview matrices to the state before the last call to enable2DMode().
 void disable2DMode(RenderingContext & rc);
 
+[[deprecated]]
 void enableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements);
+[[deprecated]]
 void disableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements);
+[[deprecated]]
 void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32_t elementCount, uint32_t instanceCount);
 
 //! @}

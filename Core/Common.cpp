@@ -9,6 +9,8 @@
 
 #include "Common.h"
 #include "../State/ShaderLayout.h"
+#include "../Mesh/VertexAttribute.h"
+#include <Util/Resources/ResourceFormat.h>
 
 #include <vulkan/vulkan.hpp>
 
@@ -222,7 +224,7 @@ vk::ImageUsageFlags getVkImageUsage(const ResourceUsage& usage) {
 	vk::ImageUsageFlags flags = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 	switch(usage) {
 		case ResourceUsage::ShaderResource: flags |= vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment; break;
-		case ResourceUsage::ShaderWrite: flags |= vk::ImageUsageFlagBits::eStorage; break;
+		case ResourceUsage::ShaderWrite: flags |= vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eInputAttachment; break;
 		case ResourceUsage::Present:
 		case ResourceUsage::RenderTarget: flags |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment; break;
 		case ResourceUsage::General: flags |= vk::ImageUsageFlagBits::eColorAttachment |
@@ -281,6 +283,91 @@ vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages) {
 	if((stages & ShaderStage::Fragment) == ShaderStage::Fragment) flags |= vk::ShaderStageFlagBits::eFragment;
 	if((stages & ShaderStage::Compute) == ShaderStage::Compute) flags |= vk::ShaderStageFlagBits::eCompute;
 	return flags;
+}
+
+//-----------------
+
+InternalFormat toInternalFormat(const Util::ResourceAttribute& attr) {
+	switch(attr.getDataType()) {
+		case Util::TypeConstant::UINT8:
+			switch(attr.getNumValues()) {
+				case 1: return attr.isNormalized() ? InternalFormat::R8Unorm : InternalFormat::R8Uint;
+				case 2: return attr.isNormalized() ? InternalFormat::RG8Unorm : InternalFormat::RG8Uint;
+				case 4: return attr.isNormalized() ? InternalFormat::RGBA8Unorm : InternalFormat::RGBA8Uint;
+				default: break;
+			}
+			break;
+		case Util::TypeConstant::UINT16:
+			switch(attr.getNumValues()) {
+				case 1: return attr.isNormalized() ? InternalFormat::R16Unorm : InternalFormat::R16Uint;
+				case 2: return attr.isNormalized() ? InternalFormat::RG16Unorm : InternalFormat::RG16Uint;
+				case 3: return attr.isNormalized() ? InternalFormat::RGB16Unorm : InternalFormat::RGB16Uint;
+				case 4: return attr.isNormalized() ? InternalFormat::RGBA16Unorm : InternalFormat::RGBA16Uint;
+				default: break;
+			}
+			break;
+		case Util::TypeConstant::UINT32:
+			switch(attr.getNumValues()) {
+				case 1: return InternalFormat::R32Uint;
+				case 2: return InternalFormat::RG32Uint;
+				case 3: return InternalFormat::RGB32Uint;
+				case 4: return InternalFormat::RGBA32Uint;
+				default: break;
+			}
+			break;
+		case Util::TypeConstant::INT8:
+			switch(attr.getNumValues()) {
+				case 1: return attr.isNormalized() ? InternalFormat::R8Snorm : InternalFormat::R8Int;
+				case 2: return attr.isNormalized() ? InternalFormat::RG8Snorm : InternalFormat::RG8Int;
+				case 4: return attr.isNormalized() ? InternalFormat::RGBA8Snorm : InternalFormat::RGBA8Int;
+				default: break;
+			}
+			break;
+		case Util::TypeConstant::INT16:
+			switch(attr.getNumValues()) {
+				case 1: return attr.isNormalized() ? InternalFormat::R16Snorm : InternalFormat::R16Int;
+				case 2: return attr.isNormalized() ? InternalFormat::RG16Snorm : InternalFormat::RG16Int;
+				case 3: return attr.isNormalized() ? InternalFormat::RGB16Snorm : InternalFormat::RGB16Int;
+				case 4: return InternalFormat::RGBA16Int;
+				default: break;
+			}
+			break;
+		case Util::TypeConstant::INT32:
+			switch(attr.getNumValues()) {
+				case 1: return InternalFormat::R32Int;
+				case 2: return InternalFormat::RG32Int;
+				case 3: return InternalFormat::RGB32Int;
+				case 4: return InternalFormat::RGBA32Int;
+				default: break;
+			}
+			break;
+		case Util::TypeConstant::FLOAT:
+			switch(attr.getNumValues()) {
+				case 1: return attr.isNormalized() ? InternalFormat::R32Float : InternalFormat::R32Float;
+				case 2: return attr.isNormalized() ? InternalFormat::RG32Float : InternalFormat::RG32Float;
+				case 3: return attr.isNormalized() ? InternalFormat::RGB32Float : InternalFormat::RGB32Float;
+				case 4: return attr.isNormalized() ? InternalFormat::RGBA32Float : InternalFormat::RGBA32Float;
+				default: break;
+			}
+			break;
+		case Util::TypeConstant::HALF:
+			switch(attr.getNumValues()) {
+				case 1: return InternalFormat::R16Float;
+				case 2: return InternalFormat::RG16Float;
+				case 3: return InternalFormat::RGB16Float;
+				case 4: return InternalFormat::RGBA16Float;
+				default: break;
+			}
+			break;
+		default: break;
+	}
+	return InternalFormat::Unknown;
+}
+
+//-----------------
+
+InternalFormat toInternalFormat(const VertexAttribute& attr) {
+	return toInternalFormat(Util::ResourceAttribute(attr.getNameId(), static_cast<Util::TypeConstant>(attr.getDataType()), attr.getNumValues(), attr.getNormalize(), attr.getOffset()));
 }
 
 //-----------------

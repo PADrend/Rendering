@@ -25,9 +25,25 @@ ViewportState& ViewportState::setViewport(const Viewport& value, uint32_t index)
 
 //-------------
 
-ViewportState& ViewportState::setScissor(const Geometry::Rect_i& value, uint32_t index) { 
+ViewportState& ViewportState::setViewports(const std::vector<Viewport>& values) {
+	setViewportScissorCount(values.size());
+	viewports = values;
+	return *this; 
+}
+
+//-------------
+
+ViewportState& ViewportState::setScissor(const Geometry::Rect_i& value, uint32_t index) {
 	WARN_AND_RETURN_IF(scissors.size() > index, "Invalid scissor index " + std::to_string(index), *this); 
 	scissors[index] = value; 
+	return *this; 
+}
+
+//-------------
+
+ViewportState& ViewportState::setScissors(const std::vector<Geometry::Rect_i>& values) {
+	setViewportScissorCount(values.size());
+	scissors = values;
 	return *this; 
 }
 

@@ -112,12 +112,10 @@ TEST_CASE("RenderingContext", "[RenderingContext]") {
 	state.setViewportState({windowRect, windowRect});
 
 	VertexInputState inputState;
-	inputState.setBindingCount(2);
-	inputState.setBinding({0, sizeof(Geometry::Vec2)}, 0);
-	inputState.setBinding({1, sizeof(Util::Color4f)}, 1);
-	inputState.setAttributeCount(2);
-	inputState.setAttribute({0, 0, InternalFormat::RG32Float, 0}, 0);
-	inputState.setAttribute({1, 1, InternalFormat::RGBA32Float, 0}, 1);
+	inputState.setBinding({0, sizeof(Geometry::Vec2)});
+	inputState.setBinding({1, sizeof(Util::Color4f)});
+	inputState.setAttribute({0, 0, InternalFormat::RG32Float, 0});
+	inputState.setAttribute({1, 1, InternalFormat::RGBA32Float, 0});
 	state.setVertexInputState(inputState);
 	// --------------------------------------------
 	// draw

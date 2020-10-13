@@ -109,6 +109,48 @@ void BindingState::bindInputImage(const ImageViewRef& view, uint32_t set, uint32
 
 //------------------
 
+BufferObjectRef BindingState::getBoundBuffer(uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	auto sIt = bindingSets.find(set);
+	if(sIt == bindingSets.end())
+		return nullptr;
+	auto bIt = sIt->second.getBindings().find(binding);
+	if(bIt == sIt->second.getBindings().end())
+		return nullptr;
+	if(bIt->second.getBuffers().size() <= arrayElement)
+		return nullptr;
+	return bIt->second.getBuffers().at(arrayElement);
+}
+
+//------------------
+
+TextureRef BindingState::getBoundTexture(uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	auto sIt = bindingSets.find(set);
+	if(sIt == bindingSets.end())
+		return nullptr;
+	auto bIt = sIt->second.getBindings().find(binding);
+	if(bIt == sIt->second.getBindings().end())
+		return nullptr;
+	if(bIt->second.getTextures().size() <= arrayElement)
+		return nullptr;
+	return bIt->second.getTextures().at(arrayElement);
+}
+
+//------------------
+
+ImageViewRef BindingState::getBoundInputImage(uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	auto sIt = bindingSets.find(set);
+	if(sIt == bindingSets.end())
+		return nullptr;
+	auto bIt = sIt->second.getBindings().find(binding);
+	if(bIt == sIt->second.getBindings().end())
+		return nullptr;
+	if(bIt->second.getInputImages().size() <= arrayElement)
+		return nullptr;
+	return bIt->second.getInputImages().at(arrayElement);
+}
+
+//------------------
+
 void BindingState::reset() {
 	bindingSets.clear();
 	dirty = true;
@@ -124,6 +166,53 @@ void BindingState::clearDirty() {
 
 void BindingState::clearDirty(uint32_t set) {
 	bindingSets[set].clearDirty();
+}
+
+//------------------
+
+BindingState::BindingState(BindingState&& o) : dirty(true) {
+	bindingSets = std::move(o.bindingSets);
+	dirty = true;
+	o.dirty = true;
+}
+
+//------------------
+
+BindingState::BindingState(const BindingState& o) : dirty(true) {
+	for(auto& s : o.bindingSets) {
+		for(auto& b : s.second.getBindings()) {
+			for(uint32_t i = 0; i < b.second.getBuffers().size(); ++i)
+				bindBuffer(b.second.getBuffers()[i], s.first, b.first, i);
+			for(uint32_t i = 0; i < b.second.getTextures().size(); ++i)
+				bindTexture(b.second.getTextures()[i], s.first, b.first, i);
+			for(uint32_t i = 0; i < b.second.getInputImages().size(); ++i)
+				bindInputImage(b.second.getInputImages()[i], s.first, b.first, i);
+		}
+	}
+}
+
+//------------------
+
+BindingState& BindingState::operator=(BindingState&& o) {
+	bindingSets = std::move(o.bindingSets);
+	dirty = true;
+	o.dirty = true;
+}
+
+//------------------
+
+BindingState& BindingState::operator=(const BindingState& o) {
+	for(auto& s : o.bindingSets) {
+		for(auto& b : s.second.getBindings()) {
+			for(uint32_t i = 0; i < b.second.getBuffers().size(); ++i)
+				bindBuffer(b.second.getBuffers()[i], s.first, b.first, i);
+			for(uint32_t i = 0; i < b.second.getTextures().size(); ++i)
+				bindTexture(b.second.getTextures()[i], s.first, b.first, i);
+			for(uint32_t i = 0; i < b.second.getInputImages().size(); ++i)
+				bindInputImage(b.second.getInputImages()[i], s.first, b.first, i);
+		}
+	}
+	dirty = true;
 }
 
 //------------------

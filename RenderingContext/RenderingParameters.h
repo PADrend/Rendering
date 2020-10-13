@@ -35,7 +35,9 @@ class MultisampleState;
 class DepthStencilState;
 class ColorBlendState;
 enum class CullMode;
-
+enum class PolygonMode;
+enum class StencilOp;
+struct StencilOpState;
 
 /** @addtogroup context
  * @{
@@ -71,7 +73,7 @@ enum function_t {
 [[deprecated]] function_t glToFunction(uint32_t value);
 
 ComparisonFunc functionToComparisonFunc(function_t function);
-Comparison::function_t Comparison::comparisonFuncToFunction(ComparisonFunc function);
+function_t comparisonFuncToFunction(ComparisonFunc function);
 
 }
 
@@ -804,8 +806,11 @@ class [[deprecated]] PolygonModeParameters {
 		static std::string modeToString(polygonModeMode_t mode);
 		static polygonModeMode_t stringToMode(const std::string & str);
 
-		static uint32_t modeToGL(polygonModeMode_t mode);
-		static polygonModeMode_t glToMode(uint32_t value);
+		static uint32_t modeToGL(polygonModeMode_t mode) { return 0; }
+		static polygonModeMode_t glToMode(uint32_t value) { return POINT; }
+		
+		static PolygonMode modeToPolygonMode(polygonModeMode_t mode);
+		static polygonModeMode_t polygonModeToMode(PolygonMode value);
 	private:
 		polygonModeMode_t mode;
 	public:
@@ -815,6 +820,8 @@ class [[deprecated]] PolygonModeParameters {
 		//! Create PolygonModeParameters with the given values.
 		explicit PolygonModeParameters(const polygonModeMode_t _mode) : mode(_mode) {
 		}
+		explicit PolygonModeParameters(const PolygonMode _mode);
+
 		bool operator!=(const PolygonModeParameters & other) const {
 			return mode != other.mode;
 		}
@@ -912,7 +919,7 @@ class [[deprecated]] PrimitiveRestartParameters {
 
 	public:
 		//! Disable primitive restart.
-		PrimitiveRestartParameters() : index(), enabled(false) {}
+		PrimitiveRestartParameters() : index(0xffffffffu), enabled(false) {}
 		//! Enable primitive restart with the given index.
 		explicit PrimitiveRestartParameters(uint32_t index) : index(index), enabled(true) {}
 		bool operator!=(const PrimitiveRestartParameters & other) const { return enabled != other.enabled || index != other.index; }
@@ -980,6 +987,9 @@ class [[deprecated]] StencilParameters {
 			INVERT
 		};
 
+		static StencilOp actionToStencilOp(action_t action);
+		static action_t stencilOpToAction(StencilOp op);
+
 	private:
 		bool enabled;
 
@@ -1010,6 +1020,7 @@ class [[deprecated]] StencilParameters {
 			// Set all bits to one.
 			bitMask.set();
 		}
+		explicit StencilParameters(const StencilOpState& s);
 
 		//! Return @c true if the function subset of parameters is @b equal to the @a other set.
 		bool equalFunctionParameters(const StencilParameters & other) const {
@@ -1095,6 +1106,8 @@ class [[deprecated]] StencilParameters {
 		void setDepthTestPassAction(action_t newAction) {
 			depthTestPassAction = newAction;
 		}
+
+		StencilOpState getStencilOpState() const;
 };
 
 //! Determines the intended usage of a texture bound to a texture unit.

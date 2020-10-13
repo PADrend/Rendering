@@ -31,14 +31,20 @@ class StringIdentifier;
 namespace Rendering {
 class Device;
 using DeviceRef = Util::Reference<Device>;
+class FBO;
+using FBORef = Util::Reference<FBO>;
+class Shader;
+using ShaderRef = Util::Reference<Shader>;
+class Texture;
+using TextureRef = Util::Reference<Texture>;
+class BufferObject;
+using BufferObjectRef = Util::Reference<BufferObject>;
 class AlphaTestParameters;
 class BlendingParameters;
-class BufferObject;
 class ClipPlaneParameters;
 class ColorBufferParameters;
 class CullFaceParameters;
 class DepthBufferParameters;
-class FBO;
 class ImageBindParameters;
 class LightParameters;
 class LightingParameters;
@@ -52,7 +58,6 @@ class PrimitiveRestartParameters;
 class ScissorParameters;
 class StencilParameters;
 class Shader;
-class Texture;
 class Uniform;
 class UniformRegistry;
 class VertexAttribute;
@@ -237,6 +242,17 @@ public:
 
 	// @}
 	// ------
+	
+	//! @name Compute
+	//	@{
+	void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
+	void dispatchComputeIndirect(size_t offset=0);
+	[[deprecated]]
+	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices);
+	[[deprecated]]
+	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<std::string>& names);
+	// @}
+
 
 	//! @name CullFace
 	//	@{
@@ -284,11 +300,13 @@ public:
 
 	//! @name FBO
 	//	@{
+	[[deprecated]]
 	FBO * getActiveFBO() const;
+	FBORef getFBO() const;
 	void popFBO();
 	void pushFBO();
-	void pushAndSetFBO(FBO * fbo);
-	void setFBO(FBO * fbo);
+	void pushAndSetFBO(const FBORef& fbo);
+	void setFBO(const FBORef& fbo);
 	// @}
 
 	// ------
@@ -304,12 +322,12 @@ public:
 	//! @name Image Binding (Image load and store)
 	//	@{
 	static bool isImageBindingSupported() { return true; }
-	ImageBindParameters getBoundImage(uint8_t unit) const;
-	void pushBoundImage(uint8_t unit);
-	void pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam); 
-	void popBoundImage(uint8_t unit);
+	ImageBindParameters getBoundImage(uint8_t unit, uint8_t set=0) const;
+	void pushBoundImage(uint8_t unit, uint8_t set=0);
+	void pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam, uint8_t set=0); 
+	void popBoundImage(uint8_t unit, uint8_t set=0);
 	//! \note the texture in iParam may be null to unbind
-	void setBoundImage(uint8_t unit, const ImageBindParameters& iParam);
+	void setBoundImage(uint8_t unit, const ImageBindParameters& iParam, uint8_t set=0);
 	// @}
 
 	// ------
@@ -491,22 +509,15 @@ public:
 
 	//! @name Shader
 	//	@{
-	void pushAndSetShader(Shader * shader);
+	void pushAndSetShader(const ShaderRef& shader);
 	void pushShader();
 	void popShader();
-	bool isShaderEnabled(Shader * shader);
-	Shader * getActiveShader();
-	const Shader * getActiveShader() const;
-	void setShader(Shader * shader);
-	void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
-	void dispatchComputeIndirect(size_t offset=0);
-	[[deprecated]]
-	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices) {}
-	[[deprecated]]
-	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<std::string>& names) {}
+	bool isShaderEnabled(const ShaderRef& shader);
+	const ShaderRef& getActiveShader() const;
+	void setShader(const ShaderRef& shader);
 
 	//! (internal) called by Shader::setUniform(...)
-	void _setUniformOnShader(Shader * shader, const Uniform& uniform, bool warnIfUnused, bool forced);
+	void _setUniformOnShader(const ShaderRef& shader, const Uniform& uniform, bool warnIfUnused, bool forced);
 
 	// @}
 
@@ -549,22 +560,22 @@ public:
 	 \todo Move array of activeTextures to RenderingStatus to allow delayed binding
 	 */
 	//	@{
-	Texture * getTexture(uint8_t unit) const;
+	const TextureRef& getTexture(uint8_t unit, uint8_t set=0) const;
 	[[deprecated]]
 	TexUnitUsageParameter getTextureUsage(uint8_t unit) const;
-	void pushTexture(uint8_t unit);
-	void pushAndSetTexture(uint8_t unit, Texture * texture); // default usage = TexUnitUsageParameter::TEXTURE_MAPPING );
+	void pushTexture(uint8_t unit, uint8_t set=0);
+	void pushAndSetTexture(uint8_t unit, const TextureRef& texture, uint8_t set=0);
 	[[deprecated]]
-	void pushAndSetTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
-		pushAndSetTexture(unit, texture);
+	void pushAndSetTexture(uint8_t unit, const TextureRef& texture, TexUnitUsageParameter usage, uint8_t set=0) {
+		pushAndSetTexture(unit, texture, set);
 	}
-	void popTexture(uint8_t unit);
+	void popTexture(uint8_t unit, uint8_t set=0);
 
 	//! \note texture may be nullptr
-	void setTexture(uint8_t unit, Texture * texture); // default: usage = TexUnitUsageParameter::TEXTURE_MAPPING);
+	void setTexture(uint8_t unit, const TextureRef& texture, uint8_t set=0);
 	[[deprecated]]
-	void setTexture(uint8_t unit, Texture * texture, TexUnitUsageParameter usage) {
-		setTexture(unit, texture);
+	void setTexture(uint8_t unit, const TextureRef& texture, TexUnitUsageParameter usage, uint8_t set=0) {
+		setTexture(unit, texture, set);
 	}
 	// @}
 	
@@ -575,15 +586,15 @@ public:
 	[[deprecated]]
 	static bool isTransformFeedbackSupported() { return false; };
 	[[deprecated]]
-	static bool requestTransformFeedbackSupport() { return false; }; //! like isTransformFeedbackSupported(), but once issues a warning on failure.
+	static bool requestTransformFeedbackSupport() { return false; };
 	[[deprecated]]
-	CountedBufferObject * getActiveTransformFeedbackBuffer() const { return nullptr; }
+	BufferObject * getActiveTransformFeedbackBuffer() const { return nullptr; }
 	[[deprecated]]
 	void popTransformFeedbackBufferStatus() {}
 	[[deprecated]]
 	void pushTransformFeedbackBufferStatus() {}
 	[[deprecated]]
-	void setTransformFeedbackBuffer(CountedBufferObject * buffer) {}
+	void setTransformFeedbackBuffer(BufferObject * buffer) {}
 	[[deprecated]]
 	void _startTransformFeedback(uint32_t) {}
 	[[deprecated]]
@@ -603,19 +614,19 @@ public:
 	// @{
 	//! Activate the given client state.
 	[[deprecated]]
-	void enableClientState(uint32_t clientState);
+	void enableClientState(uint32_t clientState) {}
 
 	//! Deactivate all client states that were activated before.
 	[[deprecated]]
-	void disableAllClientStates();
+	void disableAllClientStates() {}
 
 	//! Activate the texture coordinate client state for the given texture unit.
 	[[deprecated]]
-	void enableTextureClientState(uint32_t textureUnit);
+	void enableTextureClientState(uint32_t textureUnit) {}
 
 	//! Deactivate the texture coordinate client states for all texture units that were activated before.
 	[[deprecated]]
-	void disableAllTextureClientStates();
+	void disableAllTextureClientStates() {}
 
 	/**
 	 * Bind a vertex attribute to a variable inside a shader program.
@@ -646,6 +657,10 @@ public:
 
 	//! Read the current viewport.
 	const Geometry::Rect_i& getViewport() const;
+
+	//! Read the current viewport state.
+	const ViewportState& getViewportState() const;
+
 	//! Restore the viewport from the top of the viewport stack.
 	void popViewport();
 
@@ -654,9 +669,13 @@ public:
 
 	//! Set the current viewport.
 	void setViewport(const Geometry::Rect_i& viewport);
+	void setViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor);
+	void setViewport(const ViewportState& viewport);
 
 	//! Save the current viewport onto the viewport stack and set the current viewport.
 	void pushAndSetViewport(const Geometry::Rect_i& viewport);
+	void pushAndSetViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor);
+	void pushAndSetViewport(const ViewportState& viewport);
 
 	void setWindowClientArea(const Geometry::Rect_i& clientArea);
 	// @}
