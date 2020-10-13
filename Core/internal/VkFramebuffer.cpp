@@ -7,26 +7,13 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#include "../Common.h"
-#include "../Device.h"
-#include "../ImageView.h"
-#include "../../State/PipelineState.h"
-#include "../../FBO.h"
-#include "../../Texture/Texture.h"
-
-#include <Util/Graphics/Color.h>
+#include "VkFramebuffer.h"
+#include "VkUtils.h"
 #include <Util/Macros.h>
-
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
 
 #include <vector>
 
 namespace Rendering {
-
-// defined in VkUtils.cpp
-vk::Format getVkFormat(const InternalFormat& format);
-vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 
 //---------------
 

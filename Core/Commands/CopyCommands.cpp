@@ -14,18 +14,11 @@
 #include "../ImageStorage.h"
 #include "../../Buffer/BufferObject.h"
 #include "../../Texture/Texture.h"
+#include "../internal/VkUtils.h"
 
 #include <Util/Macros.h>
 
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
-
 namespace Rendering {
-
-// defined in internal/VkUtils.cpp
-vk::AccessFlags getVkAccessMask(const ResourceUsage& usage);
-vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
-vk::Filter getVkFilter(const ImageFilter& filter);
 
 //--------------
 
@@ -72,6 +65,8 @@ CopyImageCommand::~CopyImageCommand() = default;
 bool CopyImageCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot copy image. Invalid images.", false);
 	WARN_AND_RETURN_IF(srcRegion.extent != tgtRegion.extent, "Cannot copy image. Source and target extent must be the same.", false);
+	transferImageLayout(context.cmd, srcImage, ResourceUsage::CopySource);
+	transferImageLayout(context.cmd, tgtImage, ResourceUsage::CopyDestination);
 
 	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
@@ -96,6 +91,7 @@ CopyBufferToImageCommand::~CopyBufferToImageCommand() = default;
 
 bool CopyBufferToImageCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!srcBuffer || !tgtImage, "Cannot copy buffer to image. Invalid buffer or image.", false);
+	transferImageLayout(context.cmd, tgtImage, ResourceUsage::CopyDestination);
 
 	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::BufferImageCopy copyRegion{
@@ -119,6 +115,7 @@ CopyImageToBufferCommand::~CopyImageToBufferCommand() = default;
 
 bool CopyImageToBufferCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!srcImage || !tgtBuffer, "Cannot copy image to buffer. Invalid buffer or image.", false);
+	transferImageLayout(context.cmd, srcImage, ResourceUsage::CopySource);
 
 	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::BufferImageCopy copyRegion{
@@ -142,6 +139,9 @@ BlitImageCommand::~BlitImageCommand() = default;
 
 bool BlitImageCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot blit image. Invalid images.", false);
+	transferImageLayout(context.cmd, srcImage, ResourceUsage::CopySource);
+	transferImageLayout(context.cmd, tgtImage, ResourceUsage::CopyDestination);
+
 	vk::ImageAspectFlags srcAspect = isDepthStencilFormat(srcImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	vk::ImageAspectFlags tgtAspect = isDepthStencilFormat(tgtImage->getFormat()) ? (vk::ImageAspectFlagBits::eDepth |  vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
 	Geometry::Vec3i srcOffset2 = srcRegion.offset + toVec3i(srcRegion.extent);
@@ -173,8 +173,10 @@ ClearImageCommand::~ClearImageCommand() = default;
 bool ClearImageCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!image && !view, "Cannot clear image. Invalid image or image view.", false);
 	ImageStorageRef img = image ? image : view->getImage();
+	transferImageLayout(context.cmd, img, ResourceUsage::CopyDestination);
 
 	const auto& format = image->getFormat();
+	auto layout = getVkImageLayout(ResourceUsage::CopyDestination);
 	vk::ImageSubresourceRange range{};
 	if(view) {
 		range.baseMipLevel = view->getMipLevel();
@@ -192,12 +194,12 @@ bool ClearImageCommand::compile(CompileContext& context) {
 		clearValue.depth = color.r();
 		clearValue.stencil = static_cast<uint32_t>(color.g());
 		range.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
-		vkCmd.clearDepthStencilImage(static_cast<vk::Image>(img->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination), clearValue, {range});
+		vkCmd.clearDepthStencilImage(static_cast<vk::Image>(img->getApiHandle()), layout, clearValue, {range});
 	} else {
 		vk::ClearColorValue clearValue{};
 		clearValue.setFloat32({color.r(), color.g(), color.b(), color.a()});
 		range.aspectMask = vk::ImageAspectFlagBits::eColor;
-		vkCmd.clearColorImage(static_cast<vk::Image>(img->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination), clearValue, {range});
+		vkCmd.clearColorImage(static_cast<vk::Image>(img->getApiHandle()), layout, clearValue, {range});
 	};
 	return true;
 }

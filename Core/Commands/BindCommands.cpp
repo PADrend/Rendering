@@ -14,11 +14,9 @@
 #include "../ImageView.h"
 #include "../../Texture/Texture.h"
 #include "../../Shader/Shader.h"
+#include "../internal/VkUtils.h"
 
 #include <Util/Macros.h>
-
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
 
 namespace Rendering {
 
@@ -49,6 +47,7 @@ BindSetCommand::~BindSetCommand() = default;
 bool BindSetCommand::compile(CompileContext& context) {
 	if(!layout.hasLayoutSet(set))
 		return true;
+
 	descriptorSet = context.descriptorPool->requestDescriptorSet(layout.getLayoutSet(set), bindingSet);
 	WARN_AND_RETURN_IF(!descriptorSet, "Failed to create descriptor set for binding set " + std::to_string(set), false);
 	pipelineLayout = context.resourceCache->createPipelineLayout(layout);

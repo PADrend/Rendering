@@ -14,21 +14,14 @@
 #include "../DescriptorPool.h"
 #include "../ImageView.h"
 #include "../ImageStorage.h"
+#include "../Swapchain.h"
 #include "../../Texture/Texture.h"
 #include "../../FBO.h"
+#include "../internal/VkUtils.h"
 
 #include <Util/Macros.h>
 
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
-
 namespace Rendering {
-
-// defined in internal/VkUtils.cpp
-vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
-vk::AccessFlags getVkAccessMask(const ResourceUsage& usage);
-vk::PipelineStageFlags getVkPipelineStageMask(const ResourceUsage& usage, bool src);
-vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 
 //--------------
 
@@ -51,19 +44,26 @@ BeginRenderPassCommand::~BeginRenderPassCommand() = default;
 
 //--------------
 
-
 BeginRenderPassCommand::BeginRenderPassCommand(const FBORef& fbo, std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil) :
 	fbo(fbo), colors(colors), depthValue(depthValue), stencilValue(stencilValue), clearColor(clearColor), clearDepth(clearDepth), clearStencil(clearStencil){
-	for(auto& att : fbo->getColorAttachments())
-		lastColorUsages.emplace_back(att.isNotNull() ? att->getLastUsage() : ResourceUsage::Undefined);
-	ResourceUsage lastDepthUsage = fbo->getDepthStencilAttachment() ? fbo->getDepthStencilAttachment()->getLastUsage() : ResourceUsage::Undefined;
 }
 
+//--------------
+
 bool BeginRenderPassCommand::compile(CompileContext& context) {
+	if(!fbo)
+		fbo = context.device->getSwapchain()->getCurrentFBO();
+
 	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Failed to start render pass. Invalid FBO.", false);
-	auto renderPass = context.resourceCache->createRenderPass(fbo, lastColorUsages, lastDepthUsage, clearColor, clearDepth, clearStencil);
+	std::vector<ResourceUsage> lastColorUsages;
+	for(auto& att : fbo->getColorAttachments())
+		lastColorUsages.emplace_back(att.isNotNull() ? att->getImage()->getLastUsage() : ResourceUsage::Undefined);
+	ResourceUsage lastDepthUsage = fbo->getDepthStencilAttachment() ? fbo->getDepthStencilAttachment()->getImage()->getLastUsage() : ResourceUsage::Undefined;
+
+	renderPass = context.resourceCache->createRenderPass(fbo, lastColorUsages, lastDepthUsage, clearColor, clearDepth, clearStencil);
+
 	WARN_AND_RETURN_IF(!renderPass, "Failed to start render pass. Invalid render pass.", false);
-	auto framebuffer = context.resourceCache->createFramebuffer(fbo, renderPass);
+	framebuffer = context.resourceCache->createFramebuffer(fbo, renderPass);
 	WARN_AND_RETURN_IF(!framebuffer, "Failed to start render pass. Invalid framebuffer.", false);
 
 	std::vector<vk::ClearValue> clearValues(fbo->getColorAttachmentCount(), vk::ClearColorValue{});
@@ -84,7 +84,26 @@ bool BeginRenderPassCommand::compile(CompileContext& context) {
 //--------------
 
 bool EndRenderPassCommand::compile(CompileContext& context) {
+	if(!fbo)
+		fbo = context.device->getSwapchain()->getCurrentFBO();
+
+	for(uint32_t i=0; i<fbo->getColorAttachmentCount(); ++i) {
+		const auto& attachment = fbo->getColorAttachment(i);
+		if(attachment)
+			attachment->getImage()->_setLastUsage(ResourceUsage::RenderTarget);
+	}
+	const auto& depthAttachment = fbo->getDepthStencilAttachment();
+	if(depthAttachment)
+		depthAttachment->getImage()->_setLastUsage(ResourceUsage::DepthStencil);
 	static_cast<vk::CommandBuffer>(context.cmd).endRenderPass();
+	return true;
+}
+
+//--------------
+
+bool PrepareForPresentCommand::compile(CompileContext& context) {
+	auto fbo = context.device->getSwapchain()->getCurrentFBO();
+	transferImageLayout(context.cmd, fbo->getColorAttachment()->getImageView(), ResourceUsage::Present);
 	return true;
 }
 
@@ -111,10 +130,8 @@ bool PushConstantCommand::compile(CompileContext& context) {
 	return true;
 }
 
-//--------------
-
-ImageBarrierCommand::ImageBarrierCommand(const TextureRef& texture, ResourceUsage oldUsage, ResourceUsage newUsage) :
-	view(texture->getImageView()), image(nullptr), oldUsage(oldUsage), newUsage(newUsage) {}
+ImageBarrierCommand::ImageBarrierCommand(const TextureRef& texture, ResourceUsage newUsage) :
+	view(texture->getImageView()), image(nullptr), newUsage(newUsage) {}
 
 //--------------
 
@@ -123,38 +140,11 @@ ImageBarrierCommand::~ImageBarrierCommand() = default;
 //--------------
 
 bool ImageBarrierCommand::compile(CompileContext& context) {
-	if(oldUsage == newUsage) return true;
 	WARN_AND_RETURN_IF(!image && !view, "Cannot create image barrier. Invalid image or image view.", false);
-	
-	ImageStorageRef img = image ? image : view->getImage();
-	const auto& format = img->getFormat();
-
-	vk::ImageMemoryBarrier barrier{};
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.srcAccessMask = getVkAccessMask(oldUsage);
-	barrier.dstAccessMask = getVkAccessMask(newUsage);
-	barrier.oldLayout = getVkImageLayout(oldUsage);
-	barrier.newLayout = getVkImageLayout(newUsage);
-	barrier.image = img->getApiHandle();
-	barrier.subresourceRange.aspectMask = isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
-	if(view) {
-		barrier.subresourceRange.baseArrayLayer = view->getLayer();
-		barrier.subresourceRange.layerCount = view->getLayerCount();
-		barrier.subresourceRange.baseMipLevel = view->getMipLevel();
-		barrier.subresourceRange.levelCount = view->getMipLevelCount();
-	} else {
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = format.layers;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = format.mipLevels;
-	}
-
-	static_cast<vk::CommandBuffer>(context.cmd).pipelineBarrier(
-		getVkPipelineStageMask(oldUsage, true),
-		getVkPipelineStageMask(newUsage, false),
-		{}, {}, {}, {barrier}
-	);
+	if(view)
+		transferImageLayout(context.cmd, view, newUsage);
+	else
+		transferImageLayout(context.cmd, image, newUsage);
 	return true;
 }
 

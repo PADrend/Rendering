@@ -43,8 +43,6 @@ public:
 	uint32_t getLayer() const { return config.baseLayer; }
 	uint32_t getLayerCount() const { return config.layerCount; }
 
-	ResourceUsage getLastUsage() const { return lastUsage; }
-	void _setLastUsage(ResourceUsage usage) { lastUsage = usage; }
 	const ImageViewHandle& getApiHandle() const { return handle; }
 	
 	//! @name Debugging
@@ -58,7 +56,6 @@ private:
 	const ImageStorageRef image;
 	const Configuration config;
 	ImageViewHandle handle;
-	ResourceUsage lastUsage = ResourceUsage::Undefined;
 };
 
 } /* Rendering */

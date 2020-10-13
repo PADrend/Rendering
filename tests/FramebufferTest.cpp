@@ -91,10 +91,7 @@ TEST_CASE("FramebufferTest_testDraw", "[FramebufferTest]") {
 		cmdBuffer->beginRenderPass();
 		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
-		
-		auto& fbo = device->getSwapchain()->getCurrentFBO();
-		cmdBuffer->imageBarrier(fbo->getColorAttachment(0), ResourceUsage::Present);
-
+		cmdBuffer->prepareForPresent();
 		graphicsQueue->submit(cmdBuffer);
 		graphicsQueue->present();
 	}

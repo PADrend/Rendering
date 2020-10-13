@@ -7,14 +7,8 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#include "../Common.h"
-#include "../ImageStorage.h"
-#include "../ImageView.h"
-#include "../../State/ShaderLayout.h"
-#include <Util/Resources/ResourceFormat.h>
-
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
+#include "VkUtils.h"
+#include "../Device.h"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -278,6 +272,67 @@ vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages) {
 	if((stages & ShaderStage::Compute) == ShaderStage::Compute) flags |= vk::ShaderStageFlagBits::eCompute;
 	return flags;
 }
+
+//-----------------
+
+void transferImageLayout(CommandBufferHandle cmd, const ImageView::Ref& view, ResourceUsage newUsage) {
+	auto image = view->getImage();
+	ResourceUsage oldUsage = image->getLastUsage();
+	if(oldUsage == newUsage) return;
+	
+	const auto& format = image->getFormat();
+
+	vk::ImageMemoryBarrier barrier{};
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcAccessMask = getVkAccessMask(oldUsage);
+	barrier.dstAccessMask = getVkAccessMask(newUsage);
+	barrier.oldLayout = getVkImageLayout(oldUsage);
+	barrier.newLayout = getVkImageLayout(newUsage);
+	barrier.image = image->getApiHandle();
+	barrier.subresourceRange.aspectMask = isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	barrier.subresourceRange.baseArrayLayer = view->getLayer();
+	barrier.subresourceRange.layerCount = view->getLayerCount();
+	barrier.subresourceRange.baseMipLevel = view->getMipLevel();
+	barrier.subresourceRange.levelCount = view->getMipLevelCount();
+
+	static_cast<vk::CommandBuffer>(cmd).pipelineBarrier(
+		getVkPipelineStageMask(oldUsage, true),
+		getVkPipelineStageMask(newUsage, false),
+		{}, {}, {}, {barrier}
+	);
+	image->_setLastUsage(newUsage);
+};
+
+//-----------------
+
+void transferImageLayout(CommandBufferHandle cmd, const ImageStorage::Ref& image, ResourceUsage newUsage) {
+	ResourceUsage oldUsage = image->getLastUsage();
+	if(oldUsage == newUsage) return;
+	
+	const auto& format = image->getFormat();
+
+	vk::ImageMemoryBarrier barrier{};
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcAccessMask = getVkAccessMask(oldUsage);
+	barrier.dstAccessMask = getVkAccessMask(newUsage);
+	barrier.oldLayout = getVkImageLayout(oldUsage);
+	barrier.newLayout = getVkImageLayout(newUsage);
+	barrier.image = image->getApiHandle();
+	barrier.subresourceRange.aspectMask = isDepthStencilFormat(format) ? (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil) : vk::ImageAspectFlagBits::eColor;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = format.layers;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = format.mipLevels;
+
+	static_cast<vk::CommandBuffer>(cmd).pipelineBarrier(
+		getVkPipelineStageMask(oldUsage, true),
+		getVkPipelineStageMask(newUsage, false),
+		{}, {}, {}, {barrier}
+	);
+	image->_setLastUsage(newUsage);
+};
 
 //-----------------
 

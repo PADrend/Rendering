@@ -53,6 +53,15 @@ enum class QueueFamily : uint8_t {
 	Present = 1 << 3,
 };
 
+inline QueueFamily operator | (QueueFamily lhs, QueueFamily rhs) {
+	return static_cast<QueueFamily>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+
+inline QueueFamily operator & (QueueFamily lhs, QueueFamily rhs) {
+	return static_cast<QueueFamily>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+}
+
+
 //---------------------------
 
 enum class InternalFormat : std::uint8_t {

@@ -19,6 +19,7 @@
 #include "../Texture/Texture.h"
 #include "../BufferObject.h"
 #include "../FBO.h"
+#include "../Context/RenderThread.h"
 #include "Commands/BindCommands.h"
 #include "Commands/CommonCommands.h"
 #include "Commands/CopyCommands.h"
@@ -147,6 +148,7 @@ bool CommandBuffer::compile() {
 	if(state == State::Executable)
 		return true;
 	CompileContext context{};
+	context.ownerId = RenderThread::isInRenderThread() ? 1 : 0;
 	return compile(context);
 }
 
@@ -207,9 +209,18 @@ void CommandBuffer::flush() {
 
 void CommandBuffer::submit(bool wait) {
 	WARN_AND_RETURN_IF(!primary, "Cannot submit secondary command buffer.",);
-	if(compile()) {
-		queue->submit(this);
-		if(wait) queue->wait();
+	auto compileAndSubmit = [&] () {
+		if(compile()) {
+			queue->submit(this);
+			if(wait) queue->wait();
+		}
+	};
+	if(RenderThread::isInRenderThread()) {
+		compileAndSubmit();
+	} else {
+		auto index = RenderThread::addTask(compileAndSubmit);
+		if(wait)
+			RenderThread::sync(index);
 	}
 }
 
@@ -229,11 +240,11 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 	WARN_AND_RETURN_IF(inRenderPass, "Command buffer is already in a render pass. Call endRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	auto device = queue->getDevice();
-	activeFBO = fbo ? fbo : device->getSwapchain()->getCurrentFBO();
-	pipeline.setFramebufferFormat(activeFBO);
+	activeFBO = fbo;
+	pipeline.setFramebufferFormat(fbo ? fbo : device->getSwapchain()->getCurrentFBO());
 	beginDebugMarker("Render Pass");
 
-	commands.emplace_back(new BeginRenderPassCommand(activeFBO, clearColors, clearDepthValue, clearStencilValue, clearColor, clearDepth, clearStencil));
+	commands.emplace_back(new BeginRenderPassCommand(fbo, clearColors, clearDepthValue, clearStencilValue, clearColor, clearDepth, clearStencil));
 	inRenderPass = true;
 }
 
@@ -242,19 +253,16 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 void CommandBuffer::endRenderPass() {
 	if(!inRenderPass)
 		return;
-	
-	for(uint32_t i=0; i<activeFBO->getColorAttachmentCount(); ++i) {
-		const auto& attachment = activeFBO->getColorAttachment(i);
-		if(attachment)
-			attachment->getImageView()->_setLastUsage(ResourceUsage::RenderTarget);
-	}
-	const auto& depthAttachment = activeFBO->getDepthStencilAttachment();
-	if(depthAttachment)
-		depthAttachment->getImageView()->_setLastUsage(ResourceUsage::DepthStencil);
-
-	commands.emplace_back(new EndRenderPassCommand);
+	commands.emplace_back(new EndRenderPassCommand(activeFBO));
 	inRenderPass = false;
 	endDebugMarker();
+}
+
+//-----------------
+
+void CommandBuffer::prepareForPresent() {
+	endRenderPass();
+	commands.emplace_back(new PrepareForPresentCommand);
 }
 
 //-----------------
@@ -463,8 +471,6 @@ void CommandBuffer::copyImage(const ImageStorageRef& srcImage, const ImageStorag
 	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot copy image. Invalid images.",);
 	WARN_AND_RETURN_IF(srcRegion.extent != tgtRegion.extent, "Cannot copy image. Source and target extent must be the same.",);
 	endRenderPass(); // not allowed in render pass
-	imageBarrier(srcImage, ResourceUsage::CopySource);
-	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
 	commands.emplace_back(new CopyImageCommand(srcImage, tgtImage, srcRegion, tgtRegion));
 }
 
@@ -474,7 +480,6 @@ void CommandBuffer::copyBufferToImage(const BufferStorageRef& srcBuffer, const I
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!srcBuffer || !tgtImage, "Cannot copy buffer to image. Invalid buffer or image.",);
 	endRenderPass(); // not allowed in render pass
-	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
 	commands.emplace_back(new CopyBufferToImageCommand(srcBuffer, tgtImage, srcOffset, tgtRegion));
 }
 
@@ -484,7 +489,6 @@ void CommandBuffer::copyImageToBuffer(const ImageStorageRef& srcImage, const Buf
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!srcImage || !tgtBuffer, "Cannot copy image to buffer. Invalid buffer or image.",);
 	endRenderPass(); // not allowed in render pass
-	imageBarrier(srcImage, ResourceUsage::CopySource);
 	commands.emplace_back(new CopyImageToBufferCommand(srcImage, tgtBuffer, srcRegion, tgtOffset));
 }
 
@@ -494,8 +498,6 @@ void CommandBuffer::blitImage(const ImageStorageRef& srcImage, const ImageStorag
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!srcImage || !tgtImage, "Cannot blit image. Invalid images.",);
 	endRenderPass(); // not allowed in render pass
-	imageBarrier(srcImage, ResourceUsage::CopySource);
-	imageBarrier(tgtImage, ResourceUsage::CopyDestination);
 	commands.emplace_back(new BlitImageCommand(srcImage, tgtImage, srcRegion, tgtRegion, filter));
 }
 
@@ -504,9 +506,7 @@ void CommandBuffer::blitImage(const ImageStorageRef& srcImage, const ImageStorag
 void CommandBuffer::imageBarrier(const TextureRef& texture, ResourceUsage newUsage) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!texture || !texture->isValid(), "Cannot create image barrier. Invalid texture.",);
-	if(texture->getLastUsage() == newUsage) return;
-	commands.emplace_back(new ImageBarrierCommand(texture, texture->getLastUsage(), newUsage));
-	texture->getImageView()->_setLastUsage(newUsage);
+	commands.emplace_back(new ImageBarrierCommand(texture, newUsage));
 }
 
 //-----------------
@@ -514,9 +514,7 @@ void CommandBuffer::imageBarrier(const TextureRef& texture, ResourceUsage newUsa
 void CommandBuffer::imageBarrier(const ImageViewRef& view, ResourceUsage newUsage) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	WARN_AND_RETURN_IF(!view, "Cannot create image barrier. Invalid image.",);
-	if(view->getLastUsage() == newUsage) return;
-	commands.emplace_back(new ImageBarrierCommand(view, view->getLastUsage(), newUsage));
-	view->_setLastUsage(newUsage);
+	commands.emplace_back(new ImageBarrierCommand(view, newUsage));
 }
 
 //-----------------
@@ -524,9 +522,7 @@ void CommandBuffer::imageBarrier(const ImageViewRef& view, ResourceUsage newUsag
 void CommandBuffer::imageBarrier(const ImageStorageRef& image, ResourceUsage newUsage) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(!image, "Cannot create image barrier. Invalid image.",);
-	if(image->getLastUsage() == newUsage) return;
-	commands.emplace_back(new ImageBarrierCommand(image, image->getLastUsage(), newUsage));
-	image->_setLastUsage(newUsage);
+	commands.emplace_back(new ImageBarrierCommand(image, newUsage));
 }
 
 //-----------------

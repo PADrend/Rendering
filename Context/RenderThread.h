@@ -13,9 +13,10 @@
 
 #include <mutex>
 #include <thread>
-#include <queue>
+#include <deque>
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 
 namespace Rendering {
 class Device;
@@ -25,23 +26,38 @@ using CommandBufferRef = Util::Reference<CommandBuffer>;
 
 class RenderThread : public Util::ReferenceCounter<RenderThread> {
 public:
+	using Task = std::function<void ()>;
 	using Ref = Util::Reference<RenderThread>;
-	static Ref create(const DeviceRef& device);
+	static const Ref& get();
 	RenderThread(RenderThread &&) = default;
 	RenderThread(const RenderThread &) = delete;
 	~RenderThread();
-	
-	void compileAndSubmit(const CommandBufferRef& cmd);
-private:
-	RenderThread(const DeviceRef& device);
-	void run();
 
-	DeviceRef device;
+	static uint64_t addTask(const Task& task) { return get()->_addTask(task); }
+	static void sync(uint64_t taskId) { get()->_sync(taskId); }
+	static uint64_t getProcessed() { return get()->processedCount; }
+
+	static bool isInRenderThread() { return std::this_thread::get_id() == get()->worker.get_id(); }
+
+private:
+	RenderThread();
+	void run();
+	
+	uint64_t _addTask(const Task& task);
+	void _sync(uint64_t taskId);
+
 	std::thread worker;
-	std::queue<CommandBufferRef> queue;
-	std::mutex mutex;
-	std::condition_variable condition;
 	std::atomic<bool> running;
+
+	std::mutex queueMutex;
+	std::condition_variable queueCond;
+	std::atomic<uint64_t> submittedCount;
+
+	std::mutex processedMutex;
+	std::condition_variable processedCond;	
+	std::atomic<uint64_t> processedCount;
+	
+	std::deque<Task> queue;
 };
 
 } /* Rendering */

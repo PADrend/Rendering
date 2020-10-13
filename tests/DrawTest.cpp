@@ -138,7 +138,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		cmdBuffer->endRenderPass();
 				
 		auto& fbo = device->getSwapchain()->getCurrentFBO();
-		cmdBuffer->imageBarrier(fbo->getColorAttachment(0), ResourceUsage::Present);
+		cmdBuffer->prepareForPresent();
 		cmdBuffer->submit();
 		device->present();
 

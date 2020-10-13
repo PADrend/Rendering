@@ -12,6 +12,7 @@
 #include "ResourceCache.h"
 #include "Sampler.h"
 #include "ImageView.h"
+#include "ImageStorage.h"
 #include "BufferStorage.h"
 #include "../BufferObject.h"
 #include "../Shader/Shader.h"
@@ -187,7 +188,7 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 			} else if(binding.getTexture()) {
 				const auto& tex = binding.getTexture();
 				if(tex->isValid()) {
-					auto vkImageLayout = getVkImageLayout(tex->getLastUsage());
+					auto vkImageLayout = getVkImageLayout(tex->getImage()->getLastUsage());
 					imageBindings.back().emplace_back(
 						static_cast<vk::Sampler>(tex->getSampler()->getApiHandle()), 
 						static_cast<vk::ImageView>(tex->getImageView()->getApiHandle()), 

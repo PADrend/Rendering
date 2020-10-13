@@ -152,6 +152,7 @@ uint32_t getGLType(Util::TypeConstant type) {
 		case Util::TypeConstant::FLOAT: return GL_FLOAT;
 		case Util::TypeConstant::DOUBLE: return GL_DOUBLE;
 		case Util::TypeConstant::HALF: return GL_HALF_FLOAT;
+		default: return 0;
 	}
 }
 

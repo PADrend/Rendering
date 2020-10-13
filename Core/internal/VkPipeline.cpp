@@ -7,23 +7,10 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#include "../Common.h"
-#include "../Device.h"
-#include "../ResourceCache.h"
-#include "../../FBO.h"
-#include "../../Shader/Shader.h"
-#include "../../State/ShaderLayout.h"
-#include "../../State/PipelineState.h"
-
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
+#include "VkPipeline.h"
+#include "VkUtils.h"
 
 namespace Rendering {
-
-// defined in VkUtils.cpp
-vk::Format getVkFormat(const InternalFormat& format);
-vk::ShaderStageFlags getVkStageFlags(const ShaderStage& stages);
-vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic);
 
 //---------------
 

@@ -55,8 +55,6 @@ private:
 	bool clearStencil;
 	FramebufferHandle framebuffer;
 	RenderPassHandle renderPass;
-	std::vector<ResourceUsage> lastColorUsages;
-	ResourceUsage lastDepthUsage;
 };
 
 //------------------------------------------
@@ -64,8 +62,20 @@ private:
 class EndRenderPassCommand : public Command {
 PROVIDES_TYPE_NAME(EndRenderPassCommand)
 public:
-	EndRenderPassCommand() {}
+	EndRenderPassCommand(const FBORef& fbo) : fbo(fbo) {}
 	~EndRenderPassCommand() = default;
+	bool compile(CompileContext& context) override;
+private:
+	FBORef fbo;
+};
+
+//------------------------------------------
+
+class PrepareForPresentCommand : public Command {
+PROVIDES_TYPE_NAME(PrepareForPresentCommand)
+public:
+	PrepareForPresentCommand() {}
+	~PrepareForPresentCommand() = default;
 	bool compile(CompileContext& context) override;
 };
 
@@ -90,15 +100,14 @@ private:
 class ImageBarrierCommand : public Command {
 PROVIDES_TYPE_NAME(ImageBarrierCommand)
 public:
-	ImageBarrierCommand(const TextureRef& texture, ResourceUsage oldUsage, ResourceUsage newUsage);
-	ImageBarrierCommand(const ImageViewRef& view, ResourceUsage oldUsage, ResourceUsage newUsage) : view(view), image(nullptr), oldUsage(oldUsage), newUsage(newUsage) {}
-	ImageBarrierCommand(const ImageStorageRef& image, ResourceUsage oldUsage, ResourceUsage newUsage) : view(nullptr), image(image), oldUsage(oldUsage), newUsage(newUsage) {}
+	ImageBarrierCommand(const TextureRef& texture, ResourceUsage newUsage);
+	ImageBarrierCommand(const ImageViewRef& view, ResourceUsage newUsage) : view(view), image(nullptr), newUsage(newUsage) {}
+	ImageBarrierCommand(const ImageStorageRef& image, ResourceUsage newUsage) : view(nullptr), image(image), newUsage(newUsage) {}
 	~ImageBarrierCommand();
 	bool compile(CompileContext& context) override;
 private:
 	ImageViewRef view;
 	ImageStorageRef image;
-	ResourceUsage oldUsage;
 	ResourceUsage newUsage;
 };
 

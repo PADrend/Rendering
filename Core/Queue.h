@@ -35,7 +35,7 @@ public:
 	bool present();
 	void wait();
 
-	bool supports(QueueFamily type) const;
+	bool supports(QueueFamily type) const { return (capabilities & type) != QueueFamily::None; }
 
 	uint32_t getIndex() const { return index; }
 	uint32_t getFamilyIndex() const { return familyIndex; }
@@ -67,16 +67,6 @@ private:
 	std::mutex submitMutex;
 	std::mutex poolMutex;
 };
-
-inline QueueFamily operator | (QueueFamily lhs, QueueFamily rhs) {
-	return static_cast<QueueFamily>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
-}
-
-inline QueueFamily operator & (QueueFamily lhs, QueueFamily rhs) {
-	return static_cast<QueueFamily>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
-}
-
-inline bool Queue::supports(QueueFamily type) const { return (capabilities & type) != QueueFamily::None; }
 
 } /* Rendering */
 

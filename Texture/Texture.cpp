@@ -148,7 +148,7 @@ void Texture::upload(ResourceUsage usage) {
 		tgtRegion.mipLevel = imageView->getMipLevel();
 		tgtRegion.extent = format.extent;
 		cmds->copyBufferToImage(stagingBuffer, getImage(), 0, tgtRegion);
-		cmds->imageBarrier(imageView, usage);
+		cmds->imageBarrier(getImage(), usage);
 		cmds->submit(true);
 	}
 	dataHasChanged = false;
@@ -199,10 +199,7 @@ void Texture::clear(const Util::Color4f& color) {
 	}
 	if(imageView) {
 		CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
-		auto usage = getLastUsage();
 		cmds->clearImage(imageView, color);
-		if(usage != ResourceUsage::Undefined)
-			cmds->imageBarrier(imageView, usage);
 		cmds->submit(true);
 	}
 }
@@ -279,19 +276,6 @@ void Texture::_setGLId(uint32_t _glId) {
 
 void Texture::enableComparision(RenderingContext & context, Comparison::function_t func) {
 	throw std::runtime_error("Texture::enableComparision: unsupported.");
-}
-
-//---------------
-
-ResourceUsage Texture::getLastUsage() const {
-	return imageView ? imageView->getLastUsage() : ResourceUsage::Undefined;
-}
-
-//---------------
-
-void Texture::_setLastUsage(ResourceUsage usage) {
-	if(imageView)
-		imageView->_setLastUsage(usage);
 }
 
 //---------------

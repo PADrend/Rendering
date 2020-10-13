@@ -130,8 +130,6 @@ public:
 	const ImageViewRef& getImageView() const { return imageView; }
 	ImageStorageRef getImage() const;
 	const SamplerRef& getSampler() const { return sampler; }
-	ResourceUsage getLastUsage() const;
-	void _setLastUsage(ResourceUsage usage);
 	// @}
 	
 	/*!	@name Deprecated */

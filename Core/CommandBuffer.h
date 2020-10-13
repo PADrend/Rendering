@@ -72,6 +72,7 @@ public:
 
 	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, bool clearStencil=true);
 	void endRenderPass();
+	void prepareForPresent();
 	//! @}
 
 	//! @name Binding commands
@@ -199,6 +200,7 @@ public:
 	//! @{
 	const CommandBufferHandle& getApiHandle() const { return handle; };
 	const SemaphoreHandle& getSignalSemaphore() const { return signalSemaphore; };
+	QueueRef getQueue() const { return queue.get(); };
 	//! @}
 private:
 	void ensureRenderPass() {

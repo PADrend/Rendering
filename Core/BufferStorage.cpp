@@ -65,8 +65,10 @@ uint8_t* BufferStorage::map() {
 //-------------
 
 void BufferStorage::unmap() {
-	if(mappedPtr && !config.persistent)
+	if(mappedPtr && !config.persistent) {
 		vmaUnmapMemory(device->getAllocator(), allocation);
+		mappedPtr = nullptr;
+	}
 }
 
 //-------------

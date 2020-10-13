@@ -17,46 +17,56 @@ namespace Rendering {
 
 //---------------
 
-RenderThread::Ref RenderThread::create(const DeviceRef& device) {
-	Ref obj = new RenderThread(device);
-	return obj;
+const RenderThread::Ref& RenderThread::get() {
+	static Ref thread = new RenderThread();
+	return thread;
 }
 
 //---------------
 
 RenderThread::~RenderThread() {
 	running = false;
-	condition.notify_all();
+	processedCond.notify_all();
+	queueCond.notify_all();
 	worker.join();
 }
 
 //---------------
 
-RenderThread::RenderThread(const DeviceRef& device) : device(device), worker(std::bind(&RenderThread::run, this)) {}
+RenderThread::RenderThread() : worker(std::bind(&RenderThread::run, this)), running(true), submittedCount(0), processedCount(0) {}
 
 //---------------
 
-void RenderThread::compileAndSubmit(const CommandBufferRef& cmd) {
-	std::unique_lock<std::mutex> lock(mutex);
-	queue.push(cmd);
+uint64_t RenderThread::_addTask(const Task& task) {
+	std::unique_lock<std::mutex> lock(queueMutex);
+	queue.push_back(task);
+	uint64_t returnValue = ++submittedCount;
 	lock.unlock();
-	condition.notify_all();
+	queueCond.notify_all();
+	return returnValue;
+}
+
+//---------------
+
+void RenderThread::_sync(uint64_t taskId) {
+	std::unique_lock<std::mutex> lock(processedMutex);
+	processedCond.wait(lock, [&]{ return processedCount >= taskId || !running; });
 }
 
 //---------------
 
 void RenderThread::run() {
-	std::unique_lock<std::mutex> lock(mutex);
+	std::unique_lock<std::mutex> lock(queueMutex);
 	while(running) {
-		condition.wait(lock, [this]{ return !queue.empty() || !running; });
+		queueCond.wait(lock, [this]{ return !queue.empty() || !running; });
 
 		if(!queue.empty()) {
-			auto cmd = queue.front();
-			queue.pop();
+			auto task = std::move(queue.front());
+			queue.pop_front();
 			lock.unlock();
-
-			cmd->submit();
-
+			task();
+			processedCount++;
+			processedCond.notify_all();
 			lock.lock();
 		}
 	}

@@ -69,7 +69,8 @@ public:
 	BindingState bindingState;
 	RenderingState renderingState;
 	CommandBuffer::Ref cmd;
-	RenderThread::Ref renderThread;
+	uint64_t submissionIndex = 0;
+	const uint64_t maxPendingSubmissions = 100;
 
 	// pipeline state stacks
 	std::stack<VertexInputState> vertexInputStack;
@@ -105,6 +106,9 @@ public:
 	// dummy vertex buffer
 	MeshVertexData fallbackVertexBuffer;
 	Texture::Ref dummyTexture;
+
+	std::vector<BufferObjectRef> activeVBOs;
+	BufferObject::Ref activeIBO;
 
 	// deprecated
 	std::stack<AlphaTestParameters> alphaTestParameterStack;
@@ -167,9 +171,6 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	setWindowClientArea(windowRect);
 
 	applyChanges();
-
-	// start render thread
-	//internal->renderThread = RenderThread::create(device);
 }
 
 RenderingContext::RenderingContext() : RenderingContext(Device::getDefault()) {}
@@ -178,6 +179,7 @@ RenderingContext::~RenderingContext() {
 	#ifdef PROFILING_ENABLED
 		_out.flush();
 	#endif
+	internal->device->waitIdle();
 };
 
 void RenderingContext::resetDisplayMeshFn() {
@@ -207,32 +209,35 @@ const RenderingState& RenderingContext::getRenderingState() const{
 // helper ***************************************************************************
 
 void RenderingContext::flush(bool wait) {
-	//internal->cmd->submit(wait);
-	//internal->renderThread->compileAndSubmit(internal->cmd);
+	internal->activeVBOs.clear();
+	internal->activeIBO = nullptr;
+	auto cmd = internal->cmd;
+	internal->submissionIndex = RenderThread::addTask([&,cmd]() {
+		cmd->submit(wait);
+	});
+	if(internal->submissionIndex - RenderThread::getProcessed() > internal->maxPendingSubmissions) {
+		RenderThread::sync(internal->submissionIndex);
+	}
 
-	//internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
+	auto newCmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
+	internal->cmd = newCmd;
 	applyChanges();
 }
 
 void RenderingContext::present() {
-	internal->cmd->endRenderPass();
-	auto& fbo = internal->device->getSwapchain()->getCurrentFBO();
-	internal->cmd->imageBarrier(fbo->getColorAttachment(0), ResourceUsage::Present);
-	internal->cmd->submit();
-	//internal->renderThread->compileAndSubmit(internal->cmd);
-	// does not necessarily show the last submitted command buffer
-	internal->device->present();
+	internal->cmd->prepareForPresent();
+	flush();
+	internal->submissionIndex = RenderThread::addTask([&]() {
+		internal->device->present();
+	});
 
-	END_PROFILING_COND(RenderingContext, PROFILING_CONDITION);
-	BEGIN_PROFILING_COND(RenderingContext, ++PROFILING_CONDITION);
+	END_PROFILING_COND("RenderingContext", PROFILING_CONDITION);
+	BEGIN_PROFILING_COND("RenderingContext", ++PROFILING_CONDITION);
 
 	// reset rendering state
 	// TODO: do explicit clearing?
 	internal->renderingState.getLights().clear();
 	internal->renderingState.getInstance().markDirty();
-
-	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
-	applyChanges();
 }
 
 
@@ -245,12 +250,7 @@ void RenderingContext::barrier(uint32_t flags) {
 // Applying changes ***************************************************************************
 
 void RenderingContext::applyChanges(bool forced) {
-	SCOPED_PROFILING_COND(RenderingContext::applyChanges, PROFILING_CONDITION);
-	if(internal->cmd->isInRenderPass() && 
-		internal->cmd->getActiveFBO() != internal->activeFBO &&
-		internal->activeFBO.isNotNull() && 
-		internal->cmd->getActiveFBO() != internal->device->getSwapchain()->getCurrentFBO()
-	) {
+	if(internal->cmd->isInRenderPass() && internal->cmd->getActiveFBO() != internal->activeFBO) {
 		internal->cmd->insertDebugMarker("FBO changed");
 		// FBO has changed: end the active render pass
 		internal->cmd->endRenderPass();
@@ -275,19 +275,30 @@ void RenderingContext::applyChanges(bool forced) {
 	internal->pipelineState.setShader(shader);
 
 	// Update state
-	internal->cmd->setPipeline(internal->pipelineState);
-	internal->cmd->updateBindings(internal->bindingState);
-
+	{
+		SCOPED_PROFILING_COND("setPipeline", PROFILING_CONDITION);
+		internal->cmd->setPipeline(internal->pipelineState);
+	}
+	{
+		SCOPED_PROFILING_COND("updateBindings", PROFILING_CONDITION);
+		internal->cmd->updateBindings(internal->bindingState);
+	}
 	// transfer updated global uniforms to the shader
 	shader->_getUniformRegistry()->performGlobalSync(internal->globalUniforms, false);
 
 	// apply uniforms
-	shader->applyUniforms(forced);
+	{
+		SCOPED_PROFILING_COND("applyUniforms", PROFILING_CONDITION);
+		shader->applyUniforms(forced);
+	}
 
 	// bind uniform buffers
-	for(auto& b : shader->getUniformBuffers()) {
-		if(!internal->bindingState.hasBinding(b.first.second, b.first.first)) //let rendering context overwrite uniform buffer bindings
-			b.second->bind(internal->cmd, b.first.second, b.first.first);
+	{
+		SCOPED_PROFILING_COND("bindUniforms", PROFILING_CONDITION);
+		for(auto& b : shader->getUniformBuffers()) {
+			if(!internal->bindingState.hasBinding(b.first.second, b.first.first)) //let rendering context overwrite uniform buffer bindings
+				b.second->bind(internal->cmd, b.first.second, b.first.first);
+		}
 	}
 }
 
@@ -521,7 +532,7 @@ void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const Ver
 
 
 void RenderingContext::bindVertexBuffers(const std::vector<BufferObjectRef>& buffers, const std::vector<VertexDescription>& vds, const std::vector<uint32_t> rates) {
-	SCOPED_PROFILING_COND(RenderingContext::bindVertexBuffers, PROFILING_CONDITION);
+	SCOPED_PROFILING_COND("bindVertexBuffers", PROFILING_CONDITION);
 	auto shader = internal->activeShader ? internal->activeShader : internal->fallbackShader;
 	WARN_AND_RETURN_IF(!shader, "bindVertexBuffers: There is no bound shader.",);
 	WARN_AND_RETURN_IF(buffers.size() != vds.size(), "bindVertexBuffers: Number of vertex descriptions does not match number of buffers.",);
@@ -563,11 +574,17 @@ void RenderingContext::bindVertexBuffers(const std::vector<BufferObjectRef>& buf
 		boundBuffers.emplace_back(internal->fallbackVertexBuffer.getBuffer());
 	}
 	internal->pipelineState.setVertexInputState(state);
-	internal->cmd->bindVertexBuffers(0, boundBuffers);
+	if(boundBuffers != internal->activeVBOs) {
+		internal->cmd->bindVertexBuffers(0, boundBuffers);
+		internal->activeVBOs = boundBuffers;
+	}
 }
 
 void RenderingContext::bindIndexBuffer(const BufferObjectRef& buffer) {
-	internal->cmd->bindIndexBuffer(buffer);
+	if(buffer != internal->activeIBO) {
+		internal->cmd->bindIndexBuffer(buffer);
+		internal->activeIBO = buffer;
+	}
 }
 
 void RenderingContext::draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount, uint32_t firstInstance) {

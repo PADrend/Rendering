@@ -41,6 +41,7 @@ int main( int argc, char* argv[] ) {
 	
 	auto result = Catch::Session().run( argc, argv );
 	
+	TestUtils::device->waitIdle();
 	TestUtils::window = nullptr;
 	return result;
 }
