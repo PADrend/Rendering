@@ -317,9 +317,11 @@ public:
 	//! @name Drawing
 	//	@{
 	void bindVertexBuffer(const BufferObjectRef& buffer, const VertexDescription& vd);
+	void bindVertexBuffers(const std::vector<BufferObjectRef>& buffers, const std::vector<VertexDescription>& vds, const std::vector<uint32_t> rates={});
 	void bindIndexBuffer(const BufferObjectRef& buffer);
 	void draw(uint32_t vertexCount, uint32_t firstVertex=0, uint32_t instanceCount=1, uint32_t firstInstance=0);
 	void drawIndexed(uint32_t indexCount, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t instanceCount=1, uint32_t firstInstance=0);
+	void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride);
 	void setPrimitiveTopology(PrimitiveTopology topology);
 	// @}
 

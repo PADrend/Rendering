@@ -265,6 +265,14 @@ void Shader::attachShaderObject(ShaderObjectInfo && obj) {
 
 //-----------------
 
+void Shader::addDefine(const std::string& key, const std::string& value) {
+	for(auto& obj : shaderObjects)
+		obj.addDefine(key, value);
+	status = UNKNOWN;
+}
+
+//-----------------
+
 bool Shader::_enable() {
 	if( status==LINKED || init() ) {
 		return true;

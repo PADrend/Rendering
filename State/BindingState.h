@@ -29,13 +29,13 @@ using ImageViewRef = Util::Reference<ImageView>;
 //------------------
 
 class Binding {
+HAS_DIRTY_FLAG
 public:
+	~Binding();
+
 	bool bindBuffer(const BufferObjectRef& buffer, uint32_t arrayElement=0);
 	bool bindTexture(const TextureRef& texture, uint32_t arrayElement=0);
 	bool bindInputImage(const ImageViewRef& view, uint32_t arrayElement=0);
-
-	bool isDirty() const { return dirty; }
-	void clearDirty();
 
 	const std::vector<BufferObjectRef>& getBuffers() const { return buffers; }
 	const std::vector<TextureRef>& getTextures() const { return textures; }
@@ -44,12 +44,12 @@ private:
 	std::vector<BufferObjectRef> buffers;
 	std::vector<TextureRef> textures;
 	std::vector<ImageViewRef> views;
-	bool dirty = true;
 };
 
 //------------------
 
 class BindingSet {
+HAS_DIRTY_FLAG
 public:
 	using BindingMap = std::map<uint32_t, Binding>;
 
@@ -57,21 +57,19 @@ public:
 	bool bindTexture(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
 	bool bindInputImage(const ImageViewRef& view, uint32_t binding=0, uint32_t arrayElement=0);
 
-	bool isDirty() const { return dirty; }
-	void clearDirty();
-	void clearDirty(uint32_t binding);
-
 	const BindingMap& getBindings() const { return bindings; }
 	const Binding& getBinding(uint32_t binding) const { return bindings.at(binding); }
 	bool hasBinding(uint32_t binding) const { return bindings.find(binding) != bindings.end(); }
+
+	void clearDirty(uint32_t binding) { bindings.at(binding).clearDirty(); }
 private:
 	BindingMap bindings;
-	bool dirty = true;
 };
 
 //------------------
 
 class BindingState {
+HAS_DIRTY_FLAG
 public:
 	BindingState() = default;
 	~BindingState() = default;
@@ -91,17 +89,18 @@ public:
 	const Binding& getBinding(uint32_t set, uint32_t binding) const { return bindingSets.at(set).getBinding(binding); }
 	bool hasBinding(uint32_t set, uint32_t binding) const { return hasBindingSet(set) && bindingSets.at(set).hasBinding(binding); }
 
-	void reset();
-	bool isDirty() const { return dirty; }
-	void clearDirty();
-	void clearDirty(uint32_t set);
-
-	const std::unordered_map<uint32_t, BindingSet>& getBindingSets() const { return bindingSets; }
-	const BindingSet& getBindingSet(uint32_t set) const { return bindingSets.at(set); }
+	std::unordered_map<uint32_t, BindingSet>& getBindingSets() { return bindingSets; }
+	const BindingSet& getBindingSet(uint32_t set) { return bindingSets.at(set); }
 	bool hasBindingSet(uint32_t set) const { return bindingSets.find(set) != bindingSets.end(); }
+
+	void reset(){
+		bindingSets.clear();
+		dirty = true;
+	}
+
+	void clearDirty(uint32_t set) { bindingSets[set].clearDirty(); }
 private:
 	std::unordered_map<uint32_t, BindingSet> bindingSets;
-	bool dirty = true;
 };
 
 //------------------

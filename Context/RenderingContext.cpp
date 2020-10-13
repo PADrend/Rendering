@@ -43,6 +43,12 @@
 #include <stdexcept>
 #include <stack>
 
+#define PROFILING_ENABLED 1
+#include <Util/Profiling/Profiler.h>
+#include <Util/Profiling/Logger.h>
+
+INIT_PROFILING_TIME(std::cout);
+
 namespace Rendering {
 
 static const Util::StringIdentifier DUMMY_VERTEX_ATTR("dummy");
@@ -138,6 +144,10 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 
 	//// Initially enable the depth test.
 	internal->pipelineState.getDepthStencilState().setDepthTestEnabled(true);
+
+	// Set dynamic state
+	internal->pipelineState.getViewportState().setDynamicScissors(true);
+
 	setFBO(nullptr);
 
 	MaterialData tmp;
@@ -182,27 +192,32 @@ const RenderingState& RenderingContext::getRenderingState() const{
 // helper ***************************************************************************
 
 void RenderingContext::flush(bool wait) {
-	applyChanges();
+	SCOPED_PROFILING_COND(RenderingContext::flush, internal->frameCounter == 1000);
 	internal->cmd->submit(wait);
 
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
 	internal->cmd->setDebugName("RC Commands Frame " + std::to_string(internal->frameCounter) + " (flush)");
+	applyChanges();
 }
 
 void RenderingContext::present() {
-	applyChanges();
-	internal->cmd->prepareForPresent();
-	internal->cmd->submit(true);
+	SCOPED_PROFILING_COND(RenderingContext::present, internal->frameCounter == 1000);
+	internal->cmd->endRenderPass();
+	auto& fbo = internal->device->getSwapchain()->getCurrentFBO();
+	internal->cmd->imageBarrier(fbo->getColorAttachment(0), ResourceUsage::Present);
+	internal->cmd->submit();
+	internal->device->present();
 
 	// reset rendering state
 	// TODO: do explicit clearing?
 	internal->renderingState.getLights().clear();
-	internal->renderingState.getInstance().markAsChanged();
+	internal->renderingState.getInstance().markDirty();
 
-	internal->device->present();
-
+	END_PROFILING_COND(RenderingContext, internal->frameCounter == 1000);
 	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
 	internal->cmd->setDebugName("RC Commands Frame " + std::to_string(++internal->frameCounter));
+	BEGIN_PROFILING_COND(RenderingContext, internal->frameCounter == 1000);
+	applyChanges();
 }
 
 
@@ -215,6 +230,7 @@ void RenderingContext::barrier(uint32_t flags) {
 // Applying changes ***************************************************************************
 
 void RenderingContext::applyChanges(bool forced) {
+	SCOPED_PROFILING_COND(RenderingContext::applyChanges, internal->frameCounter == 1000);
 	if(internal->cmd->isInRenderPass() && 
 		internal->cmd->getActiveFBO() != internal->activeFBO &&
 		internal->activeFBO.isNotNull() && 
@@ -513,35 +529,54 @@ void RenderingContext::setDepthBuffer(const DepthBufferParameters& p) {
 // Drawing ************************************************************************************
 
 void RenderingContext::bindVertexBuffer(const BufferObjectRef& buffer, const VertexDescription& vd) {
-	auto shader = internal->activeShader ? internal->activeShader : internal->fallbackShader;
-	WARN_AND_RETURN_IF(!shader, "There is no bound shader.",);
+	bindVertexBuffers({buffer}, {vd});
+}
 
-	VertexInputState state;	
-	state.setBinding({0, static_cast<uint32_t>(vd.getVertexSize()), 0});
-	bool hasUnusedAttributes = false;
+
+void RenderingContext::bindVertexBuffers(const std::vector<BufferObjectRef>& buffers, const std::vector<VertexDescription>& vds, const std::vector<uint32_t> rates) {
+	SCOPED_PROFILING_COND(RenderingContext::bindVertexBuffers, internal->frameCounter == 1000);
+	auto shader = internal->activeShader ? internal->activeShader : internal->fallbackShader;
+	WARN_AND_RETURN_IF(!shader, "bindVertexBuffers: There is no bound shader.",);
+	WARN_AND_RETURN_IF(buffers.size() != vds.size(), "bindVertexBuffers: Number of vertex descriptions does not match number of buffers.",);
+	std::vector<uint32_t> inputRates(rates.begin(), rates.end());
+	uint32_t bindingCount = static_cast<uint32_t>(buffers.size());
+
+	std::vector<BufferObjectRef> boundBuffers(buffers.begin(), buffers.end());
+	if(inputRates.size() < bindingCount)
+		inputRates.resize(bindingCount, 0);
+	
 	const auto& fallbackVD = internal->fallbackVertexBuffer.getVertexDescription();
+	VertexInputState state;
+	bool hasUnusedAttributes = false;
 	for(auto& location : shader->getVertexAttributeLocations()) {
-		auto attr = vd.getAttribute(location.first);
-		if(!attr.empty()) {
-			state.setAttribute({static_cast<uint32_t>(location.second), 0, toInternalFormat(attr), attr.getOffset()});
-		} else {
+		bool attrFound = false;
+		for(uint32_t binding=0; binding<bindingCount; ++binding) {
+			auto attr = vds[binding].getAttribute(location.first);
+			if(!attr.empty()) {
+				state.setAttribute({static_cast<uint32_t>(location.second), binding, toInternalFormat(attr), attr.getOffset()});
+				attrFound = true;
+				break;
+			}
+		}
+		if(!attrFound) {
 			// bind default attribute
 			auto fallbackAttr = fallbackVD.getAttribute(location.first);
 			if(fallbackAttr.empty())
-				fallbackAttr = vd.getAttribute(DUMMY_VERTEX_ATTR);
-			state.setAttribute({static_cast<uint32_t>(location.second), 1, toInternalFormat(fallbackAttr), fallbackAttr.getOffset()});
-			hasUnusedAttributes = true;
+				fallbackAttr = fallbackVD.getAttribute(DUMMY_VERTEX_ATTR);
+			state.setAttribute({static_cast<uint32_t>(location.second), bindingCount, toInternalFormat(fallbackAttr), fallbackAttr.getOffset()});
+			hasUnusedAttributes = true;			
 		}
 	}
 
+	for(uint32_t binding=0; binding<bindingCount; ++binding)
+		state.setBinding({binding, static_cast<uint32_t>(vds[binding].getVertexSize()), inputRates[binding]});
+
 	if(hasUnusedAttributes) {
-		state.setBinding({1, 0, 1});
-		internal->pipelineState.setVertexInputState(state);
-		internal->cmd->bindVertexBuffers(0, {buffer, internal->fallbackVertexBuffer.getBuffer()});
-	} else {
-		internal->pipelineState.setVertexInputState(state);
-		internal->cmd->bindVertexBuffers(0, {buffer});
+		state.setBinding({bindingCount, 0, 1});
+		boundBuffers.emplace_back(internal->fallbackVertexBuffer.getBuffer());
 	}
+	internal->pipelineState.setVertexInputState(state);
+	internal->cmd->bindVertexBuffers(0, boundBuffers);
 }
 
 void RenderingContext::bindIndexBuffer(const BufferObjectRef& buffer) {
@@ -560,6 +595,13 @@ void RenderingContext::drawIndexed(uint32_t indexCount, uint32_t firstIndex, uin
 	if(!internal->cmd->isInRenderPass())
 		internal->cmd->beginRenderPass(internal->activeFBO, false, false, false);
 	internal->cmd->drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void RenderingContext::drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride) {
+	applyChanges();
+	if(!internal->cmd->isInRenderPass())
+		internal->cmd->beginRenderPass(internal->activeFBO, false, false, false);
+	internal->cmd->drawIndirect(buffer, drawCount, stride);
 }
 
 void RenderingContext::setPrimitiveTopology(PrimitiveTopology topology) {
@@ -850,9 +892,11 @@ void RenderingContext::pushAndSetScissor(const ScissorParameters& scissorParamet
 }
 
 void RenderingContext::setScissor(const ScissorParameters& scissorParameters) {
-	auto state = internal->pipelineState.getViewportState();
-	state.setScissor(scissorParameters.isEnabled() ? scissorParameters.getRect() : state.getViewport().rect);
-	internal->pipelineState.setViewportState(state);
+	Geometry::Rect_i scissor = scissorParameters.isEnabled() ? scissorParameters.getRect() : internal->pipelineState.getViewportState().getViewport().rect;
+	if(internal->pipelineState.getViewportState().hasDynamicScissors())
+		internal->cmd->setScissor(scissor);
+	else
+		internal->pipelineState.getViewportState().setScissor(scissor);
 }
 
 // Stencil ************************************************************************************

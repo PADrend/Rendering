@@ -124,33 +124,37 @@ void CommandBuffer::flush() {
 		case PipelineType::Graphics: vkBindPoint = vk::PipelineBindPoint::eGraphics; break;
 	}
 
-	if(boundPipelines.empty() || pipeline.hasChanged()) {
+	if(boundPipelines.empty() || pipeline.isDirty()) {
 		// pipeline changed
-		insertDebugMarker("Pipeline changed");
 		PipelineHandle pipelineHandle = device->getResourceCache()->createPipeline(pipeline, nullptr);
 		WARN_AND_RETURN_IF(!pipelineHandle, "CommandBuffer: Invalid Pipeline.",);
 
-		vk::Pipeline vkPipeline(pipelineHandle);
-		vkCmd.bindPipeline(vkBindPoint, vkPipeline);
-		boundPipelines.emplace_back(pipelineHandle);
-		pipeline.markAsUnchanged();
+		if(boundPipelines.empty() || boundPipelines.back() != pipelineHandle) {
+			insertDebugMarker("Pipeline changed");
+			// only bind new pipeline if it differs from currently bound pipeline
+			vk::Pipeline vkPipeline(pipelineHandle);
+			vkCmd.bindPipeline(vkBindPoint, vkPipeline);
+			boundPipelines.emplace_back(pipelineHandle);
+		}
+
+		pipeline.clearDirty();
 	}
 
 	// update descriptor sets
 	if(bindings.isDirty()) {
-		bindings.clearDirty();
-		insertDebugMarker("Bindings changed");
 
+		bool bindingsChanged = false;
 		std::vector<vk::DescriptorSet> bindSets;
 		for(auto& it : bindings.getBindingSets()) {
 			auto set = it.first;
 			auto& bindingSet = it.second;
 			if(!bindingSet.isDirty())
 				continue;
-			bindings.clearDirty(set);
+			bindingSet.clearDirty();
 			if(!layout.hasLayoutSet(set))
 				continue;
-						
+			
+			bindingsChanged = true;
 			auto descriptorSet = device->getDescriptorPool()->requestDescriptorSet(layout.getLayoutSet(set), bindingSet);
 			if(descriptorSet) {
 				vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
@@ -160,6 +164,9 @@ void CommandBuffer::flush() {
 				WARN("Failed to create descriptor set for binding set " + std::to_string(set));
 			}
 		}
+		bindings.clearDirty();
+		if(bindingsChanged) 
+			insertDebugMarker("Bindings changed");
 	}
 }
 
@@ -190,7 +197,6 @@ void CommandBuffer::end() {
 //-----------------
 
 void CommandBuffer::submit(bool wait) {
-	SCOPED_PROFILING(CommandBuffer::submit);
 	WARN_AND_RETURN_IF(!primary, "Cannot submit secondary command buffer.",);
 	end();
 	vk::CommandBuffer vkCmd(handle);
@@ -213,7 +219,6 @@ void CommandBuffer::execute(const Ref& buffer) {
 //-----------------
 
 void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, bool clearStencil) {
-	SCOPED_PROFILING(CommandBuffer::beginRenderPass);
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(inRenderPass, "Command buffer is already in a render pass. Call endRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
@@ -262,17 +267,6 @@ void CommandBuffer::endRenderPass() {
 	vkCmd.endRenderPass();
 	inRenderPass = false;
 	endDebugMarker();
-}
-
-//-----------------
-
-void CommandBuffer::prepareForPresent() {
-	endRenderPass();
-	// TODO: We cannot guarantee that this command buffer uses the same FBO
-	auto& fbo = queue->getDevice()->getSwapchain()->getCurrentFBO();
-	auto att = fbo->getColorAttachment(0);
-	// explicitely transfer image to present layout
-	imageBarrier(att, ResourceUsage::Present);
 }
 
 //-----------------
@@ -752,10 +746,22 @@ void CommandBuffer::imageBarrier(const ImageStorageRef& image, ResourceUsage new
 
 //-----------------
 
+void CommandBuffer::setScissor(const Geometry::Rect_i& scissor) {
+	vk::CommandBuffer vkCmd(handle);
+	vk::Rect2D rect{};
+	rect.extent.width = static_cast<uint32_t>(scissor.getWidth());
+	rect.extent.height = static_cast<uint32_t>(scissor.getHeight());
+	rect.offset.x = std::max(0, scissor.getX());
+	rect.offset.y = std::max(0, scissor.getY());
+	vkCmd.setScissor(0, 1, &rect);
+}
+
+//-----------------
+
 void CommandBuffer::beginDebugMarker(const std::string& name, const Util::Color4f& color) {
 	if(!queue->getDevice()->isDebugModeEnabled())
 		return;
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);	
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.beginDebugUtilsLabelEXT({name.c_str(), {color.r(), color.g(), color.b(), color.a()}});
 }

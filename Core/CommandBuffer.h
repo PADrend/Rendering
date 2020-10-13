@@ -66,7 +66,6 @@ public:
 
 	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, bool clearStencil=true);
 	void endRenderPass();
-	void prepareForPresent();
 	//! @}
 
 	//! @name Binding commands
@@ -135,7 +134,6 @@ public:
 
 	//! @name Pipeline state
 	//! @{
-
 	PipelineState& getPipeline() { return pipeline; }
 	void setPipeline(const PipelineState& value) { pipeline = value; }
 	
@@ -161,8 +159,14 @@ public:
 	const FramebufferFormat& getFramebufferFormat() const { return pipeline.getFramebufferFormat(); }
 	const std::string& getEntryPoint() const { return pipeline.getEntryPoint(); }
 	const ShaderRef& getShader() const { return pipeline.getShader(); }
-
 	//! @}
+
+
+	//! @name Dynamic state
+	//! @{
+	void setScissor(const Geometry::Rect_i& scissor);
+	//! @}
+
 
 	//! @name Command buffer state
 	//! @{

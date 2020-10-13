@@ -20,8 +20,8 @@ namespace Rendering {
 
 ViewportState& ViewportState::setViewport(const Viewport& value, uint32_t index) {
 	WARN_AND_RETURN_IF(viewports.size() <= index, "Invalid viewport index " + std::to_string(index), *this); 
-	viewports[index] = value; 
-	dirty = true;
+	dirty |= (viewports[index] != value);
+	viewports[index] = value;
 	return *this; 
 }
 
@@ -37,8 +37,8 @@ ViewportState& ViewportState::setViewports(const std::vector<Viewport>& values) 
 //-------------
 
 ViewportState& ViewportState::setScissor(const Geometry::Rect_i& value, uint32_t index) {
-	WARN_AND_RETURN_IF(scissors.size() <= index, "Invalid scissor index " + std::to_string(index), *this); 
-	dirty = true;
+	WARN_AND_RETURN_IF(scissors.size() <= index, "Invalid scissor index " + std::to_string(index), *this);
+	dirty |= (scissors[index] != value);
 	scissors[index] = value; 
 	return *this; 
 }
@@ -121,7 +121,7 @@ PipelineState& PipelineState::operator=(PipelineState&& o) {
 		.setEntryPoint(std::move(o.entrypoint))
 		.setFramebufferFormat(std::move(o.attachments));
 	o.reset();
-	markAsChanged();
+	markDirty();
 	return *this;
 }
 
@@ -154,7 +154,7 @@ PipelineState& PipelineState::reset() {
 		.setShader(nullptr)
 		.setEntryPoint("main")
 		.setFramebufferFormat(FramebufferFormat{});
-	markAsChanged();
+	markDirty();
 	return *this;
 }
 
@@ -162,53 +162,9 @@ PipelineState& PipelineState::reset() {
 
 PipelineState& PipelineState::setShader(const ShaderRef& _shader) {
 	if(shader != _shader)
-		markAsChanged();
+		markDirty();
 	shader = _shader;
 	return *this;
-}
-
-//-------------
-
-void PipelineState::markAsChanged() {
-	dirty = true;
-	vertexInput.markAsChanged();
-	inputAssembly.markAsChanged();
-	viewport.markAsChanged();
-	rasterization.markAsChanged();
-	multisample.markAsChanged();
-	depthStencil.markAsChanged();
-	colorBlend.markAsChanged();
-	attachments.markAsChanged();
-}
-
-//-------------
-
-void PipelineState::markAsUnchanged() {
-	vertexInput.markAsUnchanged();
-	inputAssembly.markAsUnchanged();
-	viewport.markAsUnchanged();
-	rasterization.markAsUnchanged();
-	multisample.markAsUnchanged();
-	depthStencil.markAsUnchanged();
-	colorBlend.markAsUnchanged();
-	attachments.markAsUnchanged();
-	dirty = false;
-}
-
-//-------------
-
-bool PipelineState::hasChanged() const {
-	if(!dirty)
-		return false;
-	
-	return vertexInput.hasChanged() ||
-		inputAssembly.hasChanged() ||
-		viewport.hasChanged() ||
-		rasterization.hasChanged() ||
-		multisample.hasChanged() ||
-		depthStencil.hasChanged() ||
-		colorBlend.hasChanged() ||
-		attachments.hasChanged();
 }
 
 //-------------

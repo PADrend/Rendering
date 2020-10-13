@@ -9,6 +9,8 @@
 #ifndef RENDERING_STATE_RENDERINGSTATE_H_
 #define RENDERING_STATE_RENDERINGSTATE_H_
 
+#include "../Core/Common.h"
+
 #include <Geometry/Angle.h>
 #include <Geometry/Vec3.h>
 #include <Geometry/Vec4.h>
@@ -31,6 +33,7 @@ using ShaderRef = Util::Reference<Shader>;
 // Camera
 
 class CameraData {
+HAS_DIRTY_FLAG
 public:
 	void setMatrixCameraToWorld(const Geometry::Matrix4x4f& value);
 	void setMatrixCameraToClipping(const Geometry::Matrix4x4f& value);
@@ -48,9 +51,6 @@ public:
 		return matrix_cameraToWorld == o.matrix_cameraToWorld && matrix_cameraToClipping == o.matrix_cameraToClipping;
 	}
 	bool operator!=(const CameraData& o) const { return !(*this == o); }
-
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
 	Geometry::Matrix4x4f matrix_worldToCamera;
 	Geometry::Matrix4x4f matrix_cameraToWorld;
@@ -60,9 +60,6 @@ private:
 	Geometry::Vec3 position;
 	Geometry::Vec3 direction;
 	Geometry::Vec3 up;
-	
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -78,6 +75,7 @@ enum class ShadingModel {
 //-------------
 
 class MaterialData {
+HAS_DIRTY_FLAG
 public:
 	void setAmbient(const Util::Color4f& color) { ambient = color; dirty = true; }
 	void setDiffuse(const Util::Color4f& color) { diffuse = color; diffuseMap = nullptr; dirty = true; }
@@ -118,9 +116,6 @@ public:
 			alphaMask == o.alphaMask;
 	}
 	bool operator!=(const MaterialData& o) const { return !(*this == o); }
-
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
 	ShadingModel model = ShadingModel::Phong;
 	Util::Color4f ambient = {0.5,0.5,0.5,0};
@@ -133,9 +128,6 @@ private:
 	TextureRef normalMap;
 	float alphaThreshold = 0.5;
 	bool alphaMask = false;
-
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //-------------
@@ -168,6 +160,7 @@ enum class LightType {
 //-------------
 
 class LightData {
+HAS_DIRTY_FLAG
 public:
 	void setType(LightType value) { type = value; dirty = true; }
 	void setPosition(const Geometry::Vec3& value) { position = value; dirty = true; }
@@ -193,9 +186,6 @@ public:
 			coneAngle == o.coneAngle;
 	}
 	bool operator!=(const LightData& o) const { return !(*this == o); }
-
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
 private:
 	LightType type = LightType::Point;
 	Geometry::Vec3 position = {0,0,0};
@@ -204,14 +194,12 @@ private:
 	float range = -1;
 	Geometry::Angle coneAngle = Geometry::Angle::deg(20.0);
 	float cosConeAngle = std::cos(Geometry::Angle::deg(20.0).rad());
-
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //-------------
 
 class LightSet {
+HAS_DIRTY_FLAG
 public:
 	size_t addLight(const LightData& light);
 	void removeLight(size_t lightId);
@@ -230,24 +218,19 @@ private:
 	std::map<size_t,uint32_t> lightByHash;
 
 public:
-	void markAsUnchanged() { hash = calcHash(); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != calcHash() : false; }
-	void markAsChanged() { hash = 0; dirty = true; }
 	size_t calcHash() const {
 		size_t result = 0;
 		for(const auto& it : lightByHash)
 			Util::hash_combine(result, it.first);
 		return result;
 	}
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
 // Instance
 
 class InstanceData {
+HAS_DIRTY_FLAG
 public:
 	void setMatrixModelToCamera(const Geometry::Matrix4x4f& value) { matrix_modelToCamera = value; dirty = true; }
 	void multMatrixModelToCamera(const Geometry::Matrix4x4f& value) { matrix_modelToCamera *= value; dirty = true; }
@@ -264,17 +247,10 @@ public:
 			pointSize == o.pointSize;
 	}
 	bool operator!=(const InstanceData& o) const { return !(*this == o); }
-
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-	void markAsChanged() { hash = 0; dirty = true; }
 private:
 	Geometry::Matrix4x4f matrix_modelToCamera;
 	uint32_t materialId = 0;
 	float pointSize = 1.0;
-
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 
@@ -398,7 +374,7 @@ template <> struct hash<Rendering::LightData> {
 		Util::hash_combine(result, data.getIntensity());
 		Util::hash_combine(result, data.getRange());
 		if(data.getType() != Rendering::LightType::Point)
-			Util::hash_combine(result, data.getDirection());			
+			Util::hash_combine(result, data.getDirection());
 		if(data.getType() == Rendering::LightType::Spot)
 			Util::hash_combine(result, data.getConeAngle().deg());
 		return result;

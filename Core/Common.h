@@ -15,6 +15,13 @@
 
 #include <Geometry/Vec3.h>
 
+#define HAS_DIRTY_FLAG private: \
+	bool dirty = true; \
+public: \
+	void markDirty() { dirty = true; } \
+	void clearDirty() { dirty = false; } \
+	bool isDirty() const { return dirty; }
+
 namespace Util {
 class AttributeFormat;
 } /* Util */

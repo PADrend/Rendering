@@ -26,33 +26,33 @@ TEST_CASE("StateTest_testPipelineState", "[StateTest]") {
 	// --------------------------------------------
 
 	PipelineState state1{};
-	REQUIRE(state1.hasChanged());
-	state1.markAsUnchanged();
-	REQUIRE(!state1.hasChanged());
+	REQUIRE(state1.isDirty());
+	state1.clearDirty();
+	REQUIRE(!state1.isDirty());
 	
 	PipelineState state2{};
-	state2.markAsUnchanged();
-	REQUIRE(!state2.hasChanged());
+	state2.clearDirty();
+	REQUIRE(!state2.isDirty());
 	state2 = state1;
-	REQUIRE(!state2.hasChanged());
-	state2.markAsUnchanged();
+	REQUIRE(!state2.isDirty());
+	state2.clearDirty();
 
 	state1.setFramebufferFormat(device->getSwapchain()->getCurrentFBO());
-	REQUIRE(state1.hasChanged());
-	state1.markAsUnchanged();
-	REQUIRE(!state1.hasChanged());
+	REQUIRE(state1.isDirty());
+	state1.clearDirty();
+	REQUIRE(!state1.isDirty());
 	state2 = state1;
-	REQUIRE(state2.hasChanged());
-	state2.markAsUnchanged();
-	REQUIRE(!state2.hasChanged());
+	REQUIRE(state2.isDirty());
+	state2.clearDirty();
+	REQUIRE(!state2.isDirty());
 	state2 = state1;
-	REQUIRE(!state2.hasChanged());
+	REQUIRE(!state2.isDirty());
 
 
 	state1.getDepthStencilState().setDepthTestEnabled(false);
-	REQUIRE(!state1.hasChanged());
+	REQUIRE(!state1.isDirty());
 	state1.getDepthStencilState().setDepthTestEnabled(true);
-	REQUIRE(state1.hasChanged());
+	REQUIRE(state1.isDirty());
 
 	device->waitIdle();
 }
@@ -64,13 +64,13 @@ TEST_CASE("StateTest_testRenderingState", "[StateTest]") {
 	mat.rotate_deg(45, {0,0,1});
 
 	RenderingState state{};
-	REQUIRE(state.getInstance().hasChanged());
-	state.getInstance().markAsUnchanged();
-	REQUIRE(!state.getInstance().hasChanged());
+	REQUIRE(state.getInstance().isDirty());
+	state.getInstance().clearDirty();
+	REQUIRE(!state.getInstance().isDirty());
 	state.getInstance().setMatrixModelToCamera(mat);
-	REQUIRE(state.getInstance().hasChanged());
-	state.getInstance().markAsUnchanged();
-	REQUIRE(!state.getInstance().hasChanged());
+	REQUIRE(state.getInstance().isDirty());
+	state.getInstance().clearDirty();
+	REQUIRE(!state.getInstance().isDirty());
 	state.getInstance().setMatrixModelToCamera(mat);
-	REQUIRE(!state.getInstance().hasChanged());
+	REQUIRE(!state.getInstance().isDirty());
 }

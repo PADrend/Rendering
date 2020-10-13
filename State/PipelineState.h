@@ -44,6 +44,11 @@ struct VertexInputBinding {
 	uint32_t binding = 0;
 	uint32_t stride = 0;
 	uint32_t inputRate = 0;
+
+	bool operator==(const VertexInputBinding& o) const {
+		return binding == o.binding && stride == o.stride && inputRate == o.inputRate;
+	}
+	bool operator!=(const VertexInputBinding& o) const { return !(*this == o); }
 };
 
 //-------------
@@ -53,12 +58,18 @@ struct VertexInputAttribute {
 	uint32_t binding = 0;
 	InternalFormat format = InternalFormat::RGBA32Float;
 	size_t offset = 0;
+
+	bool operator==(const VertexInputAttribute& o) const {
+		return location == o.location && binding == o.binding && format == o.format && offset == o.offset;
+	}
+	bool operator!=(const VertexInputAttribute& o) const { return !(*this == o); }
 };
 
 //-------------
 
 //! Configures the mapping between mesh vertex attributes to the corresponding shader resource.
 class VertexInputState {
+HAS_DIRTY_FLAG
 public:
 	VertexInputState() = default;
 	VertexInputState(const VertexInputState& o) : bindings(o.bindings), attributes(o.attributes), dirty(true) {}
@@ -70,7 +81,7 @@ public:
 	}
 
 	//! Sets the vertex binding description of the binding given by @p index.
-	VertexInputState& setBinding(const VertexInputBinding& value) { bindings[value.binding] = value; dirty=true; return *this; }
+	VertexInputState& setBinding(const VertexInputBinding& value) { dirty |= (bindings[value.binding] != value); bindings[value.binding] = value; return *this; }
 	//! Simultaneously sets all vertex binding descriptions.
 	VertexInputState& setBindings(const std::map<uint32_t, VertexInputBinding>& values) { bindings = values; dirty=true; return *this; }
 
@@ -84,7 +95,7 @@ public:
 	uint32_t getBindingCount() const { return bindings.size(); }
 	
 	//! Sets the vertex attribute description of the attribute given by @p index.
-	VertexInputState& setAttribute(const VertexInputAttribute& value) { attributes[value.location] = value; dirty=true; return *this; }
+	VertexInputState& setAttribute(const VertexInputAttribute& value) { dirty |= (attributes[value.location] != value); attributes[value.location] = value; return *this; }
 	//! Simultaneously sets all vertex attribute descriptions.
 	VertexInputState& setAttributes(const std::map<uint32_t, VertexInputAttribute>& values) { attributes = values; dirty=true; return *this; }
 
@@ -100,15 +111,6 @@ public:
 private:
 	std::map<uint32_t, VertexInputBinding> bindings;
 	std::map<uint32_t, VertexInputAttribute> attributes;
-
-public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged() { dirty = true; hash = 0; }
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -132,20 +134,20 @@ enum class PrimitiveTopology {
 
 //! Configures how vertices form the geometry to draw.
 class InputAssemblyState {
+HAS_DIRTY_FLAG
 public:
 	InputAssemblyState(PrimitiveTopology topology = PrimitiveTopology::TriangleList, bool primitiveRestart = false) : topology(topology), primitiveRestartEnabled(primitiveRestart) {}
 	InputAssemblyState(const InputAssemblyState& o) : topology(o.topology), primitiveRestartEnabled(o.primitiveRestartEnabled), dirty(true) {}
 	InputAssemblyState& operator=(const InputAssemblyState& o) {
-		topology = o.topology;
-		primitiveRestartEnabled = o.primitiveRestartEnabled;
-		dirty = true;
+		setTopology(o.topology);
+		setPrimitiveRestartEnabled(o.primitiveRestartEnabled);
 		return *this;
 	}
 
 	//! Defines how consecutive vertices are organized into primitives.
-	InputAssemblyState& setTopology(PrimitiveTopology value) { topology = value; dirty = true; return *this; }
+	InputAssemblyState& setTopology(PrimitiveTopology value) { dirty |= (topology != value); topology = value; return *this; }
 	//! Controls whether a special vertex index value is treated as restarting the assembly of primitives (0xffffffff for 32bit indices or 0xffff for 16bit indices).
-	InputAssemblyState& setPrimitiveRestartEnabled(bool value) { primitiveRestartEnabled = value; dirty = true; return *this; }
+	InputAssemblyState& setPrimitiveRestartEnabled(bool value) { dirty |= (primitiveRestartEnabled != value); primitiveRestartEnabled = value; return *this; }
 
 	//! @see{setTopology()}
 	PrimitiveTopology getTopology() const { return topology; }
@@ -155,15 +157,6 @@ public:
 private:
 	PrimitiveTopology topology = PrimitiveTopology::TriangleList;
 	bool primitiveRestartEnabled = false;
-
-public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged() { dirty = true; hash = 0; }
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -177,12 +170,18 @@ struct Viewport {
 	Geometry::Rect_i rect = {0, 0, 1, 1};
 	float minDepth = 0.0;
 	float maxDepth = 1.0;
+
+	bool operator==(const Viewport& o) const {
+		return rect == o.rect && minDepth == o.minDepth && maxDepth == o.maxDepth;
+	}
+	bool operator!=(const Viewport& o) const { return !(*this == o); }
 };
 
 //-------------
 
 //! Configures the static viewport & scissor state of the GPU.
 class ViewportState {
+HAS_DIRTY_FLAG
 public:
 	ViewportState() = default;
 	ViewportState(const Viewport& viewport) : viewports({viewport}) {}
@@ -209,10 +208,10 @@ public:
 	//! Simultaneously sets all scissors.
 	ViewportState& setScissors(const std::vector<Geometry::Rect_i>& values);
 	//! Controls if the scissor state is dynamic. If the scissor state is dynamic, all scissors in this state are ignored.
-	ViewportState& setDynamicScissors(bool value) { dynamicScissors = value; dirty = true; return *this; }
+	ViewportState& setDynamicScissors(bool value) { dirty |= (dynamicScissors != value); dynamicScissors = value; return *this; }
 
 	//! Sets the number of viewports and scissors used by the pipeline.
-	ViewportState& setViewportScissorCount(uint32_t value) { viewports.resize(value); scissors.resize(value); dirty = true; return *this; }
+	ViewportState& setViewportScissorCount(uint32_t value) { dirty |= (viewports.size() != value); viewports.resize(value); scissors.resize(value); return *this; }
 
 	//! @see{setViewport()}
 	const Viewport& getViewport(uint32_t index=0) const { return viewports[index]; }
@@ -235,15 +234,6 @@ private:
 	std::vector<Geometry::Rect_i> scissors{{0,0,1,1}};
 	bool dynamicViewports = false;
 	bool dynamicScissors = false;
-
-public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged() { dirty = true; hash = 0; }
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -275,52 +265,52 @@ enum class FrontFace {
 
 //! Configures the rasterization operations in the GPU.
 class RasterizationState {
+HAS_DIRTY_FLAG
 public:
 	RasterizationState() = default;
 	RasterizationState(const RasterizationState& o) : depthClampEnable(o.depthClampEnable), rasterizerDiscardEnable(o.rasterizerDiscardEnable), polygonMode(o.polygonMode),
 		cullMode(o.cullMode), frontFace(o.frontFace), depthBiasEnable(o.depthBiasEnable), depthBiasConstantFactor(o.depthBiasConstantFactor), depthBiasClamp(o.depthBiasClamp),
 		depthBiasSlopeFactor(o.depthBiasSlopeFactor), lineWidth(o.lineWidth), dynamicLineWidth(o.dynamicLineWidth), dynamicDepthBias(o.dynamicDepthBias), dirty(true) {}
 	RasterizationState& operator=(const RasterizationState& o) {
-		depthClampEnable = o.depthClampEnable;
-		rasterizerDiscardEnable = o.rasterizerDiscardEnable;
-		polygonMode = o.polygonMode;
-		cullMode = o.cullMode;
-		frontFace = o.frontFace;
-		depthBiasEnable = o.depthBiasEnable;
-		depthBiasConstantFactor = o.depthBiasConstantFactor;
-		depthBiasClamp = o.depthBiasClamp;
-		depthBiasSlopeFactor = o.depthBiasSlopeFactor;
-		lineWidth = o.lineWidth;
-		dynamicLineWidth = o.dynamicLineWidth;
-		dynamicDepthBias = o.dynamicDepthBias;
-		dirty = true;
+		setDepthClampEnabled(o.depthClampEnable);
+		setRasterizerDiscardEnabled(o.rasterizerDiscardEnable);
+		setPolygonMode(o.polygonMode);
+		setCullMode(o.cullMode);
+		setFrontFace(o.frontFace);
+		setDepthBiasEnabled(o.depthBiasEnable);
+		setDepthBiasConstantFactor(o.depthBiasConstantFactor);
+		setDepthBiasClamp(o.depthBiasClamp);
+		setDepthBiasSlopeFactor(o.depthBiasSlopeFactor);
+		setLineWidth(o.lineWidth);
+		setDynamicLineWidth(o.dynamicLineWidth);
+		setDynamicDepthBias(o.dynamicDepthBias);
 		return *this;
 	}
 
 	//! Controls whether to clamp the fragment’s depth values. Enabling depth clamp will also disable clipping primitives to the z planes of the frustrum.
-	RasterizationState& setDepthClampEnabled(bool value) { depthClampEnable = value; dirty = true; return *this; }
+	RasterizationState& setDepthClampEnabled(bool value) { dirty |= (depthClampEnable != value); depthClampEnable = value; return *this; }
 	//! Controls whether primitives are discarded immediately before the rasterization stage.
-	RasterizationState& setRasterizerDiscardEnabled(bool value) { rasterizerDiscardEnable = value; dirty = true; return *this; }
+	RasterizationState& setRasterizerDiscardEnabled(bool value) { dirty |= (rasterizerDiscardEnable != value); rasterizerDiscardEnable = value; return *this; }
 	//! Sets the triangle rendering mode.
-	RasterizationState& setPolygonMode(PolygonMode value) { polygonMode = value; dirty = true; return *this; }
+	RasterizationState& setPolygonMode(PolygonMode value) { dirty |= (polygonMode != value); polygonMode = value; return *this; }
 	//! Sets the triangle facing direction used for primitive culling.
-	RasterizationState& setCullMode(CullMode value) { cullMode = value; dirty = true; return *this; }
+	RasterizationState& setCullMode(CullMode value) { dirty |= (cullMode != value); cullMode = value; return *this; }
 	//! Sets the front-facing triangle orientation to be used for culling.
-	RasterizationState& setFrontFace(FrontFace value) { frontFace = value; dirty = true; return *this; }
+	RasterizationState& setFrontFace(FrontFace value) { dirty |= (frontFace != value); frontFace = value; return *this; }
 	//! Controls whether to bias fragment depth values.
-	RasterizationState& setDepthBiasEnabled(bool value) { depthBiasEnable = value; dirty = true; return *this; }
+	RasterizationState& setDepthBiasEnabled(bool value) { dirty |= (depthBiasEnable != value); depthBiasEnable = value; return *this; }
 	//! Sets a scalar factor controlling the constant depth value added to each fragment.
-	RasterizationState& setDepthBiasConstantFactor(float value) { depthBiasConstantFactor = value; dirty = true; return *this; }
+	RasterizationState& setDepthBiasConstantFactor(float value) { dirty |= (depthBiasConstantFactor != value); depthBiasConstantFactor = value; return *this; }
 	//! Sets the maximum (or minimum) depth bias of a fragment.
-	RasterizationState& setDepthBiasClamp(float value) { depthBiasClamp = value; dirty = true; return *this; }
+	RasterizationState& setDepthBiasClamp(float value) { dirty |= (depthBiasClamp != value); depthBiasClamp = value; return *this; }
 	//! Sets a scalar factor applied to a fragment’s slope in depth bias calculations.
-	RasterizationState& setDepthBiasSlopeFactor(float value) { depthBiasSlopeFactor = value; dirty = true; return *this; }
+	RasterizationState& setDepthBiasSlopeFactor(float value) { dirty |= (depthBiasSlopeFactor != value); depthBiasSlopeFactor = value; return *this; }
 	//! Controls if the depth bias is dynamic. If it is dynamic, the depth bias values in this state are ignored.
-	RasterizationState& setDynamicDepthBias(bool value) { dynamicDepthBias = value; dirty = true; return *this; }
+	RasterizationState& setDynamicDepthBias(bool value) { dirty |= (dynamicDepthBias != value); dynamicDepthBias = value; return *this; }
 	//! Sets the width of rasterized line segments.
-	RasterizationState& setLineWidth(float value) { lineWidth = value; dirty = true; return *this; }
+	RasterizationState& setLineWidth(float value) { dirty |= (lineWidth != value); lineWidth = value; return *this; }
 	//! Controls if the line width is dynamic. If it is dynamic, the value in this state is ignored.
-	RasterizationState& setDynamicLineWidth(bool value) { dynamicLineWidth = value; dirty = true; return *this; }
+	RasterizationState& setDynamicLineWidth(bool value) { dirty |= (dynamicLineWidth != value); dynamicLineWidth = value; return *this; }
 
 	//! @see{setDepthClampEnabled()}
 	bool isDepthClampEnabled() const { return depthClampEnable; }
@@ -360,15 +350,6 @@ private:
 	float lineWidth = 1.0;
 	bool dynamicLineWidth = false;
 	bool dynamicDepthBias = false;
-
-public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged() { dirty = true; hash = 0; }
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -376,33 +357,33 @@ private:
 
 //! Configures multisampling on the GPU.
 class MultisampleState {
+HAS_DIRTY_FLAG
 public:
 	MultisampleState() = default;
 	MultisampleState(const MultisampleState& o) : sampleCount(o.sampleCount), sampleShadingEnable(o.sampleShadingEnable), minSampleShading(o.minSampleShading),
 		sampleMask(o.sampleMask), alphaToCoverageEnable(o.alphaToCoverageEnable), alphaToOneEnable(o.alphaToOneEnable), dirty(true) {}
 	MultisampleState& operator=(const MultisampleState& o) {
-		sampleCount = o.sampleCount;
-		sampleShadingEnable = o.sampleShadingEnable;
-		minSampleShading = o.minSampleShading;
-		sampleMask = o.sampleMask;
-		alphaToCoverageEnable = o.alphaToCoverageEnable;
-		alphaToOneEnable = o.alphaToOneEnable;
-		dirty = true;
+		setSampleCount(o.sampleCount);
+		setSampleShadingEnabled(o.sampleShadingEnable);
+		setMinSampleShading(o.minSampleShading);
+		setSampleMask(o.sampleMask);
+		setAlphaToCoverageEnabled(o.alphaToCoverageEnable);
+		setAlphaToOneEnabled(o.alphaToOneEnable);
 		return *this;
 	}
 
 	//! Sets the number of samples used in rasterization.
-	MultisampleState& setSampleCount(uint32_t value) { sampleCount = value; dirty = true; return *this; };
+	MultisampleState& setSampleCount(uint32_t value) { dirty |= (sampleCount != value); sampleCount = value; return *this; };
 	//! Enables or disables Sample Shading.
-	MultisampleState& setSampleShadingEnabled(bool value) { sampleShadingEnable = value; dirty = true; return *this; };
+	MultisampleState& setSampleShadingEnabled(bool value) { dirty |= (sampleShadingEnable != value); sampleShadingEnable = value; return *this; };
 	//! Specifies a minimum fraction of sample shading
-	MultisampleState& setMinSampleShading(float value) { minSampleShading = value; dirty = true; return *this; };
+	MultisampleState& setMinSampleShading(float value) { dirty |= (minSampleShading != value); minSampleShading = value; return *this; };
 	//! A bitmask of static coverage information that is ANDed with the coverage information generated during rasterization (currently supports max. 32 samples).
-	MultisampleState& setSampleMask(uint32_t value) { sampleMask = value; dirty = true; return *this; };
+	MultisampleState& setSampleMask(uint32_t value) { dirty |= (sampleMask != value); sampleMask = value; return *this; };
 	//! Controls whether a temporary coverage value is generated based on the alpha component of the fragment’s first color output.
-	MultisampleState& setAlphaToCoverageEnabled(bool value) { alphaToCoverageEnable = value; dirty = true; return *this; };
+	MultisampleState& setAlphaToCoverageEnabled(bool value) { dirty |= (alphaToCoverageEnable != value); alphaToCoverageEnable = value; return *this; };
 	//! Controls whether the alpha component of the fragment’s first color output is replaced with one.
-	MultisampleState& setAlphaToOneEnabled(bool value) { alphaToOneEnable = value; dirty = true; return *this; };
+	MultisampleState& setAlphaToOneEnabled(bool value) { dirty |= (alphaToOneEnable != value); alphaToOneEnable = value; return *this; };
 
 	//! @see{setSampleCount()}
 	uint32_t getSampleCount() const { return sampleCount; };
@@ -423,15 +404,6 @@ private:
 	uint32_t sampleMask = 0xffffffffu;
 	bool alphaToCoverageEnable = false;
 	bool alphaToOneEnable = false;
-
-public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged() { dirty = true; hash = 0; }
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -457,13 +429,20 @@ struct StencilOpState {
 	ComparisonFunc compareOp = ComparisonFunc::Never; //! Value specifying the comparison operator used in the stencil test.
 	uint32_t compareMask = 0; //! Selects the bits of the unsigned integer stencil values participating in the stencil test.
 	uint32_t writeMask = 0; //! Selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment.
-	uint32_t reference = 0; //! An integer reference value that is used in the unsigned stencil comparison.
+	uint32_t reference = 0; //! An integer reference value that is used in the unsigned stencil comparison.	
+
+	bool operator==(const StencilOpState& o) const {
+		return failOp == o.failOp && passOp == o.passOp && depthFailOp == o.depthFailOp && compareOp == o.compareOp && 
+			compareMask == o.compareMask && writeMask == o.writeMask && reference == o.reference;
+	}
+	bool operator!=(const StencilOpState& o) const { return !(*this == o); }
 };
 
 //-------------
 
 //! Pipeline state controlling the depth bounds tests, stencil test, and depth test.
 class DepthStencilState {
+HAS_DIRTY_FLAG
 public:
 	DepthStencilState(bool depthTest=false, bool depthWrite=true, ComparisonFunc compareOp=ComparisonFunc::Less) : depthTestEnable(depthTest), depthWriteEnable(depthWrite), depthCompareOp(compareOp) {}
 	DepthStencilState(const DepthStencilState& o) : depthTestEnable(o.depthTestEnable), depthWriteEnable(o.depthWriteEnable), depthCompareOp(o.depthCompareOp),
@@ -471,49 +450,48 @@ public:
 		maxDepthBounds(o.maxDepthBounds), dynamicDepthBounds(o.dynamicDepthBounds), dynamicCompareMask(o.dynamicCompareMask), dynamicWriteMask(o.dynamicWriteMask),
 		dynamicReference(o.dynamicReference), dirty(true) {}
 	DepthStencilState& operator=(const DepthStencilState& o) {
-		depthTestEnable = o.depthTestEnable;
-		depthWriteEnable = o.depthWriteEnable;
-		depthCompareOp = o.depthCompareOp;
-		depthBoundsTestEnable = o.depthBoundsTestEnable;
-		stencilTestEnable = o.stencilTestEnable;
-		front = o.front;
-		back = o.back;
-		minDepthBounds = o.minDepthBounds;
-		maxDepthBounds = o.maxDepthBounds;
-		dynamicDepthBounds = o.dynamicDepthBounds;
-		dynamicCompareMask = o.dynamicCompareMask;
-		dynamicWriteMask = o.dynamicWriteMask;
-		dynamicReference = o.dynamicReference;
-		dirty = true;
+		setDepthTestEnabled(o.depthTestEnable);
+		setDepthWriteEnabled(o.depthWriteEnable);
+		setDepthCompareOp(o.depthCompareOp);
+		setDepthBoundsTestEnabled(o.depthBoundsTestEnable);
+		setStencilTestEnabled(o.stencilTestEnable);
+		setFront(o.front);
+		setBack(o.back);
+		setMinDepthBounds(o.minDepthBounds);
+		setMaxDepthBounds(o.maxDepthBounds);
+		setDynamicDepthBounds(o.dynamicDepthBounds);
+		setDynamicCompareMask(o.dynamicCompareMask);
+		setDynamicWriteMask(o.dynamicWriteMask);
+		setDynamicReference(o.dynamicReference);
 		return *this;
 	}
 		
 	//! Controls whether depth testing is enabled.
-	DepthStencilState& setDepthTestEnabled(bool value) { depthTestEnable = value; dirty = true; return *this; }
+	DepthStencilState& setDepthTestEnabled(bool value) { dirty |= (depthTestEnable != value); depthTestEnable = value; return *this; }
 	//! Controls whether depth writes are enabled when depth testing is enabled.
-	DepthStencilState& setDepthWriteEnabled(bool value) { depthWriteEnable = value; dirty = true; return *this; }
+	DepthStencilState& setDepthWriteEnabled(bool value) { dirty |= (depthWriteEnable != value); depthWriteEnable = value; return *this; }
 	//! Sets the comparison operator used in the depth test.
-	DepthStencilState& setDepthCompareOp(ComparisonFunc value) { depthCompareOp = value; dirty = true; return *this; }
+	DepthStencilState& setDepthCompareOp(ComparisonFunc value) { dirty |= (depthCompareOp != value); depthCompareOp = value; return *this; }
 	//! Controls whether depth bounds testing is enabled.
-	DepthStencilState& setDepthBoundsTestEnabled(bool value) { depthBoundsTestEnable = value; dirty = true; return *this; }
+	DepthStencilState& setDepthBoundsTestEnabled(bool value) { dirty |= (depthBoundsTestEnable != value); depthBoundsTestEnable = value; return *this; }
 	//! Controls whether stencil testing is enabled.
-	DepthStencilState& setStencilTestEnabled(bool value) { stencilTestEnable = value; dirty = true; return *this; }
+	DepthStencilState& setStencilTestEnabled(bool value) { dirty |= (stencilTestEnable != value); stencilTestEnable = value; return *this; }
 	//! Controls the front parameters of the stencil test.
-	DepthStencilState& setFront(StencilOpState value) { front = value; dirty = true; return *this; }
+	DepthStencilState& setFront(StencilOpState value) { dirty |= (front != value); front = value; return *this; }
 	//! Controls the back parameters of the stencil test.
-	DepthStencilState& setBack(StencilOpState value) { back = value; dirty = true; return *this; }
+	DepthStencilState& setBack(StencilOpState value) { dirty |= (back != value); back = value; return *this; }
 	//! Defines the min. value used in the depth bounds test.
-	DepthStencilState& setMinDepthBounds(float value) { minDepthBounds = value; dirty = true; return *this; }
+	DepthStencilState& setMinDepthBounds(float value) { dirty |= (minDepthBounds != value); minDepthBounds = value; return *this; }
 	//! Defines the max. value used in the depth bounds test.
-	DepthStencilState& setMaxDepthBounds(float value) { maxDepthBounds = value; dirty = true; return *this; }
+	DepthStencilState& setMaxDepthBounds(float value) { dirty |= (maxDepthBounds != value); maxDepthBounds = value; return *this; }
 	//! Controls if the depth bounds are dynamic. If they are dynamic, the corresponding values in this state are ignored.
-	DepthStencilState& setDynamicDepthBounds(bool value) { dynamicDepthBounds = value; dirty = true; return *this; }
+	DepthStencilState& setDynamicDepthBounds(bool value) { dirty |= (dynamicDepthBounds != value); dynamicDepthBounds = value; return *this; }
 	//! Controls if the stencil compare mask for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-	DepthStencilState& setDynamicCompareMask(bool value) { dynamicCompareMask = value; dirty = true; return *this; }
+	DepthStencilState& setDynamicCompareMask(bool value) { dirty |= (dynamicCompareMask != value); dynamicCompareMask = value; return *this; }
 	//! Controls if the stencil write mask for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-	DepthStencilState& setDynamicWriteMask(bool value) { dynamicWriteMask = value; dirty = true; return *this; }
+	DepthStencilState& setDynamicWriteMask(bool value) { dirty |= (dynamicWriteMask != value); dynamicWriteMask = value; return *this; }
 	//! Controls if the stencil reference for both front and back is dynamic. If it is dynamic, the corresponding values in this state are ignored.
-	DepthStencilState& setDynamicReference(bool value) { dynamicReference = value; dirty = true; return *this; }
+	DepthStencilState& setDynamicReference(bool value) { dirty |= (dynamicReference != value); dynamicReference = value; return *this; }
 
 	//! @see{setDepthTestEnabled()}
 	bool isDepthTestEnabled() const { return depthTestEnable; }
@@ -556,15 +534,6 @@ private:
 	bool dynamicCompareMask = false;
 	bool dynamicWriteMask = false;
 	bool dynamicReference = false;
-
-public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged() { dirty = true; hash = 0; }
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -628,6 +597,7 @@ enum class BlendOp {
 
 //! Blending combines the incoming source (s) fragment's color with the destination (d) color of each sample stored in the framebuffer.
 class ColorBlendState {
+HAS_DIRTY_FLAG
 public:
 	ColorBlendState() = default;
 	ColorBlendState(BlendFactor srcFactor, BlendFactor dstFactor) : blendEnable(true), srcColorBlendFactor(srcFactor), dstColorBlendFactor(dstFactor),
@@ -636,42 +606,41 @@ public:
 		colorBlendOp(o.colorBlendOp), srcAlphaBlendFactor(o.srcAlphaBlendFactor), dstAlphaBlendFactor(o.dstAlphaBlendFactor), alphaBlendOp(o.alphaBlendOp),
 		logicOp(o.logicOp), constantColor(o.constantColor), dynamicBlendConstant(o.dynamicBlendConstant), dirty(true) {}
 	ColorBlendState& operator=(const ColorBlendState& o) {
-		blendEnable = o.blendEnable;
-		srcColorBlendFactor = o.srcColorBlendFactor;
-		dstColorBlendFactor = o.dstColorBlendFactor;
-		colorBlendOp = o.colorBlendOp;
-		srcAlphaBlendFactor = o.srcAlphaBlendFactor;
-		dstAlphaBlendFactor = o.dstAlphaBlendFactor;
-		alphaBlendOp = o.alphaBlendOp;
-		logicOp = o.logicOp;
-		constantColor = o.constantColor;
-		dynamicBlendConstant = o.dynamicBlendConstant;
-		dirty = true;
+		setBlendingEnabled(o.blendEnable);
+		setSrcColorBlendFactor(o.srcColorBlendFactor);
+		setDstColorBlendFactor(o.dstColorBlendFactor);
+		setColorBlendOp(o.colorBlendOp);
+		setSrcAlphaBlendFactor(o.srcAlphaBlendFactor);
+		setDstAlphaBlendFactor(o.dstAlphaBlendFactor);
+		setAlphaBlendOp(o.alphaBlendOp);
+		setLogicOp(o.logicOp);
+		setConstantColor(o.constantColor);
+		setDynamicConstantColor(o.dynamicBlendConstant);
 		return *this;
 	}
 	
 	//! Controls whether blending is enabled.
-	ColorBlendState& setBlendingEnabled(bool value) { blendEnable = value; dirty = true; return *this; }
+	ColorBlendState& setBlendingEnabled(bool value) { dirty |= (blendEnable != value); blendEnable = value; return *this; }
 	//! Selects which blend factor is used to determine the source factors (Sr,Sg,Sb).
-	ColorBlendState& setSrcColorBlendFactor(BlendFactor value) { srcColorBlendFactor = value; dirty = true; return *this; }
+	ColorBlendState& setSrcColorBlendFactor(BlendFactor value) { dirty |= (srcColorBlendFactor != value); srcColorBlendFactor = value; return *this; }
 	//! Selects which blend factor is used to determine the destination factors (Dr,Dg,Db).
-	ColorBlendState& setDstColorBlendFactor(BlendFactor value) { dstColorBlendFactor = value; dirty = true; return *this; }
+	ColorBlendState& setDstColorBlendFactor(BlendFactor value) { dirty |= (dstColorBlendFactor != value); dstColorBlendFactor = value; return *this; }
 	//! Selects which blend operation is used to calculate the RGB values to write to the color attachment.
-	ColorBlendState& setColorBlendOp(BlendOp value) { colorBlendOp = value; dirty = true; return *this; }
+	ColorBlendState& setColorBlendOp(BlendOp value) { dirty |= (colorBlendOp != value); colorBlendOp = value; return *this; }
 	//! Selects which blend factor is used to determine the source factor Sa.
-	ColorBlendState& setSrcAlphaBlendFactor(BlendFactor value) { srcAlphaBlendFactor = value; dirty = true; return *this; }
+	ColorBlendState& setSrcAlphaBlendFactor(BlendFactor value) { dirty |= (srcAlphaBlendFactor != value); srcAlphaBlendFactor = value; return *this; }
 	//! Selects which blend factor is used to determine the destination factor Da.
-	ColorBlendState& setDstAlphaBlendFactor(BlendFactor value) { dstAlphaBlendFactor = value; dirty = true; return *this; }
+	ColorBlendState& setDstAlphaBlendFactor(BlendFactor value) { dirty |= (dstAlphaBlendFactor != value); dstAlphaBlendFactor = value; return *this; }
 	//! Selects which blend operation is use to calculate the alpha values to write to the color attachment.
-	ColorBlendState& setAlphaBlendOp(BlendOp value) { alphaBlendOp = value; dirty = true; return *this; }
+	ColorBlendState& setAlphaBlendOp(BlendOp value) { dirty |= (alphaBlendOp != value); alphaBlendOp = value; return *this; }
 	//! A bitmask specifying which of the RGBA components are enabled for writing.
-	ColorBlendState& setColorWriteMask(uint8_t value) { colorWriteMask = value; dirty = true; return *this; }
+	ColorBlendState& setColorWriteMask(uint8_t value) { dirty |= (colorWriteMask != value); colorWriteMask = value; return *this; }
 	//! Selects which logical operation to apply.
-	ColorBlendState& setLogicOp(LogicOp value) { logicOp = value; dirty = true; return *this; }
+	ColorBlendState& setLogicOp(LogicOp value) { dirty |= (logicOp != value); logicOp = value; return *this; }
 	//! Sets the blend constant that is used in blending, depending on the blend factor.
-	ColorBlendState& setConstantColor(const Util::Color4f& value) { constantColor = value; dirty = true; return *this; }
+	ColorBlendState& setConstantColor(const Util::Color4f& value) { dirty |= (constantColor != value); constantColor = value; return *this; }
 	//! Controls if the blend constant is dynamic. If it is dynamic, the value in this state is ignored.
-	ColorBlendState& setDynamicConstantColor(bool value) { dynamicBlendConstant = value; dirty = true; return *this; }
+	ColorBlendState& setDynamicConstantColor(bool value) { dirty |= (dynamicBlendConstant != value); dynamicBlendConstant = value; return *this; }
 
 	//! @see{setBlendingEnabled()}
 	bool isBlendingEnabled() const { return blendEnable; }
@@ -709,15 +678,6 @@ private:
 	LogicOp logicOp = LogicOp::Disabled;
 	Util::Color4f constantColor = {0,0,0,0};
 	bool dynamicBlendConstant = false;
-
-public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged() { dirty = true; hash = 0; }
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -727,9 +687,15 @@ struct AttachmentFormat {
 	AttachmentFormat(InternalFormat format = InternalFormat::Unknown, uint32_t samples = 1) : format(format), samples(samples) {}
 	InternalFormat format;
 	uint32_t samples;
+	
+	bool operator==(const AttachmentFormat& o) const {
+		return format == o.format && samples == o.samples;
+	}
+	bool operator!=(const AttachmentFormat& o) const { return !(*this == o); }
 };
 
 class FramebufferFormat {
+HAS_DIRTY_FLAG
 public:
 	FramebufferFormat() {}
 	FramebufferFormat(const FBORef& fbo);
@@ -742,13 +708,13 @@ public:
 	}
 
 	//! Sets the color attachment format for the framebuffer attachment given by @p index.
-	FramebufferFormat& setColorAttachment(const AttachmentFormat& value, uint32_t index=0) { colorAttachments[index] = value; dirty = true; return *this; }
+	FramebufferFormat& setColorAttachment(const AttachmentFormat& value, uint32_t index=0) { dirty |= (colorAttachments[index] != value); colorAttachments[index] = value; return *this; }
 	//! Simultaneously sets all color attachments.
 	FramebufferFormat& setColorAttachments(const std::vector<AttachmentFormat>& values) { colorAttachments = values; dirty = true; return *this; }
 	//! Sets the number of color attachments of the framebuffer.
-	FramebufferFormat& setColorAttachmentCount(uint32_t value) { colorAttachments.resize(value); dirty = true; return *this; }
+	FramebufferFormat& setColorAttachmentCount(uint32_t value) { dirty |= (colorAttachments.size() != value); colorAttachments.resize(value); return *this; }
 	//! Sets the depth/stencil attachment of the framebuffer.
-	FramebufferFormat& setDepthStencilAttachment(const AttachmentFormat& value, uint32_t index=0) { colorAttachments[index] = value; dirty = true; return *this; }
+	FramebufferFormat& setDepthStencilAttachment(const AttachmentFormat& value) { dirty |= (depthAttachment != value); depthAttachment = value; return *this; }
 
 	//! @see{setColorAttachment()}
 	const AttachmentFormat& getColorAttachment(uint32_t index=0) const { return colorAttachments[index]; }
@@ -764,14 +730,6 @@ public:
 private:
 	std::vector<AttachmentFormat> colorAttachments = {};
 	AttachmentFormat depthAttachment = {InternalFormat::Unknown, 0};
-public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged() { dirty = true; hash = 0; }
-	void markAsUnchanged() { hash = Util::hash(*this); dirty = false; }
-	bool hasChanged() const { return dirty ? hash != Util::hash(*this) : false; }
-private:
-	bool dirty = true;
-	size_t hash = 0;
 };
 
 //==================================================================
@@ -795,50 +753,47 @@ public:
 
 	PipelineState& reset();
 	
-	inline PipelineState& setType(PipelineType value) { if(type != value) markAsChanged(); type = value; return *this; }
-	inline PipelineState& setVertexInputState(const VertexInputState& state) { vertexInput = state; dirty = true; return *this; }
-	inline PipelineState& setInputAssemblyState(const InputAssemblyState& state) { inputAssembly = state; dirty = true; return *this; }
-	inline PipelineState& setViewportState(const ViewportState& state) { viewport = state; dirty = true; return *this; }
-	inline PipelineState& setRasterizationState(const RasterizationState& state) { rasterization = state; dirty = true; return *this; }
-	inline PipelineState& setMultisampleState(const MultisampleState& state) { multisample = state; dirty = true; return *this; }
-	inline PipelineState& setDepthStencilState(const DepthStencilState& state) { depthStencil = state; dirty = true; return *this; }
-	inline PipelineState& setColorBlendState(const ColorBlendState& state) { colorBlend = state; dirty = true; return *this; }
-	inline PipelineState& setFramebufferFormat(const FramebufferFormat& state) { attachments = state; dirty = true; return *this; }
-	inline PipelineState& setFramebufferFormat(const FBORef& fbo) { attachments = fbo; dirty = true; return *this; }
-	inline PipelineState& setEntryPoint(const std::string& value) { if(entrypoint != value) markAsChanged(); entrypoint = value; return *this; }
+	inline PipelineState& setType(PipelineType value) { if(type != value) markDirty(); type = value; return *this; }
+	inline PipelineState& setVertexInputState(const VertexInputState& state) { vertexInput = state; return *this; }
+	inline PipelineState& setInputAssemblyState(const InputAssemblyState& state) { inputAssembly = state; return *this; }
+	inline PipelineState& setViewportState(const ViewportState& state) { viewport = state; return *this; }
+	inline PipelineState& setRasterizationState(const RasterizationState& state) { rasterization = state; return *this; }
+	inline PipelineState& setMultisampleState(const MultisampleState& state) { multisample = state; return *this; }
+	inline PipelineState& setDepthStencilState(const DepthStencilState& state) { depthStencil = state; return *this; }
+	inline PipelineState& setColorBlendState(const ColorBlendState& state) { colorBlend = state; return *this; }
+	inline PipelineState& setFramebufferFormat(const FramebufferFormat& state) { attachments = state; return *this; }
+	inline PipelineState& setFramebufferFormat(const FBORef& fbo) { attachments = fbo; return *this; }
+	inline PipelineState& setEntryPoint(const std::string& value) { if(entrypoint != value) markDirty(); entrypoint = value; return *this; }
 	PipelineState& setShader(const ShaderRef& value);
 
 	PipelineType getType() const { return type; }
 	
 	const VertexInputState& getVertexInputState() const { return vertexInput; }
-	VertexInputState& getVertexInputState() { dirty = true; return vertexInput; }
+	VertexInputState& getVertexInputState() { return vertexInput; }
 
 	const InputAssemblyState& getInputAssemblyState() const { return inputAssembly; }
-	InputAssemblyState& getInputAssemblyState() { dirty = true; return inputAssembly; }
+	InputAssemblyState& getInputAssemblyState() { return inputAssembly; }
 
 	const ViewportState& getViewportState() const { return viewport; }
-	ViewportState& getViewportState() { dirty = true; return viewport; }
+	ViewportState& getViewportState() { return viewport; }
 
 	const RasterizationState& getRasterizationState() const { return rasterization; }
-	RasterizationState& getRasterizationState() { dirty = true; return rasterization; }
+	RasterizationState& getRasterizationState() { return rasterization; }
 
 	const MultisampleState& getMultisampleState() const { return multisample; }
-	MultisampleState& getMultisampleState() { dirty = true; return multisample; }
+	MultisampleState& getMultisampleState() { return multisample; }
 
 	const DepthStencilState& getDepthStencilState() const { return depthStencil; }
-	DepthStencilState& getDepthStencilState() { dirty = true; return depthStencil; }
+	DepthStencilState& getDepthStencilState() { return depthStencil; }
 
 	const ColorBlendState& getColorBlendState() const { return colorBlend; }
-	ColorBlendState& getColorBlendState() { dirty = true; return colorBlend; }
+	ColorBlendState& getColorBlendState() { return colorBlend; }
 
 	const FramebufferFormat& getFramebufferFormat() const { return attachments; }
-	FramebufferFormat& getFramebufferFormat() { dirty = true; return attachments; }
+	FramebufferFormat& getFramebufferFormat() { return attachments; }
 
 	const std::string& getEntryPoint() const { return entrypoint; }
-	std::string& getEntryPoint() { dirty = true; return entrypoint; }
-
 	const ShaderRef& getShader() const { return shader; }
-	ShaderRef& getShader() { dirty = true; return shader; }
 
 private:
 	PipelineType type = PipelineType::Graphics;
@@ -854,13 +809,39 @@ private:
 	std::string entrypoint;
 
 public:
-	void markAsDirty() { dirty = true; }
-	void markAsChanged();
-	void markAsUnchanged();
-	bool hasChanged() const;
+	inline void markDirty() { dirty = true; }
+	inline void clearDirty();
+	inline bool isDirty() const;
 private:
 	bool dirty = true;
 };
+
+//-------------
+
+void PipelineState::clearDirty() {
+	dirty = false;
+	vertexInput.clearDirty();
+	inputAssembly.clearDirty();
+	viewport.clearDirty();
+	rasterization.clearDirty();
+	multisample.clearDirty();
+	depthStencil.clearDirty();
+	colorBlend.clearDirty();
+	attachments.clearDirty();
+}
+
+//-------------
+
+bool PipelineState::isDirty() const {
+	return dirty ? true : (vertexInput.isDirty() ||
+		inputAssembly.isDirty() ||
+		viewport.isDirty() ||
+		rasterization.isDirty() ||
+		multisample.isDirty() ||
+		depthStencil.isDirty() ||
+		colorBlend.isDirty() ||
+		attachments.isDirty());
+}
 
 //! @}
 

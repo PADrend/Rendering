@@ -175,6 +175,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	public:
 		void attachShaderObject(ShaderObjectInfo && obj);
 		const std::map<ShaderStage, ShaderModuleHandle>& getShaderModules() const { return shaderModules; }
+		void addDefine(const std::string& key, const std::string& value="");
 	// @}
 
 	// ------------------------

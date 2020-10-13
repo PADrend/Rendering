@@ -39,6 +39,8 @@ public:
 
 	//! Retrieve the current CPU value.
 	uint64_t getCpuValue() const { return cpuValue; }
+
+	bool isReady() { return cpuValue <= getGpuValue(); }
 private:
 	Fence() {};
 	uint64_t cpuValue = 0;

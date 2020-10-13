@@ -16,6 +16,10 @@ namespace Rendering {
 
 //------------------
 
+Binding::~Binding() = default;
+
+//------------------
+
 bool Binding::bindBuffer(const BufferObjectRef& buffer, uint32_t arrayElement) {
 	if(buffers.size() <= arrayElement)
 		buffers.resize(arrayElement + 1);
@@ -52,12 +56,6 @@ bool Binding::bindInputImage(const ImageViewRef& view, uint32_t arrayElement) {
 
 //------------------
 
-void Binding::clearDirty() {
-	dirty = false;
-}
-
-//------------------
-
 bool BindingSet::bindBuffer(const BufferObjectRef& buffer, uint32_t binding, uint32_t arrayElement) {	
 	dirty |= bindings[binding].bindBuffer(buffer, arrayElement);
 	return dirty;
@@ -75,18 +73,6 @@ bool BindingSet::bindTexture(const TextureRef& texture, uint32_t binding, uint32
 bool BindingSet::bindInputImage(const ImageViewRef& view, uint32_t binding, uint32_t arrayElement) {
 	dirty |= bindings[binding].bindInputImage(view, arrayElement);
 	return dirty;
-}
-
-//------------------
-
-void BindingSet::clearDirty() {
-	dirty = false;
-}
-
-//------------------
-
-void BindingSet::clearDirty(uint32_t binding) {
-	bindings[binding].clearDirty();
 }
 
 //------------------
@@ -150,25 +136,6 @@ ImageViewRef BindingState::getBoundInputImage(uint32_t set, uint32_t binding, ui
 	if(bIt->second.getInputImages().size() <= arrayElement)
 		return nullptr;
 	return bIt->second.getInputImages().at(arrayElement);
-}
-
-//------------------
-
-void BindingState::reset() {
-	bindingSets.clear();
-	dirty = true;
-}
-
-//------------------
-
-void BindingState::clearDirty() {
-	dirty = false;
-}
-
-//------------------
-
-void BindingState::clearDirty(uint32_t set) {
-	bindingSets[set].clearDirty();
 }
 
 //------------------

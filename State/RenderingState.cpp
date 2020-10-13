@@ -163,17 +163,17 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 
 	// camera
 	bool cc = false;
-	if (forced || camera.hasChanged()) {
+	if (forced || camera.isDirty()) {
 		cc = true;
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_WORLD_TO_CAMERA, camera.getMatrixWorldToCamera());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_WORLD, camera.getMatrixCameraToWorld());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CAMERA_TO_CLIPPING, camera.getMatrixCameraToClipping());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_CLIPPING_TO_CAMERA, camera.getMatrixClippingToCamera());
-		camera.markAsUnchanged();
+		camera.clearDirty();
 	}
 
 	// lights
-	if (forced || cc || lights.hasChanged()) {
+	if (forced || cc || lights.isDirty()) {
 
 		uniforms.emplace_back(UNIFORM_SG_LIGHT_COUNT, lights.getLightCount());
 		for (uint32_t i = 0; i < lights.getLightCount() && i < MAX_LIGHTS; ++i) {
@@ -188,24 +188,24 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 	}
 
 	// materials
-	if (forced || material.hasChanged()) {
+	if (forced || material.isDirty()) {
 
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_AMBIENT, material.getAmbient());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_DIFFUSE, material.getDiffuse());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_SPECULAR, material.getSpecular());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_EMISSION, material.getEmission());
 
-		material.markAsUnchanged();
+		material.clearDirty();
 	}
 
 	// modelview
 
-	if (forced || cc || instance.hasChanged()) {
+	if (forced || cc || instance.isDirty()) {
 		const auto m = camera.getMatrixCameraToClipping() * instance.getMatrixModelToCamera();
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CAMERA, instance.getMatrixModelToCamera());
 		uniforms.emplace_back(UNIFORM_SG_MATRIX_MODEL_TO_CLIPPING, m);
 		uniforms.emplace_back(UNIFORM_SG_POINT_SIZE, instance.getPointSize());
-		instance.markAsUnchanged();
+		instance.clearDirty();
 	}
 
 	for(const auto & uniform : uniforms) {

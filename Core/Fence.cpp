@@ -38,6 +38,7 @@ void Fence::wait() {
 	vk::Device device(fenceQueue.front());
 	std::vector<vk::Fence> fences(fenceQueue.begin(), fenceQueue.end());
 	device.waitForFences(fences, true, std::numeric_limits<uint64_t>::max());
+	gpuValue += fences.size();
 	fenceQueue.clear();
 }
 
