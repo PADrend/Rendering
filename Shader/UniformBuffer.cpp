@@ -10,9 +10,10 @@
 #include "UniformBuffer.h"
 
 #include "Uniform.h"
+#include "../Buffer/BufferObject.h"
+#include "../Buffer/BufferPool.h"
 #include "../Core/Device.h"
 #include "../Core/CommandBuffer.h"
-#include "../BufferObject.h"
 #include "../State/ShaderLayout.h"
 
 #include <Util/Macros.h>
@@ -29,9 +30,9 @@ namespace Rendering {
 
 //---------------
 
-UniformBuffer::Ref UniformBuffer::create(const DeviceRef& device, const Util::ResourceFormat& format, uint32_t arraySize, bool pushConstant) {
-	Ref obj = new UniformBuffer(arraySize, pushConstant);
-	if(!obj->init(device, format)) {
+UniformBuffer::Ref UniformBuffer::create(const BufferPoolRef& pool, const Util::ResourceFormat& format, uint32_t arraySize, bool pushConstant) {
+	Ref obj = new UniformBuffer(pool, arraySize, pushConstant);
+	if(!obj->init(format)) {
 		return nullptr;
 	}
 	return obj;
@@ -39,12 +40,12 @@ UniformBuffer::Ref UniformBuffer::create(const DeviceRef& device, const Util::Re
 
 //---------------
 
-UniformBuffer::Ref UniformBuffer::createFromShaderResource(const DeviceRef& device, const ShaderResource& resource) {
+UniformBuffer::Ref UniformBuffer::createFromShaderResource(const BufferPoolRef& pool, const ShaderResource& resource) {
 	bool pushConstant = resource.layout.type == ShaderResourceType::PushConstant;
 	WARN_AND_RETURN_IF(!pushConstant && resource.layout.type != ShaderResourceType::BufferUniform, "UniformBuffer can only created from resource type 'PushConstant' or 'BufferUniform", nullptr);
 	
-	Ref obj = new UniformBuffer(std::max(resource.layout.elementCount, 1u), pushConstant);
-	if(!obj->init(device, resource.format)) {
+	Ref obj = new UniformBuffer(pool, std::max(resource.layout.elementCount, 1u), pushConstant);
+	if(!obj->init(resource.format)) {
 		return nullptr;
 	}
 	return obj;
@@ -52,7 +53,7 @@ UniformBuffer::Ref UniformBuffer::createFromShaderResource(const DeviceRef& devi
 
 //---------------
 
-UniformBuffer::UniformBuffer(uint32_t arraySize, bool pushConstant) : arraySize(arraySize), pushConstant(pushConstant), dataHasChanged(true) {}
+UniformBuffer::UniformBuffer(const BufferPoolRef& pool, uint32_t arraySize, bool pushConstant) : pool(pool), arraySize(arraySize), pushConstant(pushConstant), dataHasChanged(true) {}
 
 //---------------
 
@@ -82,15 +83,22 @@ void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
 	WARN_AND_RETURN_IF(!cmd, "Uniform::flush: Invalid command buffer.",);
 	if(!force && !dataHasChanged)
 		return;
+	dataHasChanged = false;
+
+	// clear unused buffers
+	// TODO: use fences to get state of buffers
+	//while(pool->getAllocatedPageCount() > 1 && !buffers.empty())
+	//	buffers.pop_front();
 	
 	if(pushConstant) {
 		cmd->pushConstants(cache);
 	} else {
-		if(cmd->isInRenderPass())
-			cmd->endRenderPass(); // updateBuffer is not allowed in renderpass
-		cmd->updateBuffer(buffer->getBuffer(), cache.data(), cache.size());
+		// request new buffer from pool
+		auto buffer = pool->allocate(cache.size());
+		WARN_AND_RETURN_IF(!buffer, "Uniform::flush: Failed to allocate buffer.",);
+		buffer->upload(cache);
+		buffers.emplace_back(buffer);
 	}
-	dataHasChanged = false;
 }
 
 //---------------
@@ -98,20 +106,13 @@ void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
 void UniformBuffer::bind(const CommandBufferRef& cmd, uint32_t binding, uint32_t set) {
 	WARN_AND_RETURN_IF(!cmd, "Uniform::bind: Invalid command buffer.",);
 	flush(cmd);
-	if(!pushConstant)
-		cmd->bindBuffer(buffer, set, binding);
+	if(!pushConstant && !buffers.empty())
+		cmd->bindBuffer(buffers.back(), set, binding);
 }
 
 //---------------
 
-bool UniformBuffer::init(const DeviceRef& device, const Util::ResourceFormat& format) {
-	// Create and allocate GPU buffer unless we use push constants
-	if(!pushConstant) {
-		// TODO: Allocate buffer from buffer pool?
-		buffer = BufferObject::create(device);
-		buffer->allocate(format.getSize() * arraySize, ResourceUsage::ShaderResource, MemoryUsage::GpuOnly);
-		WARN_AND_RETURN_IF(!buffer->isValid(), "Failed to allocate uniform buffer.", false);
-	}
+bool UniformBuffer::init(const Util::ResourceFormat& format) {
 
 	// Allocate cache
 	cache.resize(format.getSize() * arraySize);

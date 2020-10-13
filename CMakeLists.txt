@@ -19,6 +19,8 @@ include(GNUInstallDirs)
 set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 
 add_library(Rendering SHARED
+	Buffer/BufferObject.cpp
+	Buffer/BufferPool.cpp
 	Core/internal/VkFramebuffer.cpp
 	Core/internal/VkPipeline.cpp
 	Core/internal/VkUtils.cpp
@@ -79,7 +81,6 @@ add_library(Rendering SHARED
 	Texture/Texture.cpp
 	Texture/TextureType.cpp
 	#Texture/TextureUtils.cpp
-	BufferObject.cpp
 	Draw.cpp
 	DrawCompound.cpp
 	FBO.cpp

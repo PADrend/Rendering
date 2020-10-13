@@ -195,7 +195,7 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 		for(auto& buffer : binding.getBuffers()) {
 			if(buffer && buffer->isValid()) {
 				auto b = buffer->getBuffer();
-				bufferBindings.back().emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), 0, b->getSize());
+				bufferBindings.back().emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), buffer->getOffset(), buffer->getSize());
 				//if(descriptor.dynamic)
 				//	dynamicOffsets.emplace_back(0);
 			} else {

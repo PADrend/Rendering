@@ -45,6 +45,8 @@ class DescriptorPool;
 using DescriptorPoolRef = Util::Reference<DescriptorPool>;
 class UniformBuffer;
 using UniformBufferRef = Util::Reference<UniformBuffer>;
+class BufferPool;
+using BufferPoolRef = Util::Reference<BufferPool>;
 
 //! @defgroup shader Shader
 
@@ -183,6 +185,8 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		const std::unique_ptr<UniformRegistry> uniforms;
 		using UniformBufferMap_t = std::map<std::pair<uint32_t,uint32_t>, UniformBufferRef>;
 		UniformBufferMap_t uniformBuffers;
+		BufferPoolRef uniformBufferPool;
+		
 
 		/*! (internal) Make sure that all uniforms declared in the shader are registered to the registry
 			with their current value. Called when a shader is linked successfully */

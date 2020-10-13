@@ -58,10 +58,10 @@ const std::string vertexShader = R"vs(
 const std::string fragmentShader = R"fs(
 	#version 450
 	
-	layout(push_constant) uniform PushConstants {
-		mat4 sg_matrix_modelToCamera;
-		int testData;
-	} test;
+	layout(set=0, binding=0) uniform FrameData {
+		mat4 sg_matrix_cameraToWorld;
+		vec3 values[2];
+	} fd;
 
 	struct sg_LightSourceParameters {
 		vec3 position;
@@ -86,7 +86,7 @@ const std::string fragmentShader = R"fs(
 	layout(location = 0) out vec4 outColor;
 
 	void main() {
-		outColor = vec4(fragColor, 1.0) + sg_LightSource[0].ambient * foo[0].bar;
+		outColor = vec4(fragColor, fd.values[1]) + sg_LightSource[0].ambient * foo[0].bar;
 	}
 )fs";
 
@@ -128,8 +128,23 @@ TEST_CASE("ShaderTest", "[ShaderTest]") {
 	REQUIRE(shader->getVertexAttributeLocation({"sg_Color"}) == 1);
 	REQUIRE(shader->getVertexAttributeLocation({"something"}) == -1);
 
-	//for(auto& r : shader->getResources())
-	//	std::cout << toString(r.second, true) << std::endl;
+	for(auto& r : shader->getResources())
+		std::cout << toString(r.second, true) << std::endl;
+
+	auto& layout = shader->getLayout();
+	REQUIRE(layout.hasLayoutSet(0));
+	REQUIRE(layout.hasLayoutSet(1));
+	REQUIRE(!layout.hasLayoutSet(2));
+	REQUIRE(layout.getLayoutSet(0).hasLayout(0));
+	REQUIRE(layout.getLayoutSet(0).getLayout(0).type == ShaderResourceType::BufferUniform);
+	REQUIRE((layout.getLayoutSet(0).getLayout(0).stages & ShaderStage::Vertex) == ShaderStage::Vertex);
+	REQUIRE((layout.getLayoutSet(0).getLayout(0).stages & ShaderStage::Fragment) == ShaderStage::Fragment);
+	REQUIRE(!layout.getLayoutSet(0).hasLayout(1));
+	REQUIRE(!layout.getLayoutSet(1).hasLayout(0));
+	REQUIRE(layout.getLayoutSet(1).hasLayout(1));
+	REQUIRE(layout.getLayoutSet(1).getLayout(1).stages == ShaderStage::Fragment);
+	REQUIRE(layout.getLayoutSet(1).hasLayout(2));
+	REQUIRE(layout.getLayoutSet(1).getLayout(2).stages == ShaderStage::Fragment);
 
 	{
 		auto posAttr = shader->getResource({"Vertex_sg_Color"});

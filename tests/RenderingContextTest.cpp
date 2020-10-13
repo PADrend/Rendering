@@ -72,8 +72,8 @@ const std::string fragmentShader = R"fs(
 	};
 
 	void main() {
-		//outColor = sg_Material.diffuse;
-		outColor = vec4(fragColor, 1);
+		outColor = sg_Material.diffuse;
+		//outColor = vec4(fragColor, 1);
 	}
 )fs";
 

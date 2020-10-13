@@ -9,7 +9,8 @@
 #include "TestUtils.h"
 #include <catch2/catch.hpp>
 
-#include <Rendering/BufferObject.h>
+#include <Rendering/Buffer/BufferObject.h>
+#include <Rendering/Buffer/BufferPool.h>
 #include <Rendering/Core/BufferStorage.h>
 #include <algorithm>
 #include <cstddef>
@@ -18,8 +19,9 @@
 #include <random>
 #include <vector>
 
-TEST_CASE("BufferObjectTest_test", "[BufferObjectTest]") {
-	using namespace Rendering;
+using namespace Rendering;
+
+TEST_CASE("BufferObjectTest_testBufferObject", "[BufferObjectTest]") {
 	{ // Check create() and destroy()
 		BufferObject::Ref boA = BufferObject::create(TestUtils::device);
 		BufferObject::Ref boB = BufferObject::create(TestUtils::device);
@@ -66,4 +68,96 @@ TEST_CASE("BufferObjectTest_test", "[BufferObjectTest]") {
 			REQUIRE(data[i] == data2[i]);
 		}
 	}
+}
+
+
+TEST_CASE("BufferObjectTest_testBufferPool", "[BufferObjectTest]") {
+	auto pool = BufferPool::create(TestUtils::device, {
+		8, // blockSize
+		4, // blocksPerPage
+		MemoryUsage::CpuToGpu, // access
+		true, // persistent
+		ResourceUsage::General, // usage
+	});
+	REQUIRE(pool);
+	
+	// 0000
+
+	{
+		auto bo1 = pool->allocate(8);
+		REQUIRE(bo1);
+		REQUIRE(bo1->isValid());
+		REQUIRE(bo1->getSize() == 8);
+		REQUIRE(bo1->getOffset() == 0);
+		REQUIRE(pool->getAllocatedBlockCount() == 1);
+		REQUIRE(pool->getAllocatedPageCount() == 1);
+
+		// 1000
+		
+		auto bo2 = pool->allocate(5); 
+		REQUIRE(bo2);
+		REQUIRE(bo2->isValid());
+		REQUIRE(bo2->getSize() == 8);
+		REQUIRE(bo2->getOffset() == 8);
+		REQUIRE(bo1->getBuffer() == bo2->getBuffer());
+		REQUIRE(pool->getAllocatedBlockCount() == 2);
+		REQUIRE(pool->getAllocatedPageCount() == 1);
+
+		// 1100
+		
+		auto bo3 = pool->allocate(14); 
+		REQUIRE(bo3);
+		REQUIRE(bo3->isValid());
+		REQUIRE(bo3->getSize() == 16);
+		REQUIRE(bo3->getOffset() == 16);
+		REQUIRE(bo1->getBuffer() == bo3->getBuffer());
+		REQUIRE(pool->getAllocatedBlockCount() == 4);
+		REQUIRE(pool->getAllocatedPageCount() == 1);
+
+		// 1111
+
+		bo2->destroy();
+		REQUIRE(!bo2->isValid());
+		REQUIRE(bo2->getSize() == 0);
+		REQUIRE(bo2->getOffset() == 0);
+		REQUIRE(pool->getAllocatedBlockCount() == 3);
+		REQUIRE(pool->getAllocatedPageCount() == 1);
+
+		// 1011
+			
+		auto bo4 = pool->allocate(17); 
+		REQUIRE(bo4);
+		REQUIRE(bo4->isValid());
+		REQUIRE(bo4->getSize() == 24);
+		REQUIRE(bo4->getOffset() == 0);
+		REQUIRE(bo1->getBuffer() != bo4->getBuffer());
+		auto bo4_buffer = bo4->getBuffer();
+		REQUIRE(pool->getAllocatedBlockCount() == 6);
+		REQUIRE(pool->getAllocatedPageCount() == 2);
+
+		// 1011-1110
+
+		bo4->destroy();
+		REQUIRE(!bo4->isValid());
+		REQUIRE(bo4->getSize() == 0);
+		REQUIRE(bo4->getOffset() == 0);
+		REQUIRE(pool->getAllocatedBlockCount() == 3);
+		REQUIRE(pool->getAllocatedPageCount() == 1);
+
+		// 1011
+			
+		bo2 = pool->allocate(5); 
+		REQUIRE(bo2);
+		REQUIRE(bo2->isValid());
+		REQUIRE(bo2->getSize() == 8);
+		REQUIRE(bo2->getOffset() == 8);
+		REQUIRE(bo1->getBuffer() == bo2->getBuffer());
+		REQUIRE(pool->getAllocatedBlockCount() == 4);
+		REQUIRE(pool->getAllocatedPageCount() == 1);
+
+		// 1111
+	}
+	
+	REQUIRE(pool->getAllocatedBlockCount() == 0);
+	REQUIRE(pool->getAllocatedPageCount() == 0);
 }

@@ -16,6 +16,7 @@
 #include "../Core/Device.h"
 #include "../Core/DescriptorPool.h"
 #include "../Core/ResourceCache.h"
+#include "../Buffer/BufferPool.h"
 #include "../Helper.h"
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
@@ -214,6 +215,11 @@ bool Shader::linkProgram() {
 				vertexAttributeLocations.emplace(Util::StringIdentifier(resource.name), static_cast<int32_t>(resource.location));
 			}
 
+			// use dynamic uniform buffers by default
+			/*if(resource.layout.type == ShaderResourceType::BufferUniform) {
+				resource.layout.dynamic = true;
+			}*/
+
 			auto it = resources.find(key);
 			if(it == resources.end()) {
 				resources.emplace(key, resource);
@@ -337,6 +343,13 @@ const Uniform & Shader::getUniform(const Util::StringIdentifier name) {
 void Shader::initUniformRegistry() {
 	std::vector<Uniform> activeUniforms;
 	uniformBuffers.clear();
+	uniformBufferPool = BufferPool::create(device, {
+		256, // blockSize
+		256, // blocksPerPage
+		MemoryUsage::CpuToGpu, // access
+		true, // persistent
+		ResourceUsage::ShaderResource, // usage
+	});
 
 	// allocate uniform buffers
 	for(const auto& it : resources) {
@@ -349,7 +362,7 @@ void Shader::initUniformRegistry() {
 			continue;
 		}
 
-		uniformBuffers[key] = UniformBuffer::createFromShaderResource(device, res);
+		uniformBuffers[key] = UniformBuffer::createFromShaderResource(uniformBufferPool, res);
 
 		for(const auto& attr : res.format.getAttributes()) {
 			Uniform::dataType_t type;

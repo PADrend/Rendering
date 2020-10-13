@@ -226,10 +226,15 @@ ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderR
 
 ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout& layout) {
 	vk::Device vkDevice(device->getApiHandle());
-
-	std::vector<vk::DescriptorSetLayout> layouts;
+	uint32_t maxSet = 0;
 	for(auto& set : layout.getLayoutSets()) {
-		layouts.emplace_back(device->getResourceCache()->createDescriptorSetLayout(set.second));
+		maxSet = std::max(maxSet, set.first);
+	}
+
+	auto emptyLayout = device->getResourceCache()->createDescriptorSetLayout({});
+	std::vector<vk::DescriptorSetLayout> layouts(maxSet+1, vk::DescriptorSetLayout(emptyLayout));
+	for(auto& set : layout.getLayoutSets()) {
+		layouts[set.first] = device->getResourceCache()->createDescriptorSetLayout(set.second);
 	}
 
 	std::vector<vk::PushConstantRange> pushConstantRanges;

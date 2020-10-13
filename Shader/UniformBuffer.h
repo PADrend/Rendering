@@ -18,10 +18,10 @@
 #include <vector>
 
 namespace Rendering {
-class Device;
-using DeviceRef = Util::Reference<Device>;
 class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
+class BufferPool;
+using BufferPoolRef = Util::Reference<BufferPool>;
 class CommandBuffer;
 using CommandBufferRef = Util::Reference<CommandBuffer>;
 class Uniform;
@@ -34,8 +34,8 @@ struct ShaderResource;
 class UniformBuffer : public Util::ReferenceCounter<UniformBuffer> {
 public:
 	using Ref = Util::Reference<UniformBuffer>;
-	static Ref create(const DeviceRef& device, const Util::ResourceFormat& format, uint32_t arraySize=1, bool pushConstant=false);
-	static Ref createFromShaderResource(const DeviceRef& device, const ShaderResource& resource);
+	static Ref create(const BufferPoolRef& pool, const Util::ResourceFormat& format, uint32_t arraySize=1, bool pushConstant=false);
+	static Ref createFromShaderResource(const BufferPoolRef& pool, const ShaderResource& resource);
 	~UniformBuffer();
 	UniformBuffer(UniformBuffer&& o) = default;
 	UniformBuffer(const UniformBuffer& o) = delete;
@@ -58,11 +58,12 @@ public:
 	size_t getSize() const { return cache.size(); }
 	uint32_t getElementCount() const { return arraySize; }
 private:
-	explicit UniformBuffer(uint32_t arraySize, bool pushConstant);
-	bool init(const DeviceRef& device, const Util::ResourceFormat& format);
+	explicit UniformBuffer(const BufferPoolRef& pool, uint32_t arraySize, bool pushConstant);
+	bool init(const Util::ResourceFormat& format);
 	
 	Util::ResourceAccessor::Ref accessor;
-	BufferObjectRef buffer;
+	BufferPoolRef pool;
+	std::deque<BufferObjectRef> buffers;
 	std::vector<uint8_t> cache;
 	uint32_t arraySize;
 	bool pushConstant;

@@ -100,6 +100,7 @@ public:
 
 	//! @name Internal
 	//! @{
+	const DeviceRef& getDevice() const { return device; }
 	const BufferHandle& getApiHandle() const { return handle; }
 	const AllocationHandle& getAllocation() const { return allocation; }
 	//! @}

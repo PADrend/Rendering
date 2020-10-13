@@ -10,15 +10,12 @@
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "BufferObject.h"
-#include "Core/Device.h"
-#include "Core/BufferStorage.h"
-#include "Core/Queue.h"
-#include "Core/CommandBuffer.h"
+#include "../Core/Device.h"
+#include "../Core/BufferStorage.h"
+#include "../Core/Queue.h"
+#include "../Core/CommandBuffer.h"
 
 #include <Util/Macros.h>
-
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#include <vulkan/vulkan.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -56,8 +53,21 @@ const uint32_t BufferObject::USAGE_DYNAMIC_COPY = 0;
 
 //----------------
 
-BufferObject::Ref BufferObject::create(const DeviceRef& device) {
-	return new BufferObject(device);
+BufferObject::Ref BufferObject::create(const DeviceRef& device, BufferAllocator::Ref allocator) {
+	return new BufferObject(device, allocator);
+}
+
+//----------------
+
+BufferObject::Ref BufferObject::create(const BufferStorageRef& buffer, size_t size, size_t offset, BufferAllocator::Ref allocator) {
+	WARN_AND_RETURN_IF(!buffer || !buffer->getApiHandle(), "Cannot create BufferObject: Invalid buffer.", nullptr);
+	size = size == 0 ? buffer->getSize() : size;
+	WARN_AND_RETURN_IF(size+offset > buffer->getSize(), "Cannot create BufferObject: offset+size exceeds buffer size.", nullptr);
+	Ref bo = new BufferObject(buffer->getDevice(), allocator);
+	bo->offset = offset;
+	bo->size = size;
+	bo->buffer = buffer;
+	return bo;
 }
 
 //----------------
@@ -67,56 +77,72 @@ BufferObject::BufferObject() : BufferObject(Device::getDefault()) { }
 //----------------
 
 
-BufferObject::BufferObject(const DeviceRef& device) : device(device) { }
+BufferObject::BufferObject(const DeviceRef& device, BufferAllocator::Ref allocator) : device(device), allocator(allocator) { }
 
 //----------------
 
-BufferObject::~BufferObject() = default;
+BufferObject::~BufferObject() {
+	destroy();
+}
 
 //----------------
 
 void BufferObject::swap(BufferObject& other) {
 	device.swap(other.device);
 	buffer.swap(other.buffer);
+	stagingBuffer.swap(other.stagingBuffer);
+	std::swap(size, other.size);
+	std::swap(offset, other.offset);
+	std::swap(allocator, other.allocator);
 }
 
 //----------------
 
 void BufferObject::destroy() {
+	if(allocator)
+		allocator->free(this);
 	buffer = nullptr;
+	stagingBuffer = nullptr;
+	size = 0;
+	offset = 0;
+	allocator = nullptr;
 }
 
 //----------------
 
-bool BufferObject::allocate(size_t size, ResourceUsage usage, MemoryUsage access, bool persistent) {
-	BufferStorage::Configuration config{size, access, persistent, usage};
+bool BufferObject::allocate(size_t _size, ResourceUsage usage, MemoryUsage access, bool persistent) {
+	BufferStorage::Configuration config{_size, access, persistent, usage};
 	if(buffer && config == buffer->getConfig())
 		return true; // already allocated.
+	destroy();
 	buffer = BufferStorage::create(device, config);
+	offset = 0;
+	size = _size;
+	stagingBuffer = nullptr;
 	return isValid();
 }
 
 //----------------
 
-void BufferObject::upload(const uint8_t* data, size_t numBytes, size_t offset) {
+void BufferObject::upload(const uint8_t* data, size_t numBytes, size_t _offset) {
 	WARN_AND_RETURN_IF(!isValid(), "BufferObject: Cannot upload data. Buffer is not allocated.",);
-	WARN_AND_RETURN_IF(buffer->getSize() < offset+numBytes, "BufferObject: Cannot upload data. Range out of bounds.",);
+	WARN_AND_RETURN_IF(size < _offset+numBytes, "BufferObject: Cannot upload data. Range out of bounds.",);
 	if(buffer->isMappable()) {
-		buffer->upload(data, numBytes, offset);
+		buffer->upload(data, numBytes, offset+_offset);
 	} else {
 		uint8_t* ptr = map();
-		std::copy(data, data+numBytes, ptr+offset);
+		std::copy(data, data+numBytes, ptr+_offset);
 		unmap();
 	}
 }
 
 //----------------
 
-std::vector<uint8_t> BufferObject::download(size_t range, size_t offset) {
+std::vector<uint8_t> BufferObject::download(size_t range, size_t _offset) {
 	WARN_AND_RETURN_IF(!isValid(), "BufferObject: Cannot download data. Buffer is not allocated.", {});
-	WARN_AND_RETURN_IF(buffer->getSize() < range+offset, "BufferObject: Cannot download data. Range out of bounds.", {});
+	WARN_AND_RETURN_IF(size < range+offset, "BufferObject: Cannot download data. Range out of bounds.", {});
 	const uint8_t* ptr = map();
-	const std::vector<uint8_t> result(ptr + offset, ptr + offset + range);
+	const std::vector<uint8_t> result(ptr + _offset, ptr + _offset + range);
 	unmap();
 	return result;
 }
@@ -146,12 +172,12 @@ uint8_t* BufferObject::map() {
 	if(!buffer)
 		return nullptr;
 	if(buffer->isMappable())
-		return buffer->map();
+		return buffer->map() + offset;
 	
 	// Create & map staging buffer
 	if(!stagingBuffer) {
 		static uint32_t stagingBufferId = 0;
-		stagingBuffer = BufferStorage::create(device, {buffer->getSize(), MemoryUsage::CpuOnly, false, ResourceUsage::CopySource});
+		stagingBuffer = BufferStorage::create(device, {size, MemoryUsage::CpuOnly, false, ResourceUsage::CopySource});
 		stagingBuffer->setDebugName("Staging Buffer " + std::to_string(stagingBufferId++));
 		if(!stagingBuffer)
 			return nullptr;
@@ -172,14 +198,8 @@ void BufferObject::unmap() {
 	
 	stagingBuffer->unmap();
 	CommandBuffer::Ref cmds = CommandBuffer::create(device->getQueue(QueueFamily::Transfer));
-	cmds->copyBuffer(stagingBuffer, buffer, buffer->getSize());
+	cmds->copyBuffer(stagingBuffer, buffer, buffer->getSize(), 0, offset);
 	cmds->submit(true);
-}
-
-//----------------
-
-size_t BufferObject::getSize() const {
-	return buffer ? buffer->getSize() : 0;
 }
 
 //----------------
