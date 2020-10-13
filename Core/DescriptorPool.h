@@ -10,55 +10,60 @@
 #define RENDERING_CORE_DESCRIPTORPOOL_H_
 
 #include "Common.h"
-#include "../Shader/ShaderUtils.h"
+#include "../State/ShaderLayout.h"
 
 #include <Util/ReferenceCounter.h>
+#include <Util/Factory/ObjectPool.h>
 
-#include <unordered_map>
-#include <deque>
+#include <array>
 
 namespace Rendering {
-class Shader;
-using ShaderRef = Util::Reference<Shader>;
+class Device;
+using DeviceRef = Util::Reference<Device>;
 class DescriptorSet;
 using DescriptorSetRef = Util::Reference<DescriptorSet>;
 
 class DescriptorPool : public Util::ReferenceCounter<DescriptorPool> {
 public:
-	static const uint32_t maxDescriptorCount = 16;
-
 	using Ref = Util::Reference<DescriptorPool>;
+	class Configuration {
+	public:
+		Configuration& setDescriptorCount(ShaderResourceType type, uint32_t count) {
+			totalCount -= counts[static_cast<uint32_t>(type)];
+			totalCount += count;
+			counts[static_cast<uint32_t>(type)] = count;
+			return *this;
+		}
+	private:
+		friend class DescriptorPool;
+		std::array<uint32_t, static_cast<uint32_t>(ShaderResourceType::ResourceTypeCount)> counts = {};
+		uint32_t totalCount = 0;
+	};
+
+	static Ref create(const DeviceRef& device, const Configuration& config);
 
 	~DescriptorPool();
 	DescriptorPool(DescriptorPool&& o) = delete;
 	DescriptorPool(const DescriptorPool& o) = delete;
 
-	std::pair<DescriptorSetHandle, DescriptorPoolHandle> request();
-	void free(DescriptorSetHandle handle);
+	DescriptorSetLayoutHandle getLayoutHandle(const ShaderResourceLayoutSet& layout);
+	DescriptorSetHandle requestDescriptorSet(const ShaderResourceLayoutSet& layout);
+	void free(DescriptorSetHandle handle, size_t layoutHash);
 	void reset();
 
-	const ShaderResourceLayoutSet& getLayout() const;
-	const DescriptorSetLayoutHandle& getLayoutHandle() const { return layoutHandle; }
+	uint32_t getMaxDescriptorCount(ShaderResourceType type) const { return config.counts[static_cast<uint32_t>(type)]; }
+
+	const DescriptorPoolHandle& getApiHandle() const { return handle; }
 private:
-	friend class Shader;
-	explicit DescriptorPool(const ShaderRef& shader, uint32_t set, uint32_t maxDescriptors=maxDescriptorCount);
+	explicit DescriptorPool(const DeviceRef& device, const Configuration& config);
 	bool init();
-	DescriptorPoolHandle createPool();
+	DescriptorSetHandle createDescriptorSet(const DescriptorSetLayoutHandle& layout);
 
-	const ShaderRef shader;
-	const uint32_t set;
-	const uint32_t maxDescriptors;
+	const Util::WeakPointer<Device> device;
+	const Configuration config;
+	DescriptorPoolHandle handle;
 
-	struct PoolEntry {
-		PoolEntry(DescriptorPoolHandle&& pool) : pool(std::move(pool)) {}
-		DescriptorPoolHandle pool;
-		uint32_t allocations;
-		std::deque<DescriptorSetHandle> free;
-	};
-	std::vector<PoolEntry> pools;
-	uint32_t currentPoolIndex = 0;
-	DescriptorSetLayoutHandle layoutHandle;
-
+	Util::ObjectPool<DescriptorSetHandle, size_t> pool;
 };
 
 } /* Rendering */

@@ -33,6 +33,8 @@ class CommandPool;
 using CommandPoolRef = Util::Reference<CommandPool>;
 class ResourceCache;
 using ResourceCacheRef = Util::Reference<ResourceCache>;
+class DescriptorPool;
+using DescriptorPoolRef = Util::Reference<DescriptorPool>;
 
 /** Represents a GPU Device	
 	@ingroup rendering_core
@@ -57,8 +59,6 @@ public:
 	
 	void present();
 	
-	void flush();
-	
 	//! @name Extensions & limits
 	//! @{
 	bool isExtensionSupported(const std::string& extension) const;
@@ -73,6 +73,7 @@ public:
 	std::set<Queue::Ref> getQueues() const;
 	const PipelineCacheHandle& getPipelineCache() const;
 	const ResourceCacheRef& getResourceCache() const;
+	const DescriptorPoolRef& getDescriptorPool() const;
 	
 	//! @name API Handles
 	//! @{

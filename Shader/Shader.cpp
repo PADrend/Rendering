@@ -195,7 +195,6 @@ bool Shader::linkProgram() {
 	vk::Device vkDevice(device->getApiHandle());
 
 	resources.clear();
-	descriptorPools.clear();
 	vertexAttributeLocations.clear();
 	
 	// Merge resources from shader objects
@@ -245,14 +244,7 @@ bool Shader::linkProgram() {
 	layout.setPushConstantRanges(pushConstantRanges);
 	layoutHandle = device->getResourceCache()->createPipelineLayout(layout);
 
-	// Create descriptor set pools
-	for(auto& res : layoutSets) {
-		DescriptorPool::Ref pool = new DescriptorPool(this, res.first);
-		if(pool->init())
-			descriptorPools.emplace(res.first, pool);
-	}
-
-	return true;
+	return layoutHandle.isNotNull();
 }
 
 //-----------------

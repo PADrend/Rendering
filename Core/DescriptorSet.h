@@ -12,7 +12,7 @@
 
 #include "Common.h"
 #include "../State/BindingState.h"
-#include "../Shader/ShaderUtils.h"
+#include "../State/ShaderLayout.h"
 
 #include <Util/ReferenceCounter.h>
 
@@ -27,28 +27,21 @@ using DescriptorPoolRef = Util::Reference<DescriptorPool>;
 class DescriptorSet : public Util::ReferenceCounter<DescriptorSet> {
 public:
 	using Ref = Util::Reference<DescriptorSet>;
-	static Ref create(const DescriptorPoolRef& pool);
+	static Ref create(const DescriptorPoolRef& pool, const ShaderResourceLayoutSet& layout, const BindingSet& bindings);
 
 	~DescriptorSet();
 	DescriptorSet(DescriptorSet&& o) = default;
 	DescriptorSet(const DescriptorSet& o) = delete;
 
-	void update(const BindingSet& bindings);
-	const std::vector<uint32_t>& getDynamicOffsets() const { return dynamicOffsets; }
-
-	const ShaderResourceLayoutSet& getLayout() const;
 	const DescriptorSetHandle& getApiHandle() const { return handle; }
-	const DescriptorSetLayoutHandle& getLayoutHandle() const { return layoutHandle; }
 private:
 	friend class DescriptorPool;
 	DescriptorSet(const DescriptorPoolRef& pool);
-	bool init();
+	bool init(const BindingSet& bindings, const ShaderResourceLayoutSet& layout);
 	
 	const DescriptorPoolRef pool;
 	DescriptorSetHandle handle;
-	DescriptorPoolHandle poolHandle;
-	DescriptorSetLayoutHandle layoutHandle;
-	std::vector<uint32_t> dynamicOffsets;
+	size_t layoutHash;
 };
 
 } /* Rendering */

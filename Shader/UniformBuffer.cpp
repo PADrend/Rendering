@@ -30,8 +30,8 @@ namespace Rendering {
 //---------------
 
 UniformBuffer::Ref UniformBuffer::create(const DeviceRef& device, const Util::ResourceFormat& format, uint32_t arraySize, bool pushConstant) {
-	Ref obj = new UniformBuffer(pushConstant);
-	if(!obj->init(device, format, arraySize)) {
+	Ref obj = new UniformBuffer(arraySize, pushConstant);
+	if(!obj->init(device, format)) {
 		return nullptr;
 	}
 	return obj;
@@ -43,8 +43,8 @@ UniformBuffer::Ref UniformBuffer::createFromShaderResource(const DeviceRef& devi
 	bool pushConstant = resource.layout.type == ShaderResourceType::PushConstant;
 	WARN_AND_RETURN_IF(!pushConstant && resource.layout.type != ShaderResourceType::BufferUniform, "UniformBuffer can only created from resource type 'PushConstant' or 'BufferUniform", nullptr);
 	
-	Ref obj = new UniformBuffer(pushConstant);
-	if(!obj->init(device, resource.format, resource.layout.elementCount)) {
+	Ref obj = new UniformBuffer(std::max(resource.layout.elementCount, 1u), pushConstant);
+	if(!obj->init(device, resource.format)) {
 		return nullptr;
 	}
 	return obj;
@@ -52,7 +52,7 @@ UniformBuffer::Ref UniformBuffer::createFromShaderResource(const DeviceRef& devi
 
 //---------------
 
-UniformBuffer::UniformBuffer(bool pushConstant) : pushConstant(pushConstant), dataHasChanged(true) {}
+UniformBuffer::UniformBuffer(uint32_t arraySize, bool pushConstant) : arraySize(arraySize), pushConstant(pushConstant), dataHasChanged(true) {}
 
 //---------------
 
@@ -70,7 +70,7 @@ void UniformBuffer::applyUniform(const Uniform& uniform, uint32_t index) {
 void UniformBuffer::writeData(const Util::StringIdentifier& name, const uint8_t* data, size_t size, uint32_t index) {
 	const auto& format = accessor->getFormat();
 	uint32_t location = format.getAttributeLocation(name);
-	if(location < format.getSize() && index < arraySize) {
+	if(location < format.getNumAttributes() && index < arraySize) {
 		accessor->writeRawValue(index, location, data, size);
 		dataHasChanged = true;
 	}
@@ -79,7 +79,7 @@ void UniformBuffer::writeData(const Util::StringIdentifier& name, const uint8_t*
 //---------------
 
 void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
-	WARN_AND_RETURN_IF(!cmd, "Uniform::flush: Invalud command buffer.",);
+	WARN_AND_RETURN_IF(!cmd, "Uniform::flush: Invalid command buffer.",);
 	if(!force && !dataHasChanged)
 		return;
 	
@@ -94,7 +94,7 @@ void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
 //---------------
 
 void UniformBuffer::bind(const CommandBufferRef& cmd, uint32_t binding, uint32_t set) {
-	WARN_AND_RETURN_IF(!cmd, "Uniform::flush: Invalud command buffer.",);
+	WARN_AND_RETURN_IF(!cmd, "Uniform::bind: Invalid command buffer.",);
 	flush(cmd);
 	if(!pushConstant)
 		cmd->bindBuffer(buffer, set, binding);
@@ -102,7 +102,7 @@ void UniformBuffer::bind(const CommandBufferRef& cmd, uint32_t binding, uint32_t
 
 //---------------
 
-bool UniformBuffer::init(const DeviceRef& device, const Util::ResourceFormat& format, uint32_t arraySize) {
+bool UniformBuffer::init(const DeviceRef& device, const Util::ResourceFormat& format) {
 	// Create and allocate GPU buffer unless we use push constants
 	if(!pushConstant) {
 		// TODO: Allocate buffer from buffer pool?

@@ -173,9 +173,11 @@ private:
 	State state = Invalid;
 	bool inRenderPass=false;
 	Pipeline::Ref pipeline;
-	PipelineHandle boundPipeline;
-	std::map<uint32_t, DescriptorSetRef> descriptorSets;
 	BindingState bindings;
+
+	// Keep as long as command buffer is used
+	std::vector<PipelineHandle> boundPipelines;
+	std::vector<DescriptorSetRef> boundDescriptorSets;
 };
 
 } /* Rendering */

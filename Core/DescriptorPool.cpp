@@ -26,7 +26,16 @@ vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dyna
 
 //-----------------
 
-DescriptorPool::DescriptorPool(const ShaderRef& shader, uint32_t set, uint32_t maxDescriptors) : shader(shader), set(set), maxDescriptors(maxDescriptors) { }
+DescriptorPool::Ref DescriptorPool::create(const DeviceRef& device, const Configuration& config) {
+	Ref pool = new DescriptorPool(device, config);
+	if(!pool->init())
+		return nullptr;
+	return pool;
+}
+
+//-----------------
+
+DescriptorPool::DescriptorPool(const DeviceRef& device, const Configuration& config) : device(device), config(config) { }
 
 //-----------------
 
@@ -35,109 +44,67 @@ DescriptorPool::~DescriptorPool() = default;
 //-----------------
 
 bool DescriptorPool::init() {
-	auto& device = shader->getDevice();
-	const auto& layout = shader->getLayout().getLayoutSet(set);
-	layoutHandle = device->getResourceCache()->createDescriptorSetLayout(layout);
-	if(!layoutHandle)
-		return false;
-	reset();
-	return true;
-}
-
-//-----------------
-
-std::pair<DescriptorSetHandle, DescriptorPoolHandle> DescriptorPool::request() {
-	auto& device = shader->getDevice();
 	vk::Device vkDevice(device->getApiHandle());
 
-	// find a free pool
-	// TODO: might be too slow? Maybe use a map instead.
-	uint32_t maxCount = maxDescriptors;
-	const auto& it = std::find_if(pools.begin() + currentPoolIndex, pools.end(), [&maxCount](const PoolEntry& entry) {
-		return entry.allocations < maxCount || !entry.free.empty();
-	});
-	
-	if(it != pools.end()) {
-		if(!it->free.empty()) {
-			// Use free existing descriptor set
-			DescriptorSetHandle obj = it->free.front();
-			it->free.pop_front();
-			return {obj, it->pool};
-		} else {
-			// Allocate new descriptor set from pool
-			vk::DescriptorPool vkPool(it->pool);
-			vk::DescriptorSetLayout vkLayout(layoutHandle);
-			
-			// Allocate new descriptor set from available pools
-			auto obj = vkDevice.allocateDescriptorSets({
-				vkPool, 1, &vkLayout
-			}).front();
-			it->allocations++;
-			return {DescriptorSetHandle::create(obj, {vkDevice, it->pool}), it->pool};
-		}
-	} else {
-		// No free pool found: Create a new one.
-		pools.emplace_back(std::move(createPool()));
-		currentPoolIndex = static_cast<uint32_t>(pools.size()-1);
-		return request();
+	std::vector<vk::DescriptorPoolSize> poolSizes;
+	for(uint32_t t = 0; t < config.counts.size(); ++t) {
+		if(config.counts[t] > 0)
+			poolSizes.emplace_back(getVkDescriptorType(static_cast<ShaderResourceType>(t), false), config.counts[t]);
 	}
+
+	handle = DescriptorPoolHandle::create(vkDevice.createDescriptorPool({
+		vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+		config.totalCount,
+		static_cast<uint32_t>(poolSizes.size()), poolSizes.data()
+	}), vkDevice);
+	return handle.isNotNull();
 }
 
 //-----------------
 
-void DescriptorPool::free(DescriptorSetHandle obj) {
+DescriptorSetLayoutHandle DescriptorPool::getLayoutHandle(const ShaderResourceLayoutSet& layout) {
+	return device->getResourceCache()->createDescriptorSetLayout(layout);
+}
+
+//-----------------
+
+DescriptorSetHandle DescriptorPool::requestDescriptorSet(const ShaderResourceLayoutSet& layout) {
+	size_t layoutHash = std::hash<ShaderResourceLayoutSet>{}(layout);
+	if(!pool.hasType(layoutHash)) {
+		auto layoutHandle = getLayoutHandle(layout);
+		pool.registerType(layoutHash, std::bind(&DescriptorPool::createDescriptorSet, this, layoutHandle));
+	}
+	return pool.create(layoutHash);
+}
+
+//-----------------
+
+void DescriptorPool::free(DescriptorSetHandle obj, size_t layoutHash) {
 	if(!obj)
 		return;
-	// find the pool the descriptor set belongs to
-	const auto& it = std::find_if(pools.begin(), pools.end(), [&obj](const PoolEntry& entry) {
-		DescriptorSetParent parent = obj;
-		return static_cast<VkDescriptorPool>(entry.pool) == parent.second;
-	});
-	if(it != pools.end()) {
-		it->free.emplace_back(obj);
-		currentPoolIndex = it - pools.begin();
-	}
+	pool.free(layoutHash, obj);
 }
 
 //-----------------
 
 void DescriptorPool::reset() {
-	pools.clear();
-	currentPoolIndex = 0;
+	pool.reset();
+	vk::Device vkDevice(handle);
+	vkDevice.resetDescriptorPool(static_cast<vk::DescriptorPool>(handle));
 }
 
 //-----------------
 
-const ShaderResourceLayoutSet& DescriptorPool::getLayout() const {
-	return shader->getLayout().getLayoutSet(set);
-}
-
-//-----------------
-
-DescriptorPoolHandle DescriptorPool::createPool() {
-	auto& device = shader->getDevice();
-	const auto& layoutSet = shader->getLayout().getLayoutSet(set);
+DescriptorSetHandle DescriptorPool::createDescriptorSet(const DescriptorSetLayoutHandle& layout) {
 	vk::Device vkDevice(device->getApiHandle());
-
-	std::map<vk::DescriptorType, uint32_t> descriptorTypeCount;
-	for(const auto& layout : layoutSet.getLayouts()) {
-		if(!hasBindingPoint(layout.second.type))
-			continue; // Skip resources whitout a binding point
-
-		auto vkType = getVkDescriptorType(layout.second.type, layout.second.dynamic);
-		descriptorTypeCount[vkType] += layout.second.elementCount;
-	}
-
-	std::vector<vk::DescriptorPoolSize> poolSizes;
-	for(auto& it : descriptorTypeCount)
-		if(it.second > 0)
-			poolSizes.emplace_back(it.first, it.second * maxDescriptors);
-
-	return DescriptorPoolHandle::create(vkDevice.createDescriptorPool({
-		vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-		maxDescriptors,
-		static_cast<uint32_t>(poolSizes.size()), poolSizes.data()
-	}), vkDevice);
+	vk::DescriptorPool vkPool(handle);
+	vk::DescriptorSetLayout vkLayout(layout);
+	
+	// Allocate new descriptor set from pool
+	auto obj = vkDevice.allocateDescriptorSets({
+		vkPool, 1, &vkLayout
+	}).front();
+	return DescriptorSetHandle::create(obj, {vkDevice, handle});
 }
 
 //-----------------

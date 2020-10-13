@@ -73,8 +73,6 @@ public:
 
 	// materials
 	std::stack<MaterialData> materialStack;
-	MaterialData activeMaterial;
-	uint32_t activeMaterialId;
 
 	// fbo
 	std::stack<FBO::Ref> fboStack;
@@ -166,11 +164,9 @@ void RenderingContext::flush(bool wait) {
 void RenderingContext::present() {
 	flush();
 
-	// clear materials & lights
+	// clear  lights
 	// TODO: do explicit clearing?
-	internal->renderingState.getMaterials().clear();
 	internal->renderingState.getLights().clear();
-	internal->activeMaterialId = 0;
 
 	internal->device->getQueue(QueueFamily::Present)->present();
 }
@@ -185,10 +181,6 @@ void RenderingContext::barrier(uint32_t flags) {
 // Applying changes ***************************************************************************
 
 void RenderingContext::applyChanges(bool forced) {
-	// apply material
-	
-	internal->activeMaterialId = internal->renderingState.getMaterials().addMaterial(internal->activeMaterial);
-
 	if(internal->cmd->isInRenderPass() && 
 		internal->cmd->getFBO() != internal->pipelineState.getFBO() &&
 		internal->pipelineState.getFBO().isNotNull() && 
@@ -286,7 +278,7 @@ void RenderingContext::clearStencil(int32_t clearValue) {
 // AlphaTest ************************************************************************************
 
 const AlphaTestParameters RenderingContext::getAlphaTestParameters() const {
-	return internal->activeMaterial.isAlphaMaskEnabled() ? AlphaTestParameters(Comparison::LESS, internal->activeMaterial.getAlphaThreshold()) : AlphaTestParameters();
+	return internal->renderingState.getMaterial().isAlphaMaskEnabled() ? AlphaTestParameters(Comparison::LESS, internal->renderingState.getMaterial().getAlphaThreshold()) : AlphaTestParameters();
 }
 
 void RenderingContext::popAlphaTest() {
@@ -307,10 +299,10 @@ void RenderingContext::pushAndSetAlphaTest(const AlphaTestParameters & p) {
 void RenderingContext::setAlphaTest(const AlphaTestParameters & p) {
 	if(p.isEnabled()) {
 		WARN_IF(p.getMode() != Comparison::LESS, "setAlphaTest: Only Comparison::LESS is supported.");
-		internal->activeMaterial.setAlphaMaskEnabled(true);
-		internal->activeMaterial.setAlphaThreshold(p.getReferenceValue());
+		internal->renderingState.getMaterial().setAlphaMaskEnabled(true);
+		internal->renderingState.getMaterial().setAlphaThreshold(p.getReferenceValue());
 	} else {
-		internal->activeMaterial.setAlphaMaskEnabled(false);
+		internal->renderingState.getMaterial().setAlphaMaskEnabled(false);
 	}
 }
 
@@ -995,17 +987,17 @@ void RenderingContext::popMatrix_modelToCamera() {
 
 
 const MaterialData& RenderingContext::getActiveMaterial() const {
-	return internal->activeMaterial;
+	return internal->renderingState.getMaterial();
 }
 
 const MaterialParameters RenderingContext::getMaterial() const {
 	// convert from MaterialData
 	MaterialParameters material;
-	material.setAmbient(internal->activeMaterial.getAmbient());
-	material.setDiffuse(internal->activeMaterial.getDiffuse());
-	material.setSpecular(internal->activeMaterial.getSpecular());
-	material.setEmission(internal->activeMaterial.getEmission());
-	if(internal->activeMaterial.getShadingModel() == ShadingModel::Shadeless)
+	material.setAmbient(internal->renderingState.getMaterial().getAmbient());
+	material.setDiffuse(internal->renderingState.getMaterial().getDiffuse());
+	material.setSpecular(internal->renderingState.getMaterial().getSpecular());
+	material.setEmission(internal->renderingState.getMaterial().getEmission());
+	if(internal->renderingState.getMaterial().getShadingModel() == ShadingModel::Shadeless)
 		material.enableColorMaterial();
 	return material;
 }
@@ -1023,7 +1015,7 @@ void RenderingContext::popMaterial() {
 }
 
 void RenderingContext::pushMaterial() {
-	internal->materialStack.emplace(internal->activeMaterial);
+	internal->materialStack.emplace(internal->renderingState.getMaterial());
 }
 
 void RenderingContext::pushAndSetMaterial(const MaterialData& material) {
@@ -1057,7 +1049,7 @@ void RenderingContext::setMaterial(const MaterialParameters& _material) {
 }
 
 void RenderingContext::setMaterial(const MaterialData& material) {
-	internal->activeMaterial = material;
+	internal->renderingState.setMaterial(material);
 }
 
 // VIEWPORT **********************************************************************************

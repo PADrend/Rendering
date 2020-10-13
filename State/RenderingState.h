@@ -269,21 +269,25 @@ private:
 class RenderingState {
 public:
 	CameraData& getCamera() { return camera; }
-	MaterialSet& getMaterials() { return materials; }
+	//MaterialSet& getMaterials() { return materials; }
+	MaterialData& getMaterial() { return material; }
 	LightSet& getLights() { return lights; }
 	InstanceData& getInstance() { return instance; }
+
+	void setMaterial(const MaterialData& mat) { material = mat; }
 
 	void apply(const ShaderRef& shader, bool forced=false);
 
 	bool operator==(const RenderingState& o) const {
 		return camera == o.camera &&
-			materials == o.materials &&
+			material == o.material &&
 			lights == o.lights;
 	}
 	bool operator!=(const RenderingState& o) const { return !(*this == o); }
 private:
 	CameraData camera;
-	MaterialSet materials;
+	//MaterialSet materials;
+	MaterialData material;
 	LightSet lights;
 	InstanceData instance; // For now, only one instance is supported
 };

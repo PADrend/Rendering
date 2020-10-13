@@ -80,7 +80,7 @@ CommandBuffer::~CommandBuffer() {
 bool CommandBuffer::init() {
 	handle = queue->requestCommandBuffer(primary);
 	if(handle)
-		state = Initial;
+		state = State::Initial;
 	return handle.isNotNull();
 }
 
@@ -92,8 +92,8 @@ void CommandBuffer::reset() {
 		end();
 	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 	pipeline = Pipeline::createGraphics(queue->getDevice());
-	descriptorSets.clear();
-	boundPipeline = nullptr;
+	boundDescriptorSets.clear();
+	boundPipelines.clear();
 	state = State::Initial;
 }
 
@@ -123,25 +123,18 @@ void CommandBuffer::flush() {
 			break;
 	}
 
-	if(!boundPipeline || boundPipeline != pipeline->getApiHandle()) {
+	if(boundPipelines.empty() || boundPipelines.back() != pipeline->getApiHandle()) {
+		// pipeline changed
 		vkCmd.bindPipeline(vkBindPoint, vkPipeline);
-		boundPipeline = pipeline->getApiHandle();
+		boundPipelines.emplace_back(pipeline->getApiHandle());
 	}
 
-	// remove unused descriptor sets
-	for(auto it = descriptorSets.begin(); it != descriptorSets.end();) {
-		if(!layout.hasLayoutSet(it->first)) {
-			it = descriptorSets.erase(it);
-		} else {
-			++it;
-		}
-	}
-
-	// bindings did not change
+	// update descriptor sets
 	if(!bindings.isDirty())
-		return;
+		return; // bindings did not change
 	bindings.clearDirty();
 
+	std::vector<vk::DescriptorSet> bindSets;
 	for(auto& it : bindings.getBindingSets()) {
 		auto set = it.first;
 		auto& bindingSet = it.second;
@@ -151,21 +144,15 @@ void CommandBuffer::flush() {
 		if(!layout.hasLayoutSet(set))
 			continue;
 		
-		DescriptorSet::Ref descriptorSet;
-		auto dIt = descriptorSets.find(set);
-		auto pool = shader->getDescriptorPool(set);
-		if(dIt == descriptorSets.end() || dIt->second->getLayoutHandle() != pool->getLayoutHandle()) {
-			descriptorSet = DescriptorSet::create(pool);
-			descriptorSets.emplace(set, descriptorSet);
+		auto descriptorSet = DescriptorSet::create(device->getDescriptorPool(), layout.getLayoutSet(set), bindingSet);
+		if(descriptorSet) {
+			vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
+			vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, {});
+			boundDescriptorSets.emplace_back(descriptorSet);
 		} else {
-			descriptorSet = dIt->second;
+			WARN("Failed to create descriptor set for binding set " + std::to_string(set));
 		}
-
-		descriptorSet->update(bindingSet);
-		vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
-		vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, descriptorSet->getDynamicOffsets());
 	}
-
 }
 
 //-----------------
@@ -173,6 +160,7 @@ void CommandBuffer::flush() {
 void CommandBuffer::begin() {
 	WARN_AND_RETURN_IF(state == State::Recording, "Command buffer is already recording.",);
 	WARN_AND_RETURN_IF(state == State::Invalid, "Invalid command buffer.",);
+	reset();
 	vk::CommandBuffer vkCmd(handle);
 	state = State::Recording;
 	vkCmd.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});

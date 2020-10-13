@@ -20,10 +20,12 @@ static const Util::StringIdentifier PIPELINE_LAYOUT("PipelineLayout");
 
 //----------------
 
+// defined in Pipeline.cpp
 ApiBaseHandle::Ref createComputePipelineHandle(Device* device, Shader* shader, const std::string& entryPoint, VkPipeline parent);
 ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, const PipelineState& state, VkPipeline parent);
-ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderResourceLayoutSet& layoutSet);
 ApiBaseHandle::Ref createPipelineLayoutHandle(Device* device, const ShaderLayout& layout);
+// defined in DescriptorSet.cpp
+ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderResourceLayoutSet& layoutSet);
 
 //----------------
 

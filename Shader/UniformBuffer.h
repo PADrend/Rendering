@@ -58,8 +58,8 @@ public:
 	size_t getSize() const { return cache.size(); }
 	uint32_t getElementCount() const { return arraySize; }
 private:
-	explicit UniformBuffer(bool pushConstant);
-	bool init(const DeviceRef& device, const Util::ResourceFormat& format, uint32_t arraySize);
+	explicit UniformBuffer(uint32_t arraySize, bool pushConstant);
+	bool init(const DeviceRef& device, const Util::ResourceFormat& format);
 	
 	Util::ResourceAccessor::Ref accessor;
 	BufferObjectRef buffer;

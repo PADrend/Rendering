@@ -85,9 +85,9 @@ ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderR
 
 //---------------
 
-DescriptorSet::Ref DescriptorSet::create(const DescriptorPoolRef& pool) {
+DescriptorSet::Ref DescriptorSet::create(const DescriptorPoolRef& pool, const ShaderResourceLayoutSet& layout, const BindingSet& bindings) {
 	Ref obj = new DescriptorSet(pool);
-	if(!obj->init())
+	if(!obj->init(bindings, layout))
 		return nullptr;
 	return obj;
 }
@@ -99,36 +99,25 @@ DescriptorSet::DescriptorSet(const DescriptorPoolRef& pool) : pool(pool) { }
 //---------------
 
 DescriptorSet::~DescriptorSet() {
-	pool->free(handle);
+	pool->free(handle, layoutHash);
 }
 
 //---------------
 
-bool DescriptorSet::init() {
-	if(!pool)
+bool DescriptorSet::init(const BindingSet& bindings, const ShaderResourceLayoutSet& layout) {	
+	handle = pool->requestDescriptorSet(layout);
+	if(!handle)
 		return false;
-	auto poolEntry = pool->request();
-	handle = poolEntry.first;
-	poolHandle = poolEntry.second;
-	layoutHandle = pool->getLayoutHandle();
-	
-	return handle.isNotNull();
-}
 
-//---------------
-
-void DescriptorSet::update(const BindingSet& bindings) {
-	dynamicOffsets.clear();
-		
-	const auto& layout = pool->getLayout();
+	auto layoutHandle = pool->getLayoutHandle(layout);
 	vk::Device vkDevice(layoutHandle);
+
 	vk::DescriptorSet vkDescriptorSet(handle);
 	
 	std::vector<vk::WriteDescriptorSet> writes;
 
 	std::vector<std::vector<vk::DescriptorImageInfo>> imageBindings;
 	std::vector<std::vector<vk::DescriptorBufferInfo>> bufferBindings;
-	std::vector<std::vector<vk::BufferView>> texelBufferViews; // TODO
 	
 	for(auto& bIt : bindings.getBindings()) {
 		auto& binding = bIt.second;
@@ -140,7 +129,6 @@ void DescriptorSet::update(const BindingSet& bindings) {
 		auto vkImageLayout = getVkImageLayout(descriptor.type);
 		imageBindings.emplace_back();
 		bufferBindings.emplace_back();
-		texelBufferViews.emplace_back();
 
 		for(auto& tex : binding.getTextures()) {
 			if(tex && tex->isValid()) {
@@ -158,7 +146,7 @@ void DescriptorSet::update(const BindingSet& bindings) {
 			if(view && view->getApiHandle()) {
 				imageBindings.back().emplace_back(nullptr, static_cast<vk::ImageView>(view->getApiHandle()), vkImageLayout);
 			} else {
-				WARN("Empty texture binding.");
+				WARN("Empty input image binding.");
 				imageBindings.back().emplace_back(nullptr, nullptr, vkImageLayout);
 			}
 		}
@@ -167,29 +155,24 @@ void DescriptorSet::update(const BindingSet& bindings) {
 			if(buffer && buffer->isValid()) {
 				auto b = buffer->getBuffer();
 				bufferBindings.back().emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), 0, b->getSize());
-				if(descriptor.dynamic)
-					dynamicOffsets.emplace_back(0);
+				//if(descriptor.dynamic)
+				//	dynamicOffsets.emplace_back(0);
 			} else {
-				WARN("Empty texture binding.");
+				WARN("Empty buffer binding.");
 				bufferBindings.back().emplace_back(nullptr, 0, 0);
 			}
 		}
 
 		// TODO: handle unbound array elements
-		uint32_t count = std::max<uint32_t>(imageBindings.back().size(), std::max<uint32_t>(bufferBindings.back().size(), texelBufferViews.back().size()));
+		uint32_t count = std::max<uint32_t>(imageBindings.back().size(), bufferBindings.back().size());
 		writes.emplace_back(
 			vkDescriptorSet, bIt.first, 
 			0, count, getVkDescriptorType(descriptor.type, descriptor.dynamic), 
-			imageBindings.back().data(), bufferBindings.back().data(), texelBufferViews.back().data()
+			imageBindings.back().data(), bufferBindings.back().data(), nullptr
 		);
 	}
 	vkDevice.updateDescriptorSets(writes, {});
-}
-
-//---------------
-
-const ShaderResourceLayoutSet& DescriptorSet::getLayout() const {
-	return pool->getLayout();
+	return true;
 }
 
 //---------------

@@ -49,6 +49,7 @@ const std::string vertexShader = R"vs(
 
 	void main() {
 		gl_Position = sg_matrix_modelToClipping * vec4(sg_Position, 1.0);
+		gl_Position.y = -gl_Position.y; // Vulkan uses right hand NDC
 		fragColor = sg_Color.rgb;
 	}
 )vs";
@@ -69,7 +70,8 @@ const std::string fragmentShader = R"fs(
 	};
 
 	void main() {
-		outColor = vec4(sg_Material.diffuse.rgb, 1.0);
+		//outColor = vec4(fragColor);
+		outColor = sg_Material.diffuse;
 	}
 )fs";
 
@@ -119,15 +121,16 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 		context.clearScreen({0,0,0,1});
 
 		drawCoordSys(context, 2);
-		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);		
+		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
+		context.pushAndSetColorMaterial({1,0,0,1});
 		//context.displayMesh(mesh);
+		context.popMaterial();
 		context.popMatrix_modelToCamera();
 
 		context.present();
 		//if(round == 500)
 		//	context.setShader(nullptr);
 		//mat.rotate_deg(1, {0,1,0});
-		break;
 	}
 	vkDevice.waitIdle();
 }

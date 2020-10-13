@@ -12,6 +12,7 @@
 #include "Swapchain.h"
 #include "CommandBuffer.h"
 #include "ResourceCache.h"
+#include "DescriptorPool.h"
 
 #include <Util/Macros.h>
 #include <Util/UI/Window.h>
@@ -83,6 +84,7 @@ struct Device::InternalData {
 	Swapchain::Ref swapchain;
 	ResourceCache::Ref resourceCache;
 	PipelineCacheHandle pipelineCache;
+	DescriptorPool::Ref descriptorPool;
 
 	vk::DispatchLoaderDynamic dldy;
 	vk::PhysicalDevice physicalDevice;
@@ -94,11 +96,12 @@ struct Device::InternalData {
 	std::vector<Queue::Ref> queues;
 	
 	bool createInstance(const Device::Ref& device, const Device::Configuration& config);
-	bool initPhysicalDevice(const Device::Ref& device, const Device::Configuration& config);	
+	bool initPhysicalDevice(const Device::Ref& device, const Device::Configuration& config);
 	bool createLogicalDevice(const Device::Ref& device, const Device::Configuration& config);
 	bool createAllocator(const Device::Ref& device, const Device::Configuration& config);
 	bool createMemoryAllocator(const Device::Ref& device, const Device::Configuration& config);
 	bool createSwapchain(const Device::Ref& device, const Device::Configuration& config);
+	bool createDescriptorPools(const Device::Ref& device, const Device::Configuration& config);
 };
 
 //=========================================================================
@@ -316,7 +319,7 @@ bool Device::InternalData::createMemoryAllocator(const Device::Ref& device, cons
 		return false;
 
 	allocator = AllocatorHandle::create(vmaAllocator, apiHandle);
-	return true;
+	return allocator.isNotNull();
 }
 
 //------------
@@ -330,6 +333,25 @@ bool Device::InternalData::createSwapchain(const Device::Ref& device, const Devi
 		return false;
 	}
 	return true;
+}
+
+//------------
+
+bool Device::InternalData::createDescriptorPools(const Device::Ref& device, const Device::Configuration& config) {
+	if(config.debugMode)
+		std::cout << "Creating descriptor pools..." << std::endl;
+	
+	// Descriptor counts inspired by Falcor
+	DescriptorPool::Configuration poolConfig;
+	poolConfig.setDescriptorCount(ShaderResourceType::BufferStorage, 2 * 1024)
+						.setDescriptorCount(ShaderResourceType::BufferUniform, 16 * 1024)
+						.setDescriptorCount(ShaderResourceType::Image, 1000000)
+						.setDescriptorCount(ShaderResourceType::ImageSampler, 1000000)
+						.setDescriptorCount(ShaderResourceType::ImageStorage, 16 * 1024)
+						.setDescriptorCount(ShaderResourceType::Sampler, 2 * 1024);
+	
+	descriptorPool = DescriptorPool::create(device, poolConfig);
+	return descriptorPool.isNotNull();
 }
 
 //=========================================================================
@@ -367,12 +389,6 @@ const SwapchainRef& Device::getSwapchain() const {
 
 void Device::present() {
 	internal->queues[internal->familyIndices[QueueFamily::Present]]->present();
-}
-
-//------------
-
-void Device::flush() {
-	
 }
 
 //------------
@@ -462,6 +478,12 @@ const SurfaceHandle& Device::getSurface() const {
 
 //------------
 
+const DescriptorPoolRef& Device::getDescriptorPool() const {
+	return internal->descriptorPool;
+}
+
+//------------
+
 const InstanceHandle& Device::getInstance() const {
 	return internal->instance;
 }
@@ -507,6 +529,11 @@ bool Device::init(const Configuration& config) {
 		
 	if(!internal->createSwapchain(this, config)) {
 		WARN("Device: Could not create Swapchain.");
+		return false;
+	}
+		
+	if(!internal->createDescriptorPools(this, config)) {
+		WARN("Device: Could not create descriptor pools.");
 		return false;
 	}
 	

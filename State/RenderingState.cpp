@@ -209,16 +209,15 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 	}*/
 
 	// materials
-	if (forced || materials.getMaterial(0).hasChanged()) {
+	if (forced || material.hasChanged()) {
 
-		const auto& material = materials.getMaterial(0);
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_AMBIENT, material.getAmbient());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_DIFFUSE, material.getDiffuse());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_SPECULAR, material.getSpecular());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_EMISSION, material.getEmission());
 		uniforms.emplace_back(UNIFORM_SG_MATERIAL_SHININESS, material.getSpecular().a());
 
-		materials.getMaterial(0).markAsUnchanged();
+		material.markAsUnchanged();
 	}
 
 	// modelview
