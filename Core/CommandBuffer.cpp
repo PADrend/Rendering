@@ -267,6 +267,13 @@ void CommandBuffer::prepareForPresent() {
 
 //-----------------
 
+void CommandBuffer::addCommand(Command* cmd) {
+	if(cmd)
+		commands.emplace_back(cmd);
+}
+
+//-----------------
+
 void CommandBuffer::bindBuffer(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	bindings.bind(buffer, set, binding, arrayElement);

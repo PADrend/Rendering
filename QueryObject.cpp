@@ -23,6 +23,75 @@
 
 namespace Rendering {
 
+class QueryCommand : public Command {
+PROVIDES_TYPE_NAME(QueryCommand)
+public:
+	enum Mode {
+		Begin, End
+	};
+	QueryCommand(Mode mode, const Query& query) : mode(mode), query(query) {}
+
+	bool compile(CompileContext& context) override;
+private:
+	Mode mode;
+	Query query;
+};
+
+//-------------
+
+bool QueryCommand::compile(CompileContext& context) {
+	vk::CommandBuffer vkCmd(context.cmd);
+	vk::QueryPool pool(context.device->getQueryPool()->getPoolHandle(query));
+	switch(mode) {
+		case Mode::Begin:
+			vkCmd.resetQueryPool(pool, query.id, 1);
+			vkCmd.beginQuery(pool, query.id, {});
+			break;
+		case Mode::End:
+			vkCmd.endQuery(pool, query.id);
+			break;
+	}
+	return true;
+}
+
+//---------------------------------------
+
+class TimeElapsedQueryCommand : public Command {
+PROVIDES_TYPE_NAME(TimeElapsedQueryCommand)
+public:
+	enum Mode {
+		Begin, End, Timestamp
+	};
+	TimeElapsedQueryCommand(Mode mode, const Query& query, const Query& endQuery) : mode(mode), query(query), endQuery(endQuery) {}
+
+	bool compile(CompileContext& context) override;
+private:
+	Mode mode;
+	Query query;
+	Query endQuery;
+};
+
+//-------------
+
+bool TimeElapsedQueryCommand::compile(CompileContext& context) {
+	vk::CommandBuffer vkCmd(context.cmd);
+	vk::QueryPool pool(context.device->getQueryPool()->getPoolHandle(query));
+	switch(mode) {
+		case Mode::Begin:
+		case Mode::Timestamp:
+			vkCmd.resetQueryPool(pool, query.id, 1);
+			vkCmd.resetQueryPool(pool, endQuery.id, 1);
+			vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, query.id);
+			break;
+		case Mode::End:
+			vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, endQuery.id);
+			break;
+	}
+	return true;
+}
+
+//---------------------------------------
+
 QueryObject::QueryObject(QueryType _queryType) {
 	query.type = _queryType;
 	query = Device::getDefault()->getQueryPool()->request(query.type);
@@ -85,16 +154,12 @@ uint64_t QueryObject::getResult64(RenderingContext& rc) const {
 
 void QueryObject::begin(RenderingContext& rc) const {
 	WARN_AND_RETURN_IF(query.type == QueryType::Timestamp, "QueryObject: begin() is not allowed for Timestamp queries.",);
-	rc.applyChanges();
 	auto cmd = rc.getCommandBuffer();
-	vk::CommandBuffer vkCmd(cmd->getApiHandle());
-	vk::QueryPool pool(rc.getDevice()->getQueryPool()->getPoolHandle(query));
-	vkCmd.resetQueryPool(pool, query.id, 1);
+	cmd->endRenderPass();
 	if(query.type == QueryType::TimeElapsed) {
-		vkCmd.resetQueryPool(pool, endQuery.id, 1);
-		vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, query.id);
+		cmd->addCommand(new TimeElapsedQueryCommand(TimeElapsedQueryCommand::Begin, query, endQuery));
 	} else {
-		vkCmd.beginQuery(pool, query.id, {});
+		cmd->addCommand(new QueryCommand(QueryCommand::Begin, query));
 	}
 }
 
@@ -102,27 +167,20 @@ void QueryObject::end(RenderingContext& rc) const {
 	WARN_AND_RETURN_IF(query.type == QueryType::Timestamp, "QueryObject: end() is not allowed for Timestamp queries.",);
 	if(!isValid())
 		return;
-	rc.applyChanges();
 	auto cmd = rc.getCommandBuffer();
-	cmd->flush();
-	vk::CommandBuffer vkCmd(cmd->getApiHandle());
-	vk::QueryPool pool(rc.getDevice()->getQueryPool()->getPoolHandle(query));
+	cmd->endRenderPass();
 	if(query.type == QueryType::TimeElapsed) {
-		vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, endQuery.id);
+		cmd->addCommand(new TimeElapsedQueryCommand(TimeElapsedQueryCommand::End, query, endQuery));
 	} else {
-		vkCmd.endQuery(pool, query.id);
+		cmd->addCommand(new QueryCommand(QueryCommand::End, query));
 	}
 }
 
 void QueryObject::queryCounter(RenderingContext& rc) const {
 	WARN_AND_RETURN_IF(query.type != QueryType::Timestamp, "QueryObject: queryCounter() is only allowed for Timestamp queries.",);
-	rc.applyChanges();
 	auto cmd = rc.getCommandBuffer();
-	cmd->flush();
-	vk::CommandBuffer vkCmd(cmd->getApiHandle());
-	vk::QueryPool pool(rc.getDevice()->getQueryPool()->getPoolHandle(query));
-	vkCmd.resetQueryPool(pool, query.id, 1);
-	vkCmd.writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, pool, query.id);
+	cmd->endRenderPass();
+	cmd->addCommand(new TimeElapsedQueryCommand(TimeElapsedQueryCommand::Timestamp, query, endQuery));
 }
 
 }

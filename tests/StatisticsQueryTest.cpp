@@ -12,7 +12,8 @@
 
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
-#include <Rendering/RenderingContext/RenderingContext.h>
+#include <Rendering/Context/RenderingContext.h>
+#include <Rendering/Texture/Texture.h>
 #include <Rendering/Draw.h>
 #include <Rendering/StatisticsQuery.h>
 
@@ -25,6 +26,7 @@ using namespace Rendering;
 static void testEmptyStatisticsQuery(StatisticsQuery & query, const uint32_t expectedResult) {
 	SECTION("testEmptyStatisticsQuery") {
 		RenderingContext& context = *TestUtils::context.get();
+		context.setTexture(0, nullptr);
 		REQUIRE(query.isValid());
 		query.begin(context);
 		query.end(context);
@@ -35,6 +37,7 @@ static void testEmptyStatisticsQuery(StatisticsQuery & query, const uint32_t exp
 static void testBoxStatisticsQuery(StatisticsQuery & query, const uint32_t expectedResult) {
 	SECTION("testBoxStatisticsQuery") {
 		RenderingContext& context = *TestUtils::context.get();
+		context.setTexture(0, nullptr);
 		REQUIRE(query.isValid());
 		query.begin(context);
 		drawBox(context, box);

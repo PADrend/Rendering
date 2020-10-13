@@ -342,11 +342,15 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device) {
 		deviceExtensions.emplace_back("VK_KHR_dedicated_allocation");
 	}
 
+	vk::PhysicalDeviceFeatures features;
+	features.pipelineStatisticsQuery = true;
+
 	// create logical device
 	auto vkDevice = physicalDevice.createDevice({ {}, 
 		static_cast<uint32_t>(queueCreateInfos.size()), queueCreateInfos.data(), 
 		0, nullptr, 
-		static_cast<uint32_t>(deviceExtensions.size()), deviceExtensions.data()
+		static_cast<uint32_t>(deviceExtensions.size()), deviceExtensions.data(),
+		&features
 	});
 
 	if(!vkDevice)

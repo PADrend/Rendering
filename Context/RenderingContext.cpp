@@ -213,12 +213,9 @@ void RenderingContext::flush(bool wait) {
 	internal->activeVBOs.clear();
 	internal->activeIBO = nullptr;
 	auto cmd = internal->cmd;
-	internal->submissionIndex = RenderThread::addTask([&,cmd]() {
+	RenderThread::addTask([&,cmd]() {
 		cmd->submit(wait);
 	});
-	if(internal->submissionIndex - RenderThread::getProcessed() > internal->maxPendingSubmissions) {
-		RenderThread::sync(internal->submissionIndex);
-	}
 
 	auto newCmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
 	newCmd->setBindings(cmd->getBindings());
@@ -234,6 +231,9 @@ void RenderingContext::present() {
 	internal->submissionIndex = RenderThread::addTask([&]() {
 		internal->device->present();
 	});
+	if(internal->submissionIndex - RenderThread::getProcessed() > internal->maxPendingSubmissions) {
+		RenderThread::sync(internal->submissionIndex);
+	}
 
 	END_PROFILING_COND("RenderingContext", PROFILING_CONDITION);
 	BEGIN_PROFILING_COND("RenderingContext", ++PROFILING_CONDITION);

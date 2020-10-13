@@ -73,6 +73,7 @@ public:
 	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, bool clearStencil=true);
 	void endRenderPass();
 	void prepareForPresent();
+	void addCommand(Command* cmd);
 	//! @}
 
 	//! @name Binding commands
