@@ -86,7 +86,7 @@ public:
 	uint32_t getHeight() const { return format.extent.y(); }
 	uint32_t getWidth() const { return format.extent.x(); }
 	TextureType getTextureType() const { return tType; }
-	bool isValid() const { return imageView; }
+	bool isValid() const { return imageView.isNotNull(); }
 
 	/*!	@name Image data manipulation */
 	// @{

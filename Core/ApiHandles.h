@@ -104,6 +104,7 @@ public:
 		operator const ApiType() const { return this->get() ? this->get()->handle : nullptr; }
 		operator const ParentApiType() const { return this->get() ? this->get()->parent : nullptr; }
 		operator uint64_t() const { return this->get() ? reinterpret_cast<uint64_t>(this->get()->handle) : 0; }
+		operator ApiBaseHandle::Ref() const { return {this->get()}; }
 	};
 	~ApiHandle() {};
 	ApiHandle(ApiHandle&& rhs) { parent = std::move(rhs.parent); handle = std::move(rhs.handle); rhs.parent = nullptr; rhs.handle = nullptr; };

@@ -37,7 +37,7 @@ Swapchain::~Swapchain() {
 
 //------------
 
-Swapchain::Swapchain(const DeviceRef& device, const Geometry::Vec2ui& extent) : device(device), extent(extent) { }
+Swapchain::Swapchain(const DeviceRef& device, const Geometry::Vec2ui& extent) : device(device.get()), extent(extent) { }
 
 //------------
 

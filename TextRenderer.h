@@ -9,6 +9,8 @@
 #ifndef RENDERING_TEXTRENDERER_H
 #define RENDERING_TEXTRENDERER_H
 
+#include <Util/References.h>
+
 #include <memory>
 #include <string>
 
@@ -51,7 +53,9 @@ class TextRenderer {
 		 * characters to information about the glyphs
 		 * @see Util::BitmapFont
 		 */
+		[[deprecated]]
 		TextRenderer(const Util::Bitmap & glyphBitmap, const Util::FontInfo & fontInfo);
+		TextRenderer(const Util::Reference<Util::Bitmap> & glyphBitmap, const Util::FontInfo & fontInfo) : TextRenderer(*glyphBitmap.get(), fontInfo) {}
 
 		//! Free resources
 		~TextRenderer();

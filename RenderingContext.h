@@ -77,6 +77,7 @@ using DeviceRef = Util::Reference<Device>;
 using FBORef = Util::Reference<FBO>;
 using ShaderRef = Util::Reference<Shader>;
 using TextureRef = Util::Reference<Texture>;
+using MeshRef = Util::Reference<Mesh>;
 
 //! @defgroup context Rendering Context
 
@@ -106,6 +107,9 @@ public:
 
 	void displayMesh(Mesh * mesh,uint32_t firstElement,uint32_t elementCount){ displayMeshFn(*this, mesh,firstElement,elementCount); }
 	void displayMesh(Mesh * mesh);
+
+	void displayMesh(const MeshRef& mesh,uint32_t firstElement,uint32_t elementCount){ displayMeshFn(*this, mesh.get(),firstElement,elementCount); }
+	void displayMesh(const MeshRef& mesh) { displayMesh(mesh.get()); }
 
 	[[deprecated]]
 	void setImmediateMode(const bool enabled) {}

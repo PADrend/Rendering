@@ -98,9 +98,6 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 
 	Geometry::Matrix4x4 mat;
 
-	Geometry::Matrix4x4 textScaleMat;
-	textScaleMat.scale(2);
-
 	// --------------------------------------------
 	// materials
 
@@ -167,7 +164,6 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 		context.disableLight(lightId);
 
 		enable2DMode(context);
-		context.setMatrix_modelToCamera(textScaleMat);
 		auto wideText = Util::StringUtils::utf8_to_utf32("Hello World!");
 		REQUIRE_NOTHROW(textRenderer.draw(context, wideText, {0, 0}, {1,1,1,1}));
 		disable2DMode(context);

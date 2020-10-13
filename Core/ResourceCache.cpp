@@ -39,7 +39,7 @@ ResourceCache::Ref ResourceCache::create(const DeviceRef& device) {
 
 //----------------
 
-ResourceCache::ResourceCache(const DeviceRef& device) : device(device) {
+ResourceCache::ResourceCache(const DeviceRef& device) : device(device.get()) {
 	cache.registerType(PIPELINE, std::function<decltype(createPipelineHandle)>(createPipelineHandle));
 	cache.registerType(DESCRIPTORSET_LAYOUT, std::function<decltype(createDescriptorSetLayoutHandle)>(createDescriptorSetLayoutHandle));
 	cache.registerType(PIPELINE_LAYOUT, std::function<decltype(createPipelineLayoutHandle)>(createPipelineLayoutHandle));

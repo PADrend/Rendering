@@ -24,7 +24,7 @@ namespace Rendering {
 
 //-------------
 
-Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : device(device), familyIndex(familyIndex), index(index) { }
+Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : device(device.get()), familyIndex(familyIndex), index(index) { }
 
 //-------------
 

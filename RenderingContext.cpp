@@ -574,7 +574,7 @@ void RenderingContext::setPrimitiveTopology(PrimitiveTopology topology) {
 // FBO ************************************************************************************
 
 FBO * RenderingContext::getActiveFBO() const {
-	return internal->activeFBO;
+	return internal->activeFBO.get();
 }
 
 FBORef RenderingContext::getFBO() const {
@@ -608,7 +608,7 @@ ImageBindParameters RenderingContext::getBoundImage(uint8_t unit, uint8_t set) c
 	ImageBindParameters p;
 	if(!image)
 		return p;
-	p.setTexture(Texture::create(internal->device, image));
+	p.setTexture(Texture::create(internal->device, image).detachAndDecrease());
 	p.setLayer(image->getLayer());
 	p.setLevel(image->getMipLevel());
 	p.setMultiLayer(image->getLayerCount() > 1);

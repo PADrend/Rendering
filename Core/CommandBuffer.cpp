@@ -65,7 +65,7 @@ CommandBuffer::Ref CommandBuffer::create(const QueueRef& queue, bool transient, 
 
 //-----------------
 
-CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary, bool transient) : queue(queue), primary(primary), transient(transient) { }
+CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary, bool transient) : queue(queue.get()), primary(primary), transient(transient) { }
 
 //-----------------
 

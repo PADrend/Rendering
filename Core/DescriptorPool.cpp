@@ -75,7 +75,7 @@ DescriptorPool::Ref DescriptorPool::create(const DeviceRef& device, const Config
 
 //-----------------
 
-DescriptorPool::DescriptorPool(const DeviceRef& device, const Configuration& config) : device(device), config(config) { }
+DescriptorPool::DescriptorPool(const DeviceRef& device, const Configuration& config) : device(device.get()), config(config) { }
 
 //-----------------
 
