@@ -29,6 +29,8 @@ class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
 class DescriptorSet;
 using DescriptorSetRef = Util::Reference<DescriptorSet>;
+class Queue;
+using QueueRef = Util::Reference<Queue>;
 
 //-------------------------------------------------------
 
@@ -43,7 +45,8 @@ public:
 		Free,
 	};
 
-	static Ref request(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool primary=true);
+	static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool primary=true);
+	static Ref create(const QueueRef& queue, bool primary=true);
 	
 	~CommandBuffer();
 	
@@ -98,18 +101,18 @@ public:
 	bool isPrimary() const { return primary; }
 	const CommandBufferHandle& getApiHandle() const { return handle; };
 private:
-	friend class CommandPool;
-	explicit CommandBuffer(CommandPool* pool, bool primary=true); 
+	friend class Queue;
+	explicit CommandBuffer(const QueueRef& queue, bool primary=true); 
 	bool init();
 
-	Util::WeakPointer<CommandPool> pool;
+	Util::WeakPointer<Queue> queue;
 	bool primary;
 	CommandBufferHandle handle;
 	State state = Invalid;
 	Pipeline::Ref pipeline;
 	PipelineHandle boundPipeline;
+	std::map<uint32_t, DescriptorSetRef> descriptorSets;
 	BindingState bindings;
-	std::map<uint32_t, size_t> layoutHashs;
 };
 
 } /* Rendering */

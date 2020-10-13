@@ -15,7 +15,6 @@
 #include "../RenderingContext/PipelineState.h"
 #include "../Core/ApiHandles.h"
 #include "../Core/CommandBuffer.h"
-#include "../Core/CommandPool.h"
 #include "../Core/Device.h"
 #include "../Core/Queue.h"
 #include "../Core/Swapchain.h"
@@ -106,7 +105,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 		auto& fbo = swapchain->getFBO(i);
 		auto& attachment = fbo->getColorTexture();
 
-		auto cmdBuffer = graphicsQueue->requestCommandBuffer();
+		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
 		commandBuffers.emplace_back(cmdBuffer);
 		
 		// record commands

@@ -86,17 +86,16 @@ ApiBaseHandle::Ref createDescriptorSetLayoutHandle(Device* device, const ShaderR
 
 //---------------
 
-DescriptorSet::Ref DescriptorSet::create(const DescriptorPoolRef& pool, const BindingSet& bindings) {
-	Ref obj = new DescriptorSet(pool, bindings);
+DescriptorSet::Ref DescriptorSet::create(const DescriptorPoolRef& pool) {
+	Ref obj = new DescriptorSet(pool);
 	if(!obj->init())
 		return nullptr;
-	obj->update(bindings);
 	return obj;
 }
 
 //---------------
 
-DescriptorSet::DescriptorSet(const DescriptorPoolRef& pool, const BindingSet& bindings) : pool(pool), bindings(bindings) { }
+DescriptorSet::DescriptorSet(const DescriptorPoolRef& pool) : pool(pool) { }
 
 //---------------
 
@@ -109,15 +108,20 @@ DescriptorSet::~DescriptorSet() {
 bool DescriptorSet::init() {
 	if(!pool)
 		return false;
-	handle = pool->request();
+	auto poolEntry = pool->request();
+	handle = poolEntry.first;
+	poolHandle = poolEntry.second;
 	layoutHandle = pool->getLayoutHandle();
+	
 	return handle.isNotNull();
 }
 
 //---------------
 
-bool DescriptorSet::update(const BindingSet& bindings) {
-	auto layout = pool->getLayout();
+void DescriptorSet::update(const BindingSet& bindings) {
+	dynamicOffsets.clear();
+		
+	const auto& layout = pool->getLayout();
 	vk::Device vkDevice(layoutHandle);
 	vk::DescriptorSet vkDescriptorSet(handle);
 	
@@ -160,6 +164,8 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 			if(buffer && buffer->isValid()) {
 				auto b = buffer->getBuffer();
 				bufferBindings.emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), 0, b->getSize());
+				if(descriptor.dynamic)
+					dynamicOffsets.emplace_back(0);
 			} else {
 				WARN("Empty texture binding.");
 				bufferBindings.emplace_back(nullptr, 0, 0);
@@ -175,7 +181,12 @@ bool DescriptorSet::update(const BindingSet& bindings) {
 		);
 	}
 	vkDevice.updateDescriptorSets(writes, {});
-	return true;
+}
+
+//---------------
+
+const ShaderResourceLayoutSet& DescriptorSet::getLayout() const {
+	return pool->getLayout();
 }
 
 //---------------

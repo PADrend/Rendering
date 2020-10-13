@@ -8,7 +8,6 @@
 */
 
 #include "CommandBuffer.h"
-#include "CommandPool.h"
 #include "Device.h"
 #include "DescriptorSet.h"
 #include "DescriptorPool.h"
@@ -36,39 +35,36 @@ vk::PipelineStageFlags getVkPipelineStageMask(const ResourceUsage& usage, bool s
 
 //-----------------
 
-CommandBuffer::Ref CommandBuffer::request(const DeviceRef& device, QueueFamily family, bool primary) {
-	auto pool = device->getCommandPool(family);
-	if(!pool) 
+CommandBuffer::Ref CommandBuffer::create(const DeviceRef& device, QueueFamily family, bool primary) {
+	return create(device->getQueue(family));
+}
+
+//-----------------
+
+CommandBuffer::Ref CommandBuffer::create(const QueueRef& queue, bool primary) {
+	auto buffer = new CommandBuffer(queue, primary);
+	if(!buffer->init())
 		return nullptr;
-	return pool->requestCommandBuffer(primary);
+	return buffer;
 }
 
 //-----------------
 
-CommandBuffer::CommandBuffer(CommandPool* pool, bool primary) : pool(pool), primary(primary) {
-	pipeline = Pipeline::createGraphics(pool->getDevice());
+CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary) : queue(queue), primary(primary) {
+	pipeline = Pipeline::createGraphics(queue->getDevice());
 }
 
 //-----------------
 
-CommandBuffer::~CommandBuffer() = default;
+CommandBuffer::~CommandBuffer() {
+	if(handle)
+		queue->freeCommandBuffer(handle, primary);
+};
 
 //-----------------
 
 bool CommandBuffer::init() {
-	vk::Device vkDevice(pool->getApiHandle());
-	vk::CommandPool vkPool(pool->getApiHandle());
-
-	auto buffers = vkDevice.allocateCommandBuffers({
-		vkPool,
-		primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary,
-		1u
-	});
-
-	if(buffers.empty() || !buffers.front())
-		return false;
-
-	handle = CommandBufferHandle::create(buffers.front(), {vkDevice, vkPool});
+	handle = queue->requestCommandBuffer(primary);
 	if(handle)
 		state = Initial;
 	return handle.isNotNull();
@@ -81,7 +77,8 @@ void CommandBuffer::reset() {
 	if(state == State::Recording)
 		end();
 	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-	pipeline = Pipeline::createGraphics(pool->getDevice());
+	pipeline = Pipeline::createGraphics(queue->getDevice());
+	descriptorSets.clear();
 	state = State::Initial;
 }
 
@@ -94,48 +91,75 @@ void CommandBuffer::free() {
 	state = State::Free;
 }
 
-
 //-----------------
 
 void CommandBuffer::flush() {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	vk::CommandBuffer vkCmd(handle);
-	auto device = pool->getDevice();
+	auto device = queue->getDevice();
+	auto shader = pipeline->getShader();
+	auto layout = shader->getLayout();
 
 	// bind pipeline if it has changed
 	WARN_AND_RETURN_IF(!pipeline->validate(), "CommandBuffer: Invalid Pipeline.",);
 
+	vk::Pipeline vkPipeline(pipeline->getApiHandle());
+	vk::PipelineLayout vkPipelineLayout(shader->getLayoutHandle());
+	vk::PipelineBindPoint vkBindPoint;
+	switch (pipeline->getType()) {
+		case PipelineType::Compute:
+			vkBindPoint = vk::PipelineBindPoint::eCompute;
+			break;
+		case PipelineType::Graphics:
+			vkBindPoint = vk::PipelineBindPoint::eGraphics;
+			break;
+		default:
+			break;
+	}
+
 	if(!boundPipeline || boundPipeline != pipeline->getApiHandle()) {
-		vk::Pipeline vkPipeline(pipeline->getApiHandle());
-		vk::PipelineBindPoint vkBindPoint;
-		switch (pipeline->getType()) {
-			case PipelineType::Compute:
-				vkBindPoint = vk::PipelineBindPoint::eCompute;
-				break;
-			case PipelineType::Graphics:
-				vkBindPoint = vk::PipelineBindPoint::eGraphics;
-				break;
-			default:
-				break;
-		}
 		vkCmd.bindPipeline(vkBindPoint, vkPipeline);
+		boundPipeline = pipeline->getApiHandle();
 	}
 
-	// bind descriptor sets
-	if(!bindings.isDirty())
-		return; // nothing has changed
-
-	auto shader = getShader();
-	std::unordered_set<uint32_t> updateSets;
-
-	for(auto& poolIt : shader->getDescriptorPools()) {
-		auto descrPool = poolIt.second;		
-		auto it = bindings.getBindingSets().find(poolIt.first);
-		// Check if set was bound before
-		if(it != bindings.getBindingSets().end()) {
-			// Check if layout changed
+	// remove unused descriptor sets
+	for(auto it = descriptorSets.begin(); it != descriptorSets.end();) {
+		if(!layout.hasLayoutSet(it->first)) {
+			it = descriptorSets.erase(it);
+		} else {
+			++it;
 		}
 	}
+	
+	// bindings did not change
+	if(!bindings.isDirty())
+		return;
+	bindings.clearDirty();
+
+	for(auto& it : bindings.getBindingSets()) {
+		auto set = it.first;
+		auto& bindingSet = it.second;
+		if(!bindingSet.isDirty())
+			continue;
+		bindings.clearDirty(set);
+		if(!layout.hasLayoutSet(set))
+			continue;
+		
+		DescriptorSet::Ref descriptorSet;
+		auto dIt = descriptorSets.find(set);
+		auto pool = shader->getDescriptorPool(set);
+		if(dIt == descriptorSets.end() || dIt->second->getLayoutHandle() != pool->getLayoutHandle()) {
+			descriptorSet = DescriptorSet::create(pool);
+			descriptorSets.emplace(set, descriptorSet);
+		} else {
+			descriptorSet = dIt->second;
+		}
+
+		descriptorSet->update(bindingSet);
+		vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
+		vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, descriptorSet->getDynamicOffsets());
+	}
+
 }
 
 //-----------------
@@ -166,7 +190,6 @@ void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColor
 	WARN_AND_RETURN_IF(!fbo || !fbo->validate(), "Cannot begin render pass. Invalid FBO.",);
 	vk::Framebuffer framebuffer(fbo->getApiHandle());
 	vk::RenderPass renderPass(fbo->getRenderPass());
-	bindings.reset();
 
 	std::vector<vk::ClearValue> clearValues(fbo->getColorAttachmentCount(), vk::ClearColorValue{});
 	for(uint32_t i=0; i<clearValues.size(); ++i) {

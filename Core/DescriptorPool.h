@@ -14,45 +14,51 @@
 
 #include <Util/ReferenceCounter.h>
 
-#include <vector>
+#include <unordered_map>
 #include <deque>
-#include <set>
 
 namespace Rendering {
-class Device;
-using DeviceRef = Util::Reference<Device>;
+class Shader;
+using ShaderRef = Util::Reference<Shader>;
 class DescriptorSet;
 using DescriptorSetRef = Util::Reference<DescriptorSet>;
-class DescriptorSetLayout;
-using DescriptorSetLayoutRef = Util::Reference<DescriptorSetLayout>;
 
 class DescriptorPool : public Util::ReferenceCounter<DescriptorPool> {
 public:
+	static const uint32_t maxDescriptorCount = 16;
+
 	using Ref = Util::Reference<DescriptorPool>;
 
 	~DescriptorPool();
 	DescriptorPool(DescriptorPool&& o) = delete;
 	DescriptorPool(const DescriptorPool& o) = delete;
 
-	DescriptorSetHandle request();
+	std::pair<DescriptorSetHandle, DescriptorPoolHandle> request();
 	void free(DescriptorSetHandle handle);
 	void reset();
 
-	const ShaderResourceLayoutSet& getLayout() const { return layout; }
+	const ShaderResourceLayoutSet& getLayout() const;
 	const DescriptorSetLayoutHandle& getLayoutHandle() const { return layoutHandle; }
 private:
 	friend class Shader;
-	explicit DescriptorPool(const DeviceRef& device, const ShaderResourceLayoutSet& layout);
+	explicit DescriptorPool(const ShaderRef& shader, uint32_t set, uint32_t maxDescriptors=maxDescriptorCount);
 	bool init();
+	DescriptorPoolHandle createPool();
 
-	const DeviceRef device;
-	const ShaderResourceLayoutSet layout;
+	const ShaderRef shader;
+	const uint32_t set;
+	const uint32_t maxDescriptors;
 
+	struct PoolEntry {
+		PoolEntry(DescriptorPoolHandle&& pool) : pool(std::move(pool)) {}
+		DescriptorPoolHandle pool;
+		uint32_t allocations;
+		std::deque<DescriptorSetHandle> free;
+	};
+	std::vector<PoolEntry> pools;
+	uint32_t currentPoolIndex = 0;
 	DescriptorSetLayoutHandle layoutHandle;
-	std::vector<DescriptorPoolHandle> pools;
-	uint32_t poolCounter = 0;
 
-	std::deque<DescriptorSetHandle> freeObjects;
 };
 
 } /* Rendering */

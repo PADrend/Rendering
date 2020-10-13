@@ -85,6 +85,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		[[deprecated]]
 		RenderingStatus * getRenderingStatus() { return renderingData.get(); }
 
+		const DeviceRef& getDevice() const { return device; }
 	private:
 		std::unique_ptr<RenderingStatus> renderingData; // created when the shader is successfully initialized
 		DeviceRef device;
@@ -156,11 +157,13 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	// @{
 	public:
 		const ShaderLayout& getLayout() const { return layout; }
+		const PipelineLayoutHandle& getLayoutHandle() const { return layoutHandle; }
 		
 		const std::map<uint32_t, DescriptorPoolRef>& getDescriptorPools() const { return descriptorPools; }
 		const DescriptorPoolRef& getDescriptorPool(uint32_t set) const { return descriptorPools.at(set); }
 	private:
 		ShaderLayout layout;
+		PipelineLayoutHandle layoutHandle;
 		std::unordered_map<std::string, ShaderResource> resources;
 		
 		std::map<uint32_t, DescriptorPoolRef> descriptorPools;

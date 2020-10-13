@@ -11,7 +11,6 @@
 #include "Device.h"
 #include "Swapchain.h"
 #include "CommandBuffer.h"
-#include "CommandPool.h"
 #include "../Shader/Shader.h"
 #include "../FBO.h"
 
@@ -58,30 +57,66 @@ bool Queue::present() {
 
 //-------------
 
-CommandBufferRef Queue::requestCommandBuffer(bool primary) {
-	return device->getCommandPool(familyIndex)->requestCommandBuffer(primary);
+CommandBufferHandle Queue::requestCommandBuffer(bool primary) {
+	return commandPool.create(static_cast<uint32_t>(primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary));
+}
+
+
+//-------------
+
+void Queue::freeCommandBuffer(const CommandBufferHandle& bufferHandle, bool primary) {
+	commandPool.free(static_cast<uint32_t>(primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary), bufferHandle);
 }
 
 //-------------
 
-const CommandPoolRef& Queue::getCommandPool() const {
-	return device->getCommandPool(familyIndex);
-}
+Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : device(device), familyIndex(familyIndex), index(index) { }
 
 //-------------
 
-Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : device(device), familyIndex(familyIndex), index(index) {
+bool Queue::init() {
 	vk::Device vkDevice(device->getApiHandle());
 	vk::PhysicalDevice physicalDevice(device->getApiHandle());
 	vk::SurfaceKHR surface(device->getSurface());
 
-	handle = QueueHandle::create(vkDevice.getQueue(familyIndex, index), vkDevice);
 	auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
 	QueueFamily isPresent = physicalDevice.getSurfaceSupportKHR(familyIndex, surface) ? QueueFamily::Present : QueueFamily::None;
 	QueueFamily isGraphics = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eGraphics) ? QueueFamily::Graphics : QueueFamily::None;
 	QueueFamily isCompute = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eCompute) ? QueueFamily::Compute : QueueFamily::None;
 	QueueFamily isTransfer = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eTransfer) ? QueueFamily::Transfer : QueueFamily::None;
 	capabilities = isPresent | isGraphics | isCompute | isTransfer;
+
+	handle = QueueHandle::create(vkDevice.getQueue(familyIndex, index), vkDevice);
+	if(!handle)
+		return false;
+
+	commandPoolHandle = CommandPoolHandle::create(vkDevice.createCommandPool({
+		vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+		familyIndex
+	}), vkDevice);
+
+	commandPool.registerType(static_cast<uint32_t>(vk::CommandBufferLevel::ePrimary), std::bind(&Queue::createCommandBuffer, this, true));
+	commandPool.registerType(static_cast<uint32_t>(vk::CommandBufferLevel::eSecondary), std::bind(&Queue::createCommandBuffer, this, false));
+	
+	return commandPoolHandle.isNotNull();
+}
+
+//-------------
+
+CommandBufferHandle Queue::createCommandBuffer(bool primary) {
+	vk::Device vkDevice(handle);
+	vk::CommandPool vkPool(commandPoolHandle);
+
+	auto buffers = vkDevice.allocateCommandBuffers({
+		vkPool,
+		primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary,
+		1u
+	});
+
+	if(buffers.empty() || !buffers.front())
+		return nullptr;
+	
+	return CommandBufferHandle::create(buffers.front(), {vkDevice, vkPool});
 }
 
 //-------------

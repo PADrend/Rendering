@@ -11,7 +11,6 @@
 #include "Queue.h"
 #include "Swapchain.h"
 #include "CommandBuffer.h"
-#include "CommandPool.h"
 #include "ResourceCache.h"
 
 #include <Util/Macros.h>
@@ -93,7 +92,6 @@ struct Device::InternalData {
 
 	std::map<QueueFamily, int32_t> familyIndices;
 	std::vector<Queue::Ref> queues;
-	std::vector<CommandPool::Ref> commandPools;
 	
 	bool createInstance(const Device::Ref& device, const Device::Configuration& config);
 	bool initPhysicalDevice(const Device::Ref& device, const Device::Configuration& config);	
@@ -173,7 +171,7 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const D
 
 	properties = physicalDevice.getProperties();
 	if(config.debugMode)
-		std::cout << "selected device: " << properties.deviceName << std::endl;
+		std::cout << "Selected device: " << properties.deviceName << std::endl;
 	
 	// check API version
 	uint32_t apiVersion = VK_MAKE_VERSION(config.apiVersionMajor, config.apiVersionMinor, 0);
@@ -212,12 +210,15 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 	for(uint32_t i=0; i<queueFamilyProperties.size(); ++i) {
 		if(familyIndices[QueueFamily::Graphics] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)) {
 			familyIndices[QueueFamily::Graphics] = i;
-			if(physicalDevice.getSurfaceSupportKHR(i, vkSurface))
-				familyIndices[QueueFamily::Present] = i;
-		} else if(familyIndices[QueueFamily::Compute] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute)) {
+		}
+		if(familyIndices[QueueFamily::Compute] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute)) {
 			familyIndices[QueueFamily::Compute] = i;
-		} else if(familyIndices[QueueFamily::Transfer] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eTransfer)) {
+		}
+		if(familyIndices[QueueFamily::Transfer] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eTransfer)) {
 			familyIndices[QueueFamily::Transfer] = i;
+		}
+		if(familyIndices[QueueFamily::Present] < 0 && physicalDevice.getSurfaceSupportKHR(i, vkSurface)) {
+			familyIndices[QueueFamily::Present] = i;
 		}
 	}
 
@@ -254,11 +255,13 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 	// Create command queues & pools
 	queues.clear();
 	queues.resize(queueFamilyProperties.size());
-	commandPools.clear();
-	commandPools.resize(queueFamilyProperties.size());
 	for(int32_t index : uniqueIndices) {
-		queues[index] = new Queue(device, index, 0); // For now, we only support one queue per family.
-		commandPools[index] = new CommandPool(device, index);
+		auto queue = new Queue(device, index, 0); // For now, we only support one queue per family.
+		if(!queue->init()) {
+			WARN("Device: Could not create command queue.");
+			return false;
+		}
+		queues[index] = queue;
 	}
 
 	// Create pipeline cache
@@ -428,23 +431,6 @@ std::set<Queue::Ref> Device::getQueues() const {
 			queues.emplace(queue);
 	}
 	return queues;
-}
-
-//------------
-
-const CommandPoolRef& Device::getCommandPool(QueueFamily family) const {
-	static CommandPoolRef nullRef;
-	auto familyIndex = internal->familyIndices[family];
-	return familyIndex >= 0 ? internal->commandPools[familyIndex] : nullRef;
-}
-
-//------------
-
-const CommandPoolRef& Device::getCommandPool(uint32_t familyIndex) const {
-	static CommandPoolRef nullRef;
-	if(familyIndex >= internal->commandPools.size())
-		return nullRef;
-	return internal->commandPools[familyIndex];
 }
 
 //------------

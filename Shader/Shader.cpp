@@ -15,6 +15,7 @@
 #include "../Core/Device.h"
 #include "../Core/DescriptorPool.h"
 #include "../Core/DescriptorSet.h"
+#include "../Core/ResourceCache.h"
 #include "../RenderingContext/internal/RenderingStatus.h"
 #include "../Helper.h"
 
@@ -238,10 +239,11 @@ bool Shader::linkProgram() {
 	}
 	layout.setLayoutSets(layoutSets);
 	layout.setPushConstantRanges(pushConstantRanges);
+	layoutHandle = device->getResourceCache()->createPipelineLayout(layout);
 
 	// Create descriptor set pools
 	for(auto& res : layoutSets) {
-		DescriptorPool::Ref pool = new DescriptorPool(device, res.second);
+		DescriptorPool::Ref pool = new DescriptorPool(this, res.first);
 		if(pool->init())
 			descriptorPools.emplace(res.first, pool);
 	}

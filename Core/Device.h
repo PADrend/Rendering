@@ -66,8 +66,6 @@ public:
 	const Queue::Ref& getQueue(QueueFamily family, uint32_t index=0) const;
 	const Queue::Ref& getQueue(uint32_t familyIndex, uint32_t index=0) const;
 	std::set<Queue::Ref> getQueues() const;
-	const CommandPoolRef& getCommandPool(QueueFamily family) const;
-	const CommandPoolRef& getCommandPool(uint32_t familyIndex) const;
 	const PipelineCacheHandle& getPipelineCache() const;
 	const ResourceCacheRef& getResourceCache() const;
 	

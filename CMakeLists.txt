@@ -22,7 +22,6 @@ add_library(Rendering SHARED
 	Core/ApiHandles.cpp
 	Core/BufferStorage.cpp
 	Core/CommandBuffer.cpp
-	Core/CommandPool.cpp
 	Core/Common.cpp
 	Core/DescriptorPool.cpp
 	Core/DescriptorSet.cpp

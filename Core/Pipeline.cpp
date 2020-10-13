@@ -227,7 +227,7 @@ ApiBaseHandle::Ref createComputePipelineHandle(Device* device, Shader* shader, c
 	vk::PipelineCache vkCache(device->getPipelineCache());
 
 	vk::ComputePipelineCreateInfo info{};
-	info.layout = device->getResourceCache()->createPipelineLayout(shader->getLayout());
+	info.layout = shader->getLayoutHandle();
 	info.stage.stage = vk::ShaderStageFlagBits::eCompute;
 	info.stage.pName = entryPoint.c_str();
 	info.stage.pSpecializationInfo = nullptr; // TODO
@@ -253,7 +253,7 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, Shader* shader, 
 	vk::PipelineCache vkCache(device->getPipelineCache());
 
 	vk::GraphicsPipelineCreateInfo info{};
-	info.layout = device->getResourceCache()->createPipelineLayout(shader->getLayout());
+	info.layout = shader->getLayoutHandle();
 	
 	// Convert shader stages
 	std::vector<vk::PipelineShaderStageCreateInfo> stages;

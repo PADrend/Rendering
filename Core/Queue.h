@@ -12,17 +12,16 @@
 #include "Common.h"
 
 #include <Util/ReferenceCounter.h>
+#include <Util/Factory/ObjectPool.h>
 
 #include <memory>
 
 namespace Rendering {
 class Device;
-class CommandBuffer;
-class CommandPool;
-class Swapchain;
 using DeviceRef = Util::Reference<Device>;
+class CommandBuffer;
 using CommandBufferRef = Util::Reference<CommandBuffer>;
-using CommandPoolRef = Util::Reference<CommandPool>;
+class Swapchain;
 using SwapchainRef = Util::Reference<Swapchain>;
 
 class Queue : public Util::ReferenceCounter<Queue> {
@@ -33,23 +32,30 @@ public:
 	
 	bool submit(const CommandBufferRef& commands);
 	bool present();
-	
-	CommandBufferRef requestCommandBuffer(bool primary=true);
-	const CommandPoolRef& getCommandPool() const;
+	bool supports(QueueFamily type) const;
 
-	const QueueHandle& getApiHandle() const { return handle; }
 	uint32_t getIndex() const { return index; }
 	uint32_t getFamilyIndex() const { return familyIndex; }
-	bool supports(QueueFamily type) const;
+	
+	CommandBufferHandle requestCommandBuffer(bool primary=true);
+	void freeCommandBuffer(const CommandBufferHandle& bufferHandle, bool primary);
+
+	DeviceRef getDevice() { return device.get(); }
+	const QueueHandle& getApiHandle() const { return handle; }
+	const CommandPoolHandle& getCommandPool() const { return commandPoolHandle; }
 private:
 	friend class Device;
 	explicit Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index);
+	bool init();
+	CommandBufferHandle createCommandBuffer(bool primary);
 
 	Util::WeakPointer<Device> device;
 	QueueHandle handle;
 	uint32_t familyIndex;
 	uint32_t index;
 	QueueFamily capabilities;
+	CommandPoolHandle commandPoolHandle;
+	Util::ObjectPool<CommandBufferHandle, uint32_t> commandPool;
 };
 
 inline QueueFamily operator | (QueueFamily lhs, QueueFamily rhs) {
