@@ -22,7 +22,7 @@ namespace ShaderUtils {
 RENDERINGAPI Util::Reference<Shader> createNormalToColorShader();
 
 //! Create a simple shader without any effects.
-Util::Reference<Shader> createDefaultShader();
+RENDERINGAPI Util::Reference<Shader> createDefaultShader();
 
 }
 }
