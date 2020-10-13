@@ -49,13 +49,13 @@ static Util::TypeConstant getBaseType(const spirv_cross::SPIRType& type) {
 
 //-------------
 
-static Util::ResourceFormat getResourceFormat(spirv_cross::Compiler& compiler, const spirv_cross::SPIRType& type) {
+static Util::ResourceFormat getResourceFormat(const std::string& baseName, spirv_cross::Compiler& compiler, const spirv_cross::SPIRType& type) {
 	Util::ResourceFormat result;
 	uint32_t member_count = type.member_types.size();
 
 	for (uint32_t i = 0; i < member_count; ++i) {
 		auto &member_type = compiler.get_type(type.member_types[i]);
-		auto name = compiler.get_member_name(type.self, i);
+		auto name = baseName.empty() ? compiler.get_member_name(type.self, i) : baseName + "." + compiler.get_member_name(type.self, i);
 		auto offset = compiler.type_struct_member_offset(type, i);
 		uint32_t count = 1;
 		auto attrType = getBaseType(member_type);
@@ -72,7 +72,7 @@ static Util::ResourceFormat getResourceFormat(spirv_cross::Compiler& compiler, c
 			count *= member_type.columns;
 
 		if(member_type.basetype == spirv_cross::SPIRType::Struct) {
-			auto structFormat = getResourceFormat(compiler, member_type);
+			auto structFormat = getResourceFormat("", compiler, member_type);
 
 			if(!member_type.array.empty()) {
 				// unroll arrays of struct
@@ -111,7 +111,7 @@ static Util::ResourceFormat getResourceFormat(spirv_cross::Compiler& compiler, c
 //-------------
 
 static ShaderResource readPushConstant(spirv_cross::Compiler& compiler, spirv_cross::Resource& resource, ShaderStage stage) {
-	ShaderResource result{resource.name, 0, 0, {ShaderResourceType::PushConstant, stage}};
+	ShaderResource result{compiler.get_name(resource.base_type_id), 0, 0, {ShaderResourceType::PushConstant, stage}};
 	const auto& spirvType = compiler.get_type_from_variable(resource.id);
 	result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
 	result.offset = std::numeric_limits<std::uint32_t>::max();
@@ -119,7 +119,7 @@ static ShaderResource readPushConstant(spirv_cross::Compiler& compiler, spirv_cr
 		result.offset = std::min(result.offset, compiler.get_member_decoration(spirvType.self, i, spv::DecorationOffset));
 	result.size -= result.offset;
 
-	result.format = getResourceFormat(compiler, compiler.get_type(resource.base_type_id));
+	result.format = getResourceFormat(resource.name, compiler, compiler.get_type(resource.base_type_id));
 
 	return result;
 }
@@ -164,7 +164,7 @@ static ShaderResource readShaderResource(spirv_cross::Compiler& compiler, spirv_
 		case ShaderResourceType::BufferUniform:
 		case ShaderResourceType::BufferStorage:
 			result.size = compiler.get_declared_struct_size_runtime_array(spirvType, 0); // TODO: specify runtime array size
-			result.format = getResourceFormat(compiler, compiler.get_type(resource.base_type_id)); // recursively get members of structs
+			result.format = getResourceFormat(compiler.get_name(resource.id), compiler, compiler.get_type(resource.base_type_id)); // recursively get members of structs
 			break;
 		default: break;
 	}

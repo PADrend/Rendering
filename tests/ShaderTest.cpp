@@ -41,15 +41,16 @@ const std::string vertexShader = R"vs(
 
 	layout(push_constant) uniform PushConstants {
 		mat4 sg_matrix_modelToCamera;
-		float testData[8];
+		int testData;
 	} test;
 
 	layout(set=0, binding=0) uniform FrameData {
 		mat4 sg_matrix_cameraToWorld;
+		vec3 values[2];
 	} fd;
 
 	void main() {
-		gl_Position = fd.sg_matrix_cameraToWorld * test.sg_matrix_modelToCamera * vec4(sg_Position, 1.0);
+		gl_Position = fd.sg_matrix_cameraToWorld * test.sg_matrix_modelToCamera * vec4(sg_Position + fd.values[test.testData], 1.0);
 		fragColor = vec3(1);
 	}
 )vs";
@@ -59,7 +60,7 @@ const std::string fragmentShader = R"fs(
 	
 	layout(push_constant) uniform PushConstants {
 		mat4 sg_matrix_modelToCamera;
-		float testData[8];
+		int testData;
 	} test;
 
 	struct sg_LightSourceParameters {
@@ -75,11 +76,17 @@ const std::string fragmentShader = R"fs(
 		sg_LightSourceParameters sg_LightSource[8];
 	};
 
+	// Currently not addressable by uniforms
+	layout(set=1, binding=2, std140) uniform TestData {
+		float bar;
+		float blub;
+	} foo[2];
+
 	layout(location = 0) in vec3 fragColor;
 	layout(location = 0) out vec4 outColor;
 
 	void main() {
-		outColor = vec4(fragColor, 1.0) + sg_LightSource[0].ambient * test.testData[0];
+		outColor = vec4(fragColor, 1.0) + sg_LightSource[0].ambient * foo[0].bar;
 	}
 )fs";
 
@@ -158,6 +165,27 @@ TEST_CASE("ShaderTest", "[ShaderTest]") {
 		auto uniform = shader->getUniform({"nonsense"});
 		REQUIRE(uniform.isNull());
 	}
+
+	{
+		auto uniform = shader->getUniform({"test.testData"});
+		REQUIRE(!uniform.isNull());
+		REQUIRE(uniform.getType() == Uniform::UNIFORM_INT);
+	}
+
+	{
+		auto uniform = shader->getUniform({"fd.values"});
+		REQUIRE(!uniform.isNull());
+		REQUIRE(uniform.getType() == Uniform::UNIFORM_FLOAT);
+		REQUIRE(uniform.getNumValues() == 6);
+	}
+
+	/*{ 
+		auto uniform = shader->getUniform({"foo[0].bar"});
+		REQUIRE(!uniform.isNull());
+		REQUIRE(uniform.getType() == Uniform::UNIFORM_FLOAT);
+		REQUIRE(uniform.getNumValues() == 1);
+	}*/
+
 	device->waitIdle();
 
 }

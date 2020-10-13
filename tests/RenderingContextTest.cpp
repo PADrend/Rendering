@@ -27,6 +27,7 @@
 #include "../Mesh/MeshDataStrategy.h"
 #include "../Mesh/VertexDescription.h"
 #include "../MeshUtils/PrimitiveShapes.h"
+#include "../MeshUtils/PlatonicSolids.h"
 #include "../MeshUtils/MeshBuilder.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
@@ -44,7 +45,7 @@ const std::string vertexShader = R"vs(
 
 	layout(location = 0) out vec3 fragColor;
 
-	layout(push_constant) uniform PushConstants {
+	layout(push_constant) uniform ObjectData {
 		mat4 sg_matrix_modelToClipping;
 	};
 
@@ -66,12 +67,13 @@ const std::string fragmentShader = R"fs(
 		float shininess;
 	};
 
-	layout(set=0, binding=0) uniform MaterialData {
+	layout(set=1, binding=0) uniform MaterialData {
 		sg_MaterialParameters sg_Material;
 	};
 
 	void main() {
-		outColor = sg_Material.diffuse;
+		//outColor = sg_Material.diffuse;
+		outColor = vec4(fragColor, 1);
 	}
 )fs";
 
@@ -90,13 +92,21 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	vd.appendPosition3D();
 	vd.appendColorRGBAFloat();
 
-	Mesh::Ref mesh = MeshUtils::createBox(vd, {-0.5,0.5,-0.5,0.5,-0.5,0.5});
-	REQUIRE(mesh);
-	mesh->setDataStrategy(SimpleMeshDataStrategy::getDynamicVertexStrategy());
-	mesh->_getVertexData().upload();
-	mesh->_getVertexData().getBuffer()->getBuffer()->setDebugName("Vertex Buffer");
-	mesh->_getIndexData().upload();
-	mesh->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer");
+	Mesh::Ref mesh1 = MeshUtils::createBox(vd, {-0.5,0.5,-0.5,0.5,-0.5,0.5});
+	REQUIRE(mesh1);
+	mesh1->setDataStrategy(SimpleMeshDataStrategy::getDynamicVertexStrategy());
+	mesh1->_getVertexData().upload();
+	mesh1->_getVertexData().getBuffer()->getBuffer()->setDebugName("Vertex Buffer 1");
+	mesh1->_getIndexData().upload();
+	mesh1->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer 1");
+
+	Mesh::Ref mesh2 = MeshUtils::PlatonicSolids::createOctahedron(vd);
+	REQUIRE(mesh2);
+	mesh2->setDataStrategy(SimpleMeshDataStrategy::getStaticDrawReleaseLocalStrategy());
+	mesh2->_getVertexData().upload();
+	mesh2->_getVertexData().getBuffer()->getBuffer()->setDebugName("Vertex Buffer 2");
+	mesh2->_getIndexData().upload();
+	mesh2->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer 2");
 	
 	// compile shaders
 	auto shader = Shader::createShader(device, vertexShader, fragmentShader);
@@ -110,31 +120,29 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	context.setMatrix_cameraToClipping(projection);
 
 	Geometry::SRT camera;
-	camera.setTranslation({1,1,1});
+	camera.setTranslation({1.5,1.5,1.5});
 	camera.setRotation({1,1,1},{0,1,0});
 	context.setMatrix_cameraToWorld(Geometry::Matrix4x4{camera});
 	context.setMatrix_modelToCamera(context.getMatrix_worldToCamera());
 
 	Geometry::Matrix4x4 mat;
-	mat.rotate_deg(45, {1,0,0});
-	mat.rotate_deg(45, {0,0,1});
 
 	// --------------------------------------------
 	// draw
 
 	bool running = true;
-	for(uint_fast32_t round = 0; round < 1000 && running; ++round) {
+	for(uint_fast32_t round = 0; round < 10000000 && running; ++round) {
 
 		context.clearScreen({0,0,0,1});
 		
 		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera());
 		context.pushAndSetColorMaterial({1,0,0,1});
-		context.displayMesh(mesh);
+		context.displayMesh(mesh1);
 		context.popMaterial();
 
 		context.setMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
 		context.pushAndSetColorMaterial({0,1,0,1});
-		context.displayMesh(mesh);
+		context.displayMesh(mesh2);
 		context.popMaterial();
 		context.popMatrix_modelToCamera();
 
