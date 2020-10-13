@@ -81,6 +81,8 @@ public:
 	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers);
 	void bindIndexBuffer(const BufferObjectRef& buffer);
 	void setBindings(const BindingState& state) { bindings = state; }
+	void updateBindings(const BindingState& state) { bindings.merge(state); }
+	BindingState& getBindings() { return bindings; }
 	//! @}
 
 	//! @name Push constants
@@ -141,8 +143,6 @@ public:
 	//! @{
 	PipelineState& getPipeline() { return pipeline; }
 	void setPipeline(const PipelineState& value) { pipeline = value; }
-	BindingState& getBindingState() { return bindings; }
-	void setBindingState(const BindingState& value) { bindings = value; }
 	
 	void setVertexInputState(const VertexInputState& state) { pipeline.setVertexInputState(state); }
 	void setInputAssemblyState(const InputAssemblyState& state) { pipeline.setInputAssemblyState(state); }

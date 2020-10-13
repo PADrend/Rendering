@@ -222,21 +222,21 @@ TEST_CASE("StateTest_testBindingState", "[StateTest]") {
 	state.clearDirty();
 	state2.clearDirty();
 
-	REQUIRE(cmdBuffer->getBindingState().isDirty());
+	REQUIRE(cmdBuffer->getBindings().isDirty());
 	cmdBuffer->flush();
-	REQUIRE(!cmdBuffer->getBindingState().isDirty());
+	REQUIRE(!cmdBuffer->getBindings().isDirty());
 	cmdBuffer->setBindings(state);
-	REQUIRE(cmdBuffer->getBindingState().isDirty());
+	REQUIRE(cmdBuffer->getBindings().isDirty());
 	cmdBuffer->flush();
-	REQUIRE(!cmdBuffer->getBindingState().isDirty());
+	REQUIRE(!cmdBuffer->getBindings().isDirty());
 	cmdBuffer->setBindings(state);
-	REQUIRE(!cmdBuffer->getBindingState().isDirty());
+	REQUIRE(!cmdBuffer->getBindings().isDirty());
 	cmdBuffer->bindBuffer(bo2, 1, 2, 3);
-	REQUIRE(!cmdBuffer->getBindingState().isDirty());
+	REQUIRE(!cmdBuffer->getBindings().isDirty());
 	cmdBuffer->bindBuffer(bo1, 1, 3, 0);
-	REQUIRE(cmdBuffer->getBindingState().isDirty());
+	REQUIRE(cmdBuffer->getBindings().isDirty());
 	cmdBuffer->flush();
-	REQUIRE(!cmdBuffer->getBindingState().isDirty());
+	REQUIRE(!cmdBuffer->getBindings().isDirty());
 
 	state.bind(tex1, 0, 0, 0);
 	REQUIRE(state.isDirty());
@@ -254,13 +254,13 @@ TEST_CASE("StateTest_testBindingState", "[StateTest]") {
 	REQUIRE(state.getBinding(0,0,0).getTexture() == tex1);
 	REQUIRE(state.getBinding(0,1,2).getTexture() == tex1);
 	REQUIRE(state.getBinding(1,2,3).getBuffer() == bo2);
-	REQUIRE(!cmdBuffer->getBindingState().hasBinding(0,0,0));
-	REQUIRE(cmdBuffer->getBindingState().getBinding(0,1,2).getTexture() == tex1);
-	REQUIRE(cmdBuffer->getBindingState().getBinding(1,2,3).getBuffer() == bo2);
-	REQUIRE(cmdBuffer->getBindingState().getBinding(1,3,0).getBuffer() == bo1);
+	REQUIRE(!cmdBuffer->getBindings().hasBinding(0,0,0));
+	REQUIRE(cmdBuffer->getBindings().getBinding(0,1,2).getTexture() == tex1);
+	REQUIRE(cmdBuffer->getBindings().getBinding(1,2,3).getBuffer() == bo2);
+	REQUIRE(cmdBuffer->getBindings().getBinding(1,3,0).getBuffer() == bo1);
 	cmdBuffer->setBindings(state);
-	REQUIRE(cmdBuffer->getBindingState() == state);
-	REQUIRE(cmdBuffer->getBindingState().isDirty());
-	REQUIRE(cmdBuffer->getBindingState().getBindingSet(0).isDirty());
-	REQUIRE(cmdBuffer->getBindingState().getBindingSet(1).isDirty());
+	REQUIRE(cmdBuffer->getBindings() == state);
+	REQUIRE(cmdBuffer->getBindings().isDirty());
+	REQUIRE(cmdBuffer->getBindings().getBindingSet(0).isDirty());
+	REQUIRE(cmdBuffer->getBindings().getBindingSet(1).isDirty());
 }

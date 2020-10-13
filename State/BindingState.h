@@ -38,6 +38,7 @@ public:
 	
 	bool operator==(const Binding& o) const { return buffer == o.buffer && texture == o.texture; }
 	bool operator!=(const Binding& o) const { return !(*this == o); }
+	operator bool() const { return texture || buffer; }
 
 	bool bind(const BufferObjectRef& obj);
 	bool bind(const TextureRef& obj);
@@ -68,6 +69,7 @@ public:
 	bool bind(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
 	bool bind(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
 	void setArraySize(uint32_t binding, uint32_t arraySize);
+	void merge(const BindingSet& other);
 
 	const BindingMap& getBindings() const { return bindings; }
 	const Binding& getBinding(uint32_t binding, uint32_t arrayElement=0) const;
@@ -99,6 +101,7 @@ public:
 
 	bool bind(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	bool bind(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	void merge(const BindingState& other);
 
 	const Binding& getBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;
 	bool hasBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;

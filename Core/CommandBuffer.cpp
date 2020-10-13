@@ -33,12 +33,12 @@
 #include <unordered_set>
 #include <algorithm>
 
-#define PROFILING_ENABLED 1
-#ifdef PROFILING_ENABLED
+//#define PROFILING_ENABLED 1
 #include <Util/Profiling/Profiler.h>
 #include <Util/Profiling/Logger.h>
-#include <fstream>
 
+#ifdef PROFILING_ENABLED
+#include <fstream>
 static std::ofstream _out("CmdLog.txt", std::fstream::out);
 INIT_PROFILING_TIME(_out);
 #endif
@@ -74,6 +74,9 @@ CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary, bool transient
 //-----------------
 
 CommandBuffer::~CommandBuffer() {
+	#ifdef PROFILING_ENABLED
+		_out.flush();
+	#endif
 	if(handle)
 		queue->freeCommandBuffer(handle, primary, ownerId);
 };
@@ -84,37 +87,56 @@ bool CommandBuffer::compile(CompileContext& context) {
 	#ifdef PROFILING_ENABLED
 		static uint64_t _profilingCount = 0;
 		++_profilingCount;
+		#define PROFILING_CONDITION _profilingCount==1000
 	#endif
 	if(state == State::Executable)
 		return true;
-	endRenderPass();
-	WARN_AND_RETURN_IF(state == State::Compiling, "Command Buffer is already compiling.", false);
-	ownerId = context.ownerId;
-	handle = queue->requestCommandBuffer(primary, context.ownerId);
-	WARN_AND_RETURN_IF(!handle || state == State::Invalid, "Could not compile command buffer: Invalid command buffer.", false);
-	WARN_AND_RETURN_IF(commands.empty(), "Could not compile command buffer: Command list is empty.", false);
-	state = State::Compiling;
 
-	context.cmd = handle;
-	if(!context.device || !context.descriptorPool || !context.resourceCache) {
-		context.device = queue->getDevice();
-		context.descriptorPool = context.device->getDescriptorPool();
-		context.resourceCache = context.device->getResourceCache();
+	{
+		SCOPED_PROFILING_COND("EndRenderPass", PROFILING_CONDITION);
+		endRenderPass();
+	}
+
+	{
+		SCOPED_PROFILING_COND("RequestCommandBuffer", PROFILING_CONDITION);
+		WARN_AND_RETURN_IF(state == State::Compiling, "Command Buffer is already compiling.", false);
+		ownerId = context.ownerId;
+		handle = queue->requestCommandBuffer(primary, context.ownerId);
+		WARN_AND_RETURN_IF(!handle || state == State::Invalid, "Could not compile command buffer: Invalid command buffer.", false);
+		WARN_AND_RETURN_IF(commands.empty(), "Could not compile command buffer: Command list is empty.", false);
+		state = State::Compiling;
+	}
+
+	{
+		SCOPED_PROFILING_COND("RequestCommandBuffer", PROFILING_CONDITION);
+		context.cmd = handle;
+		if(!context.device || !context.descriptorPool || !context.resourceCache) {
+			context.device = queue->getDevice();
+			context.descriptorPool = context.device->getDescriptorPool();
+			context.resourceCache = context.device->getResourceCache();
+		}
 	}
 
 	vk::CommandBuffer vkCmd(handle);
-	vkCmd.begin({transient ? vk::CommandBufferUsageFlagBits::eOneTimeSubmit : vk::CommandBufferUsageFlagBits::eSimultaneousUse});
+	{
+		SCOPED_PROFILING_COND("BeginCommandBuffer", PROFILING_CONDITION);
+		vkCmd.begin({transient ? vk::CommandBufferUsageFlagBits::eOneTimeSubmit : vk::CommandBufferUsageFlagBits::eSimultaneousUse});
+	}
+
 	for(auto& cmd : commands) {
-		#ifdef PROFILING_ENABLED
-			Util::Profiling::ScopedAction _action((_profilingCount==1000) ? &_profiler : nullptr, cmd->getTypeName());
-		#endif
+		SCOPED_PROFILING_COND(cmd->getTypeName(), PROFILING_CONDITION);
 		if(!cmd->compile(context)) {
 			WARN("Failed to compile command buffer.");
 			state = State::Invalid;
 			return false;
 		}
 	}
-	vkCmd.end();
+
+	{
+		SCOPED_PROFILING_COND("EndCommandBuffer", PROFILING_CONDITION);
+		vkCmd.end();
+	}
+
 	state = State::Executable;
 	return true;
 }

@@ -12,6 +12,8 @@
 #include "../BufferObject.h"
 #include "../Core/ImageView.h"
 
+#include <functional>
+
 namespace Rendering {
 
 //------------------
@@ -37,6 +39,45 @@ static void overwriteMap(std::map<Key,Value>& tgt, const std::map<Key,Value>& sr
 	// insert/remove remaining objects
 	tgt.erase(tgtIt, tgt.end());
 	tgt.insert(srcIt, src.end());
+}
+
+//------------------
+
+template<class Key, class Value, typename MergeOp=std::function<void(Value&,const Value&)>>
+static void mergeMap(std::map<Key,Value>& tgt, const std::map<Key,Value>& src, MergeOp merge) {
+	auto tgtIt = tgt.begin();
+	auto srcIt = src.begin();
+	while(tgtIt != tgt.end() && srcIt != src.end()) {
+		if(srcIt->first < tgtIt->first) {
+			// insert objects that are not in the target map
+			tgt.insert(tgtIt, *srcIt);
+			++srcIt;
+		} else if(tgtIt->first == srcIt->first) {
+			// merge objects in target
+			merge(tgtIt->second, srcIt->second);
+			++tgtIt; ++srcIt;
+		} else {
+			// skip
+			++tgtIt;
+		}
+	}
+	// insert/remove remaining objects
+	tgt.insert(srcIt, src.end());
+}
+
+//------------------
+
+template<class Value>
+static void mergeArray(std::vector<Value>& tgt, const std::vector<Value>& src) {
+	auto tgtIt = tgt.begin();
+	auto srcIt = src.begin();
+	while(tgtIt != tgt.end() && srcIt != src.end()) {
+		if(*srcIt)
+			*tgtIt = *srcIt;
+		++tgtIt; ++srcIt;
+	}
+	// insert/remove remaining objects
+	tgt.insert(tgt.end(), srcIt, src.end());
 }
 
 //------------------
@@ -157,6 +198,15 @@ bool BindingSet::bind(const TextureRef& texture, uint32_t binding, uint32_t arra
 
 //------------------
 
+void BindingSet::merge(const BindingSet& other) {
+	dirty |= (*this != other);
+	mergeMap(bindings, other.bindings, [](std::vector<Binding>& tgt, const std::vector<Binding>& src) {
+		mergeArray(tgt, src);
+	});
+}
+
+//------------------
+
 const Binding& BindingSet::getBinding(uint32_t binding, uint32_t arrayElement) const {
 	static Binding nullBinding{};
 	const auto& it = bindings.find(binding);
@@ -210,6 +260,15 @@ bool BindingState::bind(const BufferObjectRef& buffer, uint32_t set, uint32_t bi
 bool BindingState::bind(const TextureRef& texture, uint32_t set, uint32_t binding, uint32_t arrayElement) {
 	dirty |= bindingSets[set].bind(texture, binding, arrayElement);
 	return dirty;
+}
+
+//------------------
+
+void BindingState::merge(const BindingState& other) {
+	dirty |= (*this != other);
+	mergeMap(bindingSets, other.bindingSets, [](BindingSet& tgt, const BindingSet& src) {
+		tgt.merge(src);
+	});
 }
 
 //------------------

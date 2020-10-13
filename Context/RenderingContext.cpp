@@ -48,8 +48,15 @@
 //#define PROFILING_ENABLED 1
 #include <Util/Profiling/Profiler.h>
 #include <Util/Profiling/Logger.h>
+#ifdef PROFILING_ENABLED
+#include <fstream>
 
-INIT_PROFILING_TIME(std::cout);
+static std::ofstream _out("RCLog.txt", std::fstream::out);
+INIT_PROFILING_TIME(_out);
+static uint64_t _profilingCount = 0;
+#define PROFILING_CONDITION _profilingCount==1000
+#endif
+
 
 namespace Rendering {
 
@@ -167,7 +174,11 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 
 RenderingContext::RenderingContext() : RenderingContext(Device::getDefault()) {}
 
-RenderingContext::~RenderingContext() = default;
+RenderingContext::~RenderingContext() {
+	#ifdef PROFILING_ENABLED
+		_out.flush();
+	#endif
+};
 
 void RenderingContext::resetDisplayMeshFn() {
 	using namespace std::placeholders;
@@ -211,6 +222,9 @@ void RenderingContext::present() {
 	//internal->renderThread->compileAndSubmit(internal->cmd);
 	// does not necessarily show the last submitted command buffer
 	internal->device->present();
+
+	END_PROFILING_COND(RenderingContext, PROFILING_CONDITION);
+	BEGIN_PROFILING_COND(RenderingContext, ++PROFILING_CONDITION);
 
 	// reset rendering state
 	// TODO: do explicit clearing?
@@ -262,7 +276,7 @@ void RenderingContext::applyChanges(bool forced) {
 
 	// Update state
 	internal->cmd->setPipeline(internal->pipelineState);
-	internal->cmd->setBindings(internal->bindingState);
+	internal->cmd->updateBindings(internal->bindingState);
 
 	// transfer updated global uniforms to the shader
 	shader->_getUniformRegistry()->performGlobalSync(internal->globalUniforms, false);
