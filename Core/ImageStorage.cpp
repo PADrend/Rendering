@@ -19,6 +19,8 @@
 
 namespace Rendering {
 
+vk::Format getVkFormat(const InternalFormat& format);
+
 //-------------
 
 static VkImageType getImageType(TextureType type) {
@@ -98,7 +100,7 @@ bool ImageStorage::init() {
 	VkImageCreateInfo imageCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
 	imageCreateInfo.flags = 0;
 	imageCreateInfo.imageType = getImageType(type);
-	imageCreateInfo.format = static_cast<VkFormat>(convertToApiFormat(config.format.pixelFormat));
+	imageCreateInfo.format = static_cast<VkFormat>(getVkFormat(config.format.pixelFormat));
 	imageCreateInfo.extent = {
 		static_cast<uint32_t>(config.format.extent.x()), 
 		static_cast<uint32_t>(config.format.extent.y()), 

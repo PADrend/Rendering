@@ -44,6 +44,7 @@ API_DEFAULT_DESTROY(PipelineLayout)
 API_DEFAULT_DESTROY(ShaderModule)
 API_DEFAULT_DESTROY(DescriptorSetLayout);
 API_DEFAULT_DESTROY(DescriptorPool);
+API_DEFAULT_DESTROY(Sampler)
 
 API_DESTROY(DescriptorSet, vkFreeDescriptorSets, parent.first, parent.second, 1, &handle);
 API_DESTROY(Allocator, vmaDestroyAllocator, handle);

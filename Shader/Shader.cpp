@@ -13,6 +13,8 @@
 #include "Uniform.h"
 #include "UniformRegistry.h"
 #include "../Core/Device.h"
+#include "../Core/DescriptorPool.h"
+#include "../Core/DescriptorSet.h"
 #include "../RenderingContext/internal/RenderingStatus.h"
 #include "../Helper.h"
 
@@ -189,7 +191,7 @@ bool Shader::compileProgram() {
 
 //-----------------
 
-vk::ShaderStageFlags convertStageFlags(const ShaderStage& stages) {
+static vk::ShaderStageFlags convertStageFlags(const ShaderStage& stages) {
 	vk::ShaderStageFlags flags;
 	if((stages & ShaderStage::Vertex) == ShaderStage::Vertex) flags |= vk::ShaderStageFlagBits::eVertex;
 	if((stages & ShaderStage::TessellationControl) == ShaderStage::TessellationControl) flags |= vk::ShaderStageFlagBits::eTessellationControl;
@@ -202,58 +204,6 @@ vk::ShaderStageFlags convertStageFlags(const ShaderStage& stages) {
 
 //-----------------
 
-DescriptorSetLayoutHandle createDescriptorSetLayout(const DeviceRef& device, const ShaderResourceList& resources) {
-	vk::Device vkDevice(device->getApiHandle());
-	std::vector<vk::DescriptorSetLayoutBinding> bindings;
-	for(const auto& resource : resources) {
-		if(
-			resource.type == ShaderResourceType::Input || 
-			resource.type == ShaderResourceType::Output || 
-			resource.type == ShaderResourceType::PushConstant || 
-			resource.type == ShaderResourceType::SpecializationConstant
-		) continue; // Skip resources whitout a binding point
-
-		// Convert to vulkan descriptor type
-		vk::DescriptorType vkType;
-		switch (resource.type) {
-			case ShaderResourceType::InputAttachment: 
-				vkType = vk::DescriptorType::eInputAttachment;
-				break;
-			case ShaderResourceType::Image: 
-				vkType = vk::DescriptorType::eSampledImage;
-				break;
-			case ShaderResourceType::ImageSampler: 
-				vkType = vk::DescriptorType::eCombinedImageSampler;
-				break;
-			case ShaderResourceType::ImageStorage: 
-				vkType = vk::DescriptorType::eStorageImage;
-				break;
-			case ShaderResourceType::Sampler: 
-				vkType = vk::DescriptorType::eSampler;
-				break;
-			case ShaderResourceType::BufferUniform: 
-				vkType = resource.dynamic ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eUniformBuffer;
-				break;
-			case ShaderResourceType::BufferStorage: 
-				vkType = resource.dynamic ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eStorageBuffer;
-				break;
-			default: break;
-		}
-
-		vk::DescriptorSetLayoutBinding binding{};
-		binding.binding = resource.binding;
-		binding.descriptorCount = resource.array_size;
-		binding.descriptorType = vkType;
-		binding.stageFlags = convertStageFlags(resource.stages);
-
-		bindings.emplace_back(binding);
-	}
-
-	return {vkDevice.createDescriptorSetLayout({{}, static_cast<uint32_t>(bindings.size()), bindings.data()}), vkDevice};
-}
-
-//-----------------
-
 //! (internal)
 bool Shader::linkProgram() {
 	using namespace ShaderUtils;
@@ -261,8 +211,8 @@ bool Shader::linkProgram() {
 
 	pipelineLayout = nullptr;
 	resources.clear();
-	setResources.clear();
-	setLayouts.clear();
+	descriptorPools.clear();
+	
 	// Merge resources from shader objects
 	for(auto& obj : shaderObjects) {
 		auto objResources = reflect(obj.getType(), obj.getCode());
@@ -292,6 +242,7 @@ bool Shader::linkProgram() {
 
 	// Separate resources by set index
 	std::vector<vk::PushConstantRange> pushConstantRanges;
+	std::map<uint32_t, ShaderResourceList> setResources;
 	for(auto& res : resources) {
 		setResources[res.second.set].emplace_back(res.second);
 		if(res.second.type == ShaderResourceType::PushConstant) {
@@ -301,12 +252,14 @@ bool Shader::linkProgram() {
 
 	// Create descriptor set layouts
 	for(auto& res : setResources) {
-		setLayouts.emplace(res.first, std::move(createDescriptorSetLayout(device, res.second)));
+		DescriptorPool::Ref pool = new DescriptorPool(device, res.second, res.first);
+		if(pool->init())
+			descriptorPools.emplace(res.first, pool);
 	}
 
 	std::vector<vk::DescriptorSetLayout> layouts;
-	for(auto& res : setLayouts)
-		layouts.emplace_back(res.second);
+	for(auto& res : descriptorPools)
+		layouts.emplace_back(res.second->getLayout());
 
 	pipelineLayout = std::move(PipelineLayoutHandle(vkDevice.createPipelineLayout({{},
 		static_cast<uint32_t>(layouts.size()), layouts.data(),
@@ -314,6 +267,15 @@ bool Shader::linkProgram() {
 	}), vkDevice));
 
 	return true;
+}
+
+//-----------------
+
+DescriptorSetRef Shader::requestDescriptorSet(uint32_t set) {
+	auto it = descriptorPools.find(set);
+	if(it == descriptorPools.end() || it->second.isNull())
+		return nullptr;
+	return it->second->request();
 }
 
 //-----------------

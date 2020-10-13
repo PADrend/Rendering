@@ -39,7 +39,7 @@ bool Queue::submit(const CommandBufferRef& commands) {
 //-------------
 
 bool Queue::present() {
-	if(!supports(Family::Present)) {
+	if(!supports(QueueFamily::Present)) {
 		WARN("Queue: Present is not supported by queue " + Util::StringUtils::toString(index) + " of family " + Util::StringUtils::toString(familyIndex) + ".");
 		return false;
 	}
@@ -77,10 +77,10 @@ Queue::Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index) : de
 
 	handle = QueueHandle(vkDevice.getQueue(familyIndex, index), vkDevice);
 	auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
-	Family isPresent = physicalDevice.getSurfaceSupportKHR(familyIndex, surface) ? Family::Present : Family::None;
-	Family isGraphics = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eGraphics) ? Family::Graphics : Family::None;
-	Family isCompute = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eCompute) ? Family::Compute : Family::None;
-	Family isTransfer = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eTransfer) ? Family::Transfer : Family::None;
+	QueueFamily isPresent = physicalDevice.getSurfaceSupportKHR(familyIndex, surface) ? QueueFamily::Present : QueueFamily::None;
+	QueueFamily isGraphics = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eGraphics) ? QueueFamily::Graphics : QueueFamily::None;
+	QueueFamily isCompute = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eCompute) ? QueueFamily::Compute : QueueFamily::None;
+	QueueFamily isTransfer = (queueFamilyProperties[familyIndex].queueFlags & vk::QueueFlagBits::eTransfer) ? QueueFamily::Transfer : QueueFamily::None;
 	capabilities = isPresent | isGraphics | isCompute | isTransfer;
 }
 

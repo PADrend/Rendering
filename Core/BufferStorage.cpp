@@ -20,6 +20,10 @@ namespace Rendering {
 
 //-------------
 
+vk::BufferUsageFlags getVkBufferUsage(const ResourceUsage& usage);
+
+//-------------
+
 BufferStorage::Ref BufferStorage::create(const DeviceRef& device, const BufferStorage::Configuration& config) {
 	Ref buffer(new BufferStorage(device, config));
 	if(!buffer->init()) {
@@ -91,12 +95,12 @@ void BufferStorage::upload(const uint8_t* data, size_t size, size_t offset) {
 bool BufferStorage::init() {
 	VkBuffer vkBuffer = nullptr;
 	VkBufferCreateInfo bufferCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-	bufferCreateInfo.usage = config.usageFlags;
+	bufferCreateInfo.usage = static_cast<uint32_t>(getVkBufferUsage(config.usage));
 	bufferCreateInfo.size = config.size;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
 	VmaAllocationCreateInfo allocCreateInfo{};
-	switch(config.memoryUsage) {
+	switch(config.access) {
 		case MemoryUsage::CpuOnly: allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY; break;
 		case MemoryUsage::GpuOnly: allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; break;
 		case MemoryUsage::CpuToGpu: allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU; break;

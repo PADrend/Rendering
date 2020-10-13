@@ -13,80 +13,234 @@
 
 namespace Rendering {
 
-uint32_t convertToApiFormat(const InternalFormat& format) {
+//-----------------
+
+vk::Format getVkFormat(const InternalFormat& format) {
 	switch(format) {
-		case InternalFormat::R8Unorm: return VK_FORMAT_R8_UNORM;
-		case InternalFormat::R8Snorm: return VK_FORMAT_R8_SNORM;
-		case InternalFormat::R16Unorm: return VK_FORMAT_R16_UNORM;
-		case InternalFormat::R16Snorm: return VK_FORMAT_R16_SNORM;
-		case InternalFormat::RG8Unorm: return VK_FORMAT_R8G8_UNORM;
-		case InternalFormat::RG8Snorm: return VK_FORMAT_R8G8_SNORM;
-		case InternalFormat::RG16Unorm: return VK_FORMAT_R16G16_UNORM;
-		case InternalFormat::RG16Snorm: return VK_FORMAT_R16G16_SNORM;
-		case InternalFormat::RGB16Unorm: return VK_FORMAT_R16G16B16_UNORM;
-		case InternalFormat::RGB16Snorm: return VK_FORMAT_R16G16B16_SNORM;
-		case InternalFormat::RGB5A1Unorm: return VK_FORMAT_A1R5G5B5_UNORM_PACK16;
-		case InternalFormat::RGBA8Unorm: return VK_FORMAT_R8G8B8A8_UNORM;
-		case InternalFormat::RGBA8Snorm: return VK_FORMAT_R8G8B8A8_SNORM;
-		case InternalFormat::RGB10A2Unorm: return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
-		case InternalFormat::RGB10A2Uint: return VK_FORMAT_A2R10G10B10_UINT_PACK32;
-		case InternalFormat::RGBA16Unorm: return VK_FORMAT_R16G16B16A16_UNORM;
-		case InternalFormat::RGBA8UnormSrgb: return VK_FORMAT_R8G8B8A8_SRGB;
-		case InternalFormat::R16Float: return VK_FORMAT_R16_SFLOAT;
-		case InternalFormat::RG16Float: return VK_FORMAT_R16G16_SFLOAT;
-		case InternalFormat::RGB16Float: return VK_FORMAT_R16G16B16_SFLOAT;
-		case InternalFormat::RGBA16Float: return VK_FORMAT_R16G16B16A16_SFLOAT;
-		case InternalFormat::R32Float: return VK_FORMAT_R32_SFLOAT;
-		case InternalFormat::RG32Float: return VK_FORMAT_R32G32_SFLOAT;
-		case InternalFormat::RGB32Float: return VK_FORMAT_R32G32B32_SFLOAT;
-		case InternalFormat::RGBA32Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
-		case InternalFormat::R11G11B10Float: return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
-		case InternalFormat::RGB9E5Float: return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
-		case InternalFormat::R8Int: return VK_FORMAT_R8_SINT;
-		case InternalFormat::R8Uint: return VK_FORMAT_R8_UINT;
-		case InternalFormat::R16Int: return VK_FORMAT_R16_SINT;
-		case InternalFormat::R16Uint: return VK_FORMAT_R16_UINT;
-		case InternalFormat::R32Int: return VK_FORMAT_R32_SINT;
-		case InternalFormat::R32Uint: return VK_FORMAT_R32_UINT;
-		case InternalFormat::RG8Int: return VK_FORMAT_R8G8_SINT;
-		case InternalFormat::RG8Uint: return VK_FORMAT_R8G8_UINT;
-		case InternalFormat::RG16Int: return VK_FORMAT_R16G16_SINT;
-		case InternalFormat::RG16Uint: return VK_FORMAT_R16G16_UINT;
-		case InternalFormat::RG32Int: return VK_FORMAT_R32G32_SINT;
-		case InternalFormat::RG32Uint: return VK_FORMAT_R32G32_UINT;
-		case InternalFormat::RGB16Int: return VK_FORMAT_R16G16B16_SINT;
-		case InternalFormat::RGB16Uint: return VK_FORMAT_R16G16B16_UINT;
-		case InternalFormat::RGB32Int: return VK_FORMAT_R32G32B32_SINT;
-		case InternalFormat::RGB32Uint: return VK_FORMAT_R32G32B32_UINT;
-		case InternalFormat::RGBA8Int: return VK_FORMAT_R8G8B8A8_SINT;
-		case InternalFormat::RGBA8Uint: return VK_FORMAT_R8G8B8A8_UINT;
-		case InternalFormat::RGBA16Int: return VK_FORMAT_R16G16B16A16_SINT;
-		case InternalFormat::RGBA16Uint: return VK_FORMAT_R16G16B16A16_UINT;
-		case InternalFormat::RGBA32Int: return VK_FORMAT_R32G32B32A32_SINT;
-		case InternalFormat::RGBA32Uint: return VK_FORMAT_R32G32B32A32_UINT;
-		case InternalFormat::BGRA8Unorm: return VK_FORMAT_B8G8R8A8_UNORM;
-		case InternalFormat::BGRA8UnormSrgb: return VK_FORMAT_B8G8R8A8_SRGB;
-		case InternalFormat::R5G6B5Unorm: return VK_FORMAT_R5G6B5_UNORM_PACK16;
-		case InternalFormat::D32Float: return VK_FORMAT_D32_SFLOAT;
-		case InternalFormat::D16Unorm: return VK_FORMAT_D16_UNORM;
-		case InternalFormat::D32FloatS8X24: return VK_FORMAT_D32_SFLOAT_S8_UINT;
-		case InternalFormat::D24UnormS8: return VK_FORMAT_D24_UNORM_S8_UINT;
-		case InternalFormat::BC1Unorm: return VK_FORMAT_BC1_RGB_UNORM_BLOCK;
-		case InternalFormat::BC1UnormSrgb: return VK_FORMAT_BC1_RGB_SRGB_BLOCK;
-		case InternalFormat::BC2Unorm: return VK_FORMAT_BC2_UNORM_BLOCK;
-		case InternalFormat::BC2UnormSrgb: return VK_FORMAT_BC2_SRGB_BLOCK;
-		case InternalFormat::BC3Unorm: return VK_FORMAT_BC3_UNORM_BLOCK;
-		case InternalFormat::BC3UnormSrgb: return VK_FORMAT_BC3_SRGB_BLOCK;
-		case InternalFormat::BC4Unorm: return VK_FORMAT_BC4_UNORM_BLOCK;
-		case InternalFormat::BC4Snorm: return VK_FORMAT_BC4_SNORM_BLOCK;
-		case InternalFormat::BC5Unorm: return VK_FORMAT_BC5_UNORM_BLOCK;
-		case InternalFormat::BC5Snorm: return VK_FORMAT_BC5_SNORM_BLOCK;
-		case InternalFormat::BC6HS16: return VK_FORMAT_BC6H_SFLOAT_BLOCK;
-		case InternalFormat::BC6HU16: return VK_FORMAT_BC6H_UFLOAT_BLOCK;
-		case InternalFormat::BC7Unorm: return VK_FORMAT_BC7_UNORM_BLOCK;
-		case InternalFormat::BC7UnormSrgb: return VK_FORMAT_BC7_SRGB_BLOCK;
-		default: return VK_FORMAT_UNDEFINED;
+		case InternalFormat::R8Unorm: return vk::Format::eR8Unorm;
+		case InternalFormat::R8Snorm: return vk::Format::eR8Snorm;
+		case InternalFormat::R16Unorm: return vk::Format::eR16Unorm;
+		case InternalFormat::R16Snorm: return vk::Format::eR16Snorm;
+		case InternalFormat::RG8Unorm: return vk::Format::eR8G8Unorm;
+		case InternalFormat::RG8Snorm: return vk::Format::eR8G8Snorm;
+		case InternalFormat::RG16Unorm: return vk::Format::eR16G16Unorm;
+		case InternalFormat::RG16Snorm: return vk::Format::eR16G16Snorm;
+		case InternalFormat::RGB16Unorm: return vk::Format::eR16G16B16Unorm;
+		case InternalFormat::RGB16Snorm: return vk::Format::eR16G16B16Snorm;
+		case InternalFormat::RGB5A1Unorm: return vk::Format::eA1R5G5B5UnormPack16;
+		case InternalFormat::RGBA8Unorm: return vk::Format::eR8G8B8A8Unorm;
+		case InternalFormat::RGBA8Snorm: return vk::Format::eR8G8B8A8Snorm;
+		case InternalFormat::RGB10A2Unorm: return vk::Format::eA2R10G10B10UnormPack32;
+		case InternalFormat::RGB10A2Uint: return vk::Format::eA2R10G10B10UintPack32;
+		case InternalFormat::RGBA16Unorm: return vk::Format::eR16G16B16A16Unorm;
+		case InternalFormat::RGBA8UnormSrgb: return vk::Format::eR8G8B8A8Srgb;
+		case InternalFormat::R16Float: return vk::Format::eR16Sfloat;
+		case InternalFormat::RG16Float: return vk::Format::eR16G16Sfloat;
+		case InternalFormat::RGB16Float: return vk::Format::eR16G16B16Sfloat;
+		case InternalFormat::RGBA16Float: return vk::Format::eR16G16B16A16Sfloat;
+		case InternalFormat::R32Float: return vk::Format::eR32Sfloat;
+		case InternalFormat::RG32Float: return vk::Format::eR32G32Sfloat;
+		case InternalFormat::RGB32Float: return vk::Format::eR32G32B32Sfloat;
+		case InternalFormat::RGBA32Float: return vk::Format::eR32G32B32A32Sfloat;
+		case InternalFormat::R11G11B10Float: return vk::Format::eB10G11R11UfloatPack32;
+		case InternalFormat::RGB9E5Float: return vk::Format::eE5B9G9R9UfloatPack32;
+		case InternalFormat::R8Int: return vk::Format::eR8Sint;
+		case InternalFormat::R8Uint: return vk::Format::eR8Uint;
+		case InternalFormat::R16Int: return vk::Format::eR16Sint;
+		case InternalFormat::R16Uint: return vk::Format::eR16Uint;
+		case InternalFormat::R32Int: return vk::Format::eR32Sint;
+		case InternalFormat::R32Uint: return vk::Format::eR32Uint;
+		case InternalFormat::RG8Int: return vk::Format::eR8G8Sint;
+		case InternalFormat::RG8Uint: return vk::Format::eR8G8Uint;
+		case InternalFormat::RG16Int: return vk::Format::eR16G16Sint;
+		case InternalFormat::RG16Uint: return vk::Format::eR16G16Uint;
+		case InternalFormat::RG32Int: return vk::Format::eR32G32Sint;
+		case InternalFormat::RG32Uint: return vk::Format::eR32G32Uint;
+		case InternalFormat::RGB16Int: return vk::Format::eR16G16B16Sint;
+		case InternalFormat::RGB16Uint: return vk::Format::eR16G16B16Uint;
+		case InternalFormat::RGB32Int: return vk::Format::eR32G32B32Sint;
+		case InternalFormat::RGB32Uint: return vk::Format::eR32G32B32Uint;
+		case InternalFormat::RGBA8Int: return vk::Format::eR8G8B8A8Sint;
+		case InternalFormat::RGBA8Uint: return vk::Format::eR8G8B8A8Uint;
+		case InternalFormat::RGBA16Int: return vk::Format::eR16G16B16A16Sint;
+		case InternalFormat::RGBA16Uint: return vk::Format::eR16G16B16A16Uint;
+		case InternalFormat::RGBA32Int: return vk::Format::eR32G32B32A32Sint;
+		case InternalFormat::RGBA32Uint: return vk::Format::eR32G32B32A32Uint;
+		case InternalFormat::BGRA8Unorm: return vk::Format::eB8G8R8A8Unorm;
+		case InternalFormat::BGRA8UnormSrgb: return vk::Format::eB8G8R8A8Srgb;
+		case InternalFormat::R5G6B5Unorm: return vk::Format::eR5G6B5UnormPack16;
+		case InternalFormat::D32Float: return vk::Format::eD32Sfloat;
+		case InternalFormat::D16Unorm: return vk::Format::eD16Unorm;
+		case InternalFormat::D32FloatS8X24: return vk::Format::eD32SfloatS8Uint;
+		case InternalFormat::D24UnormS8: return vk::Format::eD24UnormS8Uint;
+		case InternalFormat::BC1Unorm: return vk::Format::eBc1RgbUnormBlock;
+		case InternalFormat::BC1UnormSrgb: return vk::Format::eBc1RgbSrgbBlock;
+		case InternalFormat::BC2Unorm: return vk::Format::eBc2UnormBlock;
+		case InternalFormat::BC2UnormSrgb: return vk::Format::eBc2SrgbBlock;
+		case InternalFormat::BC3Unorm: return vk::Format::eBc3UnormBlock;
+		case InternalFormat::BC3UnormSrgb: return vk::Format::eBc3SrgbBlock;
+		case InternalFormat::BC4Unorm: return vk::Format::eBc4UnormBlock;
+		case InternalFormat::BC4Snorm: return vk::Format::eBc4SnormBlock;
+		case InternalFormat::BC5Unorm: return vk::Format::eBc5UnormBlock;
+		case InternalFormat::BC5Snorm: return vk::Format::eBc5SnormBlock;
+		case InternalFormat::BC6HS16: return vk::Format::eBc6HSfloatBlock;
+		case InternalFormat::BC6HU16: return vk::Format::eBc6HUfloatBlock;
+		case InternalFormat::BC7Unorm: return vk::Format::eBc7UnormBlock;
+		case InternalFormat::BC7UnormSrgb: return vk::Format::eBc7SrgbBlock;
+		default: return vk::Format::eUndefined;
 	}
 }
 
+//-----------------
+
+vk::AccessFlags getVkAccessMask(const ResourceUsage& usage) {
+	switch(usage) {
+		case ResourceUsage::Undefined:
+		case ResourceUsage::PreInitialized:
+		case ResourceUsage::Present:
+		case ResourceUsage::General: return {};
+		case ResourceUsage::RenderTarget: return vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+		case ResourceUsage::DepthStencil: return vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		case ResourceUsage::ShaderResource: return vk::AccessFlagBits::eInputAttachmentRead;
+		case ResourceUsage::CopySource: return vk::AccessFlagBits::eTransferRead;
+		case ResourceUsage::CopyDestination: return vk::AccessFlagBits::eTransferWrite;
+		case ResourceUsage::ShaderWrite: return vk::AccessFlagBits::eShaderWrite;
+		default: return {};
+	};
+}
+
+//-----------------
+
+vk::ImageLayout getVkImageLayout(const ResourceUsage& usage) {
+	switch(usage) {
+		case ResourceUsage::Undefined: return vk::ImageLayout::eUndefined;
+		case ResourceUsage::PreInitialized: return vk::ImageLayout::ePreinitialized;
+		case ResourceUsage::ShaderWrite:
+		case ResourceUsage::General: return vk::ImageLayout::eGeneral;
+		case ResourceUsage::RenderTarget: return vk::ImageLayout::eColorAttachmentOptimal;
+		case ResourceUsage::DepthStencil: return vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal;
+		case ResourceUsage::ShaderResource: return vk::ImageLayout::eShaderReadOnlyOptimal;
+		case ResourceUsage::CopySource: return vk::ImageLayout::eTransferSrcOptimal;
+		case ResourceUsage::CopyDestination: return vk::ImageLayout::eTransferDstOptimal;
+		case ResourceUsage::Present: return vk::ImageLayout::ePresentSrcKHR;
+		default: return vk::ImageLayout::eUndefined;
+	};
+}
+
+//-----------------
+
+vk::PipelineStageFlags getVkPipelineStageMask(const ResourceUsage& usage, bool src) {
+	switch(usage) {
+		case ResourceUsage::Undefined:
+		case ResourceUsage::PreInitialized:
+		case ResourceUsage::General: return src ? vk::PipelineStageFlagBits::eTopOfPipe : (vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands);
+		case ResourceUsage::RenderTarget: return vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		case ResourceUsage::DepthStencil: return src ? vk::PipelineStageFlagBits::eLateFragmentTests : vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		case ResourceUsage::ShaderWrite:
+		case ResourceUsage::ShaderResource: return vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eComputeShader;
+		case ResourceUsage::CopySource:
+		case ResourceUsage::CopyDestination: return vk::PipelineStageFlagBits::eTransfer;
+		case ResourceUsage::Present: return src ? (vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands) : vk::PipelineStageFlagBits::eTopOfPipe;
+		default: return vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands;
+	};
+}
+
+//-----------------
+
+vk::BufferUsageFlags getVkBufferUsage(const ResourceUsage& usage) {
+	vk::BufferUsageFlags flags = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
+	switch(usage) {
+		case ResourceUsage::ShaderResource: flags |= vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eUniformTexelBuffer; break;
+		case ResourceUsage::ShaderWrite: flags |= vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eStorageTexelBuffer; break;
+		case ResourceUsage::IndexBuffer: flags |= vk::BufferUsageFlagBits::eIndexBuffer; break;
+		case ResourceUsage::VertexBuffer: flags |= vk::BufferUsageFlagBits::eVertexBuffer; break;
+		case ResourceUsage::IndirectBuffer: flags |= vk::BufferUsageFlagBits::eIndirectBuffer; break;
+		default: flags |= vk::BufferUsageFlags(VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM);
+	}
+}
+
+//-----------------
+
+
+bool hasBindingPoint(const ShaderResourceType& type) {
+	switch (type) {
+		case ShaderResourceType::Input:
+		case ShaderResourceType::Output:
+		case ShaderResourceType::PushConstant:
+		case ShaderResourceType::SpecializationConstant:
+		case ShaderResourceType::ResourceTypeCount:
+			return false;
+		default: 
+			return true;
+	}
+}
+
+//-----------------
+
+vk::DescriptorType getVkDescriptorType(const ShaderResourceType& type, bool dynamic) {
+	switch (type) {
+		case ShaderResourceType::InputAttachment: return vk::DescriptorType::eInputAttachment;
+		case ShaderResourceType::Image: return vk::DescriptorType::eSampledImage;
+		case ShaderResourceType::ImageSampler: return vk::DescriptorType::eCombinedImageSampler;
+		case ShaderResourceType::ImageStorage: return vk::DescriptorType::eStorageImage;
+		case ShaderResourceType::Sampler: return vk::DescriptorType::eSampler;
+		case ShaderResourceType::BufferUniform: return dynamic ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eUniformBuffer;
+		case ShaderResourceType::BufferStorage: return dynamic ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eStorageBuffer;
+		default: return {};
+	}
+}
+
+
+//-----------------
+
+std::string toString(ShaderStage stage) {
+	switch(stage) {
+		case ShaderStage::Undefined: return "Undefined";
+		case ShaderStage::Vertex: return "Vertex";
+		case ShaderStage::TessellationControl: return "TessellationControl";
+		case ShaderStage::TessellationEvaluation: return "TessellationEvaluation";
+		case ShaderStage::Geometry: return "Geometry";
+		case ShaderStage::Fragment: return "Fragment";
+		case ShaderStage::Compute: return "Compute";
+	}
+	return "";
+}
+
+//-----------------
+
+std::string toString(ShaderResourceType type) {
+	switch(type) {
+		case ShaderResourceType::Input: return "Input";
+		case ShaderResourceType::InputAttachment: return "InputAttachment";
+		case ShaderResourceType::Output: return "Output";
+		case ShaderResourceType::Image: return "Image";
+		case ShaderResourceType::ImageSampler: return "ImageSampler";
+		case ShaderResourceType::ImageStorage: return "ImageStorage";
+		case ShaderResourceType::Sampler: return "Sampler";
+		case ShaderResourceType::BufferUniform: return "BufferUniform";
+		case ShaderResourceType::BufferStorage: return "BufferStorage";
+		case ShaderResourceType::PushConstant: return "PushConstant";
+		case ShaderResourceType::SpecializationConstant: return "SpecializationConstant";
+	}
+	return "";
+}
+
+//-----------------
+
+std::string toString(const ShaderResource& resource) {
+	return "ShaderResource(name " + resource.name + ", " 
+		+ "stage " + toString(resource.stages) + ", "
+		+ "type " + toString(resource.type) + ", "
+		+ "set " + std::to_string(resource.set) + ", "
+		+ "binding " + std::to_string(resource.binding) + ", "
+		+ "location " + std::to_string(resource.location) + ", "
+		+ "input_attachment_index " + std::to_string(resource.input_attachment_index) + ", "
+		+ "vec_size " + std::to_string(resource.vec_size) + ", "
+		+ "columns " + std::to_string(resource.columns) + ", "
+		+ "array_size " + std::to_string(resource.array_size) + ", "
+		+ "offset " + std::to_string(resource.offset) + ", "
+		+ "size " + std::to_string(resource.size) + ", "
+		+ "constant_id " + std::to_string(resource.constant_id) + ", "
+		+ "dynamic " + std::to_string(resource.dynamic) + ")";
+}
 } /* Rendering */

@@ -13,6 +13,7 @@
 #include "../Core/Device.h"
 #include "../Core/ImageStorage.h"
 #include "../Core/ImageView.h"
+#include "../Core/Sampler.h"
 
 #include "../GLHeader.h"
 #include "../BufferObject.h"
@@ -35,26 +36,26 @@ namespace Rendering {
 
 // ----------------------------------------------------
 
-Texture::Ref Texture::create(const DeviceRef& device, const Format& format) {
-	return new Texture(device, format);
+Texture::Ref Texture::create(const DeviceRef& device, const Format& format, const SamplerRef& sampler) {
+	return new Texture(device, format, sampler ? sampler : Sampler::create(device, {}));
 }
 
 //--------------
 
-Texture::Ref Texture::create(const DeviceRef& device, const ImageStorageRef& image) {
-	return create(device, ImageView::create(image, {image->getType(), 0u, image->getFormat().mipLevels, 0u, image->getFormat().layers}));
+Texture::Ref Texture::create(const DeviceRef& device, const ImageStorageRef& image, const SamplerRef& sampler) {
+	return create(device, ImageView::create(image, {image->getType(), 0u, image->getFormat().mipLevels, 0u, image->getFormat().layers}), sampler);
 }
 //--------------
 
-Texture::Ref Texture::create(const DeviceRef& device, const ImageViewRef& view) {
-	Ref texture = new Texture(device, view->getImage()->getFormat());
+Texture::Ref Texture::create(const DeviceRef& device, const ImageViewRef& view, const SamplerRef& sampler) {
+	Ref texture = new Texture(device, view->getImage()->getFormat(), sampler ? sampler : Sampler::create(device, {}));
 	texture->imageView = view;
 	return texture;
 }
 
 //--------------
 
-Texture::Texture(const DeviceRef& device, const Format& format) : device(device), format(format) {
+Texture::Texture(const DeviceRef& device, const Format& format, const SamplerRef& sampler) : device(device), format(format), sampler(sampler) {
 	
 	uint32_t dim = 0;
 	if(format.extent.x() >= 1)
@@ -94,7 +95,7 @@ Texture::Texture(const DeviceRef& device, const Format& format) : device(device)
 //--------------
 
 //! [ctor]
-Texture::Texture(Format _format) : Texture(Device::getDefault(), format) { }
+Texture::Texture(Format _format) : Texture(Device::getDefault(), format, Sampler::create(Device::getDefault(), {})) { }
 
 //! [dtor]
 Texture::~Texture() = default;
@@ -108,6 +109,18 @@ void Texture::_createGLID(RenderingContext & context) {
 		}
 	}
 
+}
+
+//---------------
+
+bool Texture::getUseLinearMinFilter() const {
+	return sampler->getConfig().minFilter == ImageFilter::Linear;
+}
+
+//---------------
+
+bool Texture::getUseLinearMagFilter() const {
+	return sampler->getConfig().magFilter == ImageFilter::Linear;
 }
 
 //---------------

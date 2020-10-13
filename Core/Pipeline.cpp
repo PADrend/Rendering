@@ -20,6 +20,8 @@
 
 namespace Rendering {
 
+vk::Format getVkFormat(const InternalFormat& format);
+
 //---------------
 
 static vk::PipelineInputAssemblyStateCreateInfo convertInputAssemblyState(const InputAssemblyState& state) {
@@ -70,16 +72,16 @@ static vk::PipelineRasterizationStateCreateInfo convertRasterizationState(const 
 
 //---------------
 
-static vk::CompareOp convertCompareOp(const CompareOp& op) {
+static vk::CompareOp convertCompareOp(const ComparisonFunc& op) {
 	switch(op) {
-		case CompareOp::Never: return vk::CompareOp::eNever;
-		case CompareOp::Less: return vk::CompareOp::eLess;
-		case CompareOp::Equal: return vk::CompareOp::eEqual;
-		case CompareOp::LessOrEqual: return vk::CompareOp::eLessOrEqual;
-		case CompareOp::Greater: return vk::CompareOp::eGreater;
-		case CompareOp::NotEqual: return vk::CompareOp::eNotEqual;
-		case CompareOp::GreaterOrEqual: return vk::CompareOp::eGreaterOrEqual;
-		case CompareOp::Always: return vk::CompareOp::eAlways;
+		case ComparisonFunc::Never: return vk::CompareOp::eNever;
+		case ComparisonFunc::Less: return vk::CompareOp::eLess;
+		case ComparisonFunc::Equal: return vk::CompareOp::eEqual;
+		case ComparisonFunc::LessOrEqual: return vk::CompareOp::eLessOrEqual;
+		case ComparisonFunc::Greater: return vk::CompareOp::eGreater;
+		case ComparisonFunc::NotEqual: return vk::CompareOp::eNotEqual;
+		case ComparisonFunc::GreaterOrEqual: return vk::CompareOp::eGreaterOrEqual;
+		case ComparisonFunc::Always: return vk::CompareOp::eAlways;
 	}
 	return vk::CompareOp::eNever;
 }
@@ -253,7 +255,7 @@ bool Pipeline::initGraphics(const PipelineCacheRef& cache) {
 	for(auto& b : state.getVertexInputState().getBindings())
 		bindings.emplace_back(b.binding, b.stride, static_cast<vk::VertexInputRate>(b.inputRate));
 	for(auto& a : state.getVertexInputState().getAttributes())
-		attributes.emplace_back(a.location, a.binding, static_cast<vk::Format>(convertToApiFormat(a.format)), a.offset);
+		attributes.emplace_back(a.location, a.binding, static_cast<vk::Format>(getVkFormat(a.format)), a.offset);
 	vk::PipelineVertexInputStateCreateInfo vertexInput{{}, 
 		static_cast<uint32_t>(bindings.size()), bindings.data(), 
 		static_cast<uint32_t>(attributes.size()), attributes.data()

@@ -36,6 +36,8 @@ class ImageStorage;
 using ImageStorageRef = Util::Reference<ImageStorage>;
 class ImageView;
 using ImageViewRef = Util::Reference<ImageView>;
+class Sampler;
+using SamplerRef = Util::Reference<Sampler>;
 
 //! @addtogroup rendering_resources
 //! @{
@@ -72,9 +74,9 @@ public:
 	using Ref = Util::Reference<Texture>;
 	using Format = ImageFormat;
 	
-	static Ref create(const DeviceRef& device, const Format& format);
-	static Ref create(const DeviceRef& device, const ImageStorageRef& image);
-	static Ref create(const DeviceRef& device, const ImageViewRef& image);
+	static Ref create(const DeviceRef& device, const Format& format, const SamplerRef& sampler = nullptr);
+	static Ref create(const DeviceRef& device, const ImageStorageRef& image, const SamplerRef& sampler = nullptr);
+	static Ref create(const DeviceRef& device, const ImageViewRef& image, const SamplerRef& sampler = nullptr);
 
 	~Texture();
 
@@ -84,9 +86,7 @@ public:
 	uint32_t getHeight() const { return format.extent.y(); }
 	uint32_t getWidth() const { return format.extent.x(); }
 	TextureType getTextureType() const { return tType; }
-	bool getUseLinearMinFilter() const { return false; }
-	bool getUseLinearMagFilter() const { return false; }
-	bool isValid() const { return imageView; }
+	bool isValid() const { return imageView && sampler; }
 
 	/*!	@name Image data manipulation */
 	// @{
@@ -124,14 +124,17 @@ public:
 	// @{
 	const ImageViewRef& getImageView() const { return imageView; }
 	const ImageStorageRef& getImage() const;
-	ResourceUsage getLastUsage() const { return lastUsage; }
-	void _setLastUsage(ResourceUsage usage) { lastUsage = usage; }
+	const SamplerRef& getSampler() const { return sampler; }
 	// @}
 	
 	/*!	@name Deprecated */
 	// @{
 	[[deprecated]]
 	Texture(Format format);
+	[[deprecated]]
+	bool getUseLinearMinFilter() const;
+	[[deprecated]]
+	bool getUseLinearMagFilter() const;
 	[[deprecated]]
 	uint32_t _prepareForBinding(RenderingContext & context);
 	[[deprecated]]
@@ -160,7 +163,7 @@ public:
 	BufferObject* getBufferObject() const { return nullptr; }
 	// @}
 private:
-	Texture(const DeviceRef& device, const Format& format);
+	Texture(const DeviceRef& device, const Format& format, const SamplerRef& sampler);
 
 	DeviceRef device;
 	const Format format;
@@ -174,7 +177,7 @@ private:
 	Util::FileName fileName;
 	Util::Reference<Util::Bitmap> localBitmap;
 	ImageViewRef imageView;
-	ResourceUsage lastUsage = ResourceUsage::Undefined;
+	SamplerRef sampler;
 };
 
 

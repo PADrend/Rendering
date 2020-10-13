@@ -3,16 +3,19 @@
 	Copyright (C) 2007-2012 Benjamin Eikel <benjamin@eikel.org>
 	Copyright (C) 2007-2012 Claudius Jähn <claudius@uni-paderborn.de>
 	Copyright (C) 2007-2012 Ralf Petring <ralf@petring.net>
+	Copyright (C) 2014-2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
 #include "BufferObject.h"
-#include "GLHeader.h"
-#include "Helper.h"
+#include "Core/Device.h"
+#include "Core/BufferStorage.h"
 
 #include <Util/Macros.h>
+
+#include <vulkan/vulkan.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -21,236 +24,127 @@
 
 namespace Rendering {
 
-const uint32_t BufferObject::TARGET_ARRAY_BUFFER = GL_ARRAY_BUFFER;
-const uint32_t BufferObject::TARGET_ATOMIC_COUNTER_BUFFER = GL_ATOMIC_COUNTER_BUFFER;
-const uint32_t BufferObject::TARGET_COPY_READ_BUFFER = GL_COPY_READ_BUFFER;
-const uint32_t BufferObject::TARGET_COPY_WRITE_BUFFER = GL_COPY_WRITE_BUFFER;
-const uint32_t BufferObject::TARGET_DISPATCH_INDIRECT_BUFFER = GL_DISPATCH_INDIRECT_BUFFER;
-const uint32_t BufferObject::TARGET_DRAW_INDIRECT_BUFFER = GL_DRAW_INDIRECT_BUFFER;
-const uint32_t BufferObject::TARGET_ELEMENT_ARRAY_BUFFER = GL_ELEMENT_ARRAY_BUFFER;
-const uint32_t BufferObject::TARGET_PIXEL_PACK_BUFFER = GL_PIXEL_PACK_BUFFER;
-const uint32_t BufferObject::TARGET_PIXEL_UNPACK_BUFFER = GL_PIXEL_UNPACK_BUFFER;
-const uint32_t BufferObject::TARGET_QUERY_BUFFER = GL_QUERY_BUFFER;
-const uint32_t BufferObject::TARGET_SHADER_STORAGE_BUFFER = GL_SHADER_STORAGE_BUFFER;
-const uint32_t BufferObject::TARGET_TEXTURE_BUFFER = GL_TEXTURE_BUFFER;
-const uint32_t BufferObject::TARGET_TRANSFORM_FEEDBACK_BUFFER = GL_TRANSFORM_FEEDBACK_BUFFER;
-const uint32_t BufferObject::TARGET_UNIFORM_BUFFER = GL_UNIFORM_BUFFER;
+//----------------
 
-const uint32_t BufferObject::USAGE_STREAM_DRAW = GL_STREAM_DRAW;
-const uint32_t BufferObject::USAGE_STREAM_READ = GL_STREAM_READ;
-const uint32_t BufferObject::USAGE_STREAM_COPY = GL_STREAM_COPY;
-const uint32_t BufferObject::USAGE_STATIC_DRAW = GL_STATIC_DRAW;
-const uint32_t BufferObject::USAGE_STATIC_READ = GL_STATIC_READ;
-const uint32_t BufferObject::USAGE_STATIC_COPY = GL_STATIC_COPY;
-const uint32_t BufferObject::USAGE_DYNAMIC_DRAW = GL_DYNAMIC_DRAW;
-const uint32_t BufferObject::USAGE_DYNAMIC_READ = GL_DYNAMIC_READ;
-const uint32_t BufferObject::USAGE_DYNAMIC_COPY = GL_DYNAMIC_COPY;
+const uint32_t BufferObject::TARGET_ARRAY_BUFFER = 0;
+const uint32_t BufferObject::TARGET_ATOMIC_COUNTER_BUFFER = 0;
+const uint32_t BufferObject::TARGET_COPY_READ_BUFFER = 0;
+const uint32_t BufferObject::TARGET_COPY_WRITE_BUFFER = 0;
+const uint32_t BufferObject::TARGET_DISPATCH_INDIRECT_BUFFER = 0;
+const uint32_t BufferObject::TARGET_DRAW_INDIRECT_BUFFER = 0;
+const uint32_t BufferObject::TARGET_ELEMENT_ARRAY_BUFFER = 0;
+const uint32_t BufferObject::TARGET_PIXEL_PACK_BUFFER = 0;
+const uint32_t BufferObject::TARGET_PIXEL_UNPACK_BUFFER = 0;
+const uint32_t BufferObject::TARGET_QUERY_BUFFER = 0;
+const uint32_t BufferObject::TARGET_SHADER_STORAGE_BUFFER = 0;
+const uint32_t BufferObject::TARGET_TEXTURE_BUFFER = 0;
+const uint32_t BufferObject::TARGET_TRANSFORM_FEEDBACK_BUFFER = 0;
+const uint32_t BufferObject::TARGET_UNIFORM_BUFFER = 0;
 
-BufferObject::BufferObject() : bufferId(0) {
+const uint32_t BufferObject::USAGE_STREAM_DRAW = 0;
+const uint32_t BufferObject::USAGE_STREAM_READ = 0;
+const uint32_t BufferObject::USAGE_STREAM_COPY = 0;
+const uint32_t BufferObject::USAGE_STATIC_DRAW = 0;
+const uint32_t BufferObject::USAGE_STATIC_READ = 0;
+const uint32_t BufferObject::USAGE_STATIC_COPY = 0;
+const uint32_t BufferObject::USAGE_DYNAMIC_DRAW = 0;
+const uint32_t BufferObject::USAGE_DYNAMIC_READ = 0;
+const uint32_t BufferObject::USAGE_DYNAMIC_COPY = 0;
+
+//----------------
+
+BufferObject::Ref BufferObject::create(const DeviceRef& device) {
+	return new BufferObject(device);
 }
 
-BufferObject::BufferObject(BufferObject && other) : bufferId(other.bufferId) {
-	// Make sure the other buffer object does not free the handle.
-	other.bufferId = 0;
+//----------------
+
+BufferObject::BufferObject() : BufferObject(Device::getDefault()) { }
+
+//----------------
+
+
+BufferObject::BufferObject(const DeviceRef& device) : device(device) { }
+
+//----------------
+
+void BufferObject::swap(BufferObject& other) {
+	device.swap(other.device);
+	buffer.swap(other.buffer);
 }
 
-BufferObject::~BufferObject() {
-	destroy();
-}
-
-BufferObject & BufferObject::operator=(BufferObject && other) {
-	// Handle self-assignment.
-	if(this == &other) {
-		return *this;
-	}
-	// Make sure the other buffer object frees the handle.
-	std::swap(other.bufferId, bufferId);
-	return *this;
-}
-
-void BufferObject::swap(BufferObject & other){
-	std::swap(other.bufferId,bufferId);
-}
-
-void BufferObject::prepare() {
-	if(bufferId == 0) {
-		glGenBuffers(1, &bufferId);
-	}
-}
+//----------------
 
 void BufferObject::destroy() {
-	if(bufferId != 0) {
-		glDeleteBuffers(1, &bufferId);
-		bufferId = 0;
-	}
+	buffer = nullptr;
 }
 
-void BufferObject::bind(uint32_t bufferTarget) const {
-	glBindBuffer(bufferTarget, bufferId);
+//----------------
+
+bool BufferObject::allocate(size_t size, ResourceUsage usage = ResourceUsage::General, MemoryUsage access = MemoryUsage::CpuToGpu, bool persistent=false) {
+	BufferStorage::Configuration config{size, access, persistent, usage};
+	if(buffer && config == buffer->getConfig())
+		return true; // already allocated.
+	buffer = BufferStorage::create(device, config);
+	return isValid();
 }
 
-void BufferObject::bind(uint32_t bufferTarget, uint32_t location) const {
-#if defined(LIB_GL)
-	glBindBufferBase(bufferTarget, location, bufferId);
-#endif
+//----------------
+
+void BufferObject::upload(const uint8_t* data, size_t numBytes) {
+	WARN_AND_RETURN_IF(!isValid(), "BufferObject: Cannot upload data. Buffer is not allocated.",);
+	WARN_AND_RETURN_IF(buffer->getSize() > numBytes, "BufferObject: Cannot upload data. Range out of bounds.",);
+	buffer->upload(data, numBytes);
+	// TODO: use staging buffer if buffer is not client accessible
 }
 
-void BufferObject::unbind(uint32_t bufferTarget) const {
-	glBindBuffer(bufferTarget, 0);
-}
+//----------------
 
-void BufferObject::unbind(uint32_t bufferTarget, uint32_t location) const {
-#if defined(LIB_GL)
-	glBindBufferBase(bufferTarget, location, 0);
-#endif
-}
-
-void BufferObject::uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint) {
-	prepare();
-	bind(bufferTarget);
-	glBufferData(bufferTarget, static_cast<GLsizeiptr>(numBytes), data, usageHint);
-	unbind(bufferTarget);
-}
-
-void BufferObject::uploadSubData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, size_t offset) {
-	prepare();
-	bind(bufferTarget);
-	glBufferSubData(bufferTarget, offset, static_cast<GLsizeiptr>(numBytes), data);
-	unbind(bufferTarget);
-}
-
-template<typename T>
-void BufferObject::allocateData(uint32_t bufferTarget, std::size_t numberOfElements, uint32_t usageHint) {
-	uploadData(bufferTarget, nullptr, static_cast<GLsizeiptr>(numberOfElements * sizeof(T)), usageHint);
-}
-
-template<typename T>
-void BufferObject::uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint) {
-	uploadData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),static_cast<GLsizeiptr>(data.size() * sizeof(T)),usageHint);
-}
-
-template<typename T>
-void BufferObject::uploadSubData(uint32_t bufferTarget, const std::vector<T> & data, size_t offset) {
-	uploadSubData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),static_cast<GLsizeiptr>(data.size() * sizeof(T)),offset);
-}
-
-#if defined(LIB_GL)
-template<typename T>
-std::vector<T> BufferObject::downloadData(uint32_t bufferTarget, std::size_t numberOfElements, size_t offset) const {
-	if(bufferId == 0) {
-		return std::vector<T>();
-	}
-	bind(bufferTarget);
-	const T * bufferData = reinterpret_cast<const T *>(glMapBuffer(bufferTarget, GL_READ_ONLY));
-	const std::vector<T> result(bufferData + offset, bufferData + offset + numberOfElements);
-	glUnmapBuffer(bufferTarget);
-	unbind(bufferTarget);
+std::vector<uint8_t> BufferObject::download(size_t range, size_t offset=0) {
+	WARN_AND_RETURN_IF(!isValid(), "BufferObject: Cannot download data. Buffer is not allocated.", {});
+	WARN_AND_RETURN_IF(buffer->getSize() > range+offset, "BufferObject: Cannot download data. Range out of bounds.", {});
+	const uint8_t* ptr = map();
+	const std::vector<uint8_t> result(ptr + offset, ptr + offset + range);
+	unmap();
+	// TODO: use staging buffer if buffer is not client accessible
 	return result;
 }
-#elif defined(LIB_GLESv2)
-template<typename T>
-std::vector<T> BufferObject::downloadData(uint32_t /*bufferTarget*/, std::size_t /*numberOfElements*/, size_t /*offset*/) const {
-	return std::vector<T>();
-}
-#endif
+
+//----------------
+
 
 void BufferObject::clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data) {
-#if defined(GL_ARB_clear_buffer_object)
-	bind(bufferTarget);
-	glClearBufferData(bufferTarget, internalFormat, format, type, data);
-	unbind(bufferTarget);
-	//glClearNamedBufferDataEXT(bufferId, internalFormat, format, type, data);
-#else
 	WARN("BufferObject::clear not supported!");
-#endif
 }
+
+//----------------
 
 void BufferObject::clear(uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data) {
-#if defined(GL_ARB_clear_buffer_object)
-	glClearNamedBufferDataEXT(bufferId, internalFormat, format, type, data);
-#else
 	WARN("BufferObject::clear not supported!");
-#endif
 }
+
+//----------------
 
 void BufferObject::copy(const BufferObject& source, uint32_t sourceOffset, uint32_t targetOffset, uint32_t size) {
-	source.bind(TARGET_COPY_READ_BUFFER);
-	bind(TARGET_COPY_WRITE_BUFFER);
-	glCopyBufferSubData(TARGET_COPY_READ_BUFFER, TARGET_COPY_WRITE_BUFFER, sourceOffset, targetOffset, size);
-	unbind(TARGET_COPY_WRITE_BUFFER);
-	source.unbind(TARGET_COPY_READ_BUFFER);
-	GET_GL_ERROR();
+	WARN("BufferObject::copy not supported!");
 }
 
-uint8_t* BufferObject::map(uint32_t offset, uint32_t size, AccessFlag access) {
-	GLenum gl_access;
-	switch(access) {
-		case AccessFlag::READ_ONLY: gl_access = GL_READ_ONLY; break;
-		case AccessFlag::WRITE_ONLY: gl_access = GL_WRITE_ONLY; break;
-		case AccessFlag::READ_WRITE: gl_access = GL_READ_WRITE; break;
-		default: 
-			WARN("BufferObject::map: Cannot map buffer with access flag NO_ACCESS");
-			return nullptr;
-	}
-	bind(TARGET_COPY_WRITE_BUFFER);
-	uint8_t* ptr = nullptr;
-	if(size == 0)
-		ptr = static_cast<uint8_t*>(glMapBuffer(TARGET_COPY_WRITE_BUFFER, gl_access));
-	else
-		ptr = static_cast<uint8_t*>(glMapBufferRange(TARGET_COPY_WRITE_BUFFER, offset, size, gl_access));
-	unbind(TARGET_COPY_WRITE_BUFFER);
-	return ptr;
+//----------------
+
+uint8_t* BufferObject::map() {
+	if(!buffer)
+		return nullptr;
+	return buffer->map();
 }
+
+//----------------
 
 void BufferObject::unmap() {
-	bind(TARGET_COPY_WRITE_BUFFER);
-	glUnmapBuffer(TARGET_COPY_WRITE_BUFFER);
-	unbind(TARGET_COPY_WRITE_BUFFER);
+	if(!buffer)
+		return;
+	buffer->unmap();
 }
 
-// Instantiate the template functions
-template void BufferObject::allocateData<uint8_t>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<uint16_t>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<uint32_t>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<uint64_t>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<int8_t>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<int16_t>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<int32_t>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<int64_t>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<float>(uint32_t, std::size_t, uint32_t);
-template void BufferObject::allocateData<double>(uint32_t, std::size_t, uint32_t);
-
-template void BufferObject::uploadData<uint8_t>(uint32_t, const std::vector<uint8_t> &, uint32_t);
-template void BufferObject::uploadData<uint16_t>(uint32_t, const std::vector<uint16_t> &, uint32_t);
-template void BufferObject::uploadData<uint32_t>(uint32_t, const std::vector<uint32_t> &, uint32_t);
-template void BufferObject::uploadData<uint64_t>(uint32_t, const std::vector<uint64_t> &, uint32_t);
-template void BufferObject::uploadData<int8_t>(uint32_t, const std::vector<int8_t> &, uint32_t);
-template void BufferObject::uploadData<int16_t>(uint32_t, const std::vector<int16_t> &, uint32_t);
-template void BufferObject::uploadData<int32_t>(uint32_t, const std::vector<int32_t> &, uint32_t);
-template void BufferObject::uploadData<int64_t>(uint32_t, const std::vector<int64_t> &, uint32_t);
-template void BufferObject::uploadData<float>(uint32_t, const std::vector<float> &, uint32_t);
-template void BufferObject::uploadData<double>(uint32_t, const std::vector<double> &, uint32_t);
-
-template void BufferObject::uploadSubData<uint8_t>(uint32_t, const std::vector<uint8_t> &, size_t);
-template void BufferObject::uploadSubData<uint16_t>(uint32_t, const std::vector<uint16_t> &, size_t);
-template void BufferObject::uploadSubData<uint32_t>(uint32_t, const std::vector<uint32_t> &, size_t);
-template void BufferObject::uploadSubData<uint64_t>(uint32_t, const std::vector<uint64_t> &, size_t);
-template void BufferObject::uploadSubData<int8_t>(uint32_t, const std::vector<int8_t> &, size_t);
-template void BufferObject::uploadSubData<int16_t>(uint32_t, const std::vector<int16_t> &, size_t);
-template void BufferObject::uploadSubData<int32_t>(uint32_t, const std::vector<int32_t> &, size_t);
-template void BufferObject::uploadSubData<int64_t>(uint32_t, const std::vector<int64_t> &, size_t);
-template void BufferObject::uploadSubData<float>(uint32_t, const std::vector<float> &, size_t);
-template void BufferObject::uploadSubData<double>(uint32_t, const std::vector<double> &, size_t);
-
-template std::vector<uint8_t> BufferObject::downloadData<uint8_t>(uint32_t, size_t, size_t) const;
-template std::vector<uint16_t> BufferObject::downloadData<uint16_t>(uint32_t, size_t, size_t) const;
-template std::vector<uint32_t> BufferObject::downloadData<uint32_t>(uint32_t, size_t, size_t) const;
-template std::vector<uint64_t> BufferObject::downloadData<uint64_t>(uint32_t, size_t, size_t) const;
-template std::vector<int8_t> BufferObject::downloadData<int8_t>(uint32_t, size_t, size_t) const;
-template std::vector<int16_t> BufferObject::downloadData<int16_t>(uint32_t, size_t, size_t) const;
-template std::vector<int32_t> BufferObject::downloadData<int32_t>(uint32_t, size_t, size_t) const;
-template std::vector<int64_t> BufferObject::downloadData<int64_t>(uint32_t, size_t, size_t) const;
-template std::vector<float> BufferObject::downloadData<float>(uint32_t, size_t, size_t) const;
-template std::vector<double> BufferObject::downloadData<double>(uint32_t, size_t, size_t) const;
+//----------------
 
 }

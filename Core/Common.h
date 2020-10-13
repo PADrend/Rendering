@@ -30,6 +30,16 @@ enum class MemoryUsage {
 
 //---------------------------
 
+enum class QueueFamily : uint8_t {
+	None = 0,
+	Transfer = 1 << 0,
+	Compute = 1 << 1,
+	Graphics = 1 << 2,
+	Present = 1 << 3,
+};
+
+//---------------------------
+
 enum class PipelineType {
 	Graphics = 0,
 	Compute
@@ -117,6 +127,22 @@ enum class InternalFormat : std::uint8_t {
 	BC7UnormSrgb,
 };
 
+
+//---------------------------
+
+//! Comparison functions
+enum class ComparisonFunc {
+	Disabled, //! specifies that comparison is disabled.
+	Never, //! specifies that the test never passes.
+	Less, //! specifies that the test passes when R < S.
+	Equal, //! specifies that the test passes when R = S.
+	LessOrEqual, //! specifies that the test passes when R ≤ S.
+	Greater, //! specifies that the test passes when R > S.
+	NotEqual, //! specifies that the test passes when R ≠ S.
+	GreaterOrEqual, //! specifies that the test passes when R ≥ S.
+	Always, //! specifies that the test always passes.
+};
+
 //---------------------------
 
 //! Resource usage. Keeps track of how a resource was last used
@@ -131,6 +157,25 @@ enum class ResourceUsage {
 	CopyDestination,
 	Present,
 	ShaderWrite,
+	IndexBuffer,
+	VertexBuffer,
+	IndirectBuffer,
+};
+
+//---------------------------
+
+enum ImageFilter {
+	Nearest,
+	Linear,		
+};
+
+//---------------------------
+
+enum ImageAddressMode {
+	Repeat,
+	MirroredRepeat,
+	ClampToEdge,
+	ClampToBorder
 };
 
 //---------------------------
@@ -145,11 +190,89 @@ struct ImageFormat {
 
 //---------------------------
 
-uint32_t convertToApiFormat(const InternalFormat& format);
+enum class ShaderStage : uint8_t {
+	Undefined = 0,
+	Vertex = 1 << 0,
+	TessellationControl = 1 << 1,
+	TessellationEvaluation = 1 << 2,
+	Geometry = 1 << 3,
+	Fragment = 1 << 4,
+	Compute = 1 << 5,
+};
+
+//-------------
+
+inline ShaderStage operator|(ShaderStage a, ShaderStage b) {
+	return static_cast<ShaderStage>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+}
+
+//-------------
+
+inline ShaderStage operator&(ShaderStage a, ShaderStage b) {
+	return static_cast<ShaderStage>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+}
+
+//---------------------------
+
+enum class ShaderResourceType {
+	Input = 0,
+	InputAttachment,
+	Output,
+	Image,
+	ImageSampler,
+	ImageStorage,
+	Sampler,
+	BufferUniform,
+	BufferStorage,
+	PushConstant,
+	SpecializationConstant,
+	ResourceTypeCount
+};
+
+//---------------------------
+
+struct ShaderResource {
+	std::string name;
+	ShaderStage stages;
+	ShaderResourceType type;
+	uint32_t set;
+	uint32_t binding;
+	uint32_t location;
+	uint32_t input_attachment_index;
+	uint32_t vec_size;
+	uint32_t columns;
+	uint32_t array_size;
+	uint32_t offset;
+	uint32_t size;
+	uint32_t constant_id;
+	bool dynamic;
+
+	bool operator==(const ShaderResource& o) const {
+		return name == o.name && type == o.type && set == o.size && binding == o.binding && location == o.location && input_attachment_index == o.input_attachment_index
+			&& vec_size == o.vec_size && columns == o.columns && array_size == o.array_size && offset == o.offset && size == o.size && constant_id == o.constant_id && dynamic == o.dynamic;
+	}
+	bool operator!=(const ShaderResource& o) const { return !(*this == o); }
+};
+using ShaderResourceList = std::vector<ShaderResource>;
+
+//---------------------------
+
+std::string toString(ShaderStage stage);
+
+//---------------------------
+
+std::string toString(ShaderResourceType type);
+
+//---------------------------
+
+std::string toString(const ShaderResource& resource);
 
 //---------------------------
 
 } /* Rendering */
+
+//---------------------------
+// Hashing
 
 //---------------------------
 
@@ -163,6 +286,29 @@ template <> struct std::hash<Rendering::ImageFormat> {
 		Util::hash_combine(result, format.mipLevels);
 		Util::hash_combine(result, format.layers);
 		Util::hash_combine(result, format.samples);
+		return result;
+	}
+};
+
+//---------------------------
+
+template <> struct std::hash<Rendering::ShaderResource> {
+	std::size_t operator()(const Rendering::ShaderResource& resource) const {
+		std::size_t result = 0;
+		Util::hash_combine(result, resource.name);
+		Util::hash_combine(result, resource.stages);
+		Util::hash_combine(result, resource.type);
+		Util::hash_combine(result, resource.set);
+		Util::hash_combine(result, resource.binding);
+		Util::hash_combine(result, resource.location);
+		Util::hash_combine(result, resource.input_attachment_index);
+		Util::hash_combine(result, resource.vec_size);
+		Util::hash_combine(result, resource.columns);
+		Util::hash_combine(result, resource.array_size);
+		Util::hash_combine(result, resource.offset);
+		Util::hash_combine(result, resource.size);
+		Util::hash_combine(result, resource.constant_id);
+		Util::hash_combine(result, resource.dynamic);
 		return result;
 	}
 };

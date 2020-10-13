@@ -24,6 +24,9 @@ add_library(Rendering SHARED
 	Core/CommandBuffer.cpp
 	Core/CommandPool.cpp
 	Core/Common.cpp
+	Core/DescriptorPool.cpp
+	Core/DescriptorSet.cpp
+	Core/DescriptorSetLayout.cpp
 	Core/Device.cpp
 	Core/Fence.cpp
 	Core/ImageStorage.cpp
@@ -31,6 +34,7 @@ add_library(Rendering SHARED
 	Core/Pipeline.cpp
 	Core/PipelineCache.cpp
 	Core/Queue.cpp
+	Core/Sampler.cpp
 	Core/Swapchain.cpp
 	#Mesh/Mesh.cpp
 	#Mesh/MeshDataStrategy.cpp
@@ -56,6 +60,7 @@ add_library(Rendering SHARED
 	#RenderingContext/internal/StatusHandler_glCompatibility.cpp
 	#RenderingContext/internal/StatusHandler_glCore.cpp
 	#RenderingContext/internal/StatusHandler_sgUniforms.cpp
+	RenderingContext/BindingState.cpp
 	RenderingContext/PipelineState.cpp
 	#RenderingContext/RenderingContext.cpp
 	#RenderingContext/RenderingParameters.cpp
@@ -78,7 +83,7 @@ add_library(Rendering SHARED
 	Texture/Texture.cpp
 	Texture/TextureType.cpp
 	#Texture/TextureUtils.cpp
-	#BufferObject.cpp
+	BufferObject.cpp
 	#Draw.cpp
 	#DrawCompound.cpp
 	FBO.cpp

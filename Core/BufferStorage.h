@@ -28,9 +28,13 @@ class BufferStorage : public Util::ReferenceCounter<BufferStorage> {
 public:
 	struct Configuration {
 		size_t size; //! size (in bytes) of the buffer storage.
-		MemoryUsage memoryUsage = MemoryUsage::CpuToGpu; //! memory usage flag
+		MemoryUsage access = MemoryUsage::CpuToGpu; //! memory access flag
 		bool persistent = false; //! if true, the memory of the buffer is persistently mapped to CPU memory 
-		uint32_t usageFlags = 0x7fffffffu; //! additional, api dependend usage flags (e.g., VkBufferUsageFlags)
+		ResourceUsage usage = ResourceUsage::General; //! usage flags
+
+		bool operator==(const Configuration& o) const {
+			return size == o.size && access == o.access && persistent == o.persistent && usage == o.usage;
+		}
 	};
 
 	using Ref = Util::Reference<BufferStorage>;

@@ -344,24 +344,11 @@ enum class StencilOp {
 
 //-------------
 
-enum class CompareOp {
-	Never, //! specifies that the test never passes.
-	Less, //! specifies that the test passes when R < S.
-	Equal, //! specifies that the test passes when R = S.
-	LessOrEqual, //! specifies that the test passes when R ≤ S.
-	Greater, //! specifies that the test passes when R > S.
-	NotEqual, //! specifies that the test passes when R ≠ S.
-	GreaterOrEqual, //! specifies that the test passes when R ≥ S.
-	Always, //! specifies that the test always passes.
-};
-
-//-------------
-
 struct StencilOpState {
 	StencilOp failOp = StencilOp::Keep; //! Value specifying the action performed on samples that fail the stencil test.
 	StencilOp passOp = StencilOp::Keep; //! Calue specifying the action performed on samples that pass both the depth and stencil tests.
 	StencilOp depthFailOp = StencilOp::Keep; //! Calue specifying the action performed on samples that pass the stencil test and fail the depth test.
-	CompareOp compareOp = CompareOp::Never; //! Value specifying the comparison operator used in the stencil test.
+	ComparisonFunc compareOp = ComparisonFunc::Never; //! Value specifying the comparison operator used in the stencil test.
 	uint32_t compareMask = 0; //! Selects the bits of the unsigned integer stencil values participating in the stencil test.
 	uint32_t writeMask = 0; //! Selects the bits of the unsigned integer stencil values updated by the stencil test in the stencil framebuffer attachment.
 	uint32_t reference = 0; //! An integer reference value that is used in the unsigned stencil comparison.
@@ -377,7 +364,7 @@ DepthStencilState& setDepthTestEnabled(bool value) { depthTestEnable = value; re
 //! Controls whether depth writes are enabled when depth testing is enabled.
 DepthStencilState& setDepthWriteEnabled(bool value) { depthWriteEnable = value; return *this; }
 //! Sets the comparison operator used in the depth test.
-DepthStencilState& setDepthCompareOp(CompareOp value) { depthCompareOp = value; return *this; }
+DepthStencilState& setDepthCompareOp(ComparisonFunc value) { depthCompareOp = value; return *this; }
 //! Controls whether depth bounds testing is enabled.
 DepthStencilState& setDepthBoundsTestEnabled(bool value) { depthBoundsTestEnable = value; return *this; }
 //! Controls whether stencil testing is enabled.
@@ -404,7 +391,7 @@ bool isDepthTestEnabled() const { return depthTestEnable; }
 //! @see{setDepthWriteEnabled()}
 bool isDepthWriteEnabled() const { return depthWriteEnable; }
 //! @see{setDepthCompareOp()}
-CompareOp getDepthCompareOp() const { return depthCompareOp; }
+ComparisonFunc getDepthCompareOp() const { return depthCompareOp; }
 //! @see{setDepthBoundsTestEnabled()}
 bool isDepthBoundsTestEnabled() const { return depthBoundsTestEnable; }
 //! @see{setStencilTestEnabled()}
@@ -429,7 +416,7 @@ bool hasDynamicReference() const { return dynamicReference; }
 private:
 	bool depthTestEnable = false;
 	bool depthWriteEnable = true;
-	CompareOp depthCompareOp = CompareOp::Less;
+	ComparisonFunc depthCompareOp = ComparisonFunc::Less;
 	bool depthBoundsTestEnable = false;
 	bool stencilTestEnable = false;
 	StencilOpState front;
@@ -775,7 +762,6 @@ template <> struct hash<DepthStencilState> {
 	std::size_t operator()(const DepthStencilState& state) const {
 		std::size_t result = 0;
 		if(state.isDepthTestEnabled()) {
-			Util::hash_combine(result, state.isDepthWriteEnabled());
 			Util::hash_combine(result, state.getDepthCompareOp());
 			if(state.isDepthBoundsTestEnabled() && !state.hasDynamicDepthBounds()) {
 				Util::hash_combine(result, state.getMinDepthBounds());

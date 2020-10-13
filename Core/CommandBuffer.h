@@ -11,12 +11,14 @@
 
 #include "Common.h"
 #include "../RenderingContext/PipelineState.h"
+#include "../RenderingContext/BindingState.h"
 
 #include <Util/ReferenceCounter.h>
 #include <Util/Graphics/Color.h>
 
 #include <vector>
 #include <deque>
+#include <map>
 #include <functional>
 
 namespace Rendering {
@@ -25,6 +27,12 @@ class Texture;
 using TextureRef = Util::Reference<Texture>;
 class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
+class Pipeline;
+using PipelineRef = Util::Reference<Pipeline>;
+class Device;
+using DeviceRef = Util::Reference<Device>;
+class DescriptorSet;
+using DescriptorSetRef = Util::Reference<DescriptorSet>;
 
 //-------------------------------------------------------
 
@@ -38,6 +46,8 @@ public:
 		Executable,
 		Free,
 	};
+
+	static Ref request(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool primary=true);
 	
 	~CommandBuffer();
 	
@@ -50,6 +60,10 @@ public:
 
 	void beginRenderPass(const std::vector<Util::Color4f>& clearColors);
 	void endRenderPass();
+
+	void bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	void bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 
 	void draw(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0);
 
@@ -97,7 +111,9 @@ private:
 	CommandBufferHandle handle;
 	State state = Invalid;
 	PipelineState pipelineState;
-	size_t pipelineHash=0;
+	PipelineRef pipeline;
+	BindingState bindings;
+	std::map<uint32_t, size_t> layoutHashs;
 };
 
 } /* Rendering */

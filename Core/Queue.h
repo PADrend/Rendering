@@ -28,13 +28,6 @@ using SwapchainRef = Util::Reference<Swapchain>;
 class Queue : public Util::ReferenceCounter<Queue> {
 public:
 	using Ref = Util::Reference<Queue>;
-	enum class Family : uint8_t {
-		None = 0,
-		Transfer = 1 << 0,
-		Compute = 1 << 1,
-		Graphics = 1 << 2,
-		Present = 1 << 3,
-	};
 	
 	~Queue() = default;
 	
@@ -47,7 +40,7 @@ public:
 	const QueueHandle& getApiHandle() const { return handle; }
 	uint32_t getIndex() const { return index; }
 	uint32_t getFamilyIndex() const { return familyIndex; }
-	bool supports(Family type) const;
+	bool supports(QueueFamily type) const;
 private:
 	friend class Device;
 	explicit Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index);
@@ -56,18 +49,18 @@ private:
 	QueueHandle handle;
 	uint32_t familyIndex;
 	uint32_t index;
-	Family capabilities;
+	QueueFamily capabilities;
 };
 
-inline Queue::Family operator | (Queue::Family lhs, Queue::Family rhs) {
-	return static_cast<Queue::Family>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+inline QueueFamily operator | (QueueFamily lhs, QueueFamily rhs) {
+	return static_cast<QueueFamily>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
 }
 
-inline Queue::Family operator & (Queue::Family lhs, Queue::Family rhs) {
-	return static_cast<Queue::Family>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+inline QueueFamily operator & (QueueFamily lhs, QueueFamily rhs) {
+	return static_cast<QueueFamily>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
 }
 
-inline bool Queue::supports(Family type) const { return (capabilities & type) != Family::None; }
+inline bool Queue::supports(QueueFamily type) const { return (capabilities & type) != QueueFamily::None; }
 
 } /* Rendering */
 

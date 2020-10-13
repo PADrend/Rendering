@@ -42,6 +42,10 @@ class UniformRegistry;
 class RenderingStatus;
 class Device;
 using DeviceRef = Util::Reference<Device>;
+class DescriptorPool;
+using DescriptorPoolRef = Util::Reference<DescriptorPool>;
+class DescriptorSet;
+using DescriptorSetRef = Util::Reference<DescriptorSet>;
 
 //! @defgroup shader Shader
 
@@ -115,7 +119,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 
 	// ------------------------
 
-	/*! @name Program and status*/
+	/*! @name Program and status */
 	// @{
 	public:
 		enum status_t {
@@ -132,16 +136,8 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		//! Try to transfer the shader into LINKED-state. Returns true on success.
 		bool init();
 
-		const PipelineLayoutHandle& getPipelineLayout() const { return pipelineLayout; }		
-
-		size_t getLayoutHash() const { return hash; }
 	private:
-		PipelineLayoutHandle pipelineLayout;
-		std::unordered_map<std::string, ShaderResource> resources;
-		std::map<uint32_t, ShaderResourceList> setResources;
-		std::map<uint32_t, DescriptorSetLayoutHandle> setLayouts;
 		status_t status = UNKNOWN;
-		size_t hash = 0;
 
 		/*! (internal) Compile all objects and create the shader program.
 			If everything works fine, status is set to COMPILED and true is returned.
@@ -153,6 +149,26 @@ class Shader : public Util::ReferenceCounter<Shader> {
 			Otherwise, status is set to INVALID and false is returned. */
 		bool linkProgram();
 	// @}
+
+	// ------------------------
+
+	/*! @name Shader Resources */
+	// @{
+	public:
+		const PipelineLayoutHandle& getPipelineLayout() const { return pipelineLayout; }
+		size_t getLayoutHash() const { return hash; }
+		
+		const std::map<uint32_t, DescriptorPoolRef>& getDescriptorPools() const { return descriptorPools; }
+		const DescriptorPoolRef& getDescriptorPool(uint32_t set) const { return descriptorPools.at(set); }
+		DescriptorSetRef requestDescriptorSet(uint32_t set);
+	private:
+		PipelineLayoutHandle pipelineLayout;
+		std::unordered_map<std::string, ShaderResource> resources;
+		std::map<uint32_t, DescriptorPoolRef> descriptorPools;
+		size_t hash = 0;
+	// @}
+
+	// ------------------------
 
 	// ------------------------
 

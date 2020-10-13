@@ -68,7 +68,7 @@ struct Device::InternalData {
 	vk::PhysicalDeviceProperties properties;
 	std::vector<std::string> extensions;
 
-	std::map<Queue::Family, int32_t> familyIndices;
+	std::map<QueueFamily, int32_t> familyIndices;
 	std::vector<Queue::Ref> queues;
 	std::vector<CommandPool::Ref> commandPools;
 	
@@ -187,29 +187,29 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device, const 
 	vk::SurfaceKHR vkSurface(surface);
 	vk::Instance vkInstance(instance);
 
-	familyIndices[Queue::Family::None] = -1;
-	familyIndices[Queue::Family::Graphics] = -1;
-	familyIndices[Queue::Family::Compute] = -1;
-	familyIndices[Queue::Family::Transfer] = -1;
-	familyIndices[Queue::Family::Present] = -1;
+	familyIndices[QueueFamily::None] = -1;
+	familyIndices[QueueFamily::Graphics] = -1;
+	familyIndices[QueueFamily::Compute] = -1;
+	familyIndices[QueueFamily::Transfer] = -1;
+	familyIndices[QueueFamily::Present] = -1;
 	
 	// get queue families
 	auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
 	for(uint32_t i=0; i<queueFamilyProperties.size(); ++i) {
-		if(familyIndices[Queue::Family::Graphics] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)) {
-			familyIndices[Queue::Family::Graphics] = i;
+		if(familyIndices[QueueFamily::Graphics] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics)) {
+			familyIndices[QueueFamily::Graphics] = i;
 			if(physicalDevice.getSurfaceSupportKHR(i, vkSurface))
-				familyIndices[Queue::Family::Present] = i;
-		} else if(familyIndices[Queue::Family::Compute] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute)) {
-			familyIndices[Queue::Family::Compute] = i;
-		} else if(familyIndices[Queue::Family::Transfer] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eTransfer)) {
-			familyIndices[Queue::Family::Transfer] = i;
+				familyIndices[QueueFamily::Present] = i;
+		} else if(familyIndices[QueueFamily::Compute] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute)) {
+			familyIndices[QueueFamily::Compute] = i;
+		} else if(familyIndices[QueueFamily::Transfer] < 0 && (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eTransfer)) {
+			familyIndices[QueueFamily::Transfer] = i;
 		}
 	}
 
 	// Create unique QueueCreateInfos
 	float queuePriority = 1.0f;
-	std::set<int32_t> uniqueIndices = {familyIndices[Queue::Family::Graphics], familyIndices[Queue::Family::Compute], familyIndices[Queue::Family::Transfer]};
+	std::set<int32_t> uniqueIndices = {familyIndices[QueueFamily::Graphics], familyIndices[QueueFamily::Compute], familyIndices[QueueFamily::Transfer]};
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 	for(int32_t index : uniqueIndices)
 		queueCreateInfos.emplace_back(vk::DeviceQueueCreateFlags(), index, 1, &queuePriority);
@@ -345,7 +345,7 @@ const SwapchainRef& Device::getSwapchain() const {
 //------------
 
 void Device::present() {
-	internal->queues[internal->familyIndices[Queue::Family::Present]]->present();
+	internal->queues[internal->familyIndices[QueueFamily::Present]]->present();
 }
 
 //------------
@@ -380,7 +380,7 @@ const AllocatorHandle& Device::getAllocator() const {
 
 //------------
 
-const Queue::Ref& Device::getQueue(Queue::Family family, uint32_t index) const {
+const Queue::Ref& Device::getQueue(QueueFamily family, uint32_t index) const {
 	static Queue::Ref nullRef;
 	if(index > 0)
 		WARN("Device:getQueue: Only one queue per family is supported.");
@@ -417,7 +417,7 @@ std::set<Queue::Ref> Device::getQueues() const {
 
 //------------
 
-const CommandPoolRef& Device::getCommandPool(Queue::Family family) const {
+const CommandPoolRef& Device::getCommandPool(QueueFamily family) const {
 	static CommandPoolRef nullRef;
 	auto familyIndex = internal->familyIndices[family];
 	return familyIndex >= 0 ? internal->commandPools[familyIndex] : nullRef;

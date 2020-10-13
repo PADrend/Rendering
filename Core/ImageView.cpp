@@ -17,6 +17,8 @@
 
 namespace Rendering {
 
+vk::Format getVkFormat(const InternalFormat& format);
+
 //-------------
 
 static vk::ImageViewType getViewType(TextureType type) {
@@ -118,7 +120,7 @@ bool ImageView::init() {
 	vk::Image vkImage(image->getApiHandle());
 
 	auto type = getViewType(config.type);
-	vk::Format format(static_cast<vk::Format>(convertToApiFormat(image->getFormat().pixelFormat)));
+	vk::Format format(static_cast<vk::Format>(getVkFormat(image->getFormat().pixelFormat)));
 	
 	auto view = vkDevice.createImageView({{}, 
 		vkImage, type, format, {},

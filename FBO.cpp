@@ -26,6 +26,8 @@
 
 namespace Rendering {
 
+vk::Format getVkFormat(const InternalFormat& format);
+
 //-----------------
 
 FBO::Ref FBO::create(const DeviceRef& device) {
@@ -190,7 +192,7 @@ void FBO::init() {
 
 						// Init color attachment descriptions
 			attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
-				static_cast<vk::Format>(convertToApiFormat(format.pixelFormat)),
+				static_cast<vk::Format>(getVkFormat(format.pixelFormat)),
 				static_cast<vk::SampleCountFlagBits>(format.samples),
 				vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 				vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
@@ -219,7 +221,7 @@ void FBO::init() {
 		
 		// Init depth attachment descriptions. No need to attach if the texture is null
 		attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
-			static_cast<vk::Format>(convertToApiFormat(format.pixelFormat)),
+			static_cast<vk::Format>(getVkFormat(format.pixelFormat)),
 			static_cast<vk::SampleCountFlagBits>(format.samples),
 			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,

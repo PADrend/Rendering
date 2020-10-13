@@ -10,73 +10,38 @@
 #include "CommandBuffer.h"
 #include "CommandPool.h"
 #include "Device.h"
+#include "DescriptorSet.h"
+#include "DescriptorPool.h"
 #include "Pipeline.h"
 #include "PipelineCache.h"
 #include "ImageStorage.h"
 #include "ImageView.h"
 #include "../Shader/Shader.h"
 #include "../Texture/Texture.h"
-//#include "../BufferObject.h"
+#include "../BufferObject.h"
 #include "../FBO.h"
 
 #include <Util/Macros.h>
 
 #include <vulkan/vulkan.hpp>
 
+#include <unordered_set>
+
 namespace Rendering {
 
 //-----------------
 
-vk::AccessFlags getAccessMask(ResourceUsage usage) {
-	switch(usage) {
-		case ResourceUsage::Undefined:
-		case ResourceUsage::PreInitialized:
-		case ResourceUsage::Present:
-		case ResourceUsage::General: return {};
-		case ResourceUsage::RenderTarget: return vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
-		case ResourceUsage::DepthStencil: return vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-		case ResourceUsage::ShaderResource: return vk::AccessFlagBits::eInputAttachmentRead;
-		case ResourceUsage::CopySource: return vk::AccessFlagBits::eTransferRead;
-		case ResourceUsage::CopyDestination: return vk::AccessFlagBits::eTransferWrite;
-		case ResourceUsage::ShaderWrite: return vk::AccessFlagBits::eShaderWrite;
-		default: return {};
-	};
-}
+vk::AccessFlags getVkAccessMask(const ResourceUsage& usage);
+vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
+vk::PipelineStageFlags getVkPipelineStageMask(const ResourceUsage& usage, bool src);
 
 //-----------------
 
-vk::ImageLayout getImageLayout(ResourceUsage usage) {
-	switch(usage) {
-		case ResourceUsage::Undefined: return vk::ImageLayout::eUndefined;
-		case ResourceUsage::PreInitialized: return vk::ImageLayout::ePreinitialized;
-		case ResourceUsage::ShaderWrite:
-		case ResourceUsage::General: return vk::ImageLayout::eGeneral;
-		case ResourceUsage::RenderTarget: return vk::ImageLayout::eColorAttachmentOptimal;
-		case ResourceUsage::DepthStencil: return vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal;
-		case ResourceUsage::ShaderResource: return vk::ImageLayout::eShaderReadOnlyOptimal;
-		case ResourceUsage::CopySource: return vk::ImageLayout::eTransferSrcOptimal;
-		case ResourceUsage::CopyDestination: return vk::ImageLayout::eTransferDstOptimal;
-		case ResourceUsage::Present: return vk::ImageLayout::ePresentSrcKHR;
-		default: return vk::ImageLayout::eUndefined;
-	};
-}
-
-//-----------------
-
-vk::PipelineStageFlags getPipelineStageMask(ResourceUsage usage, bool src) {
-	switch(usage) {
-		case ResourceUsage::Undefined:
-		case ResourceUsage::PreInitialized:
-		case ResourceUsage::General: return src ? vk::PipelineStageFlagBits::eTopOfPipe : (vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands);
-		case ResourceUsage::RenderTarget: return vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		case ResourceUsage::DepthStencil: return src ? vk::PipelineStageFlagBits::eLateFragmentTests : vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		case ResourceUsage::ShaderWrite:
-		case ResourceUsage::ShaderResource: return vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eComputeShader;
-		case ResourceUsage::CopySource:
-		case ResourceUsage::CopyDestination: return vk::PipelineStageFlagBits::eTransfer;
-		case ResourceUsage::Present: return src ? (vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands) : vk::PipelineStageFlagBits::eTopOfPipe;
-		default: return vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands;
-	};
+CommandBuffer::Ref CommandBuffer::request(const DeviceRef& device, QueueFamily family, bool primary) {
+	auto pool = device->getCommandPool(family);
+	if(!pool) 
+		return nullptr;
+	return pool->requestCommandBuffer(primary);
 }
 
 //-----------------
@@ -88,9 +53,9 @@ CommandBuffer::CommandBuffer(CommandPool* pool, bool primary) : pool(pool), prim
 CommandBuffer::~CommandBuffer() {
 	if(!handle) return;
 	vk::Device vkDevice(handle);
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 	vk::CommandPool vkPool(pool->getApiHandle());
-	vkDevice.freeCommandBuffers(vkPool, 1, &vkBuffer);
+	vkDevice.freeCommandBuffers(vkPool, 1, &vkCmd);
 }
 
 //-----------------
@@ -117,10 +82,10 @@ bool CommandBuffer::init() {
 //-----------------
 
 void CommandBuffer::reset() {
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 	if(state == State::Recording)
 		end();
-	vkBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
 	pipelineState.reset();
 	state = State::Initial;
 }
@@ -128,7 +93,7 @@ void CommandBuffer::reset() {
 //-----------------
 
 void CommandBuffer::free() {
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 	if(state == State::Recording)
 		end();
 	state = State::Free;
@@ -139,14 +104,13 @@ void CommandBuffer::free() {
 
 void CommandBuffer::flush(PipelineType bindPoint) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 	auto device = pool->getDevice();
 
-	// bind pipeline
-	if(pipelineHash != pipelineState.getHash()) {
-		auto pipeline = device->getPipelineCache()->requestPipeline(bindPoint, pipelineState);
+	// bind pipeline if it has changed
+	if(!pipeline || pipeline->getHash() != pipelineState.getHash()) {
+		pipeline = device->getPipelineCache()->requestPipeline(bindPoint, pipelineState);
 		WARN_AND_RETURN_IF(!pipeline, "CommandBuffer: Could not create pipeline.",);
-		pipelineHash = pipelineState.getHash();
 		vk::Pipeline vkPipeline(pipeline->getApiHandle());	
 		vk::PipelineBindPoint vkBindPoint;
 		switch (bindPoint) {
@@ -159,10 +123,26 @@ void CommandBuffer::flush(PipelineType bindPoint) {
 			default:
 				break;
 		}
-		vkBuffer.bindPipeline(vkBindPoint, vkPipeline);
+		vkCmd.bindPipeline(vkBindPoint, vkPipeline);
 	}
 
 	// bind descriptor sets
+	if(!bindings.isDirty())
+		return; // nothing has changed
+
+	auto shader = pipelineState.getShader();
+	WARN_AND_RETURN_IF(!shader || !shader->init(), "CommandBuffer: Could not bind descriptor sets. Invalid shader.",);
+
+	std::unordered_set<uint32_t> updateSets;
+
+	for(auto& poolIt : shader->getDescriptorPools()) {
+		auto descrPool = poolIt.second;		
+		auto it = bindings.getBindingSets().find(poolIt.first);
+		// Check if set was bound before
+		if(it != bindings.getBindingSets().end()) {
+			// Check if layout changed
+		}
+	}
 }
 
 //-----------------
@@ -170,30 +150,31 @@ void CommandBuffer::flush(PipelineType bindPoint) {
 void CommandBuffer::begin() {
 	WARN_AND_RETURN_IF(state == State::Recording, "Command buffer is already recording.",);
 	WARN_AND_RETURN_IF(state == State::Free || state == State::Invalid, "Invalid command buffer.",);
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 	state = State::Recording;
 	pipelineState.reset();
-	vkBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
+	vkCmd.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
 }
 
 //-----------------
 
 void CommandBuffer::end() {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 	state = State::Executable;
-	vkBuffer.end();
+	vkCmd.end();
 }
 
 //-----------------
 
 void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColors) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 	auto& fbo = pipelineState.getFBO();
 	WARN_AND_RETURN_IF(!fbo || !fbo->validate(), "Cannot begin render pass. Invalid FBO.",);
 	vk::Framebuffer framebuffer(fbo->getApiHandle());
 	vk::RenderPass renderPass(fbo->getRenderPass());
+	bindings.reset();
 
 	std::vector<vk::ClearValue> clearValues(fbo->getColorAttachmentCount(), vk::ClearColorValue{});
 	for(uint32_t i=0; i<clearValues.size(); ++i) {
@@ -201,7 +182,7 @@ void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColor
 		clearValues[i].color.setFloat32(std::array<float,4>{c.r(), c.g(), c.b(), c.a()});
 	}
 
-	vkBuffer.beginRenderPass({
+	vkCmd.beginRenderPass({
 		renderPass, framebuffer,
 		vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} },
 		static_cast<uint32_t>(clearValues.size()), clearValues.data()
@@ -212,18 +193,35 @@ void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColor
 
 void CommandBuffer::endRenderPass() {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkBuffer(handle);
-	vkBuffer.endRenderPass();
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.endRenderPass();
 }
 
+//-----------------
+
+void CommandBuffer::bindBuffer(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	bindings.bindBuffer(buffer, set, binding, arrayElement);
+}
+
+//-----------------
+
+void CommandBuffer::bindTexture(const TextureRef& texture, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	bindings.bindTexture(texture, set, binding, arrayElement);
+}
+
+//-----------------
+
+void CommandBuffer::bindInputImage(const ImageViewRef& view, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	bindings.bindInputImage(view, set, binding, arrayElement);
+}
 //-----------------
 
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	if(instanceCount==0) return;
 	flush(PipelineType::Graphics);
-	vk::CommandBuffer vkBuffer(handle);
-	vkBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
+	vk::CommandBuffer vkCmd(handle);
+	vkCmd.draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 //-----------------
@@ -231,20 +229,21 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
 void CommandBuffer::textureBarrier(const TextureRef& texture, ResourceUsage newUsage) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
 	WARN_AND_RETURN_IF(!texture || !texture->isValid(), "Cannot create texture barrier. Invalid texture.",);
-	if(texture->getLastUsage() == newUsage)
+	auto view = texture->getImageView();
+	if(view->getLastUsage() == newUsage)
 		return;
 
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 	auto image = texture->getImage();
 	auto view = texture->getImageView();
 
 	vk::ImageMemoryBarrier barrier{};
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.srcAccessMask = getAccessMask(texture->getLastUsage());
-	barrier.dstAccessMask = getAccessMask(newUsage);
-	barrier.oldLayout = getImageLayout(texture->getLastUsage());
-	barrier.newLayout = getImageLayout(newUsage);
+	barrier.srcAccessMask = getVkAccessMask(view->getLastUsage());
+	barrier.dstAccessMask = getVkAccessMask(newUsage);
+	barrier.oldLayout = getVkImageLayout(view->getLastUsage());
+	barrier.newLayout = getVkImageLayout(newUsage);
 	barrier.image = image->getApiHandle();
 	barrier.subresourceRange = { 
 		vk::ImageAspectFlagBits::eColor, // TODO: check for depth/stencil format
@@ -252,19 +251,19 @@ void CommandBuffer::textureBarrier(const TextureRef& texture, ResourceUsage newU
 		view->getLayer(), view->getLayerCount()
 	};
 
-	vkBuffer.pipelineBarrier(
-		getPipelineStageMask(texture->getLastUsage(), true),
-		getPipelineStageMask(newUsage, false),
+	vkCmd.pipelineBarrier(
+		getVkPipelineStageMask(view->getLastUsage(), true),
+		getVkPipelineStageMask(newUsage, false),
 		{}, {}, {}, {barrier}
 	);
-	texture->_setLastUsage(newUsage);
+	view->_setLastUsage(newUsage);
 }
 
 //-----------------
 
 /*void CommandBuffer::bufferBarrier(const BufferObjectRef& buffer, ResourceUsage newUsage) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
-	vk::CommandBuffer vkBuffer(handle);
+	vk::CommandBuffer vkCmd(handle);
 }*/
 
 //-----------------
