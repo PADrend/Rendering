@@ -237,26 +237,23 @@ void RenderingContext::applyChanges(bool forced) {
 void RenderingContext::clearColor(const Util::Color4f& color) {
 	applyChanges();
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass({color});
+		internal->cmd->beginRenderPass();
 	internal->cmd->clearColor({color});
 }
 
 void RenderingContext::clearScreen(const Util::Color4f& color) {
 	applyChanges();
-	// TODO: check if LOAD_OP_CLEAR is set in RenderPass
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass({color});
-	else
-		internal->cmd->clearColor({color});
-	//internal->cmd->clearDepthStencil(1, 0); // TODO: check FBO for depth attachment
+		internal->cmd->beginRenderPass();
+	internal->cmd->clearColor({color});
+	internal->cmd->clearDepthStencil(1, 0);
 }
 
 void RenderingContext::clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool _clearDepth) {
 	applyChanges();
 	if(!internal->cmd->isInRenderPass())
-		internal->cmd->beginRenderPass({color});
-	else
-		internal->cmd->clearColor({color}, rect);
+		internal->cmd->beginRenderPass();
+	internal->cmd->clearColor({color}, rect);
 	if(_clearDepth)
 		internal->cmd->clearDepthStencil(1, 0, rect);
 }

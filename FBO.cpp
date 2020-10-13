@@ -28,6 +28,7 @@
 namespace Rendering {
 
 vk::Format getVkFormat(const InternalFormat& format);
+vk::ImageLayout getVkImageLayout(const ResourceUsage& usage);
 
 //-----------------
 
@@ -190,14 +191,15 @@ void FBO::init() {
 			layerCount = attachment->getImageView()->getLayerCount();
 			attachments.emplace_back(attachment->getImageView()->getApiHandle());
 			const auto& format = attachment->getFormat();
+			auto lastLayout = getVkImageLayout(attachment->getImageView()->getLastUsage());
 
-						// Init color attachment descriptions
+			// Init color attachment descriptions
 			attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
 				static_cast<vk::Format>(getVkFormat(format.pixelFormat)),
 				static_cast<vk::SampleCountFlagBits>(format.samples),
-				vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+				lastLayout == vk::ImageLayout::eUndefined ? vk::AttachmentLoadOp::eDontCare : vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 				vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-				vk::ImageLayout::eUndefined,
+				lastLayout,
 				vk::ImageLayout::ePresentSrcKHR
 			);
 			
@@ -209,7 +211,7 @@ void FBO::init() {
 		}
 	}
 	bool hasColor = attachmentCount > 0;
-	bool hasDepth = depthStencilAttachment && depthStencilAttachment->getImageView();
+	bool hasDepth = depthStencilAttachment;
 	
 	// Bind depth buffer
 	if(hasDepth) {
@@ -219,14 +221,15 @@ void FBO::init() {
 		if(layerCount == 0) layerCount = depthStencilAttachment->getImageView()->getLayerCount();
 		attachments.emplace_back(depthStencilAttachment->getImageView()->getApiHandle());
 		const auto& format = depthStencilAttachment->getFormat();
+		auto lastLayout = getVkImageLayout(depthStencilAttachment->getImageView()->getLastUsage());
 		
 		// Init depth attachment descriptions. No need to attach if the texture is null
 		attachmentDescs.emplace_back(vk::AttachmentDescriptionFlags{},
 			static_cast<vk::Format>(getVkFormat(format.pixelFormat)),
 			static_cast<vk::SampleCountFlagBits>(format.samples),
+			lastLayout == vk::ImageLayout::eUndefined ? vk::AttachmentLoadOp::eDontCare : vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
 			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
-			vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
-			vk::ImageLayout::eUndefined,
+			lastLayout,
 			vk::ImageLayout::eDepthStencilAttachmentOptimal
 		);
 		attachmentRefs.back() = {attachmentCount++, vk::ImageLayout::eDepthStencilAttachmentOptimal};

@@ -113,24 +113,40 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	context.setMatrix_modelToCamera(context.getMatrix_worldToCamera());
 
 	Geometry::Matrix4x4 mat;
-	
+	mat.rotate_deg(45, {1,0,0});
+	mat.rotate_deg(45, {0,0,1});
+
 	// --------------------------------------------
 	// draw
 
-	for(uint_fast32_t round = 0; round < 1000; ++round) {
+	bool running = true;
+	while(running) {
 		context.clearScreen({0,0,0,1});
 
-		drawCoordSys(context, 2);
-		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
+		//mat.translate(-0.5,0,0);
+		//drawCoordSys(context, 2);
+		
+		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera());
 		context.pushAndSetColorMaterial({1,0,0,1});
-		//context.displayMesh(mesh);
+		context.displayMesh(mesh);
+		context.popMaterial();
+		context.popMatrix_modelToCamera();
+
+		//mat.translate(1,0,0);
+		context.pushAndSetMatrix_modelToCamera(context.getMatrix_worldToCamera() * mat);
+		context.pushAndSetColorMaterial({0,1,0,1});
+		context.displayMesh(mesh);
 		context.popMaterial();
 		context.popMatrix_modelToCamera();
 
 		context.present();
+		//mat.rotate_deg(0.1, {0,1,0});
 		//if(round == 500)
 		//	context.setShader(nullptr);
-		//mat.rotate_deg(1, {0,1,0});
+		for(auto& e : TestUtils::window->fetchEvents()) {
+			if(e.type == Util::UI::EVENT_KEYBOARD || e.type == Util::UI::EVENT_QUIT)
+				running = false;
+		}
 	}
 	vkDevice.waitIdle();
 }

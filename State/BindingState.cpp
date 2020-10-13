@@ -16,35 +16,38 @@ namespace Rendering {
 
 //------------------
 
-void Binding::bindBuffer(const BufferObjectRef& buffer, uint32_t arrayElement) {
+bool Binding::bindBuffer(const BufferObjectRef& buffer, uint32_t arrayElement) {
 	if(buffers.size() <= arrayElement)
 		buffers.resize(arrayElement + 1);
+	dirty |= buffers[arrayElement] != buffer;
 	buffers[arrayElement] = buffer;
 	textures.clear();
 	views.clear();
-	dirty = true;
+	return dirty;
 }
 
 //------------------
 
-void Binding::bindTexture(const TextureRef& texture, uint32_t arrayElement) {
+bool Binding::bindTexture(const TextureRef& texture, uint32_t arrayElement) {
 	if(textures.size() <= arrayElement)
 		textures.resize(arrayElement + 1);
+	dirty |= textures[arrayElement] != texture;
 	buffers.clear();
 	textures[arrayElement] = texture;
 	views.clear();
-	dirty = true;
+	return dirty;
 }
 
 //------------------
 
-void Binding::bindInputImage(const ImageViewRef& view, uint32_t arrayElement) {
+bool Binding::bindInputImage(const ImageViewRef& view, uint32_t arrayElement) {
 	if(views.size() <= arrayElement)
 		views.resize(arrayElement + 1);
+	dirty |= views[arrayElement] != view;
 	buffers.clear();
 	textures.clear();
 	views[arrayElement] = view;
-	dirty = true;
+	return dirty;
 }
 
 //------------------
@@ -55,23 +58,23 @@ void Binding::clearDirty() {
 
 //------------------
 
-void BindingSet::bindBuffer(const BufferObjectRef& buffer, uint32_t binding, uint32_t arrayElement) {
-	bindings[binding].bindBuffer(buffer, arrayElement);
-	dirty = true;
+bool BindingSet::bindBuffer(const BufferObjectRef& buffer, uint32_t binding, uint32_t arrayElement) {	
+	dirty |= bindings[binding].bindBuffer(buffer, arrayElement);
+	return dirty;
 }
 
 //------------------
 
-void BindingSet::bindTexture(const TextureRef& texture, uint32_t binding, uint32_t arrayElement) {
-	bindings[binding].bindTexture(texture, arrayElement);
-	dirty = true;
+bool BindingSet::bindTexture(const TextureRef& texture, uint32_t binding, uint32_t arrayElement) {
+	dirty |= bindings[binding].bindTexture(texture, arrayElement);
+	return dirty;
 }
 
 //------------------
 
-void BindingSet::bindInputImage(const ImageViewRef& view, uint32_t binding, uint32_t arrayElement) {
-	bindings[binding].bindInputImage(view, arrayElement);
-	dirty = true;
+bool BindingSet::bindInputImage(const ImageViewRef& view, uint32_t binding, uint32_t arrayElement) {
+	dirty |= bindings[binding].bindInputImage(view, arrayElement);
+	return dirty;
 }
 
 //------------------
@@ -88,23 +91,23 @@ void BindingSet::clearDirty(uint32_t binding) {
 
 //------------------
 
-void BindingState::bindBuffer(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	bindingSets[set].bindBuffer(buffer, binding, arrayElement);
-	dirty = true;
+bool BindingState::bindBuffer(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	dirty |= bindingSets[set].bindBuffer(buffer, binding, arrayElement);
+	return dirty;
 }
 
 //------------------
 
-void BindingState::bindTexture(const TextureRef& texture, uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	bindingSets[set].bindTexture(texture, binding, arrayElement);
-	dirty = true;
+bool BindingState::bindTexture(const TextureRef& texture, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	dirty |= bindingSets[set].bindTexture(texture, binding, arrayElement);
+	return dirty;
 }
 
 //------------------
 
-void BindingState::bindInputImage(const ImageViewRef& view, uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	bindingSets[set].bindInputImage(view, binding, arrayElement);
-	dirty = true;
+bool BindingState::bindInputImage(const ImageViewRef& view, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	dirty |= bindingSets[set].bindInputImage(view, binding, arrayElement);
+	return dirty;
 }
 
 //------------------
@@ -206,14 +209,13 @@ BindingState& BindingState::operator=(const BindingState& o) {
 	for(auto& s : o.bindingSets) {
 		for(auto& b : s.second.getBindings()) {
 			for(uint32_t i = 0; i < b.second.getBuffers().size(); ++i)
-				bindBuffer(b.second.getBuffers()[i], s.first, b.first, i);
+				dirty |= bindBuffer(b.second.getBuffers()[i], s.first, b.first, i);
 			for(uint32_t i = 0; i < b.second.getTextures().size(); ++i)
-				bindTexture(b.second.getTextures()[i], s.first, b.first, i);
+				dirty |= bindTexture(b.second.getTextures()[i], s.first, b.first, i);
 			for(uint32_t i = 0; i < b.second.getInputImages().size(); ++i)
-				bindInputImage(b.second.getInputImages()[i], s.first, b.first, i);
+				dirty |= bindInputImage(b.second.getInputImages()[i], s.first, b.first, i);
 		}
 	}
-	dirty = true;
 	return *this;
 }
 

@@ -125,6 +125,11 @@ bool Swapchain::updateFramebuffers() {
 	format.extent = {extent.x(), extent.y(), 1u};
 	format.pixelFormat = InternalFormat::BGRA8Unorm;
 
+	ImageFormat depthFormat = format;
+	depthFormat.pixelFormat = InternalFormat::D24UnormS8;
+	auto depthImage = ImageStorage::create(device.get(), {depthFormat, MemoryUsage::GpuOnly, ResourceUsage::DepthStencil});
+	auto depthTexture = Texture::create(device.get(), depthImage);
+
 	// Update FBOs
 	fbos.resize(imageCount);
 	for(uint32_t i=0; i<imageCount; ++i) {
@@ -135,6 +140,8 @@ bool Swapchain::updateFramebuffers() {
 		auto& fbo = fbos[i];
 		if(!fbo) fbo = FBO::create(device.get());
 		fbo->attachColorTexture(texture);
+		fbo->attachDepthStencilTexture(depthTexture);
+
 		// TODO: create & add depth texture
 		if(!fbo || !fbo->validate()) {
 			WARN("Device: Could not create swap chain framebuffers.");

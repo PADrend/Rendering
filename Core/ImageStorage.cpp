@@ -98,7 +98,7 @@ ImageStorage::ImageStorage(const DeviceRef& device, const ImageStorage::Configur
 
 bool ImageStorage::init() {
 	VkImage vkImage = nullptr;
-	VkImageCreateInfo imageCreateInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+	VkImageCreateInfo imageCreateInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
 	imageCreateInfo.flags = 0;
 	imageCreateInfo.imageType = getImageType(type);
 	imageCreateInfo.format = static_cast<VkFormat>(getVkFormat(config.format.pixelFormat));
@@ -111,8 +111,18 @@ bool ImageStorage::init() {
 	imageCreateInfo.arrayLayers = config.format.layers;
 	imageCreateInfo.samples = getSampleCount(config.format.samples);
 	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageCreateInfo.usage = static_cast<VkImageUsageFlags>(getVkImageUsage(config.usage));
+
+	
+	std::vector<uint32_t> familyIndices;
+	auto queues = device->getQueues();
+	for(auto& queue : device->getQueues()) {
+		familyIndices.emplace_back(queue->getFamilyIndex());
+	}
+	if(familyIndices.size() > 1) {
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+	}
 
 	if(imageCreateInfo.imageType == VK_IMAGE_TYPE_MAX_ENUM) {		
 		WARN("ImageStorage: invalid image extent.");

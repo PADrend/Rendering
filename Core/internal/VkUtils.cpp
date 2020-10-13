@@ -225,7 +225,8 @@ vk::ImageUsageFlags getVkImageUsage(const ResourceUsage& usage) {
 		case ResourceUsage::ShaderResource: flags |= vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment; break;
 		case ResourceUsage::ShaderWrite: flags |= vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eInputAttachment; break;
 		case ResourceUsage::Present:
-		case ResourceUsage::RenderTarget: flags |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment; break;
+		case ResourceUsage::RenderTarget: flags |= vk::ImageUsageFlagBits::eColorAttachment; break;
+		case ResourceUsage::DepthStencil: flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment; break;
 		case ResourceUsage::General: flags |= vk::ImageUsageFlagBits::eColorAttachment |
 			vk::ImageUsageFlagBits::eDepthStencilAttachment |
 			vk::ImageUsageFlagBits::eInputAttachment |

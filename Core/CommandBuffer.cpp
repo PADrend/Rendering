@@ -214,6 +214,16 @@ void CommandBuffer::beginRenderPass(const std::vector<Util::Color4f>& clearColor
 void CommandBuffer::endRenderPass() {
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	vk::CommandBuffer vkCmd(handle);
+	const auto& fbo = getFBO();
+	for(uint32_t i=0; i<fbo->getColorAttachmentCount(); ++i) {
+		const auto& attachment = fbo->getColorTexture(i);
+		if(attachment)
+			attachment->getImageView()->_setLastUsage(ResourceUsage::RenderTarget);
+	}
+	const auto& depthAttachment = fbo->getDepthStencilTexture();
+	if(depthAttachment)
+		depthAttachment->getImageView()->_setLastUsage(ResourceUsage::DepthStencil);
+
 	vkCmd.endRenderPass();
 	inRenderPass = false;
 }
@@ -313,6 +323,8 @@ void CommandBuffer::clearDepthStencil(float depth, uint32_t stencil, const Geome
 	WARN_AND_RETURN_IF(!inRenderPass, "Command buffer is not in a render pass. Call beginRenderPass() first.",);
 	auto& fbo = getFBO();
 	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Cannot clear depth stencil. Invalid FBO.",);
+	if(!fbo->getDepthStencilTexture())
+		return;
 	vk::ClearAttachment clearAttachment;
 	if(clearDepth)
 		clearAttachment.aspectMask |= vk::ImageAspectFlagBits::eDepth;

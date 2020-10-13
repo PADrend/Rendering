@@ -30,9 +30,9 @@ using ImageViewRef = Util::Reference<ImageView>;
 
 class Binding {
 public:
-	void bindBuffer(const BufferObjectRef& buffer, uint32_t arrayElement=0);
-	void bindTexture(const TextureRef& texture, uint32_t arrayElement=0);
-	void bindInputImage(const ImageViewRef& view, uint32_t arrayElement=0);
+	bool bindBuffer(const BufferObjectRef& buffer, uint32_t arrayElement=0);
+	bool bindTexture(const TextureRef& texture, uint32_t arrayElement=0);
+	bool bindInputImage(const ImageViewRef& view, uint32_t arrayElement=0);
 
 	bool isDirty() const { return dirty; }
 	void clearDirty();
@@ -53,9 +53,9 @@ class BindingSet {
 public:
 	using BindingMap = std::map<uint32_t, Binding>;
 
-	void bindBuffer(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
-	void bindTexture(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
-	void bindInputImage(const ImageViewRef& view, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bindBuffer(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bindTexture(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bindInputImage(const ImageViewRef& view, uint32_t binding=0, uint32_t arrayElement=0);
 
 	bool isDirty() const { return dirty; }
 	void clearDirty();
@@ -80,9 +80,9 @@ public:
 	BindingState& operator=(BindingState&& o);
 	BindingState& operator=(const BindingState& o);
 
-	void bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	void bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 
 	BufferObjectRef getBoundBuffer(uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 	TextureRef getBoundTexture(uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);

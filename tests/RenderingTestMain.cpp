@@ -25,8 +25,8 @@ int main( int argc, char* argv[] ) {
 
 	Util::UI::Window::Properties properties;
 	properties.positioned = false;
-	properties.clientAreaWidth = 256;
-	properties.clientAreaHeight = 256;
+	properties.clientAreaWidth = 512;
+	properties.clientAreaHeight = 512;
 	properties.title = "Rendering Test";
 	properties.compatibilityProfile = true;
 	TestUtils::window = Util::UI::createWindow(properties);

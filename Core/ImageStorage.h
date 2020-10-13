@@ -28,7 +28,7 @@ class ImageStorage : public Util::ReferenceCounter<ImageStorage> {
 public:
 	struct Configuration {
 		ImageFormat format; //! internal format of the image storage.
-		MemoryUsage access = MemoryUsage::CpuToGpu; //! memory access flag
+		MemoryUsage access = MemoryUsage::GpuOnly; //! memory access flag
 		ResourceUsage usage = ResourceUsage::General; //! usage flags
 	};
 

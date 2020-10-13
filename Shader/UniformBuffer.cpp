@@ -86,6 +86,8 @@ void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
 	if(pushConstant) {
 		cmd->pushConstants(cache);
 	} else {
+		if(cmd->isInRenderPass())
+			cmd->endRenderPass(); // updateBuffer is not allowed in renderpass
 		cmd->updateBuffer(buffer->getBuffer(), cache.data(), cache.size());
 	}
 	dataHasChanged = false;
