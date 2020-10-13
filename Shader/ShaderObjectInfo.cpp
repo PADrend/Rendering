@@ -67,7 +67,7 @@ static std::vector<std::string> split(const std::string & subject, const std::st
 
 //-------------
 
-static std::string printErrorLines(const std::string& error, const std::string& source) {
+static std::string printErrorLines(const std::string& error, const std::string& source, const std::string& name) {
 	std::stringstream ss;
 	std::vector<std::string> errLines = split(error, "\n");
 	std::vector<std::string> srcLines = split(source, "\n");
@@ -77,7 +77,7 @@ static std::string printErrorLines(const std::string& error, const std::string& 
 		// usual error format: <name>:<line>: error: ...
 		auto prefix = split(err, ":");
 		uint32_t line;
-		if(prefix.size() >= 2 && (line = Util::StringUtils::toNumber<uint32_t>(prefix[1])) > 0) {			
+		if(prefix.size() >= 2 && (line = Util::StringUtils::toNumber<uint32_t>(prefix[1])) > 0 && Util::StringUtils::beginsWith(prefix[0].c_str(), name.c_str())) {
 			if(line > 1 && line <= srcLines.size())
 				lines.emplace(line-1);
 			if(line <= srcLines.size())
@@ -102,9 +102,14 @@ static std::string printErrorLines(const std::string& error, const std::string& 
 class ShaderIncluder : public shaderc::CompileOptions::IncluderInterface {
 public:
 	using Ptr = std::unique_ptr<shaderc::CompileOptions::IncluderInterface>;
+	struct IncludeResult {
+		explicit IncludeResult(const std::string& source, const std::string& name) : source(source), name(name) {}
+		std::string source;
+		std::string name;
+	};
 
-	ShaderIncluder(const Util::FileName& file) {
-		locator.addSearchPath(file.getPath());
+	ShaderIncluder(const Util::FileName& file) : locator(getDataLocator()) {
+		locator.addSearchPath(file.getDir());
 	}
 
 	// Handles shaderc_include_resolver_fn callbacks.
@@ -114,7 +119,12 @@ public:
 																							size_t include_depth);
 
 	// Handles shaderc_include_result_release_fn callbacks.
-	virtual void ReleaseInclude(shaderc_include_result* data) { delete data; }
+	virtual void ReleaseInclude(shaderc_include_result* data) {
+		if(data) {
+			delete reinterpret_cast<IncludeResult*>(data->user_data);
+			delete data;
+		}
+	}
 
 	Util::FileLocator locator;
 };
@@ -122,14 +132,17 @@ public:
 //-------------
 
 shaderc_include_result* ShaderIncluder::GetInclude(const char* requested_source, shaderc_include_type type, const char* requesting_source, size_t include_depth) {
-	auto* result = new shaderc_include_result;
-	result->content = nullptr;
-	result->content_length = 0;
-	result->source_name = nullptr;
-	result->source_name_length = 0;
-	result->user_data = nullptr;
 	auto includeFile = locator.locateFile(Util::FileName(requested_source));
-	WARN("ShaderObjectInfo: #include not supported. Include file: '" + std::string(requested_source) + "' " + (includeFile.first ? "found" : "not found"));
+	IncludeResult* userData = nullptr;
+	if(includeFile.first)
+		userData = new IncludeResult(Util::FileUtils::getFileContents(includeFile.second), requested_source);
+	
+	auto* result = new shaderc_include_result;
+	result->user_data = userData;
+	result->content = userData ? userData->source.c_str() : nullptr;
+	result->content_length = userData ? userData->source.length() : 0;
+	result->source_name = userData ? userData->name.c_str() : nullptr;
+	result->source_name_length = userData ? userData->name.length() : 0;
 	return result; 
 }
 
@@ -201,11 +214,11 @@ bool ShaderObjectInfo::compile(const DeviceRef& device) {
 	if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
 		std::stringstream ss;
 		ss << "Shader compile error";
-	if(!filename.empty())
-		ss << " in file '" << filename.toString() << "'";
+		if(!filename.empty())
+			ss << " in file '" << filename.toString() << "'";
 		ss << ":" << std::endl;
 		ss << result.GetErrorMessage();
-		ss << printErrorLines(result.GetErrorMessage(), source) << std::endl;
+		ss << printErrorLines(result.GetErrorMessage(), source, name) << std::endl;
 		WARN(ss.str());
 		return false;
 	}

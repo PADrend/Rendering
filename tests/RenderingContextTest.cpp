@@ -1,6 +1,6 @@
 /*
 	This file is part of the Rendering library.
-	Copyright (C) 2013 Benjamin Eikel <benjamin@eikel.org>
+	Copyright (C) 2020 Sascha Brandt <sascha@brandt.graphics>
 	
 	This library is subject to the terms of the Mozilla Public License, v. 2.0.
 	You should have received a copy of the MPL along with this library; see the 
@@ -10,6 +10,7 @@
 #include <catch2/catch.hpp>
 
 #include <Geometry/Box.h>
+#include <Geometry/Sphere.h>
 #include <Geometry/Vec3.h>
 #include <Geometry/Angle.h>
 #include <Geometry/Matrix4x4.h>
@@ -36,9 +37,6 @@
 #include <cstdint>
 #include <iostream>
 
-#include <shaderc/shaderc.hpp>
-#include <spirv_cross.hpp>
-
 TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
@@ -58,7 +56,9 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 
 	VertexDescription vd;
 	vd.appendPosition3D();
-	vd.appendColorRGBAFloat();
+	vd.appendNormalByte();
+	vd.appendColorRGBAByte();
+	vd.appendTexCoord();
 
 	Mesh::Ref mesh1 = MeshUtils::createBox(vd, {-0.5,0.5,-0.5,0.5,-0.5,0.5});
 	REQUIRE(mesh1);
@@ -75,7 +75,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	mesh2->_getVertexData().getBuffer()->getBuffer()->setDebugName("Vertex Buffer 2");
 	mesh2->_getIndexData().upload();
 	mesh2->_getIndexData().getBuffer()->getBuffer()->setDebugName("Index Buffer 2");
-	
+
 	// --------------------------------------------
 	// matrices
 
@@ -96,11 +96,12 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 	MaterialData material1{};
 	material1.setDiffuse({1,0,0});
 	material1.setAmbient(material1.getDiffuse() * 0.1);
+	material1.setSpecular({0.5,0.5,0.5,0});
 
 	MaterialData material2{};
 	material2.setDiffuse({0,1,0});
 	material2.setAmbient(material2.getDiffuse() * 0.1);
-
+	material1.setSpecular({1,1,1,1});
 
 	// --------------------------------------------
 	// light
@@ -144,7 +145,7 @@ TEST_CASE("RenderingContext", "[RenderingContextTest]") {
 		context.present();
 		
 		mat.rotate_deg(0.1, {0,1,0});
-		lightMat.rotate_deg(-0.1, {0,1,0});
+		lightMat.rotate_deg(-0.05, {0,1,0});
 		for(auto& e : TestUtils::window->fetchEvents()) {
 			if(e.type == Util::UI::EVENT_KEYBOARD || e.type == Util::UI::EVENT_QUIT)
 				running = false;
