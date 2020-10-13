@@ -87,8 +87,9 @@ bool DescriptorPool::init() {
 
 	std::vector<vk::DescriptorPoolSize> poolSizes;
 	for(uint32_t t = 0; t < config.counts.size(); ++t) {
+		ShaderResourceType type = static_cast<ShaderResourceType>(t);
 		if(config.counts[t] > 0)
-			poolSizes.emplace_back(getVkDescriptorType(static_cast<ShaderResourceType>(t), false), config.counts[t]);
+			poolSizes.emplace_back(getVkDescriptorType(type, type == ShaderResourceType::BufferUniform), config.counts[t]);
 	}
 
 	handle = DescriptorPoolHandle::create(vkDevice.createDescriptorPool({
@@ -108,7 +109,7 @@ DescriptorSetRef DescriptorPool::requestDescriptorSet(const ShaderResourceLayout
 		auto layoutHandle = device->getResourceCache()->createDescriptorSetLayout(layout);
 		pool.registerType(layoutHash, std::bind(&DescriptorPool::createDescriptorSet, this, layoutHandle));
 	}
-	// TODO: cache bindings
+	
 	auto setHandle = pool.create(layoutHash);
 	if(!setHandle)
 		return nullptr;
@@ -153,6 +154,7 @@ DescriptorSetHandle DescriptorPool::createDescriptorSet(const DescriptorSetLayou
 void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, const ShaderResourceLayoutSet& layout, const BindingSet& bindings) {
 	vk::Device vkDevice(device->getApiHandle());
 	vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
+	descriptorSet->dynamicOffsets.clear();
 	
 	std::vector<vk::WriteDescriptorSet> writes;
 
@@ -195,9 +197,10 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 		for(auto& buffer : binding.getBuffers()) {
 			if(buffer && buffer->isValid()) {
 				auto b = buffer->getBuffer();
-				bufferBindings.back().emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), buffer->getOffset(), buffer->getSize());
-				//if(descriptor.dynamic)
-				//	dynamicOffsets.emplace_back(0);
+				size_t offset = descriptor.dynamic ? 0 : buffer->getOffset();
+				bufferBindings.back().emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), offset, buffer->getSize());
+				if(descriptor.dynamic)
+					descriptorSet->dynamicOffsets.emplace_back(static_cast<uint32_t>(buffer->getOffset()));
 			} else {
 				WARN("Empty buffer binding.");
 				bufferBindings.back().emplace_back(nullptr, 0, 0);

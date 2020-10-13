@@ -14,7 +14,11 @@
 
 #include <Util/ReferenceCounter.h>
 
+#include <deque>
+
 namespace Rendering {
+class Queue;
+using QueueRef = Util::Reference<Queue>;
 
 class Fence : public Util::ReferenceCounter<Fence> {
 public:
@@ -24,10 +28,22 @@ public:
 	Fence(Fence&& o) = default;
 	Fence(const Fence& o) = delete;
 
+	//! Wait until the GPU reached the current CPU value.
+	void wait();
+
+	//! Insert a signal command in the command queue & increase the CPU value.
+	uint64_t signal(const QueueRef& queue);
+
+	//! Retrieve the current GPU value.
+	uint64_t getGpuValue();
+
+	//! Retrieve the current CPU value.
+	uint64_t getCpuValue() const { return cpuValue; }
 private:
-	Fence();
-	bool init();
-	
+	Fence() {};
+	uint64_t cpuValue = 0;
+	uint64_t gpuValue = 0;
+	std::deque<FenceHandle> fenceQueue;
 };
 
 } /* Rendering */

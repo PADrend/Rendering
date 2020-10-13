@@ -94,7 +94,8 @@ void CommandBuffer::reset() {
 	pipeline.reset();
 	boundDescriptorSets.clear();
 	boundPipelines.clear();
-	usedResources.clear();
+	boundBuffers.clear();
+	boundResource.clear();
 	state = State::Initial;
 }
 
@@ -146,7 +147,7 @@ void CommandBuffer::flush() {
 			auto descriptorSet = device->getDescriptorPool()->requestDescriptorSet(layout.getLayoutSet(set), bindingSet);
 			if(descriptorSet) {
 				vk::DescriptorSet vkDescriptorSet(descriptorSet->getApiHandle());
-				vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, {});
+				vkCmd.bindDescriptorSets(vkBindPoint, vkPipelineLayout, set, {vkDescriptorSet}, descriptorSet->getDynamicOffsets());
 				boundDescriptorSets.emplace_back(descriptorSet);
 			} else {
 				WARN("Failed to create descriptor set for binding set " + std::to_string(set));
@@ -267,6 +268,7 @@ void CommandBuffer::prepareForPresent() {
 
 void CommandBuffer::bindBuffer(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
 	bindings.bindBuffer(buffer, set, binding, arrayElement);
+	boundBuffers.emplace_back(buffer);
 }
 
 //-----------------
@@ -311,6 +313,7 @@ void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, const std::vector<B
 	vkOffsets.resize(buffers.size(), 0);
 	for(auto& bo : buffers) {
 		vkBuffers.emplace_back((bo && bo->isValid()) ? bo->getApiHandle() : nullptr);
+		boundBuffers.emplace_back(bo);
 	}
 	vkCmd.bindVertexBuffers(firstBinding, vkBuffers, vkOffsets);
 }
@@ -322,6 +325,7 @@ void CommandBuffer::bindIndexBuffer(const BufferObjectRef& buffer, size_t offset
 	vk::CommandBuffer vkCmd(handle);
 	vk::Buffer vkBuffer((buffer && buffer->isValid()) ? buffer->getApiHandle() : nullptr);
 	vkCmd.bindIndexBuffer(vkBuffer, offset, vk::IndexType::eUint32);
+	boundBuffers.emplace_back(buffer);
 }
 
 //-----------------
@@ -469,6 +473,8 @@ void CommandBuffer::copyBuffer(const BufferStorageRef& srcBuffer, const BufferSt
 	WARN_AND_RETURN_IF(!srcBuffer || !tgtBuffer, "Cannot copy buffer. Invalid buffers.",);
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.copyBuffer(static_cast<vk::Buffer>(srcBuffer->getApiHandle()), static_cast<vk::Buffer>(tgtBuffer->getApiHandle()), {{srcOffset,tgtOffset,size}});
+	boundResource.emplace_back(srcBuffer->getApiHandle());
+	boundResource.emplace_back(tgtBuffer->getApiHandle());
 }
 
 //-----------------
@@ -476,6 +482,8 @@ void CommandBuffer::copyBuffer(const BufferStorageRef& srcBuffer, const BufferSt
 void CommandBuffer::copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size, size_t srcOffset, size_t tgtOffset) {
 	if(srcBuffer && tgtBuffer)
 		copyBuffer(srcBuffer->getBuffer(), tgtBuffer->getBuffer(), size, srcOffset, tgtOffset);
+	boundBuffers.emplace_back(srcBuffer);
+	boundBuffers.emplace_back(tgtBuffer);
 }
 
 //-----------------
@@ -486,6 +494,7 @@ void CommandBuffer::updateBuffer(const BufferStorageRef& buffer, const uint8_t* 
 	WARN_AND_RETURN_IF(size+offset > buffer->getSize(), "Cannot update buffer. Offset+size exceeds buffer size.",);
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.updateBuffer(static_cast<vk::Buffer>(buffer->getApiHandle()), offset, size, data);
+	boundResource.emplace_back(buffer->getApiHandle());
 }
 
 //-----------------
@@ -510,6 +519,8 @@ void CommandBuffer::copyImage(const ImageStorageRef& srcImage, const ImageStorag
 		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
 		{copyRegion}
 	);
+	boundResource.emplace_back(srcImage->getApiHandle());
+	boundResource.emplace_back(tgtImage->getApiHandle());
 }
 
 //-----------------
@@ -531,6 +542,8 @@ void CommandBuffer::copyBufferToImage(const BufferStorageRef& srcBuffer, const I
 		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
 		{copyRegion}
 	);
+	boundResource.emplace_back(srcBuffer->getApiHandle());
+	boundResource.emplace_back(tgtImage->getApiHandle());
 }
 
 //-----------------
@@ -552,6 +565,8 @@ void CommandBuffer::copyImageToBuffer(const ImageStorageRef& srcImage, const Buf
 		static_cast<vk::Buffer>(tgtBuffer->getApiHandle()),
 		{copyRegion}
 	);
+	boundResource.emplace_back(srcImage->getApiHandle());
+	boundResource.emplace_back(tgtBuffer->getApiHandle());
 }
 
 //-----------------
@@ -578,6 +593,8 @@ void CommandBuffer::blitImage(const ImageStorageRef& srcImage, const ImageStorag
 		static_cast<vk::Image>(tgtImage->getApiHandle()), getVkImageLayout(tgtImage->getLastUsage()),
 		{blitRegion}, getVkFilter(filter)
 	);
+	boundResource.emplace_back(srcImage->getApiHandle());
+	boundResource.emplace_back(tgtImage->getApiHandle());
 }
 
 //-----------------

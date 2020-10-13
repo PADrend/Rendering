@@ -84,20 +84,14 @@ void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
 	if(!force && !dataHasChanged)
 		return;
 	dataHasChanged = false;
-
-	// clear unused buffers
-	// TODO: use fences to get state of buffers
-	//while(pool->getAllocatedPageCount() > 1 && !buffers.empty())
-	//	buffers.pop_front();
 	
 	if(pushConstant) {
 		cmd->pushConstants(cache);
 	} else {
 		// request new buffer from pool
-		auto buffer = pool->allocate(cache.size());
+		buffer = pool->allocate(cache.size());
 		WARN_AND_RETURN_IF(!buffer, "Uniform::flush: Failed to allocate buffer.",);
 		buffer->upload(cache);
-		buffers.emplace_back(buffer);
 	}
 }
 
@@ -106,8 +100,8 @@ void UniformBuffer::flush(const CommandBufferRef& cmd, bool force) {
 void UniformBuffer::bind(const CommandBufferRef& cmd, uint32_t binding, uint32_t set) {
 	WARN_AND_RETURN_IF(!cmd, "Uniform::bind: Invalid command buffer.",);
 	flush(cmd);
-	if(!pushConstant && !buffers.empty())
-		cmd->bindBuffer(buffers.back(), set, binding);
+	if(!pushConstant && buffer)
+		cmd->bindBuffer(buffer, set, binding);
 }
 
 //---------------

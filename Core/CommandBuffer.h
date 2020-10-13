@@ -203,9 +203,10 @@ private:
 	uint32_t clearStencilValue=0;
 
 	// Keep as long as command buffer is used
-	std::vector<ApiBaseHandle::Ref> usedResources;
-	std::vector<PipelineHandle> boundPipelines;
-	std::vector<DescriptorSetRef> boundDescriptorSets;
+	std::deque<ApiBaseHandle::Ref> boundResource;
+	std::deque<PipelineHandle> boundPipelines;
+	std::deque<DescriptorSetRef> boundDescriptorSets;
+	std::deque<BufferObjectRef> boundBuffers;
 };
 
 } /* Rendering */

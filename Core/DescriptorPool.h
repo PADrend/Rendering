@@ -16,6 +16,7 @@
 #include <Util/Factory/ObjectPool.h>
 
 #include <array>
+#include <vector>
 
 namespace Rendering {
 class Device;
@@ -79,12 +80,14 @@ public:
 	DescriptorSet(DescriptorSet&& o) = default;
 	DescriptorSet(const DescriptorSet& o) = delete;
 	const DescriptorSetHandle& getApiHandle() const { return handle; }
+	const std::vector<uint32_t>& getDynamicOffsets() const { return dynamicOffsets; }
 private:
 	friend class DescriptorPool;
 	DescriptorSet(const DescriptorPool::Ref& pool, const DescriptorSetHandle& handle, size_t layoutHash) : pool(pool), handle(handle), layoutHash(layoutHash) {}
-	const DescriptorPool::Ref pool;
-	const DescriptorSetHandle handle;
+	DescriptorPool::Ref pool;
+	DescriptorSetHandle handle;
 	size_t layoutHash;
+	std::vector<uint32_t> dynamicOffsets;
 };
 
 } /* Rendering */

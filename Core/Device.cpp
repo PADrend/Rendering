@@ -219,6 +219,7 @@ bool Device::InternalData::createInstance(const Device::Ref& device, const Devic
 	instance = InstanceHandle::create(vkInstance);
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkInstance);
 	
+	
 	// setup debug callback
 	if(config.debugMode) {
 		debugMessenger = vkInstance.createDebugUtilsMessengerEXT({ {},
@@ -257,9 +258,6 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const D
 		return false;
 
 	properties = physicalDevice.getProperties();
-	if(config.debugMode)
-		std::cout << "Selected device: " << properties.deviceName << std::endl;
-	
 	// check API version
 	uint32_t apiVersion = VK_MAKE_VERSION(config.apiVersionMajor, config.apiVersionMinor, 0);
 	if(apiVersion > 0 && properties.apiVersion < apiVersion) {
@@ -267,6 +265,14 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device, const D
 		std::string supportedStr = std::to_string(VK_VERSION_MAJOR(properties.apiVersion)) + "." + std::to_string(VK_VERSION_MINOR(properties.apiVersion));
 		WARN("Device: Requested API version is not supported. Requested version: " + reqVerStr + ", Highest supported: " + supportedStr);
 		return false;
+	}
+
+	if(config.debugMode) {
+		std::cout << "Vulkan version: "
+							<< std::to_string(VK_VERSION_MAJOR(properties.apiVersion)) << "."
+							<< std::to_string(VK_VERSION_MINOR(properties.apiVersion)) << "."
+							<< std::to_string(VK_VERSION_PATCH(properties.apiVersion)) << std::endl;
+		std::cout << "Selected device: " << properties.deviceName << std::endl;
 	}
 
 	// get supported extensions

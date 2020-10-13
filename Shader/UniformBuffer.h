@@ -63,7 +63,7 @@ private:
 	
 	Util::ResourceAccessor::Ref accessor;
 	BufferPoolRef pool;
-	std::deque<BufferObjectRef> buffers;
+	BufferObjectRef buffer;
 	std::vector<uint8_t> cache;
 	uint32_t arraySize;
 	bool pushConstant;

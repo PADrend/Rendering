@@ -119,10 +119,7 @@ BufferObjectRef BufferPool::allocateFromPage(Page& page, uint32_t count) {
 	uint32_t start = 0;
 	uint32_t freeBlocks = 0;
 	while(start<=config.blocksPerPage-count && freeBlocks < count) {
-		freeBlocks = 0;
-		while(freeBlocks<=count && !page.blocks[start+freeBlocks]) {
-			++freeBlocks;
-		}
+		for(freeBlocks=0; freeBlocks<count && !page.blocks[start+freeBlocks]; ++freeBlocks) { }
 		if(freeBlocks < count)
 			start+=std::max(freeBlocks,1u);
 	}

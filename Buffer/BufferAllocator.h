@@ -11,6 +11,7 @@
 #define RENDERING_BUFFER_BUFFERALLOCATOR_H_
 
 #include <Util/ReferenceCounter.h>
+#include <cstddef>
 
 namespace Rendering {
 class BufferObject;

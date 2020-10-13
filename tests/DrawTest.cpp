@@ -124,7 +124,7 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	// draw
 
 	auto angle = Geometry::Angle::deg(0);
-	for(uint_fast32_t round = 0; round < 1000; ++round) {		
+	for(uint_fast32_t round = 0; round < 1000; ++round) {
 		auto cmdBuffer = CommandBuffer::create(graphicsQueue);
 		cmdBuffer->setPipeline(state);
 

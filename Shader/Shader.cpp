@@ -216,9 +216,9 @@ bool Shader::linkProgram() {
 			}
 
 			// use dynamic uniform buffers by default
-			/*if(resource.layout.type == ShaderResourceType::BufferUniform) {
+			if(resource.layout.type == ShaderResourceType::BufferUniform) {
 				resource.layout.dynamic = true;
-			}*/
+			}
 
 			auto it = resources.find(key);
 			if(it == resources.end()) {
