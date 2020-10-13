@@ -23,6 +23,7 @@ using DescriptorSetRef = Util::Reference<DescriptorSet>;
 //------------------------------------------
 
 class BindPipelineCommand : public Command {
+PROVIDES_TYPE_NAME(BindPipelineCommand)
 public:
 	BindPipelineCommand(const PipelineState& pipeline, const PipelineHandle& parent=nullptr) : pipeline(pipeline), parentHandle(parent) {}
 	~BindPipelineCommand();
@@ -36,6 +37,7 @@ private:
 //------------------------------------------
 
 class BindSetCommand : public Command {
+PROVIDES_TYPE_NAME(BindSetCommand)
 public:
 	BindSetCommand(uint32_t set, const BindingSet& bindingSet, const ShaderLayout& layout, PipelineType bindingPoint) :
 		set(set), bindingSet(bindingSet), layout(layout), bindingPoint(bindingPoint) {}
@@ -53,6 +55,7 @@ private:
 //------------------------------------------
 
 class BindVertexBuffersCommand : public Command {
+PROVIDES_TYPE_NAME(BindVertexBuffersCommand)
 public:
 	BindVertexBuffersCommand(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers) :
 		firstBinding(firstBinding), buffers(buffers) {}
@@ -66,6 +69,7 @@ private:
 //------------------------------------------
 
 class BindIndexBufferCommand : public Command {
+PROVIDES_TYPE_NAME(BindIndexBufferCommand)
 public:
 	BindIndexBufferCommand(const BufferObjectRef& buffer) : buffer(buffer) {}
 	~BindIndexBufferCommand();

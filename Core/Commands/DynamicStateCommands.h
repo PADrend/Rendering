@@ -17,6 +17,7 @@ namespace Rendering {
 //------------------------------------------
 
 class DynamicScissorCommand : public Command {
+PROVIDES_TYPE_NAME(DynamicScissorCommand)
 public:
 	DynamicScissorCommand(const std::vector<Geometry::Rect_i>& scissors, uint32_t firstScissor=0) : firstScissor(firstScissor), scissors(scissors) {}
 	~DynamicScissorCommand() = default;

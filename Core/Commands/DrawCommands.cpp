@@ -90,7 +90,7 @@ bool ClearAttachmentsCommand::compile(CompileContext& context) {
 	clearRect.layerCount = 1;
 	clearRect.rect = vk::Rect2D{
 		{rect.getX(), rect.getY()},
-		{rect.getWidth(), rect.getHeight()}
+		{static_cast<uint32_t>(rect.getWidth()), static_cast<uint32_t>(rect.getHeight())}
 	};
 	static_cast<vk::CommandBuffer>(context.cmd).clearAttachments(clearAttachments, {clearRect});
 	return true;

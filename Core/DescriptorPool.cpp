@@ -163,8 +163,8 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 	std::vector<std::vector<vk::DescriptorImageInfo>> imageBindings;
 	std::vector<std::vector<vk::DescriptorBufferInfo>> bufferBindings;
 	
-	for(auto& bIt : bindings.getBindings()) {
-		auto& binding = bIt.second;
+	for(const auto& bIt : bindings.getBindings()) {
+		const auto& bindingArray = bIt.second;
 		if(!layout.hasLayout(bIt.first))
 			continue;
 		auto descriptor = layout.getLayout(bIt.first);
@@ -173,7 +173,34 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 		imageBindings.emplace_back();
 		bufferBindings.emplace_back();
 
-		for(auto& tex : binding.getTextures()) {
+		for(const auto& binding : bindingArray) {
+			if(binding.getBuffer()) {
+				const auto& b = binding.getBuffer();
+				if(b->isValid()) {
+					size_t offset = descriptor.dynamic ? 0 : b->getOffset();
+					bufferBindings.back().emplace_back(static_cast<vk::Buffer>(b->getApiHandle()), offset, b->getSize());
+					if(descriptor.dynamic)
+						descriptorSet->dynamicOffsets.emplace_back(static_cast<uint32_t>(b->getOffset()));
+				} else {
+					WARN("Invalid buffer.");
+				}
+			} else if(binding.getTexture()) {
+				const auto& tex = binding.getTexture();
+				if(tex->isValid()) {
+					auto vkImageLayout = getVkImageLayout(tex->getLastUsage());
+					imageBindings.back().emplace_back(
+						static_cast<vk::Sampler>(tex->getSampler()->getApiHandle()), 
+						static_cast<vk::ImageView>(tex->getImageView()->getApiHandle()), 
+						vkImageLayout);
+				} else {
+					WARN("Invalid texture.");
+				}
+			} else {
+				WARN("Empty binding.");
+			}
+		}
+
+		/*for(auto& tex : binding.getTextures()) {
 			auto vkImageLayout = getVkImageLayout(tex->getLastUsage());
 			if(tex && tex->isValid()) {
 				imageBindings.back().emplace_back(
@@ -186,15 +213,6 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 			}
 		}
 
-		/*for(auto& view : binding.getInputImages()) {
-			if(view && view->getApiHandle()) {
-				imageBindings.back().emplace_back(nullptr, static_cast<vk::ImageView>(view->getApiHandle()), vkImageLayout);
-			} else {
-				WARN("Empty input image binding.");
-				imageBindings.back().emplace_back(nullptr, nullptr, vkImageLayout);
-			}
-		}*/
-
 		for(auto& buffer : binding.getBuffers()) {
 			if(buffer && buffer->isValid()) {
 				auto b = buffer->getBuffer();
@@ -206,7 +224,7 @@ void DescriptorPool::updateDescriptorSet(const DescriptorSetRef& descriptorSet, 
 				WARN("Empty buffer binding.");
 				bufferBindings.back().emplace_back(nullptr, 0, 0);
 			}
-		}
+		}*/
 
 		// TODO: handle unbound array elements
 		uint32_t count = std::max<uint32_t>(imageBindings.back().size(), bufferBindings.back().size());

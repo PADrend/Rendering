@@ -28,6 +28,7 @@ using FBORef = Util::Reference<FBO>;
 //------------------------------------------
 
 class ExecuteCommandBufferCommand : public Command {
+PROVIDES_TYPE_NAME(ExecuteCommandBufferCommand)
 public:
 	ExecuteCommandBufferCommand(const CommandBufferRef& buffer) : buffer(buffer) {}
 	~ExecuteCommandBufferCommand();
@@ -39,9 +40,9 @@ private:
 //------------------------------------------
 
 class BeginRenderPassCommand : public Command {
+PROVIDES_TYPE_NAME(BeginRenderPassCommand)
 public:
-	BeginRenderPassCommand(const FBORef& fbo, std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil) : 
-		fbo(fbo), colors(colors), depthValue(depthValue), stencilValue(stencilValue), clearColor(clearColor), clearDepth(clearDepth), clearStencil(clearStencil) {}
+	BeginRenderPassCommand(const FBORef& fbo, std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil);
 	~BeginRenderPassCommand();
 	bool compile(CompileContext& context) override;
 private:
@@ -54,11 +55,14 @@ private:
 	bool clearStencil;
 	FramebufferHandle framebuffer;
 	RenderPassHandle renderPass;
+	std::vector<ResourceUsage> lastColorUsages;
+	ResourceUsage lastDepthUsage;
 };
 
 //------------------------------------------
 
 class EndRenderPassCommand : public Command {
+PROVIDES_TYPE_NAME(EndRenderPassCommand)
 public:
 	EndRenderPassCommand() {}
 	~EndRenderPassCommand() = default;
@@ -68,6 +72,7 @@ public:
 //------------------------------------------
 
 class PushConstantCommand : public Command {
+PROVIDES_TYPE_NAME(PushConstantCommand)
 public:
 	PushConstantCommand(const uint8_t* data, size_t size, size_t offset, ShaderLayout layout) :
 		constantData(data, data+size), offset(offset), layout(layout) { }
@@ -83,6 +88,7 @@ private:
 //------------------------------------------
 
 class ImageBarrierCommand : public Command {
+PROVIDES_TYPE_NAME(ImageBarrierCommand)
 public:
 	ImageBarrierCommand(const TextureRef& texture, ResourceUsage oldUsage, ResourceUsage newUsage);
 	ImageBarrierCommand(const ImageViewRef& view, ResourceUsage oldUsage, ResourceUsage newUsage) : view(view), image(nullptr), oldUsage(oldUsage), newUsage(newUsage) {}
@@ -99,6 +105,7 @@ private:
 //------------------------------------------
 
 class DebugMarkerCommand : public Command {
+PROVIDES_TYPE_NAME(DebugMarkerCommand)
 public:
 	enum Mode {
 		Begin,

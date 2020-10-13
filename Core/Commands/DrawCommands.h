@@ -18,6 +18,7 @@ class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
 
 class DrawCommand : public Command {
+PROVIDES_TYPE_NAME(DrawCommand)
 public:
 	DrawCommand(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0) :
 		vertexCount(vertexCount), instanceCount(instanceCount), firstVertex(firstVertex), firstInstance(firstInstance) {}
@@ -32,6 +33,7 @@ private:
 //------------------------------------------
 
 class DrawIndexedCommand : public Command {
+PROVIDES_TYPE_NAME(DrawIndexedCommand)
 public:
 	DrawIndexedCommand(uint32_t indexCount, uint32_t instanceCount=1, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t firstInstance=0) :
 		indexCount(indexCount), instanceCount(instanceCount), firstIndex(firstIndex), vertexOffset(vertexOffset), firstInstance(firstInstance) {}
@@ -47,6 +49,7 @@ private:
 //------------------------------------------
 
 class DrawIndirectCommand : public Command {
+PROVIDES_TYPE_NAME(DrawIndirectCommand)
 public:
 	DrawIndirectCommand(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0) :
 		buffer(buffer), drawCount(drawCount), stride(stride), offset(offset) {}
@@ -62,6 +65,7 @@ private:
 //------------------------------------------
 
 class DrawIndexedIndirectCommand : public Command {
+PROVIDES_TYPE_NAME(DrawIndexedIndirectCommand)
 public:
 	DrawIndexedIndirectCommand(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0) :
 		buffer(buffer), drawCount(drawCount), stride(stride), offset(offset) {}
@@ -77,6 +81,7 @@ private:
 //------------------------------------------
 
 class ClearAttachmentsCommand : public Command {
+PROVIDES_TYPE_NAME(ClearAttachmentsCommand)
 public:
 	ClearAttachmentsCommand(std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil, const Geometry::Rect_i& rect) :
 		colors(colors), depthValue(depthValue), stencilValue(stencilValue), rect(rect), clearColor(clearColor), clearDepth(clearDepth), clearStencil(clearStencil) {}

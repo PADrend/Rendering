@@ -150,14 +150,20 @@ bool Swapchain::updateFramebuffers() {
 
 //------------
 
-uint32_t Swapchain::acquireNextIndex() {
+void Swapchain::waitForIndex(uint32_t index) {
 	vk::Fence fence(presentFences[currentFence]);
 	vk::Device vkDevice(handle);
+	vkDevice.waitForFences(1, &fence, true, std::numeric_limits<uint64_t>::max());
+}
+
+//------------
+
+uint32_t Swapchain::acquireNextIndex() {
+	waitForIndex(currentIndex);	
+	vk::Device vkDevice(handle);
 	vk::SwapchainKHR vkSwapchain(handle);
-	vkDevice.waitForFences(1, &fence, false, std::numeric_limits<uint64_t>::max());
-	
 	currentFence = (currentFence + 1) % imageCount;
-	fence = presentFences[currentFence];
+	vk::Fence fence(presentFences[currentFence]);
 	vkDevice.resetFences(1, &fence);
 	auto result = vkDevice.acquireNextImageKHR(vkSwapchain, std::numeric_limits<uint64_t>::max(), nullptr, fence);
 	currentIndex = result.value;

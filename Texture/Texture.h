@@ -131,6 +131,7 @@ public:
 	ImageStorageRef getImage() const;
 	const SamplerRef& getSampler() const { return sampler; }
 	ResourceUsage getLastUsage() const;
+	void _setLastUsage(ResourceUsage usage);
 	// @}
 	
 	/*!	@name Deprecated */

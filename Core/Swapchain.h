@@ -48,6 +48,7 @@ public:
 	const FBORef& getFBO(uint32_t index) const { return fbos[index]; }
 	uint32_t getCurrentIndex() const { return currentIndex; }
 	uint32_t getSize() const { return imageCount; }
+	void waitForIndex(uint32_t index);
 
 	const SwapchainHandle& getApiHandle() const { return handle; }
 private:

@@ -23,55 +23,70 @@ class BufferObject;
 using BufferObjectRef = Util::Reference<BufferObject>;
 class Texture;
 using TextureRef = Util::Reference<Texture>;
-class ImageView;
-using ImageViewRef = Util::Reference<ImageView>;
 
 //------------------
 
 class Binding {
 HAS_DIRTY_FLAG
 public:
+	Binding() = default;
 	~Binding();
+	Binding(Binding&& o);
+	Binding(const Binding& o);
+	Binding& operator=(Binding&& o);
+	Binding& operator=(const Binding& o);
+	
+	bool operator==(const Binding& o) const { return buffer == o.buffer && texture == o.texture; }
+	bool operator!=(const Binding& o) const { return !(*this == o); }
 
-	bool bindBuffer(const BufferObjectRef& buffer, uint32_t arrayElement=0);
-	bool bindTexture(const TextureRef& texture, uint32_t arrayElement=0);
-	bool bindInputImage(const ImageViewRef& view, uint32_t arrayElement=0);
+	bool bind(const BufferObjectRef& obj);
+	bool bind(const TextureRef& obj);
 
-	const std::vector<BufferObjectRef>& getBuffers() const { return buffers; }
-	const std::vector<TextureRef>& getTextures() const { return textures; }
-	const std::vector<ImageViewRef>& getInputImages() const { return views; }
+	const BufferObjectRef& getBuffer() const { return buffer; }
+	const TextureRef& getTexture() const { return texture; }
+	bool isValid() const { return texture || buffer; }
 private:
-	std::vector<BufferObjectRef> buffers;
-	std::vector<TextureRef> textures;
-	std::vector<ImageViewRef> views;
+	BufferObjectRef buffer;
+	TextureRef texture;
 };
 
 //------------------
 
 class BindingSet {
-HAS_DIRTY_FLAG
 public:
-	using BindingMap = std::map<uint32_t, Binding>;
+	using BindingMap = std::map<uint32_t, std::vector<Binding>>;
+	BindingSet() = default;
 	~BindingSet();
+	BindingSet(BindingSet&& o);
+	BindingSet(const BindingSet& o);
+	BindingSet& operator=(BindingSet&& o);
+	BindingSet& operator=(const BindingSet& o);
 
-	bool bindBuffer(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
-	bool bindTexture(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
-	bool bindInputImage(const ImageViewRef& view, uint32_t binding=0, uint32_t arrayElement=0);
+	bool operator==(const BindingSet& o) const { return bindings == o.bindings; }
+	bool operator!=(const BindingSet& o) const { return !(*this == o); }
+
+	bool bind(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bind(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
+	void setArraySize(uint32_t binding, uint32_t arraySize);
 
 	const BindingMap& getBindings() const { return bindings; }
-	const Binding& getBinding(uint32_t binding) const { return bindings.at(binding); }
-	bool hasBinding(uint32_t binding) const { return bindings.find(binding) != bindings.end(); }
-
-	void clearDirty(uint32_t binding) { bindings.at(binding).clearDirty(); }
+	const Binding& getBinding(uint32_t binding, uint32_t arrayElement=0) const;
+	bool hasBinding(uint32_t binding, uint32_t arrayElement=0) const;
+	
 private:
 	BindingMap bindings;
+	bool dirty = true;
+public:
+	void markDirty() { dirty = true; }
+	void clearDirty();
+	bool isDirty() const;
 };
 
 //------------------
 
 class BindingState {
-HAS_DIRTY_FLAG
 public:
+	using BindingSetMap = std::map<uint32_t, BindingSet>;
 	BindingState() = default;
 	~BindingState();
 	BindingState(BindingState&& o);
@@ -79,18 +94,16 @@ public:
 	BindingState& operator=(BindingState&& o);
 	BindingState& operator=(const BindingState& o);
 
-	bool bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	bool bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	bool bindInputImage(const ImageViewRef& view, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	bool operator==(const BindingState& o) const { return bindingSets == o.bindingSets; }
+	bool operator!=(const BindingState& o) const { return !(*this == o); }
 
-	BufferObjectRef getBoundBuffer(uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	TextureRef getBoundTexture(uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	ImageViewRef getBoundInputImage(uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bind(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	bool bind(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
 
-	const Binding& getBinding(uint32_t set, uint32_t binding) const { return bindingSets.at(set).getBinding(binding); }
-	bool hasBinding(uint32_t set, uint32_t binding) const { return hasBindingSet(set) && bindingSets.at(set).hasBinding(binding); }
+	const Binding& getBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;
+	bool hasBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;
 
-	std::unordered_map<uint32_t, BindingSet>& getBindingSets() { return bindingSets; }
+	const BindingSetMap& getBindingSets() { return bindingSets; }
 	const BindingSet& getBindingSet(uint32_t set) { return bindingSets.at(set); }
 	bool hasBindingSet(uint32_t set) const { return bindingSets.find(set) != bindingSets.end(); }
 
@@ -98,10 +111,13 @@ public:
 		bindingSets.clear();
 		dirty = true;
 	}
-
-	void clearDirty(uint32_t set) { bindingSets.at(set).clearDirty(); }
 private:
-	std::unordered_map<uint32_t, BindingSet> bindingSets;
+	BindingSetMap bindingSets;
+	bool dirty = true;
+public:
+	void markDirty() { dirty = true; }
+	void clearDirty();
+	bool isDirty() const;
 };
 
 //------------------

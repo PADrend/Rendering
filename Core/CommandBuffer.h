@@ -35,6 +35,8 @@ class BufferStorage;
 using BufferStorageRef = Util::Reference<BufferStorage>;
 class ImageStorage;
 using ImageStorageRef = Util::Reference<ImageStorage>;
+class ImageView;
+using ImageViewRef = Util::Reference<ImageView>;
 class DescriptorSet;
 using DescriptorSetRef = Util::Reference<DescriptorSet>;
 class Queue;
@@ -65,6 +67,7 @@ public:
 	void flush();
 	void submit(bool wait=false);
 	void execute(const Ref& buffer);
+	bool compile(CompileContext& context);
 	bool compile();
 
 	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, bool clearStencil=true);
@@ -138,6 +141,8 @@ public:
 	//! @{
 	PipelineState& getPipeline() { return pipeline; }
 	void setPipeline(const PipelineState& value) { pipeline = value; }
+	BindingState& getBindingState() { return bindings; }
+	void setBindingState(const BindingState& value) { bindings = value; }
 	
 	void setVertexInputState(const VertexInputState& state) { pipeline.setVertexInputState(state); }
 	void setInputAssemblyState(const InputAssemblyState& state) { pipeline.setInputAssemblyState(state); }
@@ -193,6 +198,7 @@ public:
 	//! @name Internal
 	//! @{
 	const CommandBufferHandle& getApiHandle() const { return handle; };
+	const SemaphoreHandle& getSignalSemaphore() const { return signalSemaphore; };
 	//! @}
 private:
 	void ensureRenderPass() {
@@ -216,7 +222,8 @@ private:
 	float clearDepthValue=1;
 	uint32_t clearStencilValue=0;
 
-	uint32_t drawCommandCount=0;
+	SemaphoreHandle signalSemaphore;
+	uint32_t ownerId=0;
 };
 
 } /* Rendering */

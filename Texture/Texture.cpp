@@ -288,4 +288,11 @@ ResourceUsage Texture::getLastUsage() const {
 }
 
 //---------------
+
+void Texture::_setLastUsage(ResourceUsage usage) {
+	if(imageView)
+		imageView->_setLastUsage(usage);
+}
+
+//---------------
 }

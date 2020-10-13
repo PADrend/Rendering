@@ -74,9 +74,9 @@ public:
 	VertexInputState() = default;
 	VertexInputState(const VertexInputState& o) : bindings(o.bindings), attributes(o.attributes), dirty(true) {}
 	VertexInputState& operator=(const VertexInputState& o) {
+		dirty |= (*this != o);
 		bindings = o.bindings;
 		attributes = o.attributes;
-		dirty = true;
 		return *this;
 	}
 
@@ -108,6 +108,11 @@ public:
 	//! @see{setAttributeCount()}
 	uint32_t getAttributeCount() const { return attributes.size(); }
 
+
+	bool operator==(const VertexInputState& o) const {
+		return bindings == o.bindings && attributes == o.attributes;
+	}
+	bool operator!=(const VertexInputState& o) const { return !(*this == o); }
 private:
 	std::map<uint32_t, VertexInputBinding> bindings;
 	std::map<uint32_t, VertexInputAttribute> attributes;
@@ -188,11 +193,11 @@ public:
 	ViewportState(const Viewport& viewport, const Geometry::Rect_i& scissor) : viewports({viewport}), scissors({scissor}) {}
 	ViewportState(const ViewportState& o) : viewports(o.viewports), scissors(o.scissors), dynamicViewports(o.dynamicViewports), dynamicScissors(o.dynamicScissors), dirty(true) {}
 	ViewportState& operator=(const ViewportState& o) {
+		dirty |= (*this != o);
 		viewports = o.viewports;
 		scissors = o.scissors;
 		dynamicViewports = o.dynamicViewports;
 		dynamicScissors = o.dynamicScissors;
-		dirty = true;
 		return *this;
 	}
 
@@ -228,7 +233,12 @@ public:
 	bool hasDynamicScissors() const { return dynamicScissors; }
 	
 	//! @see{setViewportScissorCount()}
-	uint32_t getViewportScissorCount() const { return viewports.size(); }
+	uint32_t getViewportScissorCount() const { return viewports.size(); }	
+
+	bool operator==(const ViewportState& o) const {
+		return viewports == o.viewports && scissors == o.scissors && dynamicViewports == o.dynamicViewports && dynamicScissors == o.dynamicScissors;
+	}
+	bool operator!=(const ViewportState& o) const { return !(*this == o); }
 private:
 	std::vector<Viewport> viewports{{}};
 	std::vector<Geometry::Rect_i> scissors{{0,0,1,1}};
@@ -701,9 +711,9 @@ public:
 	FramebufferFormat(const FBORef& fbo);
 	FramebufferFormat(const FramebufferFormat& o) : colorAttachments(o.colorAttachments), depthAttachment(o.depthAttachment), dirty(true) {}
 	FramebufferFormat& operator=(const FramebufferFormat& o) {
+		dirty |= (*this != o);
 		colorAttachments = o.colorAttachments;
 		depthAttachment = o.depthAttachment;
-		dirty = true;
 		return *this;
 	}
 
@@ -727,6 +737,10 @@ public:
 	//! @see{setDepthStencilAttachment()}
 	bool hasDepthStencilAttachment() const { return depthAttachment.samples > 0 && isDepthStencilFormat(depthAttachment.format); }
 	
+	bool operator==(const FramebufferFormat& o) const {
+		return colorAttachments == o.colorAttachments && depthAttachment == o.depthAttachment;
+	}
+	bool operator!=(const FramebufferFormat& o) const { return !(*this == o); }
 private:
 	std::vector<AttachmentFormat> colorAttachments = {};
 	AttachmentFormat depthAttachment = {InternalFormat::Unknown, 0};

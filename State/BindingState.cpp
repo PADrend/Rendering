@@ -16,41 +16,86 @@ namespace Rendering {
 
 //------------------
 
+template<class Key, class Value>
+static void overwriteMap(std::map<Key,Value>& tgt, const std::map<Key,Value>& src) {
+	auto tgtIt = tgt.begin();
+	auto srcIt = src.begin();
+	while(tgtIt != tgt.end() && srcIt != src.end()) {
+		if(srcIt->first < tgtIt->first) {
+			// insert objects that are not in the target map
+			tgt.insert(tgtIt, *srcIt);
+			++srcIt;
+		} else if(tgtIt->first == srcIt->first) {
+			// overwrite objects in target using copy assignment operator
+			tgtIt->second = srcIt->second;
+			++tgtIt; ++srcIt;
+		} else {
+			// erase objects in target map
+			tgtIt = tgt.erase(tgtIt);
+		}
+	}
+	// insert/remove remaining objects
+	tgt.erase(tgtIt, tgt.end());
+	tgt.insert(srcIt, src.end());
+}
+
+//------------------
+
 Binding::~Binding() = default;
 
 //------------------
 
-bool Binding::bindBuffer(const BufferObjectRef& buffer, uint32_t arrayElement) {
-	if(buffers.size() <= arrayElement)
-		buffers.resize(arrayElement + 1);
-	dirty |= buffers[arrayElement] != buffer;
-	buffers[arrayElement] = buffer;
-	textures.clear();
-	views.clear();
+Binding::Binding(Binding&& o) {
+	buffer = std::move(o.buffer);
+	texture = std::move(o.texture);
+	dirty = true;
+	o.dirty = true;
+}
+
+//------------------
+
+Binding::Binding(const Binding& o) {
+	buffer = o.buffer;
+	texture = o.texture;
+	dirty = true;
+}
+
+//------------------
+
+Binding& Binding::operator=(Binding&& o) {
+	buffer = std::move(o.buffer);
+	texture = std::move(o.texture);
+	dirty = o.dirty;
+	o.dirty = true;
+	return *this;
+}
+
+//------------------
+
+Binding& Binding::operator=(const Binding& o) {
+	dirty |= (*this != o);
+	buffer = o.buffer;
+	texture = o.texture;
+	return *this;
+}
+
+//------------------
+
+bool Binding::bind(const BufferObjectRef& obj) {
+	if(texture || buffer != obj)
+		markDirty();
+	buffer = obj;
+	texture = nullptr;
 	return dirty;
 }
 
 //------------------
 
-bool Binding::bindTexture(const TextureRef& texture, uint32_t arrayElement) {
-	if(textures.size() <= arrayElement)
-		textures.resize(arrayElement + 1);
-	dirty |= textures[arrayElement] != texture;
-	buffers.clear();
-	textures[arrayElement] = texture;
-	views.clear();
-	return dirty;
-}
-
-//------------------
-
-bool Binding::bindInputImage(const ImageViewRef& view, uint32_t arrayElement) {
-	if(views.size() <= arrayElement)
-		views.resize(arrayElement + 1);
-	dirty |= views[arrayElement] != view;
-	buffers.clear();
-	textures.clear();
-	views[arrayElement] = view;
+bool Binding::bind(const TextureRef& obj) {
+	if(buffer || texture != obj)
+		markDirty();
+	buffer = nullptr;
+	texture = obj;
 	return dirty;
 }
 
@@ -60,23 +105,93 @@ BindingSet::~BindingSet() = default;
 
 //------------------
 
-bool BindingSet::bindBuffer(const BufferObjectRef& buffer, uint32_t binding, uint32_t arrayElement) {	
-	dirty |= bindings[binding].bindBuffer(buffer, arrayElement);
+BindingSet::BindingSet(BindingSet&& o) {
+	bindings = std::move(o.bindings);
+	dirty = true;
+	o.dirty = true;
+}
+
+//------------------
+
+BindingSet::BindingSet(const BindingSet& o) {
+	bindings = o.bindings;
+	dirty = true;
+}
+
+//------------------
+
+BindingSet& BindingSet::operator=(BindingSet&& o) {
+	bindings = std::move(o.bindings);
+	dirty = o.dirty;
+	o.dirty = true;
+	return *this;
+}
+
+//------------------
+
+BindingSet& BindingSet::operator=(const BindingSet& o) {
+	dirty |= (*this != o);
+	overwriteMap(bindings, o.bindings);
+	return *this;
+}
+
+//------------------
+
+bool BindingSet::bind(const BufferObjectRef& buffer, uint32_t binding, uint32_t arrayElement) {
+	auto& bindingArray = bindings[binding];
+	if(bindingArray.size() <= arrayElement)
+		bindingArray.resize(arrayElement + 1);
+	dirty |= bindingArray[arrayElement].bind(buffer);
 	return dirty;
 }
 
 //------------------
 
-bool BindingSet::bindTexture(const TextureRef& texture, uint32_t binding, uint32_t arrayElement) {
-	dirty |= bindings[binding].bindTexture(texture, arrayElement);
+bool BindingSet::bind(const TextureRef& texture, uint32_t binding, uint32_t arrayElement) {
+	auto& bindingArray = bindings[binding];
+	if(bindingArray.size() <= arrayElement)
+		bindingArray.resize(arrayElement + 1);
+	dirty |= bindingArray[arrayElement].bind(texture);
 	return dirty;
 }
 
 //------------------
 
-bool BindingSet::bindInputImage(const ImageViewRef& view, uint32_t binding, uint32_t arrayElement) {
-	dirty |= bindings[binding].bindInputImage(view, arrayElement);
-	return dirty;
+const Binding& BindingSet::getBinding(uint32_t binding, uint32_t arrayElement) const {
+	static Binding nullBinding{};
+	const auto& it = bindings.find(binding);
+	if(it == bindings.end())
+		return nullBinding;
+	return it->second.size() > arrayElement ? it->second[arrayElement] : nullBinding;
+}
+
+//------------------
+
+bool BindingSet::hasBinding(uint32_t binding, uint32_t arrayElement) const {
+	const auto& it = bindings.find(binding);
+	if(it == bindings.end())
+		return false;
+	return it->second.size() > arrayElement && it->second[arrayElement].isValid();
+}
+
+//------------------
+
+void BindingSet::clearDirty() {
+	for(auto& entry : bindings)
+		for(auto& b : entry.second)
+			b.clearDirty();
+	dirty = false;
+}
+
+//------------------
+
+bool BindingSet::isDirty() const {
+	if(dirty) return true;
+	for(const auto& entry : bindings)
+		for(const auto& b : entry.second)
+			if(b.isDirty())
+				return true;
+	return false;
 }
 
 //------------------
@@ -85,95 +200,38 @@ BindingState::~BindingState() = default;
 
 //------------------
 
-bool BindingState::bindBuffer(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	dirty |= bindingSets[set].bindBuffer(buffer, binding, arrayElement);
+bool BindingState::bind(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	dirty |= bindingSets[set].bind(buffer, binding, arrayElement);
 	return dirty;
 }
 
 //------------------
 
-bool BindingState::bindTexture(const TextureRef& texture, uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	dirty |= bindingSets[set].bindTexture(texture, binding, arrayElement);
+bool BindingState::bind(const TextureRef& texture, uint32_t set, uint32_t binding, uint32_t arrayElement) {
+	dirty |= bindingSets[set].bind(texture, binding, arrayElement);
 	return dirty;
 }
 
 //------------------
 
-bool BindingState::bindInputImage(const ImageViewRef& view, uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	dirty |= bindingSets[set].bindInputImage(view, binding, arrayElement);
-	return dirty;
-}
-
-//------------------
-
-BufferObjectRef BindingState::getBoundBuffer(uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	auto sIt = bindingSets.find(set);
-	if(sIt == bindingSets.end())
-		return nullptr;
-	auto bIt = sIt->second.getBindings().find(binding);
-	if(bIt == sIt->second.getBindings().end())
-		return nullptr;
-	if(bIt->second.getBuffers().size() <= arrayElement)
-		return nullptr;
-	return bIt->second.getBuffers().at(arrayElement);
-}
-
-//------------------
-
-TextureRef BindingState::getBoundTexture(uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	auto sIt = bindingSets.find(set);
-	if(sIt == bindingSets.end())
-		return nullptr;
-	auto bIt = sIt->second.getBindings().find(binding);
-	if(bIt == sIt->second.getBindings().end())
-		return nullptr;
-	if(bIt->second.getTextures().size() <= arrayElement)
-		return nullptr;
-	return bIt->second.getTextures().at(arrayElement);
-}
-
-//------------------
-
-ImageViewRef BindingState::getBoundInputImage(uint32_t set, uint32_t binding, uint32_t arrayElement) {
-	auto sIt = bindingSets.find(set);
-	if(sIt == bindingSets.end())
-		return nullptr;
-	auto bIt = sIt->second.getBindings().find(binding);
-	if(bIt == sIt->second.getBindings().end())
-		return nullptr;
-	if(bIt->second.getInputImages().size() <= arrayElement)
-		return nullptr;
-	return bIt->second.getInputImages().at(arrayElement);
-}
-
-//------------------
-
-BindingState::BindingState(BindingState&& o) : dirty(true) {
+BindingState::BindingState(BindingState&& o) {
 	bindingSets = std::move(o.bindingSets);
-	dirty = true;
+	dirty = o.dirty;
 	o.dirty = true;
 }
 
 //------------------
 
-BindingState::BindingState(const BindingState& o) : dirty(true) {
-	for(auto& s : o.bindingSets) {
-		for(auto& b : s.second.getBindings()) {
-			for(uint32_t i = 0; i < b.second.getBuffers().size(); ++i)
-				bindBuffer(b.second.getBuffers()[i], s.first, b.first, i);
-			for(uint32_t i = 0; i < b.second.getTextures().size(); ++i)
-				bindTexture(b.second.getTextures()[i], s.first, b.first, i);
-			for(uint32_t i = 0; i < b.second.getInputImages().size(); ++i)
-				bindInputImage(b.second.getInputImages()[i], s.first, b.first, i);
-		}
-	}
+BindingState::BindingState(const BindingState& o) {
+	bindingSets = o.bindingSets;
+	dirty = true;
 }
 
 //------------------
 
 BindingState& BindingState::operator=(BindingState&& o) {
 	bindingSets = std::move(o.bindingSets);
-	dirty = true;
+	dirty = o.dirty;
 	o.dirty = true;
 	return *this;
 }
@@ -181,17 +239,46 @@ BindingState& BindingState::operator=(BindingState&& o) {
 //------------------
 
 BindingState& BindingState::operator=(const BindingState& o) {
-	for(auto& s : o.bindingSets) {
-		for(auto& b : s.second.getBindings()) {
-			for(uint32_t i = 0; i < b.second.getBuffers().size(); ++i)
-				dirty |= bindBuffer(b.second.getBuffers()[i], s.first, b.first, i);
-			for(uint32_t i = 0; i < b.second.getTextures().size(); ++i)
-				dirty |= bindTexture(b.second.getTextures()[i], s.first, b.first, i);
-			for(uint32_t i = 0; i < b.second.getInputImages().size(); ++i)
-				dirty |= bindInputImage(b.second.getInputImages()[i], s.first, b.first, i);
-		}
-	}
+	dirty |= (*this != o);
+	overwriteMap(bindingSets, o.bindingSets);
 	return *this;
+}
+
+//------------------
+
+const Binding& BindingState::getBinding(uint32_t set, uint32_t binding, uint32_t arrayElement) const {
+	static Binding nullBinding{};
+	const auto it = bindingSets.find(set);
+	if(it == bindingSets.end())
+		return nullBinding;
+	return it->second.getBinding(binding, arrayElement);
+}
+
+//------------------
+
+bool BindingState::hasBinding(uint32_t set, uint32_t binding, uint32_t arrayElement) const {
+	const auto it = bindingSets.find(set);
+	if(it == bindingSets.end())
+		return false;
+	return it->second.hasBinding(binding, arrayElement);
+}
+
+//------------------
+
+void BindingState::clearDirty() {
+	for(auto& set : bindingSets)
+		set.second.clearDirty();
+	dirty = false;
+}
+
+//------------------
+
+bool BindingState::isDirty() const {
+	if(dirty) return true;
+	for(const auto& set : bindingSets)
+		if(set.second.isDirty())
+			return true;
+	return false;
 }
 
 //------------------

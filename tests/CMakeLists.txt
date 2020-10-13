@@ -21,7 +21,7 @@ if(RENDERING_BUILD_TESTS)
 		RenderingTestMain.cpp
 		ShaderTest.cpp
 		StateTest.cpp
-		StatisticsQueryTest.cpp
+		#StatisticsQueryTest.cpp
 		VertexAccessorTest.cpp
 	)
 

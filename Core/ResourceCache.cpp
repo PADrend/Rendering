@@ -84,14 +84,10 @@ RenderPassHandle ResourceCache::createRenderPass(const FramebufferFormat& attach
 
 //----------------
 
-RenderPassHandle ResourceCache::createRenderPass(const FBORef& fbo, bool clearColor, bool clearDepth, bool clearStencil) {
+RenderPassHandle ResourceCache::createRenderPass(const FBORef& fbo, const std::vector<ResourceUsage>& lastColorUsages, ResourceUsage lastDepthUsage, bool clearColor, bool clearDepth, bool clearStencil) {
 	SCOPED_PROFILING(ResourceCache::createRenderPass);
 	if(!fbo)
 		return nullptr;
-	std::vector<ResourceUsage> lastColorUsages;
-	for(auto& att : fbo->getColorAttachments())
-		lastColorUsages.emplace_back(att.isNotNull() ? att->getLastUsage() : ResourceUsage::Undefined);
-	ResourceUsage lastDepthUsage = fbo->getDepthStencilAttachment() ? fbo->getDepthStencilAttachment()->getLastUsage() : ResourceUsage::Undefined;
 	return create<RenderPassHandle, const FramebufferFormat&, bool, bool, bool, const std::vector<ResourceUsage>&, ResourceUsage>(RENDERPASS, {fbo}, clearColor, clearDepth, clearStencil, lastColorUsages, lastDepthUsage);
 }
 

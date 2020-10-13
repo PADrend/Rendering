@@ -39,7 +39,7 @@ public:
 	DescriptorSetLayoutHandle createDescriptorSetLayout(const ShaderResourceLayoutSet& layout);
 	PipelineLayoutHandle createPipelineLayout(const ShaderLayout& layout);
 	RenderPassHandle createRenderPass(const FramebufferFormat& attachments);
-	RenderPassHandle createRenderPass(const FBORef& fbo, bool clearColor=false, bool clearDepth=false, bool clearStencil=false);
+	RenderPassHandle createRenderPass(const FBORef& fbo, const std::vector<ResourceUsage>& lastColorUsages, ResourceUsage lastDepthUsage, bool clearColor=false, bool clearDepth=false, bool clearStencil=false);
 	FramebufferHandle createFramebuffer(const FBORef& fbo, const RenderPassHandle& renderPass);
 private:
 	ResourceCache(const DeviceRef& device);

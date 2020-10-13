@@ -172,7 +172,7 @@ ClearImageCommand::~ClearImageCommand() = default;
 
 bool ClearImageCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!image && !view, "Cannot clear image. Invalid image or image view.", false);
-	ImageStorageRef image = image ? image : view->getImage();
+	ImageStorageRef img = image ? image : view->getImage();
 
 	const auto& format = image->getFormat();
 	vk::ImageSubresourceRange range{};
@@ -187,17 +187,17 @@ bool ClearImageCommand::compile(CompileContext& context) {
 	}
 
 	vk::CommandBuffer vkCmd(context.cmd);
-	if(isDepthStencilFormat(image->getFormat())) {
+	if(isDepthStencilFormat(img->getFormat())) {
 		vk::ClearDepthStencilValue clearValue{};
 		clearValue.depth = color.r();
 		clearValue.stencil = static_cast<uint32_t>(color.g());
 		range.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
-		vkCmd.clearDepthStencilImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination), clearValue, {range});
+		vkCmd.clearDepthStencilImage(static_cast<vk::Image>(img->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination), clearValue, {range});
 	} else {
 		vk::ClearColorValue clearValue{};
 		clearValue.setFloat32({color.r(), color.g(), color.b(), color.a()});
 		range.aspectMask = vk::ImageAspectFlagBits::eColor;
-		vkCmd.clearColorImage(static_cast<vk::Image>(image->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination), clearValue, {range});
+		vkCmd.clearColorImage(static_cast<vk::Image>(img->getApiHandle()), getVkImageLayout(ResourceUsage::CopyDestination), clearValue, {range});
 	};
 	return true;
 }

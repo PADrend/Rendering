@@ -29,8 +29,8 @@ ViewportState& ViewportState::setViewport(const Viewport& value, uint32_t index)
 
 ViewportState& ViewportState::setViewports(const std::vector<Viewport>& values) {
 	setViewportScissorCount(values.size());
+	dirty |= (viewports != values);
 	viewports = values;
-	dirty = true;
 	return *this; 
 }
 
@@ -47,8 +47,8 @@ ViewportState& ViewportState::setScissor(const Geometry::Rect_i& value, uint32_t
 
 ViewportState& ViewportState::setScissors(const std::vector<Geometry::Rect_i>& values) {
 	setViewportScissorCount(values.size());
+	dirty |= (scissors != values);
 	scissors = values;
-	dirty = true;
 	return *this; 
 }
 
@@ -165,8 +165,7 @@ PipelineState& PipelineState::reset() {
 //-------------
 
 PipelineState& PipelineState::setShader(const ShaderRef& _shader) {
-	if(shader != _shader)
-		markDirty();
+	dirty |= (shader != _shader);
 	shader = _shader;
 	return *this;
 }

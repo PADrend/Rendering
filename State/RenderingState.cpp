@@ -59,22 +59,155 @@ static const Uniform::UniformName UNIFORM_SG_MATERIAL_EMISSION("sg_Material.emis
 
 //----------------
 
-void CameraData::setMatrixCameraToWorld(const Geometry::Matrix4x4f& value) { 
+CameraData::CameraData(CameraData&& o) {
+	matrix_worldToCamera = std::move(o.matrix_worldToCamera);
+	matrix_cameraToWorld = std::move(o.matrix_cameraToWorld);
+	matrix_cameraToClipping = std::move(o.matrix_cameraToClipping);
+	matrix_clippingToCamera = std::move(o.matrix_clippingToCamera);
+	position = std::move(o.position);
+	direction = std::move(o.direction);
+	up = std::move(o.up);
+	dirty = true;
+	o.dirty = true;
+}
+
+//----------------
+
+CameraData::CameraData(const CameraData& o) {
+	matrix_worldToCamera = o.matrix_worldToCamera;
+	matrix_cameraToWorld = o.matrix_cameraToWorld;
+	matrix_cameraToClipping = o.matrix_cameraToClipping;
+	matrix_clippingToCamera = o.matrix_clippingToCamera;
+	position = o.position;
+	direction = o.direction;
+	up = o.up;
+	dirty = true;
+}
+
+//----------------
+
+CameraData& CameraData::operator=(CameraData&& o) {
+	matrix_worldToCamera = std::move(o.matrix_worldToCamera);
+	matrix_cameraToWorld = std::move(o.matrix_cameraToWorld);
+	matrix_cameraToClipping = std::move(o.matrix_cameraToClipping);
+	matrix_clippingToCamera = std::move(o.matrix_clippingToCamera);
+	position = std::move(o.position);
+	direction = std::move(o.direction);
+	up = std::move(o.up);
+	dirty = o.dirty;
+	o.dirty = true;
+	return *this;
+}
+
+//----------------
+
+CameraData& CameraData::operator=(const CameraData& o) {
+	dirty |= (*this != o);
+	matrix_worldToCamera = o.matrix_worldToCamera;
+	matrix_cameraToWorld = o.matrix_cameraToWorld;
+	matrix_cameraToClipping = o.matrix_cameraToClipping;
+	matrix_clippingToCamera = o.matrix_clippingToCamera;
+	position = o.position;
+	direction = o.direction;
+	up = o.up;
+	return *this;
+}
+
+//----------------
+
+void CameraData::setMatrixCameraToWorld(const Geometry::Matrix4x4f& value) {
+	dirty |= (matrix_cameraToWorld != value);
 	matrix_cameraToWorld = value;
 	matrix_worldToCamera = value.inverse();
 	const auto& srt = matrix_cameraToWorld.toSRT();
 	position = srt.getTranslation();
 	up = srt.getUpVector();
 	direction = srt.getDirVector();
+}
+
+//----------------
+
+void CameraData::setMatrixCameraToClipping(const Geometry::Matrix4x4f& value) {
+	dirty |= (matrix_cameraToClipping != value);
+	matrix_cameraToClipping = value;
+	matrix_clippingToCamera = value.inverse();
 	dirty = true;
 }
 
 //----------------
 
-void CameraData::setMatrixCameraToClipping(const Geometry::Matrix4x4f& value) { 
-	matrix_cameraToClipping = value;
-	matrix_clippingToCamera = value.inverse();
+MaterialData::~MaterialData() = default;
+
+//----------------
+
+MaterialData::MaterialData(MaterialData&& o) {
+	model = std::move(o.model);
+	ambient = std::move(o.ambient);
+	diffuse = std::move(o.diffuse);
+	diffuseMap = std::move(o.diffuseMap);
+	specular = std::move(o.specular);
+	specularMap = std::move(o.specularMap);
+	emission = std::move(o.emission);
+	emissionMap = std::move(o.emissionMap);
+	normalMap = std::move(o.normalMap);
+	alphaThreshold = std::move(o.alphaThreshold);
+	alphaMask = std::move(o.alphaMask);
 	dirty = true;
+	o.dirty = true;
+}
+
+//----------------
+
+MaterialData::MaterialData(const MaterialData& o) {
+	model = o.model;
+	ambient = o.ambient;
+	diffuse = o.diffuse;
+	diffuseMap = o.diffuseMap;
+	specular = o.specular;
+	specularMap = o.specularMap;
+	emission = o.emission;
+	emissionMap = o.emissionMap;
+	normalMap = o.normalMap;
+	alphaThreshold = o.alphaThreshold;
+	alphaMask = o.alphaMask;
+	dirty = true;
+}
+
+//----------------
+
+MaterialData& MaterialData::operator=(MaterialData&& o) {
+	model = std::move(o.model);
+	ambient = std::move(o.ambient);
+	diffuse = std::move(o.diffuse);
+	diffuseMap = std::move(o.diffuseMap);
+	specular = std::move(o.specular);
+	specularMap = std::move(o.specularMap);
+	emission = std::move(o.emission);
+	emissionMap = std::move(o.emissionMap);
+	normalMap = std::move(o.normalMap);
+	alphaThreshold = std::move(o.alphaThreshold);
+	alphaMask = std::move(o.alphaMask);
+	dirty = o.dirty;
+	o.dirty = true;
+	return *this;
+}
+
+//----------------
+
+MaterialData& MaterialData::operator=(const MaterialData& o) {
+	dirty |= (*this != o);
+	model = o.model;
+	ambient = o.ambient;
+	diffuse = o.diffuse;
+	diffuseMap = o.diffuseMap;
+	specular = o.specular;
+	specularMap = o.specularMap;
+	emission = o.emission;
+	emissionMap = o.emissionMap;
+	normalMap = o.normalMap;
+	alphaThreshold = o.alphaThreshold;
+	alphaMask = o.alphaMask;
+	return *this;
 }
 
 //----------------
@@ -112,15 +245,107 @@ MaterialData& MaterialSet::getMaterial(uint32_t materialId) {
 
 //----------------
 
+LightData::LightData(LightData&& o) {
+	type = std::move(o.type);
+	position = std::move(o.position);
+	direction = std::move(o.direction);
+	intensity = std::move(o.intensity);
+	range = std::move(o.range);
+	coneAngle = std::move(o.coneAngle);
+	cosConeAngle = std::move(o.cosConeAngle);
+	dirty = true;
+	o.dirty = true;
+}
+
+//----------------
+
+LightData::LightData(const LightData& o) {
+	type = o.type;
+	position = o.position;
+	direction = o.direction;
+	intensity = o.intensity;
+	range = o.range;
+	coneAngle = o.coneAngle;
+	cosConeAngle = o.cosConeAngle;
+	dirty = true;
+}
+
+//----------------
+
+LightData& LightData::operator=(LightData&& o) {
+	type = std::move(o.type);
+	position = std::move(o.position);
+	direction = std::move(o.direction);
+	intensity = std::move(o.intensity);
+	range = std::move(o.range);
+	coneAngle = std::move(o.coneAngle);
+	cosConeAngle = std::move(o.cosConeAngle);
+	dirty = o.dirty;
+	o.dirty = true;
+	return *this;
+}
+
+//----------------
+
+LightData& LightData::operator=(const LightData& o) {
+	dirty |= (*this != o);
+	type = o.type;
+	position = o.position;
+	direction = o.direction;
+	intensity = o.intensity;
+	range = o.range;
+	coneAngle = o.coneAngle;
+	cosConeAngle = o.cosConeAngle;
+	return *this;
+}
+
+//----------------
+
+LightSet::LightSet(LightSet&& o) {
+	lights = std::move(o.lights);
+	lightByHash = std::move(o.lightByHash);
+	dirty = true;
+	o.dirty = true;
+}
+
+//----------------
+
+LightSet::LightSet(const LightSet& o) {
+	lights = o.lights;
+	lightByHash = o.lightByHash;
+	dirty = true;
+}
+
+//----------------
+
+LightSet& LightSet::operator=(LightSet&& o) {
+	lights = std::move(o.lights);
+	lightByHash = std::move(o.lightByHash);
+	dirty = o.dirty;
+	o.dirty = true;
+	return *this;
+}
+
+//----------------
+
+LightSet& LightSet::operator=(const LightSet& o) {
+	dirty |= (*this != o);
+	lights = o.lights;
+	lightByHash = o.lightByHash;
+	return *this;
+}
+
+//----------------
+
 size_t LightSet::addLight(const LightData& light) {
 	auto key = Util::hash(light);
 	const auto& it = lightByHash.find(key);
-	if(it != lightByHash.end())
-		return it->second;
-	uint32_t lightId = static_cast<uint32_t>(lights.size());
-	lightByHash[key] = lightId;
-	lights.emplace_back(light);
-	dirty = true;
+	if(it == lightByHash.end()) {
+		uint32_t lightId = static_cast<uint32_t>(lights.size());
+		lightByHash[key] = lightId;
+		lights.emplace_back(light);
+		dirty = true;
+	}
 	return key;
 }
 
@@ -158,6 +383,65 @@ const LightData& LightSet::getLight(size_t lightId) const {
 
 //----------------
 
+void LightSet::clearDirty() {
+	for(auto& light : lights)
+		light.clearDirty();
+	dirty = false;
+}
+
+//----------------
+
+bool LightSet::isDirty() const {
+	if(dirty)
+		return true;
+	for(auto& light : lights)
+		if(light.isDirty())
+			return true;
+	return false;
+}
+
+//----------------
+
+InstanceData::InstanceData(InstanceData&& o) {
+	matrix_modelToCamera = std::move(o.matrix_modelToCamera);
+	materialId = std::move(o.materialId);
+	pointSize = std::move(o.pointSize);
+	dirty = true;
+	o.dirty = true;
+}
+
+//----------------
+
+InstanceData::InstanceData(const InstanceData& o) {
+	matrix_modelToCamera = o.matrix_modelToCamera;
+	materialId = o.materialId;
+	pointSize = o.pointSize;
+	dirty = true;
+}
+
+//----------------
+
+InstanceData& InstanceData::operator=(InstanceData&& o) {
+	matrix_modelToCamera = std::move(o.matrix_modelToCamera);
+	materialId = std::move(o.materialId);
+	pointSize = std::move(o.pointSize);
+	dirty = o.dirty;
+	o.dirty = true;
+	return *this;
+}
+
+//----------------
+
+InstanceData& InstanceData::operator=(const InstanceData& o) {
+	dirty |= (*this != o);
+	matrix_modelToCamera = o.matrix_modelToCamera;
+	materialId = o.materialId;
+	pointSize = o.pointSize;
+	return *this;
+}
+
+//----------------
+
 void RenderingState::apply(const ShaderRef& shader, bool forced) {
 	std::deque<Uniform> uniforms;
 
@@ -185,6 +469,7 @@ void RenderingState::apply(const ShaderRef& shader, bool forced) {
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_INTENSITY[i], light.getIntensity());
 			uniforms.emplace_back(UNIFORM_SG_LIGHT_SOURCES_COSCONEANGLE[i], light.getCosConeAngle());
 		}
+		lights.clearDirty();
 	}
 
 	// materials

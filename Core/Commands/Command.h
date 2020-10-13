@@ -13,6 +13,7 @@
 #include "../Common.h"
 
 #include <Util/References.h>
+#include <Util/TypeNameMacro.h>
 
 #include <memory>
 
@@ -25,6 +26,7 @@ class Device;
 using DeviceRef = Util::Reference<Device>;
 
 struct CompileContext {
+	uint32_t ownerId = 0;
 	DeviceRef device;
 	ResourceCacheRef resourceCache;
 	DescriptorPoolRef descriptorPool;
@@ -32,6 +34,7 @@ struct CompileContext {
 };
 
 class Command {
+PROVIDES_TYPE_NAME(Command)
 public:
 	using Ptr = std::unique_ptr<Command>;
 	virtual ~Command() = default;

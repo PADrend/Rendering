@@ -37,6 +37,8 @@ class DescriptorPool;
 using DescriptorPoolRef = Util::Reference<DescriptorPool>;
 class QueryPool;
 using QueryPoolRef = Util::Reference<QueryPool>;
+class CommandBuffer;
+using CommandBufferRef = Util::Reference<CommandBuffer>;
 
 /** Represents a GPU Device	
 	@ingroup rendering_core
@@ -45,7 +47,7 @@ class Device : public Util::ReferenceCounter<Device> {
 public:
 	using Ref = Util::Reference<Device>;
 	
-	static Ref create(Util::UI::WindowRef window, std::vector<std::string> validationLayers={});
+	static Ref create(Util::UI::WindowRef window, std::vector<std::string> validationLayers={}, bool throwOnError=false);
 	static Ref getDefault();
 	~Device();
 	
@@ -79,7 +81,7 @@ public:
 	//! @}
 private:
 	Device(Util::UI::WindowRef window);
-	bool init(std::vector<std::string> validationLayers);
+	bool init(std::vector<std::string> validationLayers, bool throwOnError);
 
 	struct InternalData;
 	std::unique_ptr<InternalData> internal;

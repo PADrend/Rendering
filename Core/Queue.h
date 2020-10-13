@@ -40,26 +40,24 @@ public:
 	uint32_t getIndex() const { return index; }
 	uint32_t getFamilyIndex() const { return familyIndex; }
 	
-	CommandBufferHandle requestCommandBuffer(bool primary=true);
-	void freeCommandBuffer(const CommandBufferHandle& bufferHandle, bool primary);
+	CommandBufferHandle requestCommandBuffer(bool primary=true, uint32_t threadId=0);
+	void freeCommandBuffer(const CommandBufferHandle& bufferHandle, bool primary, uint32_t threadId=0);
 
 	DeviceRef getDevice() { return device.get(); }
 	const QueueHandle& getApiHandle() const { return handle; }
-	const CommandPoolHandle& getCommandPool() const { return commandPoolHandle; }
 private:
 	friend class Device;
 	explicit Queue(const DeviceRef& device, uint32_t familyIndex, uint32_t index);
 	bool init();
 	void clearPending();
-	CommandBufferHandle createCommandBuffer(bool primary);
+	CommandBufferHandle createCommandBuffer(CommandPoolHandle pool, bool primary);
 
 	Util::WeakPointer<Device> device;
 	QueueHandle handle;
 	uint32_t familyIndex;
 	uint32_t index;
 	QueueFamily capabilities;
-	CommandPoolHandle commandPoolHandle;
-	Util::ObjectPool<CommandBufferHandle, uint32_t> commandPool;
+	Util::ObjectPool<CommandBufferHandle, int32_t> commandPool;
 
 	struct PendingEntry {
 		CommandBufferRef cmd;

@@ -162,7 +162,7 @@ RenderingContext::RenderingContext(const DeviceRef& device) :
 	applyChanges();
 
 	// start render thread
-	internal->renderThread = RenderThread::create(device);
+	//internal->renderThread = RenderThread::create(device);
 }
 
 RenderingContext::RenderingContext() : RenderingContext(Device::getDefault()) {}
@@ -197,9 +197,9 @@ const RenderingState& RenderingContext::getRenderingState() const{
 
 void RenderingContext::flush(bool wait) {
 	//internal->cmd->submit(wait);
-	internal->renderThread->compileAndSubmit(internal->cmd);
+	//internal->renderThread->compileAndSubmit(internal->cmd);
 
-	internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
+	//internal->cmd = CommandBuffer::create(internal->device->getQueue(QueueFamily::Graphics), true);
 	applyChanges();
 }
 
@@ -207,8 +207,8 @@ void RenderingContext::present() {
 	internal->cmd->endRenderPass();
 	auto& fbo = internal->device->getSwapchain()->getCurrentFBO();
 	internal->cmd->imageBarrier(fbo->getColorAttachment(0), ResourceUsage::Present);
-	//internal->cmd->submit();
-	internal->renderThread->compileAndSubmit(internal->cmd);
+	internal->cmd->submit();
+	//internal->renderThread->compileAndSubmit(internal->cmd);
 	// does not necessarily show the last submitted command buffer
 	internal->device->present();
 
@@ -608,7 +608,7 @@ void RenderingContext::setFBO(const FBORef& fbo) {
 // ImageBinding ************************************************************************************
 
 ImageBindParameters RenderingContext::getBoundImage(uint8_t unit, uint8_t set) const {
-	auto image = internal->bindingState.getBoundInputImage(set, unit, 0);
+	/*auto image = internal->bindingState.getBoundInputImage(set, unit, 0);
 	ImageBindParameters p;
 	if(!image)
 		return p;
@@ -619,12 +619,13 @@ ImageBindParameters RenderingContext::getBoundImage(uint8_t unit, uint8_t set) c
 	auto usage = image->getImage()->getConfig().usage;
 	p.setReadOperations(usage == ResourceUsage::ShaderResource || usage == ResourceUsage::ShaderWrite || usage == ResourceUsage::General);
 	p.setWriteOperations(usage == ResourceUsage::ShaderWrite || usage == ResourceUsage::General);
-	return p;
+	return p;*/
+	return {};
 }
 
 void RenderingContext::pushBoundImage(uint8_t unit, uint8_t set) {
-	auto image = internal->bindingState.getBoundInputImage(set, unit, 0);
-	internal->imageStacks[unit].emplace(image);
+	//auto image = internal->bindingState.getBoundInputImage(set, unit, 0);
+	//internal->imageStacks[unit].emplace(image);
 }
 
 void RenderingContext::pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam, uint8_t set) {
@@ -633,15 +634,15 @@ void RenderingContext::pushAndSetBoundImage(uint8_t unit, const ImageBindParamet
 }
 
 void RenderingContext::popBoundImage(uint8_t unit, uint8_t set) {
-	WARN_AND_RETURN_IF(internal->imageStacks[unit].empty(), "popBoundImage: Empty stack",);
-	internal->bindingState.bindInputImage(internal->imageStacks[unit].top(), set, unit, 0);
-	internal->imageStacks[unit].pop();
+	//WARN_AND_RETURN_IF(internal->imageStacks[unit].empty(), "popBoundImage: Empty stack",);
+	//internal->bindingState.bindInputImage(internal->imageStacks[unit].top(), set, unit, 0);
+	//internal->imageStacks[unit].pop();
 }
 
 //! \note the texture in iParam may be null to unbind
 void RenderingContext::setBoundImage(uint8_t unit, const ImageBindParameters& iParam, uint8_t set) {
-	ImageView::Ref view = iParam.getTexture() ? iParam.getTexture()->getImageView() : nullptr; 
-	internal->bindingState.bindInputImage(view, set, unit, 0);
+	//ImageView::Ref view = iParam.getTexture() ? iParam.getTexture()->getImageView() : nullptr; 
+	//internal->bindingState.bindInputImage(view, set, unit, 0);
 	// TODO: transfer image to correct usage type
 }
 	
@@ -940,7 +941,7 @@ void RenderingContext::_setUniformOnShader(const ShaderRef& shader, const Unifor
 // TEXTURES **********************************************************************************
 
 const TextureRef RenderingContext::getTexture(uint32_t unit, uint32_t set) const {
-	return internal->bindingState.getBoundTexture(set, unit);
+	return internal->bindingState.getBinding(set, unit, 0).getTexture();
 }
 
 TexUnitUsageParameter RenderingContext::getTextureUsage(uint32_t unit) const {
@@ -966,9 +967,9 @@ void RenderingContext::setTexture(uint32_t unit, const TextureRef& texture, uint
 	if(texture)
 		texture->upload();
 	if(texture.isNotNull())
-		internal->bindingState.bindTexture(texture, set, unit, 0);
+		internal->bindingState.bind(texture, set, unit, 0);
 	else
-		internal->bindingState.bindTexture(internal->dummyTexture, set, unit, 0);
+		internal->bindingState.bind(internal->dummyTexture, set, unit, 0);
 }
 
 // PROJECTION MATRIX *************************************************************************

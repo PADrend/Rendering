@@ -27,17 +27,21 @@
 
 #include <Util/Macros.h>
 
-#define PROFILING_ENABLED 1
-#include <Util/Profiling/Profiler.h>
-#include <Util/Profiling/Logger.h>
-
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 #include <unordered_set>
 #include <algorithm>
 
-INIT_PROFILING_TIME(std::cout);
+#define PROFILING_ENABLED 1
+#ifdef PROFILING_ENABLED
+#include <Util/Profiling/Profiler.h>
+#include <Util/Profiling/Logger.h>
+#include <fstream>
+
+static std::ofstream _out("CmdLog.txt", std::fstream::out);
+INIT_PROFILING_TIME(_out);
+#endif
 
 namespace Rendering {
 
@@ -64,35 +68,46 @@ CommandBuffer::Ref CommandBuffer::create(const QueueRef& queue, bool transient, 
 //-----------------
 
 CommandBuffer::CommandBuffer(const QueueRef& queue, bool primary, bool transient) : queue(queue.get()), primary(primary), transient(transient), state(State::Recording) {
+	reset();
 }
 
 //-----------------
 
 CommandBuffer::~CommandBuffer() {
-	if(handle) queue->freeCommandBuffer(handle, primary);
+	if(handle)
+		queue->freeCommandBuffer(handle, primary, ownerId);
 };
 
 //-----------------
 
-bool CommandBuffer::compile() {
+bool CommandBuffer::compile(CompileContext& context) {
+	#ifdef PROFILING_ENABLED
+		static uint64_t _profilingCount = 0;
+		++_profilingCount;
+	#endif
 	if(state == State::Executable)
 		return true;
 	endRenderPass();
 	WARN_AND_RETURN_IF(state == State::Compiling, "Command Buffer is already compiling.", false);
-	handle = queue->requestCommandBuffer(primary);
+	ownerId = context.ownerId;
+	handle = queue->requestCommandBuffer(primary, context.ownerId);
 	WARN_AND_RETURN_IF(!handle || state == State::Invalid, "Could not compile command buffer: Invalid command buffer.", false);
 	WARN_AND_RETURN_IF(commands.empty(), "Could not compile command buffer: Command list is empty.", false);
 	state = State::Compiling;
 
-	CompileContext context;
 	context.cmd = handle;
-	context.device = queue->getDevice();
-	context.descriptorPool = context.device->getDescriptorPool();
-	context.resourceCache = context.device->getResourceCache();
+	if(!context.device || !context.descriptorPool || !context.resourceCache) {
+		context.device = queue->getDevice();
+		context.descriptorPool = context.device->getDescriptorPool();
+		context.resourceCache = context.device->getResourceCache();
+	}
 
 	vk::CommandBuffer vkCmd(handle);
 	vkCmd.begin({transient ? vk::CommandBufferUsageFlagBits::eOneTimeSubmit : vk::CommandBufferUsageFlagBits::eSimultaneousUse});
 	for(auto& cmd : commands) {
+		#ifdef PROFILING_ENABLED
+			Util::Profiling::ScopedAction _action((_profilingCount==1000) ? &_profiler : nullptr, cmd->getTypeName());
+		#endif
 		if(!cmd->compile(context)) {
 			WARN("Failed to compile command buffer.");
 			state = State::Invalid;
@@ -106,21 +121,34 @@ bool CommandBuffer::compile() {
 
 //-----------------
 
+bool CommandBuffer::compile() {
+	if(state == State::Executable)
+		return true;
+	CompileContext context{};
+	return compile(context);
+}
+
+//-----------------
+
 void CommandBuffer::reset() {
 	WARN_AND_RETURN_IF(state == State::Compiling, "Cannot reset command buffer: Command buffer is compiling.",);
 	endRenderPass();
-	vk::CommandBuffer vkCmd(handle);
-	vkCmd.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+	if(handle) {
+		queue->freeCommandBuffer(handle, primary, ownerId);
+		handle = nullptr;
+	}
 	pipeline.reset();
 	bindings.reset();
 	commands.clear();
+	vk::Device vkDevice(queue->getApiHandle());
+	signalSemaphore = SemaphoreHandle::create(vkDevice.createSemaphore({}), vkDevice);
 	state = State::Recording;
 }
 
 //-----------------
 
 void CommandBuffer::flush() {
-	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording. Call begin() first.",);
+	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
 	const auto& shader = pipeline.getShader();
 	WARN_AND_RETURN_IF(!shader, "Cannot flush command buffer. Invalid shader.",);
 	const auto& layout = shader->getLayout();
@@ -141,7 +169,6 @@ void CommandBuffer::flush() {
 			auto& bindingSet = it.second;
 			if(!bindingSet.isDirty())
 				continue;
-			bindingSet.clearDirty();
 			if(!layout.hasLayoutSet(set))
 				continue;
 			
@@ -183,6 +210,7 @@ void CommandBuffer::beginRenderPass(const FBORef& fbo, bool clearColor, bool cle
 	activeFBO = fbo ? fbo : device->getSwapchain()->getCurrentFBO();
 	pipeline.setFramebufferFormat(activeFBO);
 	beginDebugMarker("Render Pass");
+
 	commands.emplace_back(new BeginRenderPassCommand(activeFBO, clearColors, clearDepthValue, clearStencilValue, clearColor, clearDepth, clearStencil));
 	inRenderPass = true;
 }
@@ -211,14 +239,14 @@ void CommandBuffer::endRenderPass() {
 
 void CommandBuffer::bindBuffer(const BufferObjectRef& buffer, uint32_t set, uint32_t binding, uint32_t arrayElement) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
-	bindings.bindBuffer(buffer, set, binding, arrayElement);
+	bindings.bind(buffer, set, binding, arrayElement);
 }
 
 //-----------------
 
 void CommandBuffer::bindTexture(const TextureRef& texture, uint32_t set, uint32_t binding, uint32_t arrayElement) {
 	WARN_AND_RETURN_IF(!isRecording(), "Command buffer is not recording.",);
-	bindings.bindTexture(texture, set, binding, arrayElement);
+	bindings.bind(texture, set, binding, arrayElement);
 }
 
 //-----------------

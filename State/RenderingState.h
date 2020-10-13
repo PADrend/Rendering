@@ -35,6 +35,13 @@ using ShaderRef = Util::Reference<Shader>;
 class CameraData {
 HAS_DIRTY_FLAG
 public:
+	CameraData() = default;
+	~CameraData() = default;
+	CameraData(CameraData&& o);
+	CameraData(const CameraData& o);
+	CameraData& operator=(CameraData&& o);
+	CameraData& operator=(const CameraData& o);
+
 	void setMatrixCameraToWorld(const Geometry::Matrix4x4f& value);
 	void setMatrixCameraToClipping(const Geometry::Matrix4x4f& value);
 
@@ -77,18 +84,25 @@ enum class ShadingModel {
 class MaterialData {
 HAS_DIRTY_FLAG
 public:
-	void setAmbient(const Util::Color4f& color) { ambient = color; dirty = true; }
-	void setDiffuse(const Util::Color4f& color) { diffuse = color; diffuseMap = nullptr; dirty = true; }
-	void setDiffuse(const TextureRef& texture) { diffuseMap = texture; dirty = true; }
-	void setSpecular(const Util::Color4f& color) { specular = color; specularMap = nullptr; dirty = true; }
-	void setSpecular(const TextureRef& texture) { specularMap = texture; dirty = true; }
-	void setEmission(const Util::Color4f& color) { emission = color; emissionMap = nullptr; dirty = true; }
-	void setEmission(const TextureRef& texture) { emissionMap = texture; dirty = true; }
-	void setEmissionIntensity(float value) { emission.a(value); dirty = true; }
-	void setNormal(const TextureRef& texture) { normalMap = texture; dirty = true; }
-	void setAlphaThreshold(float value) { alphaThreshold = value; dirty = true; }
-	void setAlphaMaskEnabled(bool value) { alphaMask = value; dirty = true; }
-	void setShadingModel(ShadingModel value) { model = value; dirty = true; }
+	MaterialData() = default;
+	~MaterialData();
+	MaterialData(MaterialData&& o);
+	MaterialData(const MaterialData& o);
+	MaterialData& operator=(MaterialData&& o);
+	MaterialData& operator=(const MaterialData& o);
+
+	void setAmbient(const Util::Color4f& color) { dirty |= (ambient != color); ambient = color; }
+	void setDiffuse(const Util::Color4f& color) { dirty |= (diffuse != color); diffuse = color; setDiffuse(nullptr); }
+	void setDiffuse(const TextureRef& texture) { dirty |= (diffuseMap != texture); diffuseMap = texture; }
+	void setSpecular(const Util::Color4f& color) { dirty |= (specular != color); specular = color; setSpecular(nullptr); }
+	void setSpecular(const TextureRef& texture) { dirty |= (specularMap != texture); specularMap = texture; }
+	void setEmission(const Util::Color4f& color) { dirty |= (emission != color); emission = color; setEmission(nullptr); }
+	void setEmission(const TextureRef& texture) { dirty |= (emissionMap != texture); emissionMap = texture; }
+	void setEmissionIntensity(float value) { dirty |= (emission.a() != value); emission.a(value); }
+	void setNormal(const TextureRef& texture) { dirty |= (normalMap != texture); normalMap = texture; }
+	void setAlphaThreshold(float value) { dirty |= (alphaThreshold != value); alphaThreshold = value; }
+	void setAlphaMaskEnabled(bool value) { dirty |= (alphaMask != value); alphaMask = value; }
+	void setShadingModel(ShadingModel value) { dirty |= (model != value); model = value; }
 
 	const Util::Color4f& getAmbient() const { return ambient; }
 	const Util::Color4f& getDiffuse() const { return diffuse; }
@@ -162,12 +176,19 @@ enum class LightType {
 class LightData {
 HAS_DIRTY_FLAG
 public:
-	void setType(LightType value) { type = value; dirty = true; }
-	void setPosition(const Geometry::Vec3& value) { position = value; dirty = true; }
-	void setDirection(const Geometry::Vec3& value) { direction = value; dirty = true; }
-	void setIntensity(const Util::Color4f& value) { intensity = value; dirty = true; }
-	void setConeAngle(const Geometry::Angle& value) { coneAngle = value; cosConeAngle = std::cos(coneAngle.rad()); dirty = true; }
-	void setRange(float value) { range = value; dirty = true; }
+	LightData() = default;
+	~LightData() = default;
+	LightData(LightData&& o);
+	LightData(const LightData& o);
+	LightData& operator=(LightData&& o);
+	LightData& operator=(const LightData& o);
+
+	void setType(LightType value) { dirty |= (type != value); type = value; }
+	void setPosition(const Geometry::Vec3& value) { dirty |= (position != value); position = value; }
+	void setDirection(const Geometry::Vec3& value) { dirty |= (direction != value); direction = value; }
+	void setIntensity(const Util::Color4f& value) { dirty |= (intensity != value); intensity = value; }
+	void setConeAngle(const Geometry::Angle& value) { dirty |= !(coneAngle == value); coneAngle = value; cosConeAngle = std::cos(coneAngle.rad()); }
+	void setRange(float value) { dirty |= (range != value); range = value; }
 
 	LightType getType() const { return type; }
 	const Geometry::Vec3& getPosition() const { return position; }
@@ -199,8 +220,14 @@ private:
 //-------------
 
 class LightSet {
-HAS_DIRTY_FLAG
 public:
+	LightSet() = default;
+	~LightSet() = default;
+	LightSet(LightSet&& o);
+	LightSet(const LightSet& o);
+	LightSet& operator=(LightSet&& o);
+	LightSet& operator=(const LightSet& o);
+
 	size_t addLight(const LightData& light);
 	void removeLight(size_t lightId);
 	void removeLight(const LightData& light) { removeLight(Util::hash(light)); }
@@ -216,6 +243,7 @@ public:
 private:
 	std::vector<LightData> lights;
 	std::map<size_t,uint32_t> lightByHash;
+	bool dirty = true;
 
 public:
 	size_t calcHash() const {
@@ -224,6 +252,9 @@ public:
 			Util::hash_combine(result, it.first);
 		return result;
 	}
+	void markDirty() { dirty = true; }
+	void clearDirty();
+	bool isDirty() const;
 };
 
 //==================================================================
@@ -232,10 +263,17 @@ public:
 class InstanceData {
 HAS_DIRTY_FLAG
 public:
-	void setMatrixModelToCamera(const Geometry::Matrix4x4f& value) { matrix_modelToCamera = value; dirty = true; }
-	void multMatrixModelToCamera(const Geometry::Matrix4x4f& value) { matrix_modelToCamera *= value; dirty = true; }
-	void setMaterialId(uint32_t value) { materialId = value; dirty = true; }
-	void setPointSize(float value) { pointSize = value; dirty = true; }
+	InstanceData() = default;
+	~InstanceData() = default;
+	InstanceData(InstanceData&& o);
+	InstanceData(const InstanceData& o);
+	InstanceData& operator=(InstanceData&& o);
+	InstanceData& operator=(const InstanceData& o);
+
+	void setMatrixModelToCamera(const Geometry::Matrix4x4f& value) { dirty |= (matrix_modelToCamera != value); matrix_modelToCamera = value; }
+	void multMatrixModelToCamera(const Geometry::Matrix4x4f& value) { dirty |= !value.isIdentity(); matrix_modelToCamera *= value; }
+	void setMaterialId(uint32_t value) { dirty |= (materialId != value); materialId = value; }
+	void setPointSize(float value) { dirty |= (pointSize != value); pointSize = value; }
 
 	const Geometry::Matrix4x4f& getMatrixModelToCamera() const { return matrix_modelToCamera; }
 	uint32_t getMaterialId() const { return materialId; }
@@ -278,7 +316,8 @@ public:
 	bool operator==(const RenderingState& o) const {
 		return camera == o.camera &&
 			material == o.material &&
-			lights == o.lights;
+			lights == o.lights &&
+			instance == o.instance;
 	}
 	bool operator!=(const RenderingState& o) const { return !(*this == o); }
 private:
@@ -287,6 +326,11 @@ private:
 	MaterialData material;
 	LightSet lights;
 	InstanceData instance; // For now, only one instance is supported
+
+public:
+	void markDirty() { camera.markDirty(); material.markDirty(); lights.markDirty(); instance.markDirty(); }
+	void clearDirty() { camera.clearDirty(); material.clearDirty(); lights.clearDirty(); instance.clearDirty(); }
+	bool isDirty() const { return camera.isDirty() || material.isDirty() || lights.isDirty() || instance.isDirty(); }
 };
 
 //-------------

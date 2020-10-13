@@ -13,6 +13,7 @@
 #include "CommandBuffer.h"
 #include "../Shader/Shader.h"
 #include "../FBO.h"
+#include "../Texture/Texture.h"
 
 #include <Util/Macros.h>
 #include <Util/StringUtils.h>
@@ -34,7 +35,7 @@ Queue::~Queue() = default;
 
 bool Queue::submit(const CommandBufferRef& commands) {
 	WARN_AND_RETURN_IF(!commands, "Queue: invalid command buffer.", false);
-	WARN_AND_RETURN_IF(!commands->compile(), "Queue: command buffer is not executable.", false);
+	WARN_AND_RETURN_IF(!commands->compile(), "Queue: Command buffer is not executable.", false);
 	std::unique_lock<std::mutex> lock(submitMutex);
 	clearPending();
 	vk::Device vkDevice(handle);
@@ -42,10 +43,11 @@ bool Queue::submit(const CommandBufferRef& commands) {
 	vk::CommandBuffer vkCommandBuffer(commands->getApiHandle());
 	FenceHandle fence = FenceHandle::create(vkDevice.createFence({}), vkDevice);
 	pendingQueue.emplace_back(PendingEntry{commands, fence});
+	vk::Semaphore signalSemaphore(commands->getSignalSemaphore());
 	vkQueue.submit({{
 		0, nullptr, nullptr,
 		1, &vkCommandBuffer,
-		0, nullptr
+		1, &signalSemaphore
 	}}, static_cast<vk::Fence>(fence));
 	return true;
 }
@@ -63,6 +65,7 @@ bool Queue::present() {
 	vk::SwapchainKHR vkSwapchain(swapchain->getApiHandle());
 	vk::Queue vkQueue(handle);
 	auto swapchainIndex = swapchain->getCurrentIndex();
+	
 	vkQueue.presentKHR({
 		0, nullptr,
 		1, &vkSwapchain,
@@ -102,17 +105,34 @@ void Queue::clearPending() {
 
 //-------------
 
-CommandBufferHandle Queue::requestCommandBuffer(bool primary) {
+CommandBufferHandle Queue::requestCommandBuffer(bool primary, uint32_t threadId) {
 	std::unique_lock<std::mutex> lock(poolMutex);
-	return commandPool.create(static_cast<uint32_t>(primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary));
+	int32_t key = static_cast<int32_t>(threadId);
+	if(!primary)
+		key = -(key+1);
+
+	if(!commandPool.hasType(key)) {
+		// lazily create new command pool
+		vk::Device vkDevice(device->getApiHandle());
+		auto pool = CommandPoolHandle::create(vkDevice.createCommandPool({
+			vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+			familyIndex
+		}), vkDevice);
+		commandPool.registerType(key, std::bind(&Queue::createCommandBuffer, this, pool, key >= 0));
+	}
+
+	return commandPool.create(key);
 }
 
 
 //-------------
 
-void Queue::freeCommandBuffer(const CommandBufferHandle& bufferHandle, bool primary) {
+void Queue::freeCommandBuffer(const CommandBufferHandle& bufferHandle, bool primary, uint32_t threadId) {
 	std::unique_lock<std::mutex> lock(poolMutex);
-	commandPool.free(static_cast<uint32_t>(primary ? vk::CommandBufferLevel::ePrimary : vk::CommandBufferLevel::eSecondary), bufferHandle);
+	int32_t key = static_cast<int32_t>(threadId);
+	if(!primary)
+		key = -(key+1);
+	commandPool.free(key, bufferHandle);
 }
 
 //-------------
@@ -130,25 +150,14 @@ bool Queue::init() {
 	capabilities = isPresent | isGraphics | isCompute | isTransfer;
 
 	handle = QueueHandle::create(vkDevice.getQueue(familyIndex, index), vkDevice);
-	if(!handle)
-		return false;
-
-	commandPoolHandle = CommandPoolHandle::create(vkDevice.createCommandPool({
-		vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-		familyIndex
-	}), vkDevice);
-
-	commandPool.registerType(static_cast<uint32_t>(vk::CommandBufferLevel::ePrimary), std::bind(&Queue::createCommandBuffer, this, true));
-	commandPool.registerType(static_cast<uint32_t>(vk::CommandBufferLevel::eSecondary), std::bind(&Queue::createCommandBuffer, this, false));
-	
-	return commandPoolHandle.isNotNull();
+	return handle.isNotNull();
 }
 
 //-------------
 
-CommandBufferHandle Queue::createCommandBuffer(bool primary) {
+CommandBufferHandle Queue::createCommandBuffer(CommandPoolHandle pool, bool primary) {
 	vk::Device vkDevice(handle);
-	vk::CommandPool vkPool(commandPoolHandle);
+	vk::CommandPool vkPool(pool);
 
 	auto buffers = vkDevice.allocateCommandBuffers({
 		vkPool,

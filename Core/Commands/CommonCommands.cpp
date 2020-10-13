@@ -11,6 +11,7 @@
 #include "../Device.h"
 #include "../CommandBuffer.h"
 #include "../ResourceCache.h"
+#include "../DescriptorPool.h"
 #include "../ImageView.h"
 #include "../ImageStorage.h"
 #include "../../Texture/Texture.h"
@@ -37,7 +38,9 @@ ExecuteCommandBufferCommand::~ExecuteCommandBufferCommand() = default;
 
 bool ExecuteCommandBufferCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!buffer, "Cannot execute secondary command buffer. Invalid command buffer.", false);
-	WARN_AND_RETURN_IF(!buffer->compile(), "Failed to compile secondary command buffer.", false);
+	CompileContext subContext(context);
+	subContext.cmd = nullptr;
+	WARN_AND_RETURN_IF(!buffer->compile(subContext), "Failed to compile secondary command buffer.", false);
 	static_cast<vk::CommandBuffer>(context.cmd).executeCommands(static_cast<vk::CommandBuffer>(buffer->getApiHandle()));
 	return true;
 }
@@ -48,9 +51,17 @@ BeginRenderPassCommand::~BeginRenderPassCommand() = default;
 
 //--------------
 
+
+BeginRenderPassCommand::BeginRenderPassCommand(const FBORef& fbo, std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil) :
+	fbo(fbo), colors(colors), depthValue(depthValue), stencilValue(stencilValue), clearColor(clearColor), clearDepth(clearDepth), clearStencil(clearStencil){
+	for(auto& att : fbo->getColorAttachments())
+		lastColorUsages.emplace_back(att.isNotNull() ? att->getLastUsage() : ResourceUsage::Undefined);
+	ResourceUsage lastDepthUsage = fbo->getDepthStencilAttachment() ? fbo->getDepthStencilAttachment()->getLastUsage() : ResourceUsage::Undefined;
+}
+
 bool BeginRenderPassCommand::compile(CompileContext& context) {
 	WARN_AND_RETURN_IF(!fbo || !fbo->isValid(), "Failed to start render pass. Invalid FBO.", false);
-	auto renderPass = context.resourceCache->createRenderPass(fbo, clearColor, clearDepth, clearStencil);
+	auto renderPass = context.resourceCache->createRenderPass(fbo, lastColorUsages, lastDepthUsage, clearColor, clearDepth, clearStencil);
 	WARN_AND_RETURN_IF(!renderPass, "Failed to start render pass. Invalid render pass.", false);
 	auto framebuffer = context.resourceCache->createFramebuffer(fbo, renderPass);
 	WARN_AND_RETURN_IF(!framebuffer, "Failed to start render pass. Invalid framebuffer.", false);

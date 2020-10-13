@@ -90,8 +90,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 			message << std::endl;
 		}
 	}
-	Device* device = reinterpret_cast<Device*>(pUserData);
-	std::cerr << message.str() << std::endl;
+	if(pUserData) {
+		throw std::runtime_error(message.str());
+	} else {
+		std::cerr << message.str() << std::endl;
+	}
 	return VK_FALSE;
 }
 
@@ -125,9 +128,10 @@ struct Device::InternalData {
 
 	std::map<QueueFamily, int32_t> familyIndices;
 	std::vector<Queue::Ref> queues;
+	bool throwOnError;
 
 	
-	bool createInstance(const Device::Ref& device, std::vector<std::string> validationLayers);
+	bool createInstance(const Device::Ref& device, std::vector<std::string> validationLayers, bool throwOnError);
 	bool initPhysicalDevice(const Device::Ref& device);
 	bool createLogicalDevice(const Device::Ref& device);
 	bool createMemoryAllocator(const Device::Ref& device);
@@ -137,7 +141,8 @@ struct Device::InternalData {
 
 //=========================================================================
 
-bool Device::InternalData::createInstance(const Device::Ref& device, std::vector<std::string> validationLayers) {
+bool Device::InternalData::createInstance(const Device::Ref& device, std::vector<std::string> validationLayers, bool _throwOnError) {
+	throwOnError = _throwOnError;
 	if(config.debug)
 		std::cout << "Creating Vulkan instance..." << std::endl;
 
@@ -236,7 +241,7 @@ bool Device::InternalData::createInstance(const Device::Ref& device, std::vector
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
 			debugCallback,
-			reinterpret_cast<void*>(device.get())
+			reinterpret_cast<void*>(throwOnError)
 		});
 		
 	}
@@ -452,9 +457,9 @@ bool Device::InternalData::createDescriptorPools(const Device::Ref& device) {
 
 //=========================================================================
 
-Device::Ref Device::create(Util::UI::WindowRef window, std::vector<std::string> validationLayers) {
+Device::Ref Device::create(Util::UI::WindowRef window, std::vector<std::string> validationLayers, bool throwOnError) {
 	Ref device = new Device(std::move(window));
-	if(!device->init(validationLayers))
+	if(!device->init(validationLayers, throwOnError))
 		device = nullptr;
 	if(!defaultDevice)
 		defaultDevice = device.get();
@@ -611,9 +616,9 @@ const DeviceHandle& Device::getApiHandle() const {
 
 //------------
 
-bool Device::init(std::vector<std::string> validationLayers) {
+bool Device::init(std::vector<std::string> validationLayers, bool throwOnError) {
 
-	if(!internal->createInstance(this, validationLayers)) {
+	if(!internal->createInstance(this, validationLayers, throwOnError)) {
 		WARN("Device: Could not create Vulkan instance.");
 		return false;
 	}
