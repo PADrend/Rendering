@@ -10,6 +10,8 @@
 #include "CommandPool.h"
 #include "CommandBuffer.h"
 #include "Device.h"
+#include "../Shader/Shader.h"
+#include "../FBO.h"
 
 #include <Util/Macros.h>
 
@@ -25,7 +27,7 @@ CommandPool::~CommandPool() = default;
 
 CommandBuffer::Ref CommandPool::requestCommandBuffer(bool primary) {
 	CommandBuffer::Ref obj;
-	while(!active.empty() && active.front()->ready()) {
+	while(!active.empty() && active.front()->getState() == CommandBuffer::State::Free) {
 		if(active.front()->isPrimary())
 			freePrimary.emplace_back(std::move(active.front()));
 		else

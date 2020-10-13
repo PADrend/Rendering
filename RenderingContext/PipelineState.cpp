@@ -8,6 +8,8 @@
 */
 
 #include "PipelineState.h"
+#include "../Shader/Shader.h"
+#include "../FBO.h"
 
 #include <Util/Macros.h>
 
@@ -39,15 +41,7 @@ ColorBlendState& ColorBlendState::setAttachment(const ColorBlendAttachmentState&
 
 //---------------
 
-PipelineState::PipelineState() {
-	setVertexInputState({})
-		.setInputAssemblyState({})
-		.setViewportState({})
-		.setRasterizationState({})
-		.setMultisampleState({})
-		.setDepthStencilState({})
-		.setColorBlendState({});
-}
+PipelineState::PipelineState() { reset(); }
 
 //-------------
 
@@ -58,14 +52,11 @@ PipelineState::PipelineState(PipelineState&& o) {
 		.setRasterizationState(std::move(o.rasterization))
 		.setMultisampleState(std::move(o.multisample))
 		.setDepthStencilState(std::move(o.depthStencil))
-		.setColorBlendState(std::move(o.colorBlend));
-	o.setVertexInputState({})
-		.setInputAssemblyState({})
-		.setViewportState({})
-		.setRasterizationState({})
-		.setMultisampleState({})
-		.setDepthStencilState({})
-		.setColorBlendState({});
+		.setColorBlendState(std::move(o.colorBlend))
+		.setEntryPoint(std::move(o.entrypoint))
+		.setShader(std::move(o.shader))
+		.setFBO(std::move(o.fbo));
+	o.reset();
 }
 
 //-------------
@@ -77,7 +68,10 @@ PipelineState::PipelineState(const PipelineState& o) {
 		.setRasterizationState(o.rasterization)
 		.setMultisampleState(o.multisample)
 		.setDepthStencilState(o.depthStencil)
-		.setColorBlendState(o.colorBlend);
+		.setColorBlendState(o.colorBlend)
+		.setEntryPoint(o.entrypoint)
+		.setShader(o.shader)
+		.setFBO(o.fbo);
 }
 
 //-------------
@@ -89,14 +83,11 @@ PipelineState& PipelineState::operator=(PipelineState&& o) {
 		.setRasterizationState(std::move(o.rasterization))
 		.setMultisampleState(std::move(o.multisample))
 		.setDepthStencilState(std::move(o.depthStencil))
-		.setColorBlendState(std::move(o.colorBlend));
-	o.setVertexInputState({})
-		.setInputAssemblyState({})
-		.setViewportState({})
-		.setRasterizationState({})
-		.setMultisampleState({})
-		.setDepthStencilState({})
-		.setColorBlendState({});
+		.setColorBlendState(std::move(o.colorBlend))
+		.setEntryPoint(std::move(o.entrypoint))
+		.setShader(std::move(o.shader))
+		.setFBO(std::move(o.fbo));
+	o.reset();
 	return *this;
 }
 
@@ -109,7 +100,42 @@ PipelineState& PipelineState::operator=(const PipelineState& o) {
 		.setRasterizationState(o.rasterization)
 		.setMultisampleState(o.multisample)
 		.setDepthStencilState(o.depthStencil)
-		.setColorBlendState(o.colorBlend);
+		.setColorBlendState(o.colorBlend)
+		.setEntryPoint(o.entrypoint)
+		.setShader(o.shader)
+		.setFBO(o.fbo);
+	return *this;
+}
+
+//-------------
+
+PipelineState& PipelineState::reset() {
+	setVertexInputState({})
+		.setInputAssemblyState({})
+		.setViewportState({})
+		.setRasterizationState({})
+		.setMultisampleState({})
+		.setDepthStencilState({})
+		.setColorBlendState({})
+		.setEntryPoint("main")
+		.setShader(nullptr)
+		.setFBO(nullptr);
+		return *this;
+}
+
+//-------------
+
+PipelineState& PipelineState::setShader(const ShaderRef& _shader) {
+	shader = _shader;
+	hashes[PipelineHashEntry::Shader] = shader ? shader->getLayoutHash() : 0;
+	return *this;
+}
+
+//-------------
+
+PipelineState& PipelineState::setFBO(const FBORef& _fbo) {
+	fbo = _fbo;
+	hashes[PipelineHashEntry::FBO] = fbo ? fbo->getLayoutHash() : 0;
 	return *this;
 }
 

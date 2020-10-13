@@ -11,6 +11,7 @@
 #define RENDERING_CORE_PIPELINE_CACHE_H_
 
 #include "Common.h"
+#include "Pipeline.h"
 #include "../RenderingContext/PipelineState.h"
 
 #include <Util/ReferenceCounter.h>
@@ -20,11 +21,6 @@
 namespace Rendering {
 class Device;
 using DeviceRef = Util::Reference<Device>;
-class Pipeline;
-using PipelineRef = Util::Reference<Pipeline>;
-class Shader;
-using ShaderRef = Util::Reference<Shader>;
-
 class PipelineCache : public Util::ReferenceCounter<PipelineCache> {
 public:
 	using Ref = Util::Reference<PipelineCache>;
@@ -32,22 +28,23 @@ public:
 	PipelineCache(const PipelineCache &) = delete;
 	~PipelineCache();
 
+	Pipeline::Ref requestPipeline(PipelineType type, const PipelineState& state, const Pipeline::Ref& parent = nullptr);
+	Pipeline::Ref requestGraphicsPipeline(const PipelineState& state, const Pipeline::Ref& parent = nullptr);
+	Pipeline::Ref requestComputePipeline(const ShaderRef& shader, const std::string& entrypoint = "main", const Pipeline::Ref& parent = nullptr);
+
 	const PipelineCacheHandle& getApiHandle() const { return handle; }
 
 	uint32_t getSize() const { return cache.size(); }
 	void clear() { cache.clear(); }
+	DeviceRef getDevice() const { return device.get(); }
 private:
 	friend class Device;
-	friend class Pipeline;
 	PipelineCache(const DeviceRef& device);
 	bool init();
-	
-	PipelineHandle::Ref requestGraphicsHandle(const PipelineRef& pipeline, const PipelineRef& parent=nullptr);
-	PipelineHandle::Ref requestComputeHandle(const PipelineRef& pipeline, const PipelineRef& parent=nullptr);
 
 	Util::WeakPointer<Device> device;
 	PipelineCacheHandle handle;
-	std::unordered_map<size_t, PipelineHandle::Ref> cache;
+	std::unordered_map<size_t, Pipeline::Ref> cache;
 };
 
 } /* Rendering */

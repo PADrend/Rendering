@@ -12,6 +12,8 @@
 #include "Swapchain.h"
 #include "CommandBuffer.h"
 #include "CommandPool.h"
+#include "../Shader/Shader.h"
+#include "../FBO.h"
 
 #include <Util/Macros.h>
 #include <Util/StringUtils.h>
@@ -23,6 +25,14 @@ namespace Rendering {
 //-------------
 
 bool Queue::submit(const CommandBufferRef& commands) {
+	WARN_AND_RETURN_IF(!commands || !commands->isExecutable(), "Queue: command buffer is not executable.", false);
+	vk::Queue vkQueue(handle);
+	vk::CommandBuffer vkCommandBuffer(commands->getApiHandle());
+	vkQueue.submit({{
+		0, nullptr, nullptr,
+		1, &vkCommandBuffer,
+		0, nullptr
+	}}, {});
 	return true;
 }
 

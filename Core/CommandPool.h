@@ -34,6 +34,7 @@ public:
 	
 	const CommandPoolHandle& getApiHandle() const { return handle; }
 	uint32_t getQueueFamily() const { return queueFamily; }
+	DeviceRef getDevice() const { return device.get(); }
 private:
 	friend class Device;
 	explicit CommandPool(const DeviceRef& device, uint32_t queueFamily);

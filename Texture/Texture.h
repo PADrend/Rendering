@@ -124,6 +124,8 @@ public:
 	// @{
 	const ImageViewRef& getImageView() const { return imageView; }
 	const ImageStorageRef& getImage() const;
+	ResourceUsage getLastUsage() const { return lastUsage; }
+	void _setLastUsage(ResourceUsage usage) { lastUsage = usage; }
 	// @}
 	
 	/*!	@name Deprecated */
@@ -172,6 +174,7 @@ private:
 	Util::FileName fileName;
 	Util::Reference<Util::Bitmap> localBitmap;
 	ImageViewRef imageView;
+	ResourceUsage lastUsage = ResourceUsage::Undefined;
 };
 
 

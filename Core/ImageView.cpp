@@ -67,6 +67,9 @@ static bool checkCompability(const ImageFormat& format, const TextureType& image
 				default: typeValid = false; break;
 			}
 			break;
+		default:
+			WARN("ImageView: image view type '" + getTypeString(config.type) + "' is not a valid view type.");
+			return false;
 	}
 	if(!typeValid) {
 		WARN("ImageView: image view type '" + getTypeString(config.type) + "' is not compatible with type '" + getTypeString(imageType) + "'");

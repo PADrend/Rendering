@@ -22,6 +22,10 @@
 #include <vector>
 
 namespace Rendering {
+class Shader;
+using ShaderRef = Util::Reference<Shader>;
+class FBO;
+using FBORef = Util::Reference<FBO>;
 
 /** @addtogroup context
  * @{
@@ -549,6 +553,7 @@ private:
 	bool dynamicBlendConstant = false;
 };
 
+
 //==================================================================
 // PipelineState
 
@@ -561,6 +566,8 @@ public:
 	PipelineState& operator=(PipelineState&& o);
 	PipelineState& operator=(const PipelineState& o);
 
+	PipelineState& reset();
+	
 	inline PipelineState& setVertexInputState(const VertexInputState& state);
 	inline PipelineState& setInputAssemblyState(const InputAssemblyState& state);
 	inline PipelineState& setViewportState(const ViewportState& state);
@@ -568,6 +575,9 @@ public:
 	inline PipelineState& setMultisampleState(const MultisampleState& state);
 	inline PipelineState& setDepthStencilState(const DepthStencilState& state);
 	inline PipelineState& setColorBlendState(const ColorBlendState& state);
+	inline PipelineState& setEntryPoint(const std::string& value);
+	PipelineState& setShader(const ShaderRef& shader);
+	PipelineState& setFBO(const FBORef& fbo);
 	
 	const VertexInputState& getVertexInputState() const { return vertexInput; }
 	const InputAssemblyState& getInputAssemblyState() const { return inputAssembly; }
@@ -576,6 +586,9 @@ public:
 	const MultisampleState& getMultisampleState() const { return multisample; }
 	const DepthStencilState& getDepthStencilState() const { return depthStencil; }
 	const ColorBlendState& getColorBlendState() const { return colorBlend; }
+	const std::string& getEntryPoint() const { return entrypoint; }
+	const ShaderRef& getShader() const { return shader; }
+	const FBORef& getFBO() const { return fbo; }
 
 	size_t getHash() const {
 		std::size_t result = 0;
@@ -584,7 +597,21 @@ public:
 		return result;
 	}
 private:
-	std::array<size_t, 7> hashes;
+	enum PipelineHashEntry {
+		VertexInput = 0,
+		InputAssembly,
+		Viewport,
+		Rasterization,
+		Multisample,
+		DepthStencil,
+		ColorBlend,
+		EntryPoint,
+		Shader,
+		FBO,
+		EntryCount,
+	};
+
+	std::array<size_t, PipelineHashEntry::EntryCount> hashes;
 
 	VertexInputState vertexInput;
 	InputAssemblyState inputAssembly;
@@ -593,6 +620,9 @@ private:
 	MultisampleState multisample;
 	DepthStencilState depthStencil;
 	ColorBlendState colorBlend;
+	std::string entrypoint;
+	ShaderRef shader;
+	FBORef fbo;
 };
 
 //! @}
@@ -832,13 +862,14 @@ template <> struct hash<PipelineState> {
 }
 
 namespace Rendering {
-inline PipelineState& PipelineState::setVertexInputState(const VertexInputState& state) { vertexInput = state; hashes[0] = std::hash<VertexInputState>{}(state); return *this; }
-inline PipelineState& PipelineState::setInputAssemblyState(const InputAssemblyState& state) { inputAssembly = state; hashes[1] = std::hash<InputAssemblyState>{}(state); return *this; }
-inline PipelineState& PipelineState::setViewportState(const ViewportState& state) { viewport = state; hashes[2] = std::hash<ViewportState>{}(state); return *this; }
-inline PipelineState& PipelineState::setRasterizationState(const RasterizationState& state) { rasterization = state; hashes[3] = std::hash<RasterizationState>{}(state); return *this; }
-inline PipelineState& PipelineState::setMultisampleState(const MultisampleState& state) { multisample = state; hashes[4] = std::hash<MultisampleState>{}(state); return *this; }
-inline PipelineState& PipelineState::setDepthStencilState(const DepthStencilState& state) { depthStencil = state; hashes[5] = std::hash<DepthStencilState>{}(state); return *this; }
-inline PipelineState& PipelineState::setColorBlendState(const ColorBlendState& state) { colorBlend = state; hashes[6] = std::hash<ColorBlendState>{}(state); return *this; }
+inline PipelineState& PipelineState::setVertexInputState(const VertexInputState& state) { vertexInput = state; hashes[PipelineHashEntry::VertexInput] = std::hash<VertexInputState>{}(state); return *this; }
+inline PipelineState& PipelineState::setInputAssemblyState(const InputAssemblyState& state) { inputAssembly = state; hashes[PipelineHashEntry::InputAssembly] = std::hash<InputAssemblyState>{}(state); return *this; }
+inline PipelineState& PipelineState::setViewportState(const ViewportState& state) { viewport = state; hashes[PipelineHashEntry::Viewport] = std::hash<ViewportState>{}(state); return *this; }
+inline PipelineState& PipelineState::setRasterizationState(const RasterizationState& state) { rasterization = state; hashes[PipelineHashEntry::Rasterization] = std::hash<RasterizationState>{}(state); return *this; }
+inline PipelineState& PipelineState::setMultisampleState(const MultisampleState& state) { multisample = state; hashes[PipelineHashEntry::Multisample] = std::hash<MultisampleState>{}(state); return *this; }
+inline PipelineState& PipelineState::setDepthStencilState(const DepthStencilState& state) { depthStencil = state; hashes[PipelineHashEntry::DepthStencil] = std::hash<DepthStencilState>{}(state); return *this; }
+inline PipelineState& PipelineState::setColorBlendState(const ColorBlendState& state) { colorBlend = state; hashes[PipelineHashEntry::ColorBlend] = std::hash<ColorBlendState>{}(state); return *this; }
+inline PipelineState& PipelineState::setEntryPoint(const std::string& value) { entrypoint = value; hashes[PipelineHashEntry::EntryPoint] = std::hash<std::string>{}(value); return *this; }
 } /* Rendering */
 
 #endif /* end of include guard: RENDERING_CORE_PIPELINE_STATE_H_ */

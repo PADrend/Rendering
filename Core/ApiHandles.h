@@ -9,9 +9,7 @@
 #ifndef RENDERING_VK_HANDLES
 #define RENDERING_VK_HANDLES
 
-#include <Util/ReferenceCounter.h>
-
-#include <memory>
+#include <utility>
 
 /** @defgroup rendering_core Core
  * Provides a low-level API to the rendering backend (Vulkan).
@@ -36,9 +34,8 @@ struct HandlePair {
 #define API_HANDLE_DECLARE(Handle) typedef struct Vk##Handle##_T* Vk##Handle
 #define API_HANDLE_DECLARE_MA(Handle) typedef struct Vma##Handle##_T* Vma##Handle
 
-#define API_BASE_HANDLE(HandleType, ApiType, ParentApiType) class HandleType##Handle : public Util::ReferenceCounter<HandleType##Handle> { \
+#define API_BASE_HANDLE(HandleType, ApiType, ParentApiType) class HandleType##Handle { \
 public: \
-	using Ref = Util::Reference<HandleType##Handle>; \
 	HandleType##Handle() {} \
 	HandleType##Handle(const ApiType& handle, const ParentApiType& parent = nullptr, bool owner = true) : parent(parent), handle(handle), owner(owner) {} \
 	HandleType##Handle(const HandleType##Handle&) = delete; \

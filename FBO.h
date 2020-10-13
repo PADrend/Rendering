@@ -88,6 +88,7 @@ public:
 	
 	uint32_t getWidth() const { return width; }
 	uint32_t getHeight() const { return height; }
+	uint32_t getColorAttachmentCount() const { return colorAttachments.size(); }
 	
 	bool isValid() const { return valid; }
 	void invalidate() { valid = false; hash = 0; }

@@ -14,12 +14,15 @@
 #include "../RenderingContext/RenderingContext.h"
 #include "../RenderingContext/PipelineState.h"
 #include "../Core/ApiHandles.h"
+#include "../Core/CommandBuffer.h"
+#include "../Core/CommandPool.h"
 #include "../Core/Device.h"
 #include "../Core/Queue.h"
 #include "../Core/Swapchain.h"
 #include "../Core/ImageStorage.h"
 #include "../Core/ImageView.h"
 #include "../Core/Pipeline.h"
+#include "../Core/PipelineCache.h"
 #include "../FBO.h"
 #include "../Texture/Texture.h"
 #include "../Shader/Shader.h"
@@ -78,6 +81,9 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	auto device = Device::create(TestUtils::window.get(), {"Test", 0u, 0u, true});
 	vk::Device vkDevice(device->getApiHandle());
 	
+	auto graphicsQueue = device->getQueue(Queue::Family::Graphics);
+	auto swapchain = device->getSwapchain();
+
 	// --------------------------------------------
 	// create graphics pipeline
 	
@@ -85,111 +91,46 @@ TEST_CASE("DrawTest_testBox", "[DrawTest]") {
 	auto shader = Shader::createShader(device, vertexShader, fragmentShader);
 	REQUIRE(shader->init());
 
-	auto pipeline = GraphicsPipeline::create(device, {}, shader);
-	auto state = pipeline->getState();
+	PipelineState state{};
 	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(TestUtils::window->getWidth()), static_cast<int32_t>(TestUtils::window->getHeight())};
 	state.setViewportState({windowRect, windowRect});
-	pipeline->setState(state);
+	state.setShader(shader);
 		
-	auto graphicsQueue = device->getQueue(Queue::Family::Graphics);
-	auto swapchain = device->getSwapchain();
-	
 	// --------------------------------------------
 	// command queue
 	
 	// create command buffers
 	auto swapchainSize = swapchain->getSize();
-	auto commandPool = vkDevice.createCommandPoolUnique({ {}, graphicsQueue->getFamilyIndex() });
 
-	std::vector<vk::UniqueCommandBuffer> commandBuffers = vkDevice.allocateCommandBuffersUnique({
-		*commandPool, 
-		vk::CommandBufferLevel::ePrimary, 
-		swapchainSize
-	});
-	pipeline->setFBO(swapchain->getFBO(0));
-	REQUIRE(pipeline->validate());
-	vk::Pipeline vkPipeline(pipeline->getApiHandle());
-	
+
+	std::vector<CommandBuffer::Ref> commandBuffers;
 	for(uint32_t i=0; i<swapchainSize; ++i) {
 		auto& fbo = swapchain->getFBO(i);
-		vk::RenderPass renderPass(fbo->getRenderPass());
-		vk::Framebuffer framebuffer(fbo->getApiHandle());
 		auto& attachment = fbo->getColorTexture();
-		auto& view = attachment->getImageView();
-		auto& image = attachment->getImage();
+
+		auto cmdBuffer = graphicsQueue->requestCommandBuffer();
+		commandBuffers.emplace_back(cmdBuffer);
 		
 		// record commands
-		auto& cmdBuffer = commandBuffers[i];
-		cmdBuffer->begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
-		
-		vk::ImageMemoryBarrier barrier;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.oldLayout = vk::ImageLayout::eUndefined;
-		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.image = image->getApiHandle();
-		barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor,
-			view->getMipLevel(), view->getMipLevelCount(),
-			view->getLayer(), view->getLayerCount()
-		};
-		
-		cmdBuffer->pipelineBarrier(
-			vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands, 
-			vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands, 
-			{}, {}, {}, {barrier}
-		);
-		
-		vk::ClearValue clearColor(vk::ClearColorValue{std::array<float,4>{0.0f, 0.0f, 0.0f, 1.0f}});
-		cmdBuffer->beginRenderPass({
-			renderPass, framebuffer,
-			vk::Rect2D{ {0, 0}, {fbo->getWidth(), fbo->getHeight()} },
-			1, &clearColor
-		}, vk::SubpassContents::eInline);
-		cmdBuffer->bindPipeline(vk::PipelineBindPoint::eGraphics, vkPipeline);
-		cmdBuffer->draw(3, 1, 0, 0);
-		
+		cmdBuffer->begin();
+
+		state.setFBO(fbo);
+		cmdBuffer->setPipeline(state);
+		cmdBuffer->textureBarrier(attachment, ResourceUsage::RenderTarget);
+
+		cmdBuffer->beginRenderPass({{0,0,0,1}});
+		cmdBuffer->draw(3);
 		cmdBuffer->endRenderPass();
 				
-		barrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
-		
-		cmdBuffer->pipelineBarrier(
-			vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands, 
-			vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eAllCommands, 
-			{}, {}, {}, {barrier}
-		);
-		
+		cmdBuffer->textureBarrier(attachment, ResourceUsage::Present);
 		cmdBuffer->end();
 	}
 	// --------------------------------------------
 	// draw
-			
-	auto imageAvailableSemaphore = vkDevice.createSemaphoreUnique({});
-	auto renderFinishedSemaphore = vkDevice.createSemaphoreUnique({});
 	
 	for(uint_fast32_t round = 0; round < 100; ++round) {
 		auto index = swapchain->getCurrentIndex();
-
-		vk::PipelineStageFlags waitStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		/*graphicsQueue.submit({{
-			1, &imageAvailableSemaphore.get(), &waitStageMask, 
-			1, &commandBuffers[index].get(), 
-			1, &renderFinishedSemaphore.get() 
-		}}, {});
-		
-		presentQueue.presentKHR({
-			1, &renderFinishedSemaphore.get(),
-			1, &swapchain,
-			&index
-		});*/
-		vk::Queue queue(graphicsQueue->getApiHandle());
-		queue.submit({{
-			0, nullptr, &waitStageMask, 
-			1, &commandBuffers[index].get(), 
-			0, nullptr 
-		}}, {});
-		
+		graphicsQueue->submit(commandBuffers[index]);		
 		graphicsQueue->present();
 	}
 	vkDevice.waitIdle();

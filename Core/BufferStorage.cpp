@@ -97,10 +97,10 @@ bool BufferStorage::init() {
 
 	VmaAllocationCreateInfo allocCreateInfo{};
 	switch(config.memoryUsage) {
-		case CpuOnly: allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY; break;
-		case GpuOnly: allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; break;
-		case CpuToGpu: allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU; break;
-		case GpuToCpu: allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_TO_CPU; break;
+		case MemoryUsage::CpuOnly: allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY; break;
+		case MemoryUsage::GpuOnly: allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; break;
+		case MemoryUsage::CpuToGpu: allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU; break;
+		case MemoryUsage::GpuToCpu: allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_TO_CPU; break;
 		default: allocCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN; break;
 	}
 

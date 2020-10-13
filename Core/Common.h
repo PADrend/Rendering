@@ -20,12 +20,19 @@ using Vec3ui = _Vec3<uint32_t>;
 
 namespace Rendering {
 
-enum MemoryUsage {
+enum class MemoryUsage {
 	Unknown, //! No intended memory usage specified.
 	CpuOnly, //! Memory will be mappable on host.
 	GpuOnly, //! Memory will be used on device only.
 	CpuToGpu, //! Memory that is both mappable on host and preferably fast to access by GPU.
 	GpuToCpu //! Memory mappable on host and cached.
+};
+
+//---------------------------
+
+enum class PipelineType {
+	Graphics = 0,
+	Compute
 };
 
 //---------------------------
@@ -112,6 +119,22 @@ enum class InternalFormat : std::uint8_t {
 
 //---------------------------
 
+//! Resource usage. Keeps track of how a resource was last used
+enum class ResourceUsage {
+	Undefined = 0,
+	PreInitialized,
+	General,
+	RenderTarget,
+	DepthStencil,
+	ShaderResource,
+	CopySource,
+	CopyDestination,
+	Present,
+	ShaderWrite,
+};
+
+//---------------------------
+
 struct ImageFormat {
 	Geometry::Vec3ui extent;
 	InternalFormat pixelFormat = InternalFormat::RGBA8Unorm;
@@ -124,11 +147,11 @@ struct ImageFormat {
 
 uint32_t convertToApiFormat(const InternalFormat& format);
 
-//-------------
+//---------------------------
 
 } /* Rendering */
 
-//-------------
+//---------------------------
 
 template <> struct std::hash<Rendering::ImageFormat> {
 	std::size_t operator()(const Rendering::ImageFormat &format) const {
@@ -144,6 +167,6 @@ template <> struct std::hash<Rendering::ImageFormat> {
 	}
 };
 
-//-------------
+//---------------------------
 
 #endif /* end of include guard: RENDERING_CORE_COMMON_H_ */
