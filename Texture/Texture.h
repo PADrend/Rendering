@@ -74,11 +74,11 @@ public:
 	using Ref = Util::Reference<Texture>;
 	using Format = ImageFormat;
 	
-	static Ref create(const DeviceRef& device, const Format& format, const SamplerRef& sampler = nullptr);
-	static Ref create(const DeviceRef& device, const ImageStorageRef& image, const SamplerRef& sampler = nullptr);
-	static Ref create(const DeviceRef& device, const ImageViewRef& image, const SamplerRef& sampler = nullptr);
+	RENDERINGAPI static Ref create(const DeviceRef& device, const Format& format, const SamplerRef& sampler = nullptr);
+	RENDERINGAPI static Ref create(const DeviceRef& device, const ImageStorageRef& image, const SamplerRef& sampler = nullptr);
+	RENDERINGAPI static Ref create(const DeviceRef& device, const ImageViewRef& image, const SamplerRef& sampler = nullptr);
 
-	~Texture();
+	RENDERINGAPI ~Texture();
 
 	uint32_t getDataSize() const { return Rendering::getDataSize(format); }
 	const Format & getFormat() const { return format; }
@@ -91,31 +91,31 @@ public:
 	/*!	@name Image data manipulation */
 	// @{
 
-	void allocateLocalData();
+	RENDERINGAPI void allocateLocalData();
 
 	/*! Returns a pointer to the local data.
 		\note if the texture has no local data, it is downloaded automatically */
-	uint8_t * openLocalData();
+	RENDERINGAPI uint8_t * openLocalData();
 	[[deprecated]]
-	uint8_t * openLocalData(RenderingContext & context) { return openLocalData(); }
+	RENDERINGAPI uint8_t * openLocalData(RenderingContext & context) { return openLocalData(); }
 
-	uint8_t * getLocalData();
-	const uint8_t * getLocalData() const;
+	RENDERINGAPI uint8_t * getLocalData();
+	RENDERINGAPI const uint8_t * getLocalData() const;
 	
 	void dataChanged() { dataHasChanged = true; }
 
 	Util::Bitmap* getLocalBitmap() const { return localBitmap.get(); }
 	
-	void upload(ResourceUsage usage=ResourceUsage::General);
-	void download();
-	void clear(const Util::Color4f& color={});
-	void release();
+	RENDERINGAPI void upload(ResourceUsage usage=ResourceUsage::General);
+	RENDERINGAPI void download();
+	RENDERINGAPI void clear(const Util::Color4f& color={});
+	RENDERINGAPI void release();
 	// @}
 
 	/*!	@name Mipmaps */
 	// @{
 	void planMipmapCreation() { mipmapCreationIsPlanned = true; }
-	void createMipmaps(RenderingContext& context);
+	RENDERINGAPI void createMipmaps(RenderingContext& context);
 	bool getHasMipmaps() const { return hasMipmaps; }
 	// @}
 	
@@ -128,20 +128,20 @@ public:
 	/*!	@name Internal */
 	// @{
 	const ImageViewRef& getImageView() const { return imageView; }
-	ImageStorageRef getImage() const;
+	RENDERINGAPI ImageStorageRef getImage() const;
 	const SamplerRef& getSampler() const { return sampler; }
 	// @}
 	
 	/*!	@name Deprecated */
 	// @{
 	[[deprecated]]
-	Texture(Format format);
+	RENDERINGAPI Texture(Format format);
 	[[deprecated]]
-	bool getUseLinearMinFilter() const;
+	RENDERINGAPI bool getUseLinearMinFilter() const;
 	[[deprecated]]
-	bool getUseLinearMagFilter() const;
+	RENDERINGAPI bool getUseLinearMagFilter() const;
 	[[deprecated]]
-	uint32_t _prepareForBinding(RenderingContext & context);
+	RENDERINGAPI uint32_t _prepareForBinding(RenderingContext & context);
 	[[deprecated]]
 	bool isGLTextureValid()const { return isValid(); }
 	[[deprecated]]
@@ -153,7 +153,7 @@ public:
 	[[deprecated]]
 	void _createGLID(RenderingContext & context) {}
 	[[deprecated]]
-	void _uploadGLTexture(RenderingContext & context, int level=0);
+	RENDERINGAPI void _uploadGLTexture(RenderingContext & context, int level=0);
 	[[deprecated]]
 	void downloadGLTexture(RenderingContext & context) { download(); }
 	[[deprecated]]
@@ -161,14 +161,14 @@ public:
 	[[deprecated]]
 	void clearGLData(const Util::Color4f& color={}) { clear(color); }
 	[[deprecated]]
-	void _setGLId(uint32_t glId);
+	RENDERINGAPI void _setGLId(uint32_t glId);
 	[[deprecated]]
-	void enableComparision(RenderingContext & context, Comparison::function_t func);
+	RENDERINGAPI void enableComparision(RenderingContext & context, Comparison::function_t func);
 	[[deprecated]]
 	BufferObject* getBufferObject() const { return nullptr; }
 	// @}
 private:
-	Texture(const DeviceRef& device, const Format& format, const SamplerRef& sampler);
+	RENDERINGAPI Texture(const DeviceRef& device, const Format& format, const SamplerRef& sampler);
 
 	Device* device;
 	Format format;

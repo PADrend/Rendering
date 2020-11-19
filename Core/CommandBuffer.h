@@ -56,32 +56,32 @@ public:
 		Executable,
 	};
 
-	static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool transient=true, bool primary=true);
-	static Ref create(const QueueRef& queue, bool transient=true, bool primary=true);
+	RENDERINGAPI static Ref create(const DeviceRef& device, QueueFamily family=QueueFamily::Graphics, bool transient=true, bool primary=true);
+	RENDERINGAPI static Ref create(const QueueRef& queue, bool transient=true, bool primary=true);
 	
-	~CommandBuffer();
+	RENDERINGAPI ~CommandBuffer();
 	
 	//! @name Command buffer recording & executing
 	//! @{
-	void reset();
-	void flush();
-	void submit(bool wait=false);
-	void execute(const Ref& buffer);
-	bool compile(CompileContext& context);
-	bool compile();
+	RENDERINGAPI void reset();
+	RENDERINGAPI void flush();
+	RENDERINGAPI void submit(bool wait=false);
+	RENDERINGAPI void execute(const Ref& buffer);
+	RENDERINGAPI bool compile(CompileContext& context);
+	RENDERINGAPI bool compile();
 
-	void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, bool clearStencil=true);
-	void endRenderPass();
-	void prepareForPresent();
-	void addCommand(Command* cmd);
+	RENDERINGAPI void beginRenderPass(const FBORef& fbo=nullptr, bool clearColor=true, bool clearDepth=true, bool clearStencil=true);
+	RENDERINGAPI void endRenderPass();
+	RENDERINGAPI void prepareForPresent();
+	RENDERINGAPI void addCommand(Command* cmd);
 	//! @}
 
 	//! @name Binding commands
 	//! @{
-	void bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers);
-	void bindIndexBuffer(const BufferObjectRef& buffer);
+	RENDERINGAPI void bindBuffer(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	RENDERINGAPI void bindTexture(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	RENDERINGAPI void bindVertexBuffers(uint32_t firstBinding, const std::vector<BufferObjectRef>& buffers);
+	RENDERINGAPI void bindIndexBuffer(const BufferObjectRef& buffer);
 	void setBindings(const BindingState& state) { bindings = state; }
 	void updateBindings(const BindingState& state) { bindings.merge(state); }
 	BindingState& getBindings() { return bindings; }
@@ -89,7 +89,7 @@ public:
 
 	//! @name Push constants
 	//! @{
-	void pushConstants(const uint8_t* data, size_t size, size_t offset=0);
+	RENDERINGAPI void pushConstants(const uint8_t* data, size_t size, size_t offset=0);
 	void pushConstants(const std::vector<uint8_t>& data, size_t offset=0) {
 		pushConstants(data.data(), data.size(), offset);
 	}
@@ -101,43 +101,43 @@ public:
 
 	//! @name Clear commands
 	//! @{
-	void clear(bool clearColor=true, bool clearDepth=true, bool clearStencil=true, const Geometry::Rect_i& rect={});
-	void setClearColor(const std::vector<Util::Color4f>& colors);
-	void setClearDepthValue(float depth);
-	void setClearStencilValue(uint32_t stencil);
-	void clearColor(const std::vector<Util::Color4f>& colors, const Geometry::Rect_i& rect={});
-	void clearDepth(float depth, const Geometry::Rect_i& rect={});
-	void clearStencil(uint32_t stencil, const Geometry::Rect_i& rect={});
-	void clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect={});
-	void clearImage(const TextureRef& texture, const Util::Color4f& color);
-	void clearImage(const ImageViewRef& view, const Util::Color4f& color);
-	void clearImage(const ImageStorageRef& image, const Util::Color4f& color);
+	RENDERINGAPI void clear(bool clearColor=true, bool clearDepth=true, bool clearStencil=true, const Geometry::Rect_i& rect={});
+	RENDERINGAPI void setClearColor(const std::vector<Util::Color4f>& colors);
+	RENDERINGAPI void setClearDepthValue(float depth);
+	RENDERINGAPI void setClearStencilValue(uint32_t stencil);
+	RENDERINGAPI void clearColor(const std::vector<Util::Color4f>& colors, const Geometry::Rect_i& rect={});
+	RENDERINGAPI void clearDepth(float depth, const Geometry::Rect_i& rect={});
+	RENDERINGAPI void clearStencil(uint32_t stencil, const Geometry::Rect_i& rect={});
+	RENDERINGAPI void clearDepthStencil(float depth, uint32_t stencil, const Geometry::Rect_i& rect={});
+	RENDERINGAPI void clearImage(const TextureRef& texture, const Util::Color4f& color);
+	RENDERINGAPI void clearImage(const ImageViewRef& view, const Util::Color4f& color);
+	RENDERINGAPI void clearImage(const ImageStorageRef& image, const Util::Color4f& color);
 	//! @}
 
 	//! @name Draw commands
 	//! @{
-	void draw(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0);
-	void drawIndexed(uint32_t indexCount, uint32_t instanceCount=1, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t firstInstance=0);
-	void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);
-	void drawIndexedIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);
+	RENDERINGAPI void draw(uint32_t vertexCount, uint32_t instanceCount=1, uint32_t firstVertex=0, uint32_t firstInstance=0);
+	RENDERINGAPI void drawIndexed(uint32_t indexCount, uint32_t instanceCount=1, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t firstInstance=0);
+	RENDERINGAPI void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);
+	RENDERINGAPI void drawIndexedIndirect(const BufferObjectRef& buffer, uint32_t drawCount=0, uint32_t stride=0, size_t offset=0);
 	//! @}
 
 	//! @name Copy commands
 	//! @{
-	void copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size, size_t srcOffset=0, size_t tgtOffset=0);
-	void copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size, size_t srcOffset=0, size_t tgtOffset=0);
-	void updateBuffer(const BufferStorageRef& buffer, const uint8_t* data, size_t size, size_t offset=0);
-	void copyImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion);
-	void copyBufferToImage(const BufferStorageRef& srcBuffer, const ImageStorageRef& tgtImage, size_t srcOffset, const ImageRegion& tgtRegion);
-	void copyImageToBuffer(const ImageStorageRef& srcImage, const BufferStorageRef& tgtBuffer, const ImageRegion& srcRegion, size_t tgtOffset);
-	void blitImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion, ImageFilter filter=ImageFilter::Nearest);
+	RENDERINGAPI void copyBuffer(const BufferStorageRef& srcBuffer, const BufferStorageRef& tgtBuffer, size_t size, size_t srcOffset=0, size_t tgtOffset=0);
+	RENDERINGAPI void copyBuffer(const BufferObjectRef& srcBuffer, const BufferObjectRef& tgtBuffer, size_t size, size_t srcOffset=0, size_t tgtOffset=0);
+	RENDERINGAPI void updateBuffer(const BufferStorageRef& buffer, const uint8_t* data, size_t size, size_t offset=0);
+	RENDERINGAPI void copyImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion);
+	RENDERINGAPI void copyBufferToImage(const BufferStorageRef& srcBuffer, const ImageStorageRef& tgtImage, size_t srcOffset, const ImageRegion& tgtRegion);
+	RENDERINGAPI void copyImageToBuffer(const ImageStorageRef& srcImage, const BufferStorageRef& tgtBuffer, const ImageRegion& srcRegion, size_t tgtOffset);
+	RENDERINGAPI void blitImage(const ImageStorageRef& srcImage, const ImageStorageRef& tgtImage, const ImageRegion& srcRegion, const ImageRegion& tgtRegion, ImageFilter filter=ImageFilter::Nearest);
 	//! @}
 
 	//! @name Memory barriers
 	//! @{
-	void imageBarrier(const TextureRef& texture, ResourceUsage newUsage);
-	void imageBarrier(const ImageStorageRef& image, ResourceUsage newUsage);
-	void imageBarrier(const ImageViewRef& image, ResourceUsage newUsage);
+	RENDERINGAPI void imageBarrier(const TextureRef& texture, ResourceUsage newUsage);
+	RENDERINGAPI void imageBarrier(const ImageStorageRef& image, ResourceUsage newUsage);
+	RENDERINGAPI void imageBarrier(const ImageViewRef& image, ResourceUsage newUsage);
 	//void bufferBarrier(const BufferObjectRef& buffer, ResourceUsage newUsage);
 	//! @}
 
@@ -157,7 +157,7 @@ public:
 	void setFramebufferFormat(const FBORef& fbo) { pipeline.setFramebufferFormat(fbo); }
 	void setEntryPoint(const std::string& value) { pipeline.setEntryPoint(value); }
 	void setShader(const ShaderRef& shader) { pipeline.setShader(shader); }
-	void setFBO(const FBORef& fbo);
+	RENDERINGAPI void setFBO(const FBORef& fbo);
 	
 	const VertexInputState& getVertexInputState() const { return pipeline.getVertexInputState(); }
 	const InputAssemblyState& getInputAssemblyState() const { return pipeline.getInputAssemblyState(); }
@@ -175,8 +175,8 @@ public:
 
 	//! @name Dynamic state
 	//! @{
-	void setScissor(const Geometry::Rect_i& scissor);
-	void setLineWidth(float width);
+	RENDERINGAPI void setScissor(const Geometry::Rect_i& scissor);
+	RENDERINGAPI void setLineWidth(float width);
 	//! @}
 
 
@@ -194,8 +194,8 @@ public:
 	//! @{
 	void beginDebugMarker(const std::string& name, const Util::Color4f& color={});
 	void insertDebugMarker(const std::string& name, const Util::Color4f& color={});
-	void endDebugMarker();
-	void setDebugName(const std::string& name);
+	RENDERINGAPI void endDebugMarker();
+	RENDERINGAPI void setDebugName(const std::string& name);
 	//! @}
 
 	//! @name Internal

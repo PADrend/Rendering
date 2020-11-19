@@ -30,10 +30,10 @@ public:
 		uint32_t layerCount = 1;
 	};
 	using Ref = Util::Reference<ImageView>;
-	static Ref create(const ImageStorageRef& image, const Configuration& config);
+	RENDERINGAPI static Ref create(const ImageStorageRef& image, const Configuration& config);
 	ImageView(ImageView &&) = default;
 	ImageView(const ImageView &) = delete;
-	~ImageView();
+	RENDERINGAPI ~ImageView();
 
 	const ImageStorageRef& getImage() const { return image; }
 	const Configuration& getConfig() const { return config; }
@@ -47,7 +47,7 @@ public:
 	
 	//! @name Debugging
 	//! @{	
-	void setDebugName(const std::string& name);
+	RENDERINGAPI void setDebugName(const std::string& name);
 	//! @}
 private:
 	ImageView(const ImageStorageRef& image, const Configuration& config);

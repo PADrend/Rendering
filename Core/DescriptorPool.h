@@ -42,20 +42,20 @@ public:
 		uint32_t totalCount = 0;
 	};
 
-	static Ref create(const DeviceRef& device, const Configuration& config);
+	RENDERINGAPI static Ref create(const DeviceRef& device, const Configuration& config);
 
-	~DescriptorPool();
+	RENDERINGAPI ~DescriptorPool();
 	DescriptorPool(DescriptorPool&& o) = delete;
 	DescriptorPool(const DescriptorPool& o) = delete;
 
-	DescriptorSetRef requestDescriptorSet(const ShaderResourceLayoutSet& layout, const BindingSet& bindings);
-	void reset();
+	RENDERINGAPI DescriptorSetRef requestDescriptorSet(const ShaderResourceLayoutSet& layout, const BindingSet& bindings);
+	RENDERINGAPI void reset();
 
 	uint32_t getMaxDescriptorCount(ShaderResourceType type) const { return config.counts[static_cast<uint32_t>(type)]; }
 
 	const DescriptorPoolHandle& getApiHandle() const { return handle; }
 
-	void setDebugName(const std::string& name);
+	RENDERINGAPI void setDebugName(const std::string& name);
 private:
 	friend class DescriptorSet;
 	explicit DescriptorPool(const DeviceRef& device, const Configuration& config);

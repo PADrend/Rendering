@@ -28,10 +28,10 @@ class RenderThread : public Util::ReferenceCounter<RenderThread> {
 public:
 	using Task = std::function<void ()>;
 	using Ref = Util::Reference<RenderThread>;
-	static const Ref& get();
+	RENDERINGAPI static const Ref& get();
 	RenderThread(RenderThread &&) = default;
 	RenderThread(const RenderThread &) = delete;
-	~RenderThread();
+	RENDERINGAPI ~RenderThread();
 
 	static uint64_t addTask(const Task& task) { return get()->_addTask(task); }
 	static void sync(uint64_t taskId) { get()->_sync(taskId); }

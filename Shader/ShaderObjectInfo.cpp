@@ -35,6 +35,8 @@ const uint32_t ShaderObjectInfo::SHADER_STAGE_GEOMETRY = static_cast<uint32_t>(S
 const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_CONTROL = static_cast<uint32_t>(ShaderStage::TessellationControl);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_EVALUATION = static_cast<uint32_t>(ShaderStage::TessellationEvaluation);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_COMPUTE = static_cast<uint32_t>(ShaderStage::Compute);
+const uint32_t ShaderObjectInfo::SHADER_STAGE_TASK = static_cast<uint32_t>(ShaderStage::Undefined);
+const uint32_t ShaderObjectInfo::SHADER_STAGE_MESH = static_cast<uint32_t>(ShaderStage::Undefined);
 
 //-------------
 
@@ -275,7 +277,13 @@ ShaderObjectInfo ShaderObjectInfo::createCompute(const std::string & code) {
 	return ShaderObjectInfo(ShaderStage::Compute, code);
 }
 
-//-------------
+ShaderObjectInfo ShaderObjectInfo::createMesh(const std::string & code) {
+	throw std::logic_error("No support for GL_NV_mesh_shader.");
+}
+
+ShaderObjectInfo ShaderObjectInfo::createTask(const std::string & code) {
+	throw std::logic_error("No support for GL_NV_mesh_shader.");
+}
 
 ShaderObjectInfo ShaderObjectInfo::loadVertex(const Util::FileName & file) {
 	return createVertex(Util::FileUtils::getParsedFileContents(file)).setFileName(file);
@@ -299,7 +307,13 @@ ShaderObjectInfo ShaderObjectInfo::loadCompute(const Util::FileName & file) {
 	return createCompute(Util::FileUtils::getParsedFileContents(file)).setFileName(file);
 }
 
-//-------------
+ShaderObjectInfo ShaderObjectInfo::loadMesh(const Util::FileName & file) {
+	return createMesh(Util::FileUtils::getParsedFileContents(file)).setFileName(file);
+}
+
+ShaderObjectInfo ShaderObjectInfo::loadTask(const Util::FileName & file) {
+	return createTask(Util::FileUtils::getParsedFileContents(file)).setFileName(file);
+}
 
 }
 

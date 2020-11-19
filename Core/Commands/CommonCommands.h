@@ -42,7 +42,7 @@ private:
 class BeginRenderPassCommand : public Command {
 PROVIDES_TYPE_NAME(BeginRenderPassCommand)
 public:
-	BeginRenderPassCommand(const FBORef& fbo, std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil);
+	RENDERINGAPI BeginRenderPassCommand(const FBORef& fbo, std::vector<Util::Color4f> colors, float depthValue, uint32_t stencilValue, bool clearColor, bool clearDepth, bool clearStencil);
 	~BeginRenderPassCommand();
 	bool compile(CompileContext& context) override;
 private:
@@ -100,7 +100,7 @@ private:
 class ImageBarrierCommand : public Command {
 PROVIDES_TYPE_NAME(ImageBarrierCommand)
 public:
-	ImageBarrierCommand(const TextureRef& texture, ResourceUsage newUsage);
+	RENDERINGAPI ImageBarrierCommand(const TextureRef& texture, ResourceUsage newUsage);
 	ImageBarrierCommand(const ImageViewRef& view, ResourceUsage newUsage) : view(view), image(nullptr), newUsage(newUsage) {}
 	ImageBarrierCommand(const ImageStorageRef& image, ResourceUsage newUsage) : view(nullptr), image(image), newUsage(newUsage) {}
 	~ImageBarrierCommand();

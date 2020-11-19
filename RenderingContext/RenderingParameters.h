@@ -66,8 +66,10 @@ enum function_t {
 	GEQUAL,
 	ALWAYS
 };
-[[deprecated]] std::string functionToString(function_t function);
-[[deprecated]] function_t stringToFunction(const std::string & str);
+[[deprecated]]
+RENDERINGAPI std::string functionToString(function_t function);
+[[deprecated]]
+RENDERINGAPI function_t stringToFunction(const std::string & str);
 
 [[deprecated]] static uint32_t functionToGL(function_t function) { return 0; }
 [[deprecated]] static function_t glToFunction(uint32_t value) { return LESS; }
@@ -158,8 +160,8 @@ class [[deprecated]] BlendingParameters {
 			ONE_MINUS_CONSTANT_ALPHA
 		};
 
-		static std::string functionToString(function_t function);
-		static function_t stringToFunction(const std::string & str);
+		RENDERINGAPI static std::string functionToString(function_t function);
+		RENDERINGAPI static function_t stringToFunction(const std::string & str);
 
 		static uint32_t functionToGL(function_t function) { return 0; }
 		static function_t glToFunction(uint32_t value) { return ZERO; }
@@ -176,8 +178,8 @@ class [[deprecated]] BlendingParameters {
 			FUNC_REVERSE_SUBTRACT
 		};
 
-		static std::string equationToString(equation_t equation);
-		static equation_t stringToEquation(const std::string & str);
+		RENDERINGAPI static std::string equationToString(equation_t equation);
+		RENDERINGAPI static equation_t stringToEquation(const std::string & str);
 
 		static uint32_t equationToGL(equation_t equation) { return 0; }
 		static equation_t glToEquation(uint32_t value) { return FUNC_ADD; }
@@ -215,7 +217,7 @@ class [[deprecated]] BlendingParameters {
 			blendColor(Util::Color4f(0.0f, 0.0f, 0.0f, 0.0f)) {
 		}
 
-		explicit BlendingParameters(const ColorBlendState& state); 
+		RENDERINGAPI explicit BlendingParameters(const ColorBlendState& state); 
 
 		bool operator!=(const BlendingParameters & other) const {
 			return enabled != other.enabled ||
@@ -303,7 +305,7 @@ class [[deprecated]] BlendingParameters {
 			return blendColor;
 		}
 
-		ColorBlendState toBlendState() const;
+		RENDERINGAPI ColorBlendState toBlendState() const;
 };
 
 
@@ -456,7 +458,7 @@ class [[deprecated]] CullFaceParameters {
 		//! Create CullFaceParameters with the given values.
 		CullFaceParameters(cullFaceMode_t m) : enabled(true), mode(m) {}
 
-		CullFaceParameters(CullMode m);
+		RENDERINGAPI CullFaceParameters(CullMode m);
 
 		bool operator!=(const CullFaceParameters & other) const {
 			return enabled != other.enabled || mode != other.mode;
@@ -479,7 +481,7 @@ class [[deprecated]] CullFaceParameters {
 		void setMode(cullFaceMode_t _mode) {
 			mode = _mode;
 		}
-		CullMode getCullMode() const;
+		RENDERINGAPI CullMode getCullMode() const;
 };
 
 // -------------------------------------------
@@ -543,9 +545,9 @@ class [[deprecated]] ImageBindParameters {
 		bool  multiLayer,readOperations,writeOperations;
 	
 	public:
-		ImageBindParameters();
-		ImageBindParameters(Texture*t);
-		~ImageBindParameters();
+		RENDERINGAPI ImageBindParameters();
+		RENDERINGAPI ImageBindParameters(Texture*t);
+		RENDERINGAPI ~ImageBindParameters();
 		
 		uint32_t getLayer()const			{	return layer;	}
 		void setLayer(uint32_t i)			{	layer = i;	}
@@ -563,7 +565,7 @@ class [[deprecated]] ImageBindParameters {
 		void setWriteOperations(bool b)		{	writeOperations = b;	}
 		
 		Texture* getTexture()const			{	return texture.get();	}
-		void setTexture(Texture* t);
+		RENDERINGAPI void setTexture(Texture* t);
 		
 		bool operator==(const ImageBindParameters & other) const {
 			return texture == other.texture&&layer==other.layer&&level==other.level&&multiLayer==other.multiLayer&&
@@ -803,14 +805,14 @@ class [[deprecated]] PolygonModeParameters {
 	public:
 		enum polygonModeMode_t { POINT = 1, LINE = 2, FILL = 3 };
 
-		static std::string modeToString(polygonModeMode_t mode);
-		static polygonModeMode_t stringToMode(const std::string & str);
+		RENDERINGAPI static std::string modeToString(polygonModeMode_t mode);
+		RENDERINGAPI static polygonModeMode_t stringToMode(const std::string & str);
 
 		static uint32_t modeToGL(polygonModeMode_t mode) { return 0; }
 		static polygonModeMode_t glToMode(uint32_t value) { return POINT; }
 		
-		static PolygonMode modeToPolygonMode(polygonModeMode_t mode);
-		static polygonModeMode_t polygonModeToMode(PolygonMode value);
+		RENDERINGAPI static PolygonMode modeToPolygonMode(polygonModeMode_t mode);
+		RENDERINGAPI static polygonModeMode_t polygonModeToMode(PolygonMode value);
 	private:
 		polygonModeMode_t mode;
 	public:
@@ -820,7 +822,7 @@ class [[deprecated]] PolygonModeParameters {
 		//! Create PolygonModeParameters with the given values.
 		explicit PolygonModeParameters(const polygonModeMode_t _mode) : mode(_mode) {
 		}
-		explicit PolygonModeParameters(const PolygonMode _mode);
+		RENDERINGAPI explicit PolygonModeParameters(const PolygonMode _mode);
 
 		bool operator!=(const PolygonModeParameters & other) const {
 			return mode != other.mode;
@@ -987,8 +989,8 @@ class [[deprecated]] StencilParameters {
 			INVERT
 		};
 
-		static StencilOp actionToStencilOp(action_t action);
-		static action_t stencilOpToAction(StencilOp op);
+		RENDERINGAPI static StencilOp actionToStencilOp(action_t action);
+		RENDERINGAPI static action_t stencilOpToAction(StencilOp op);
 
 	private:
 		bool enabled;
@@ -1020,7 +1022,7 @@ class [[deprecated]] StencilParameters {
 			// Set all bits to one.
 			bitMask.set();
 		}
-		explicit StencilParameters(const StencilOpState& s);
+		RENDERINGAPI explicit StencilParameters(const StencilOpState& s);
 
 		//! Return @c true if the function subset of parameters is @b equal to the @a other set.
 		bool equalFunctionParameters(const StencilParameters & other) const {
@@ -1107,7 +1109,7 @@ class [[deprecated]] StencilParameters {
 			depthTestPassAction = newAction;
 		}
 
-		StencilOpState getStencilOpState() const;
+		RENDERINGAPI StencilOpState getStencilOpState() const;
 };
 
 //! Determines the intended usage of a texture bound to a texture unit.

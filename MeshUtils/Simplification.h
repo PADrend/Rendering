@@ -41,7 +41,7 @@ static const int BOUNDARY_OFFSET = 4;
  * @return new simplified mesh, null if simplification failed
  * @author Jonas Knoll, Benjamin Eikel
  */
-Mesh * simplifyMesh(Mesh * mesh, 
+RENDERINGAPI Mesh * simplifyMesh(Mesh * mesh, 
 					uint32_t numberOfTriangles, 
 					float threshold, 
 					bool useOptimalPositioning, 

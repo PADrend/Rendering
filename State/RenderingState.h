@@ -38,13 +38,13 @@ HAS_DIRTY_FLAG
 public:
 	CameraData() = default;
 	~CameraData() = default;
-	CameraData(CameraData&& o);
-	CameraData(const CameraData& o);
-	CameraData& operator=(CameraData&& o);
-	CameraData& operator=(const CameraData& o);
+	RENDERINGAPI CameraData(CameraData&& o);
+	RENDERINGAPI CameraData(const CameraData& o);
+	RENDERINGAPI CameraData& operator=(CameraData&& o);
+	RENDERINGAPI CameraData& operator=(const CameraData& o);
 
-	void setMatrixCameraToWorld(const Geometry::Matrix4x4f& value);
-	void setMatrixCameraToClipping(const Geometry::Matrix4x4f& value);
+	RENDERINGAPI void setMatrixCameraToWorld(const Geometry::Matrix4x4f& value);
+	RENDERINGAPI void setMatrixCameraToClipping(const Geometry::Matrix4x4f& value);
 	void setViewport(const Geometry::Rect_i& value) { dirty |= (viewport != value); viewport = value; }
 
 	const Geometry::Matrix4x4f& getMatrixWorldToCamera() const { return matrix_worldToCamera; }
@@ -91,11 +91,11 @@ class MaterialData {
 HAS_DIRTY_FLAG
 public:
 	MaterialData() = default;
-	~MaterialData();
-	MaterialData(MaterialData&& o);
-	MaterialData(const MaterialData& o);
-	MaterialData& operator=(MaterialData&& o);
-	MaterialData& operator=(const MaterialData& o);
+	RENDERINGAPI ~MaterialData();
+	RENDERINGAPI MaterialData(MaterialData&& o);
+	RENDERINGAPI MaterialData(const MaterialData& o);
+	RENDERINGAPI MaterialData& operator=(MaterialData&& o);
+	RENDERINGAPI MaterialData& operator=(const MaterialData& o);
 
 	void setAmbient(const Util::Color4f& color) { dirty |= (ambient != color); ambient = color; }
 	void setDiffuse(const Util::Color4f& color) { dirty |= (diffuse != color); diffuse = color; setDiffuse(nullptr); }
@@ -154,10 +154,10 @@ private:
 
 class MaterialSet {
 public:
-	uint32_t addMaterial(const MaterialData& material);
-	bool hasMaterial(uint32_t materialId) const;
-	bool hasMaterial(const MaterialData& material) const;
-	MaterialData& getMaterial(uint32_t materialId);
+	RENDERINGAPI uint32_t addMaterial(const MaterialData& material);
+	RENDERINGAPI bool hasMaterial(uint32_t materialId) const;
+	RENDERINGAPI bool hasMaterial(const MaterialData& material) const;
+	RENDERINGAPI MaterialData& getMaterial(uint32_t materialId);
 	void clear() { materials.clear(); materialByHash.clear(); }
 	const std::vector<MaterialData>& getMaterials() const { return materials; }
 
@@ -184,10 +184,10 @@ HAS_DIRTY_FLAG
 public:
 	LightData() = default;
 	~LightData() = default;
-	LightData(LightData&& o);
-	LightData(const LightData& o);
-	LightData& operator=(LightData&& o);
-	LightData& operator=(const LightData& o);
+	RENDERINGAPI LightData(LightData&& o);
+	RENDERINGAPI LightData(const LightData& o);
+	RENDERINGAPI LightData& operator=(LightData&& o);
+	RENDERINGAPI LightData& operator=(const LightData& o);
 
 	void setType(LightType value) { dirty |= (type != value); type = value; }
 	void setPosition(const Geometry::Vec3& value) { dirty |= (position != value); position = value; }
@@ -229,17 +229,17 @@ class LightSet {
 public:
 	LightSet() = default;
 	~LightSet() = default;
-	LightSet(LightSet&& o);
-	LightSet(const LightSet& o);
-	LightSet& operator=(LightSet&& o);
-	LightSet& operator=(const LightSet& o);
+	RENDERINGAPI LightSet(LightSet&& o);
+	RENDERINGAPI LightSet(const LightSet& o);
+	RENDERINGAPI LightSet& operator=(LightSet&& o);
+	RENDERINGAPI LightSet& operator=(const LightSet& o);
 
-	size_t addLight(const LightData& light);
-	void removeLight(size_t lightId);
+	RENDERINGAPI size_t addLight(const LightData& light);
+	RENDERINGAPI void removeLight(size_t lightId);
 	void removeLight(const LightData& light) { removeLight(Util::hash(light)); }
-	bool hasLight(size_t lightId) const;
+	RENDERINGAPI bool hasLight(size_t lightId) const;
 	bool hasLight(const LightData& light) const { return hasLight(Util::hash(light)); }
-	const LightData& getLight(size_t lightId) const;
+	RENDERINGAPI const LightData& getLight(size_t lightId) const;
 	void clear() { lights.clear(); lightByHash.clear(); }
 	const std::vector<LightData>& getLights() const { return lights; }
 	uint32_t getLightCount() const { return static_cast<uint32_t>(lights.size()); }
@@ -259,8 +259,8 @@ public:
 		return result;
 	}
 	void markDirty() { dirty = true; }
-	void clearDirty();
-	bool isDirty() const;
+	RENDERINGAPI void clearDirty();
+	RENDERINGAPI bool isDirty() const;
 };
 
 //==================================================================
@@ -271,10 +271,10 @@ HAS_DIRTY_FLAG
 public:
 	InstanceData() = default;
 	~InstanceData() = default;
-	InstanceData(InstanceData&& o);
-	InstanceData(const InstanceData& o);
-	InstanceData& operator=(InstanceData&& o);
-	InstanceData& operator=(const InstanceData& o);
+	RENDERINGAPI InstanceData(InstanceData&& o);
+	RENDERINGAPI InstanceData(const InstanceData& o);
+	RENDERINGAPI InstanceData& operator=(InstanceData&& o);
+	RENDERINGAPI InstanceData& operator=(const InstanceData& o);
 
 	void setMatrixModelToCamera(const Geometry::Matrix4x4f& value) { dirty |= (matrix_modelToCamera != value); matrix_modelToCamera = value; }
 	void multMatrixModelToCamera(const Geometry::Matrix4x4f& value) { dirty |= !value.isIdentity(); matrix_modelToCamera *= value; }
@@ -317,7 +317,7 @@ public:
 
 	void setMaterial(const MaterialData& mat) { material = mat; }
 
-	void apply(const ShaderRef& shader, bool forced=false);
+	RENDERINGAPI void apply(const ShaderRef& shader, bool forced=false);
 
 	bool operator==(const RenderingState& o) const {
 		return camera == o.camera &&

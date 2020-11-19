@@ -9,9 +9,9 @@
 #include "TestUtils.h"
 #include <catch2/catch.hpp>
 
-#include <Rendering/Buffer/BufferObject.h>
-#include <Rendering/Buffer/BufferPool.h>
-#include <Rendering/Core/BufferStorage.h>
+#include "../Buffer/BufferObject.h"
+#include "../Buffer/BufferPool.h"
+#include "../Core/BufferStorage.h"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

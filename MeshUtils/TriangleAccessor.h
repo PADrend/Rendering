@@ -42,23 +42,23 @@ private:
 	Util::Reference<PositionAttributeAccessor> posAcc;
 	std::unique_ptr<LocalMeshDataHolder> meshDataHolder;
 protected:
-	TriangleAccessor(Mesh* mesh);
+	RENDERINGAPI TriangleAccessor(Mesh* mesh);
 
-	void assertRange(uint32_t index) const;
+	RENDERINGAPI void assertRange(uint32_t index) const;
 public:
 	typedef std::tuple<uint32_t,uint32_t,uint32_t> TriangleIndices_t;
 
 	/*! (static factory)
 		Create a TriangleAccessor for the given Mesh.
 		If no Accessor can be created, an std::invalid_argument exception is thrown. */
-	static Util::Reference<TriangleAccessor> create(Mesh* mesh);
+	RENDERINGAPI static Util::Reference<TriangleAccessor> create(Mesh* mesh);
 
 	virtual ~TriangleAccessor() {}
 
-	Geometry::Triangle3 getTriangle(uint32_t index) const;
-	void setTriangle(uint32_t index, const Geometry::Triangle3 triangle);
+	RENDERINGAPI Geometry::Triangle3 getTriangle(uint32_t index) const;
+	RENDERINGAPI void setTriangle(uint32_t index, const Geometry::Triangle3 triangle);
 
-	TriangleIndices_t getIndices(uint32_t index) const;
+	RENDERINGAPI TriangleIndices_t getIndices(uint32_t index) const;
 };
 
 } /* namespace MeshUtils */

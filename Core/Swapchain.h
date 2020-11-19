@@ -39,10 +39,10 @@ class Swapchain : public Util::ReferenceCounter<Swapchain> {
 public:
 	using Ref = Util::Reference<Swapchain>;
 	
-	~Swapchain();
-	uint32_t acquireNextIndex();
+	RENDERINGAPI ~Swapchain();
+	RENDERINGAPI uint32_t acquireNextIndex();
 
-	bool resize(uint32_t width, uint32_t height);
+	RENDERINGAPI bool resize(uint32_t width, uint32_t height);
 	
 	const FBORef& getCurrentFBO() const { return fbos[currentIndex]; }
 	const FBORef& getFBO(uint32_t index) const { return fbos[index]; }

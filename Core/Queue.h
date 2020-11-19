@@ -29,12 +29,12 @@ class Queue : public Util::ReferenceCounter<Queue> {
 public:
 	using Ref = Util::Reference<Queue>;
 	
-	~Queue();
+	RENDERINGAPI ~Queue();
 	
-	bool submit(const CommandBufferRef& commands);
-	bool submit(const FenceHandle& fence);
-	bool present();
-	void wait();
+	RENDERINGAPI bool submit(const CommandBufferRef& commands);
+	RENDERINGAPI bool submit(const FenceHandle& fence);
+	RENDERINGAPI bool present();
+	RENDERINGAPI void wait();
 
 	bool supports(QueueFamily type) const { return (capabilities & type) != QueueFamily::None; }
 

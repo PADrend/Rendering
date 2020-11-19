@@ -69,97 +69,98 @@ namespace MeshUtils {
 class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
 	public:
 		//! Deprecated \see MeshUtils::createBox(...)
-		static Mesh * createBox(const VertexDescription & vd, const Geometry::Box & box) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createBox(const VertexDescription & vd, const Geometry::Box & box);		
 		//! Deprecated \see MeshUtils::addBox(...)
-		static void addBox(MeshBuilder & mb, const Geometry::Box & box) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static void addBox(MeshBuilder & mb, const Geometry::Box & box);		
 		//! Deprecated \see MeshUtils::createDome(...)
-		static Mesh * createDome(const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0) __attribute__((deprecated));			 
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createDome(const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0);			 
 	 	//! Deprecated \see MeshUtils::createSphere(...)
-		static Mesh * createSphere(const VertexDescription & vd, uint32_t inclinationSegments, uint32_t azimuthSegments) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createSphere(const VertexDescription & vd, uint32_t inclinationSegments, uint32_t azimuthSegments);		
 		//! Deprecated \see MeshUtils::addSphere(...)
-		static void addSphere(MeshBuilder & mb, const Geometry::Sphere_f & sphere, uint32_t inclinationSegments, uint32_t azimuthSegments) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static void addSphere(MeshBuilder & mb, const Geometry::Sphere_f & sphere, uint32_t inclinationSegments, uint32_t azimuthSegments);		
 		//! Deprecated \see MeshUtils::createDiscSector(...)
-		static Mesh * createDiscSector(float radius, uint8_t numSegments, float angle = 360.0f) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createDiscSector(float radius, uint8_t numSegments, float angle = 360.0f);		
 		//! Deprecated \see MeshUtils::createRingSector(...)
-		static Mesh * createRingSector(float innerRadius, float outerRadius, uint8_t numSegments, float angle = 360.0f) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createRingSector(float innerRadius, float outerRadius, uint8_t numSegments, float angle = 360.0f);		
 		//! Deprecated \see MeshUtils::createCone(...)
-		static Mesh * createCone(float radius, float height, uint8_t numSegments) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createCone(float radius, float height, uint8_t numSegments);		
 		//! Deprecated \see MeshUtils::createConicalFrustum(...)
-		static Mesh * createConicalFrustum(float radiusBottom, float radiusTop, float height, uint8_t numSegments) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createConicalFrustum(float radiusBottom, float radiusTop, float height, uint8_t numSegments);		
 		//! Deprecated \see MeshUtils::createArrow(...)
-		static Mesh * createArrow(float radius, float length) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createArrow(float radius, float length);		
 		//! Deprecated \see MeshUtils::createRectangle(...)
-		static Mesh * createRectangle(const VertexDescription & vd,float width, float height) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createRectangle(const VertexDescription & vd,float width, float height);		
 		//! Deprecated \see MeshUtils::createMeshFromBitmaps(...)
-		static Mesh * createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::Bitmap> depth, Util::Reference<Util::Bitmap> color = nullptr, Util::Reference<Util::Bitmap> normals = nullptr ) __attribute__((deprecated));								
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::Bitmap> depth, Util::Reference<Util::Bitmap> color = nullptr, Util::Reference<Util::Bitmap> normals = nullptr );								
 		//! Deprecated \see MeshUtils::createHexGrid(...)
-		static Mesh * createHexGrid(const VertexDescription & vd, float width, float height, uint32_t rows, uint32_t columns) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createHexGrid(const VertexDescription & vd, float width, float height, uint32_t rows, uint32_t columns);		
 		//! Deprecated \see MeshUtils::createVoxelMesh(...)
-		static Mesh * createVoxelMesh(const VertexDescription & vd, const Util::PixelAccessor& colorAcc, uint32_t depth) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createVoxelMesh(const VertexDescription & vd, const Util::PixelAccessor& colorAcc, uint32_t depth);		
 		//! Deprecated \see MeshUtils::createTorus(...)
-		static Mesh * createTorus(const VertexDescription & vd, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments) __attribute__((deprecated));		
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createTorus(const VertexDescription & vd, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);		
 		//! Deprecated \see MeshUtils::addTorus(...)
-		static void addTorus(MeshBuilder & mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments) __attribute__((deprecated));
+		RENDERINGAPI RENDERING_DEPRECATED static void addTorus(MeshBuilder & mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);
 
 public:
-	MeshBuilder();
-	explicit MeshBuilder(VertexDescription description);
-	~MeshBuilder();
+	RENDERINGAPI MeshBuilder();
+	RENDERINGAPI explicit MeshBuilder(VertexDescription description);
+	RENDERINGAPI ~MeshBuilder();
 	
 	/*! true if no no vertices were added so far.	*/
 	bool isEmpty() const { return vSize == 0; }
 
 	//! Build a new mesh using the internal vertex and index buffer.
-	Mesh * buildMesh();
+	RENDERINGAPI Mesh * buildMesh();
 
 	/*! Sets the current vertex data for the following vertices (like a state in OpenGL). 
 		If a tranformation is set, the position and normal are transformed accordingly before being set. */
-	void position(const Geometry::Vec2 & v, const Util::StringIdentifier& attr=VertexAttributeIds::POSITION);
-	void position(const Geometry::Vec3f & v, const Util::StringIdentifier& attr=VertexAttributeIds::POSITION);
-	void position(const Geometry::Vec4 & v, const Util::StringIdentifier& attr=VertexAttributeIds::POSITION);
-	void normal(const Geometry::Vec3f & n, const Util::StringIdentifier& attr=VertexAttributeIds::NORMAL);
-	void normal(const Geometry::Vec3b & n, const Util::StringIdentifier& attr=VertexAttributeIds::NORMAL);
-	void color(const Util::Color4f & c, const Util::StringIdentifier& attr=VertexAttributeIds::COLOR);
-	void color(const Util::Color4ub & c, const Util::StringIdentifier& attr=VertexAttributeIds::COLOR);
-	void texCoord0(const Geometry::Vec2 & uv, const Util::StringIdentifier& attr=VertexAttributeIds::TEXCOORD0);
-	void values(const std::vector<float> & v, const Util::StringIdentifier& attr);
-	void values(const std::vector<uint32_t> & v, const Util::StringIdentifier& attr);
-	void value(float v, const Util::StringIdentifier& attr);
-	void value(uint32_t v, const Util::StringIdentifier& attr);
+	RENDERINGAPI void position(const Geometry::Vec2 & v, const Util::StringIdentifier& attr=VertexAttributeIds::POSITION);
+	RENDERINGAPI void position(const Geometry::Vec3f & v, const Util::StringIdentifier& attr=VertexAttributeIds::POSITION);
+	RENDERINGAPI void position(const Geometry::Vec4 & v, const Util::StringIdentifier& attr=VertexAttributeIds::POSITION);
+	RENDERINGAPI void normal(const Geometry::Vec3f & n, const Util::StringIdentifier& attr=VertexAttributeIds::NORMAL);
+	RENDERINGAPI void normal(const Geometry::Vec3b & n, const Util::StringIdentifier& attr=VertexAttributeIds::NORMAL);
+	RENDERINGAPI void normal(const Geometry::Vec4 & n, const Util::StringIdentifier& attr=VertexAttributeIds::NORMAL);
+	RENDERINGAPI void color(const Util::Color4f & c, const Util::StringIdentifier& attr=VertexAttributeIds::COLOR);
+	RENDERINGAPI void color(const Util::Color4ub & c, const Util::StringIdentifier& attr=VertexAttributeIds::COLOR);
+	RENDERINGAPI void texCoord0(const Geometry::Vec2 & uv, const Util::StringIdentifier& attr=VertexAttributeIds::TEXCOORD0);
+	RENDERINGAPI void values(const std::vector<float> & v, const Util::StringIdentifier& attr);
+	RENDERINGAPI void values(const std::vector<uint32_t> & v, const Util::StringIdentifier& attr);
+	RENDERINGAPI void value(float v, const Util::StringIdentifier& attr);
+	RENDERINGAPI void value(uint32_t v, const Util::StringIdentifier& attr);
 
 	/*! Add a vertex with the current data (set by position(...),normal(...) etc.).
 		The index of the new vertex is returned.*/
-	uint32_t addVertex();
+	RENDERINGAPI uint32_t addVertex();
 
 	/*! Add a vertex to the internal buffer. The index of the new vertex is returned.  deprecated!!!!!	*/
-	uint32_t addVertex(const Geometry::Vec3& pos, const Geometry::Vec3& n,
+	RENDERINGAPI RENDERING_DEPRECATED uint32_t addVertex(const Geometry::Vec3& pos, const Geometry::Vec3& n,
 						float r, float g, float b, float a,
-						float u, float v) __attribute__((deprecated));
+						float u, float v);
 
 	/*! Add a index to the interal buffer	*/
-	void addIndex(uint32_t idx);
+	RENDERINGAPI void addIndex(uint32_t idx);
 
 	/*! Adds a quad to the internal buffer, clockwise.	*/
-	void addQuad(uint32_t idx0, uint32_t idx1, uint32_t idx2, uint32_t idx3);
+	RENDERINGAPI void addQuad(uint32_t idx0, uint32_t idx1, uint32_t idx2, uint32_t idx3);
 
 	/*! Adds a three indices	*/
-	void addTriangle(uint32_t idx0, uint32_t idx1, uint32_t idx2);
+	RENDERINGAPI void addTriangle(uint32_t idx0, uint32_t idx1, uint32_t idx2);
 
 	/*! Get current vertex count which is the index of next vertex added. */
 	uint32_t getNextIndex() const { return vSize; }
 	
 	//! Add entire mesh to meshBuilder
-	void addMesh(Mesh* mesh);
+	RENDERINGAPI void addMesh(Mesh* mesh);
 	
 	//! Get the current transformation.
-	Geometry::Matrix4x4 getTransformation() const;
+	RENDERINGAPI Geometry::Matrix4x4 getTransformation() const;
 
 	//! The transformation is applied to following 'position' and 'normal' calls.
-	void setTransformation(const Geometry::Matrix4x4 & m);
-	void setTransformation(const Geometry::SRT & s);
+	RENDERINGAPI void setTransformation(const Geometry::Matrix4x4 & m);
+	RENDERINGAPI void setTransformation(const Geometry::SRT & s);
 	
 	//! Multiply on current transform.
-	void transform(const Geometry::Matrix4x4 & m);
+	RENDERINGAPI void transform(const Geometry::Matrix4x4 & m);
 	
 private:
 	VertexDescription description;

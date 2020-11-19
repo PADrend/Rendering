@@ -130,7 +130,7 @@ PROVIDES_TYPE_NAME(ClearImageCommand)
 public:
 	ClearImageCommand(const ImageViewRef& view, const Util::Color4f& color) : view(view), image(nullptr), color(color) {}
 	ClearImageCommand(const ImageStorageRef& image, const Util::Color4f& color) : view(nullptr), image(image), color(color) {}
-	ClearImageCommand(const TextureRef& texture, const Util::Color4f& color);
+	RENDERINGAPI ClearImageCommand(const TextureRef& texture, const Util::Color4f& color);
 	~ClearImageCommand();
 	bool compile(CompileContext& context) override;
 private:

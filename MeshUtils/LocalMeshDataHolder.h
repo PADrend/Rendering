@@ -39,10 +39,10 @@ class LocalMeshDataHolder {
 		 * 
 		 * @param meshToHold Mesh that is taken care of
 		 */
-		LocalMeshDataHolder(Mesh * meshToHold);
+		RENDERINGAPI LocalMeshDataHolder(Mesh * meshToHold);
 
 		//! Restore the original data strategy on the associated mesh.
-		~LocalMeshDataHolder();
+		RENDERINGAPI ~LocalMeshDataHolder();
 };
 
 }

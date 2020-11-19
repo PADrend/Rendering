@@ -29,23 +29,23 @@ class RenderingContext;
 */
 class MeshIndexData {
 public:
-	MeshIndexData();
+	RENDERINGAPI MeshIndexData();
 	//! Copy all data from @p other
-	MeshIndexData(const MeshIndexData & other);
-	MeshIndexData(MeshIndexData &&);
+	RENDERINGAPI MeshIndexData(const MeshIndexData & other);
+	RENDERINGAPI MeshIndexData(MeshIndexData &&);
 
-	~MeshIndexData();
+	RENDERINGAPI ~MeshIndexData();
 
 	MeshIndexData & operator=(const MeshIndexData &) = delete;
 	MeshIndexData & operator=(MeshIndexData &&) = default;
 
-	void swap(MeshIndexData & other);
+	RENDERINGAPI void swap(MeshIndexData & other);
 	uint32_t getIndexCount() const { return indexCount; }
 	bool empty() const { return indexCount==0; }
 
 	// data
-	void allocate(uint32_t count);
-	void releaseLocalData();
+	RENDERINGAPI void allocate(uint32_t count);
+	RENDERINGAPI void releaseLocalData();
 	const uint32_t * data() const { return indexArray.data(); }
 	uint32_t * data() { return indexArray.data(); }
 	std::size_t dataSize() const { return indexArray.size() * sizeof(uint32_t); }
@@ -61,7 +61,7 @@ public:
 	inline uint32_t getMaxIndex() const { return maxIndex; }
 	/*! Recalculates the index range of the mesh.
 		\note Should be called whenever the vertices are changed.	*/
-	void updateIndexRange();
+	RENDERINGAPI void updateIndexRange();
 
 	// vbo
 	inline bool isUploaded() const { return bufferObject && bufferObject->isValid(); }
@@ -70,13 +70,13 @@ public:
 	bool upload() { return upload(MemoryUsage::GpuOnly); }
 	/*! (internal) Create or update a VBO if hasChanged is set to true.
 		hasChanged is set to false.	*/
-	bool upload(MemoryUsage usage);
+	RENDERINGAPI bool upload(MemoryUsage usage);
 	/*! (internal) */
-	bool download();
-	void downloadTo(std::vector<uint32_t> & destination) const;
+	RENDERINGAPI bool download();
+	RENDERINGAPI void downloadTo(std::vector<uint32_t> & destination) const;
 	void release() { bufferObject->destroy(); }
 
-	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfIndices);
+	RENDERINGAPI void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfIndices);
 
 	const BufferObject::Ref& getBuffer() { return bufferObject; }
 	

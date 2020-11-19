@@ -38,7 +38,7 @@ struct HandlePair {
 #define API_HANDLE_DECLARE(Handle) typedef struct Vk##Handle##_T* Vk##Handle
 #define API_HANDLE_DECLARE_MA(Handle) typedef struct Vma##Handle##_T* Vma##Handle
 
-#define API_BASE_HANDLE(HandleType, ApiType, ParentApiType) template<> ApiHandle<ApiType, ParentApiType>::~ApiHandle(); \
+#define API_BASE_HANDLE(HandleType, ApiType, ParentApiType) template<> RENDERINGAPI ApiHandle<ApiType, ParentApiType>::~ApiHandle(); \
 	using HandleType##Handle = ApiHandle<ApiType, ParentApiType>::Ref;
 
 #define API_HANDLE(HandleType, ParentType) API_BASE_HANDLE(HandleType, Vk##HandleType, Vk##ParentType)

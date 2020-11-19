@@ -32,7 +32,7 @@ class UniformRegistry {
 		typedef std::list<entry_t *> orderedEntries_t;
 		typedef std::unordered_map<Util::StringIdentifier,entry_t *> uniformRegistry_t;
 
-		static step_t globalUniformUpdateCounter;
+		RENDERINGAPI static step_t globalUniformUpdateCounter;
 		static step_t getNewGlobalStep(){	return ++globalUniformUpdateCounter;	}
 
 		step_t stepOfLastApply; // =0
@@ -72,11 +72,11 @@ class UniformRegistry {
 	public:
 
 		//! (ctor)
-		UniformRegistry();
+		RENDERINGAPI UniformRegistry();
 		//! (dtor)
-		~UniformRegistry();
+		RENDERINGAPI ~UniformRegistry();
 
-		void clear();
+		RENDERINGAPI void clear();
 
 		//! This forces all uniforms to be re-applied. Call this after the Shader has changed somehow.
 		void resetCounters()	{	stepOfLastApply=stepOfLastGlobalSync=0;	}
@@ -94,9 +94,9 @@ class UniformRegistry {
 		}
 
 		//! Transfer all uniforms that have been changed in the globalUniforms since the last stepOfLastGlobalSync
-		void performGlobalSync(const UniformRegistry & globalUniforms, bool forced);
+		RENDERINGAPI void performGlobalSync(const UniformRegistry & globalUniforms, bool forced);
 
-		void setUniform(const Uniform & uniform, bool warnIfUnused=false, bool forced=false);
+		RENDERINGAPI void setUniform(const Uniform & uniform, bool warnIfUnused=false, bool forced=false);
 };
 
 }

@@ -34,8 +34,8 @@ class MeshDataStrategy {
 		static MeshDataStrategy * defaultStrategy;
 	public:
 		/*! Returns an instance of the default strategy as singleton. */
-		static MeshDataStrategy * getDefaultStrategy();
-		static void setDefaultStrategy(MeshDataStrategy * newDefault);
+		RENDERINGAPI static MeshDataStrategy * getDefaultStrategy();
+		RENDERINGAPI static void setDefaultStrategy(MeshDataStrategy * newDefault);
 
 		// --------------------------------------
 
@@ -63,7 +63,7 @@ class MeshDataStrategy {
 		
 	protected:
 		//! (internal) Actually bind the buffers and render the mesh.
-		static void doDisplayMesh(RenderingContext & context, Mesh * m,uint32_t firstElement,uint32_t elementCount);
+		RENDERINGAPI static void doDisplayMesh(RenderingContext & context, Mesh * m,uint32_t firstElement,uint32_t elementCount);
 
 };
 
@@ -77,24 +77,24 @@ class SimpleMeshDataStrategy : public MeshDataStrategy {
 		/*!	Return an instance of the SimpleMeshDataStrategy:
 			Create a VBO (with static usage) when first	displayed and release the local memory.
 			\note This is the initial default strategy. */
-		static SimpleMeshDataStrategy * getStaticDrawReleaseLocalStrategy();
+		RENDERINGAPI static SimpleMeshDataStrategy * getStaticDrawReleaseLocalStrategy();
 
 		/*!	Return an instance of the SimpleMeshDataStrategy:
 			Create a VBO (with static usage) when first	displayed and release the local memory.
 			\note Each action results in an output message. */
-		static SimpleMeshDataStrategy * getDebugStrategy();
+		RENDERINGAPI static SimpleMeshDataStrategy * getDebugStrategy();
 
 		/*!	Return an instance of the SimpleMeshDataStrategy:
 			Create a VBO (with static usage) when first	displayed and to preserve a copy in local memory. */
-		static SimpleMeshDataStrategy * getStaticDrawPreserveLocalStrategy();
+		RENDERINGAPI static SimpleMeshDataStrategy * getStaticDrawPreserveLocalStrategy();
 
 		/*!	Return an instance of the SimpleMeshDataStrategy:
 			Create a VBO (with dynamic usage) when first displayed and to preserve a copy in local memory. */
-		static SimpleMeshDataStrategy * getDynamicVertexStrategy();
+		RENDERINGAPI static SimpleMeshDataStrategy * getDynamicVertexStrategy();
 
 		/*!	Return an instance of the SimpleMeshDataStrategy:
 			Use VertexArrays and render from local memory. */
-		static SimpleMeshDataStrategy * getPureLocalStrategy();
+		RENDERINGAPI static SimpleMeshDataStrategy * getPureLocalStrategy();
 
 		// --------------------
 
@@ -106,13 +106,13 @@ class SimpleMeshDataStrategy : public MeshDataStrategy {
 		const uint8_t flags;
 		inline bool getFlag(const uint8_t f)const	{	return flags&f;	}
 
-		SimpleMeshDataStrategy( const uint8_t flags );
-		virtual ~SimpleMeshDataStrategy();
+		RENDERINGAPI SimpleMeshDataStrategy( const uint8_t flags );
+		RENDERINGAPI virtual ~SimpleMeshDataStrategy();
 
-		void assureLocalVertexData(Mesh * m) override;
-		void assureLocalIndexData(Mesh * m) override;
-		void prepare(Mesh * m) override;
-		void displayMesh(RenderingContext & context, Mesh * m,uint32_t startIndex,uint32_t indexCount) override;
+		RENDERINGAPI void assureLocalVertexData(Mesh * m) override;
+		RENDERINGAPI void assureLocalIndexData(Mesh * m) override;
+		RENDERINGAPI void prepare(Mesh * m) override;
+		RENDERINGAPI void displayMesh(RenderingContext & context, Mesh * m,uint32_t startIndex,uint32_t indexCount) override;
 };
 
 }

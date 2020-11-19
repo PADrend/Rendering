@@ -8,11 +8,11 @@
 */
 
 #include <catch2/catch.hpp>
-#include <Rendering/Mesh/MeshVertexData.h>
-#include <Rendering/Mesh/MeshIndexData.h>
-#include <Rendering/Mesh/VertexDescription.h>
-#include <Rendering/Mesh/VertexAccessor.h>
-#include <Rendering/Mesh/VertexAttributeAccessors.h>
+#include "../Mesh/MeshVertexData.h"
+#include "../Mesh/MeshIndexData.h"
+#include "../Mesh/VertexDescription.h"
+#include "../Mesh/VertexAccessor.h"
+#include "../Mesh/VertexAttributeAccessors.h"
 
 #include <Util/Timer.h>
 #include <Util/References.h>

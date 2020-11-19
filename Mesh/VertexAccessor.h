@@ -47,12 +47,12 @@ class Mesh;
 class VertexAccessor : public Util::ResourceAccessor {
 private:
 	MeshVertexData& vData;
-	explicit VertexAccessor(MeshVertexData& _vData, uint8_t* ptr);
+	RENDERINGAPI explicit VertexAccessor(MeshVertexData& _vData, uint8_t* ptr);
 public:	
-	virtual ~VertexAccessor();
+	RENDERINGAPI virtual ~VertexAccessor();
 	
-	static Util::Reference<VertexAccessor> create(MeshVertexData& _vData);
-	static Util::Reference<VertexAccessor> create(Mesh* mesh);
+	RENDERINGAPI static Util::Reference<VertexAccessor> create(MeshVertexData& _vData);
+	RENDERINGAPI static Util::Reference<VertexAccessor> create(Mesh* mesh);
 		
 	Geometry::Vec3 getPosition(uint32_t index, Util::StringIdentifier name=VertexAttributeIds::POSITION) const {
 		Geometry::Vec3 v;
@@ -95,8 +95,8 @@ public:
 		const auto data = readValues<float>(index, location, 4);
 		return Util::Color4f(data);
 	}
-	Util::Color4f getColor4ub(uint32_t index, uint16_t location) const {
-		return Util::Color4f(getColor4f(index, location));
+	Util::Color4ub getColor4ub(uint32_t index, uint16_t location) const {
+		return Util::Color4ub(getColor4f(index, location));
 	}
 	void setColor(uint32_t index, const Util::Color4f& c, Util::StringIdentifier name=VertexAttributeIds::COLOR) {
 		writeValues(index, name, c.data(), 4);

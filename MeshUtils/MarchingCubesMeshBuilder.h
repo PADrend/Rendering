@@ -49,8 +49,8 @@ struct DataSet{
 	
 };
 	
-Mesh * createMesh(DataSet & data);
-Mesh * createMeshFromTiledImage(const Util::PixelAccessor & accessor, uint32_t sizeX, uint32_t sizeY, uint32_t sizeZ);
+RENDERINGAPI Mesh * createMesh(DataSet & data);
+RENDERINGAPI Mesh * createMeshFromTiledImage(const Util::PixelAccessor & accessor, uint32_t sizeX, uint32_t sizeY, uint32_t sizeZ);
 }
 
 }

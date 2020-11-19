@@ -37,16 +37,16 @@ public:
 		ResourceUsage usage = ResourceUsage::General; //! usage flags
 	};
 
-	static Ref create(const DeviceRef& device, const Configuration& config);
-	~BufferPool();
+	RENDERINGAPI static Ref create(const DeviceRef& device, const Configuration& config);
+	RENDERINGAPI ~BufferPool();
 	BufferPool(BufferPool&& o) = default;
 	BufferPool(const BufferPool& o) = delete;
 
-	BufferObjectRef allocate(size_t size) override;
-	void free(BufferObject* buffer) override;
-	void reset();
+	RENDERINGAPI BufferObjectRef allocate(size_t size) override;
+	RENDERINGAPI void free(BufferObject* buffer) override;
+	RENDERINGAPI void reset();
 	
-	uint32_t getAllocatedBlockCount() const;
+	RENDERINGAPI uint32_t getAllocatedBlockCount() const;
 	uint32_t getAllocatedPageCount() const {
 		std::unique_lock<std::mutex> lock(mutex);
 		return static_cast<uint32_t>(pages.size());

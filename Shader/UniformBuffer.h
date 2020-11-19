@@ -34,16 +34,16 @@ struct ShaderResource;
 class UniformBuffer : public Util::ReferenceCounter<UniformBuffer> {
 public:
 	using Ref = Util::Reference<UniformBuffer>;
-	static Ref create(const BufferPoolRef& pool, const Util::ResourceFormat& format, uint32_t arraySize=1, bool pushConstant=false);
-	static Ref createFromShaderResource(const BufferPoolRef& pool, const ShaderResource& resource);
+	RENDERINGAPI static Ref create(const BufferPoolRef& pool, const Util::ResourceFormat& format, uint32_t arraySize=1, bool pushConstant=false);
+	RENDERINGAPI static Ref createFromShaderResource(const BufferPoolRef& pool, const ShaderResource& resource);
 	~UniformBuffer();
 	UniformBuffer(UniformBuffer&& o) = default;
 	UniformBuffer(const UniformBuffer& o) = delete;
 
 	[[deprecated]]
-	void applyUniform(const Uniform& uniform, uint32_t index=0);
+	RENDERINGAPI void applyUniform(const Uniform& uniform, uint32_t index=0);
 
-	void writeData(const Util::StringIdentifier& name, const uint8_t* data, size_t size, uint32_t index=0);
+	RENDERINGAPI void writeData(const Util::StringIdentifier& name, const uint8_t* data, size_t size, uint32_t index=0);
 
 	template<typename T>
 	void writeValue(const Util::StringIdentifier& name, const T& value, uint32_t index=0);
@@ -51,8 +51,8 @@ public:
 	template<typename T>
 	void writeValues(const Util::StringIdentifier& name, const std::vector<T>& values, uint32_t index=0);
 
-	void flush(const CommandBufferRef& cmd, bool force=false);
-	void bind(const CommandBufferRef& cmd, uint32_t binding=0, uint32_t set=0);
+	RENDERINGAPI void flush(const CommandBufferRef& cmd, bool force=false);
+	RENDERINGAPI void bind(const CommandBufferRef& cmd, uint32_t binding=0, uint32_t set=0);
 
 	const Util::ResourceFormat& getFormat() const { return accessor->getFormat(); }
 	size_t getSize() const { return cache.size(); }

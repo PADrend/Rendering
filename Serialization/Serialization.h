@@ -47,17 +47,17 @@ namespace Serialization {
 
 typedef Util::ReferenceAttribute<Mesh> MeshWrapper_t;
 
-extern const Util::StringIdentifier DESCRIPTION_TYPE;
-extern const char * const DESCRIPTION_TYPE_MESH;
-extern const char * const DESCRIPTION_TYPE_MATERIAL;
-extern const Util::StringIdentifier DESCRIPTION_FILE;
-extern const Util::StringIdentifier DESCRIPTION_DATA;
-extern const Util::StringIdentifier DESCRIPTION_TEXTURE_FILE;
-extern const Util::StringIdentifier DESCRIPTION_MATERIAL_NAME;
-extern const Util::StringIdentifier DESCRIPTION_MATERIAL_AMBIENT;
-extern const Util::StringIdentifier DESCRIPTION_MATERIAL_DIFFUSE;
-extern const Util::StringIdentifier DESCRIPTION_MATERIAL_SPECULAR;
-extern const Util::StringIdentifier DESCRIPTION_MATERIAL_SHININESS;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_TYPE;
+RENDERINGAPI extern const char * const DESCRIPTION_TYPE_MESH;
+RENDERINGAPI extern const char * const DESCRIPTION_TYPE_MATERIAL;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_FILE;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_DATA;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_TEXTURE_FILE;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_MATERIAL_NAME;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_MATERIAL_AMBIENT;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_MATERIAL_DIFFUSE;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_MATERIAL_SPECULAR;
+RENDERINGAPI extern const Util::StringIdentifier DESCRIPTION_MATERIAL_SHININESS;
 
 /**
  * Load a single mesh from the given address.
@@ -66,7 +66,7 @@ extern const Util::StringIdentifier DESCRIPTION_MATERIAL_SHININESS;
  * @param file Address to the file containing the mesh data
  * @return A single mesh
  */
-Mesh * loadMesh(const Util::FileName & url);
+RENDERINGAPI Mesh * loadMesh(const Util::FileName & url);
 
 /**
  * Create a single mesh from the given data.
@@ -76,7 +76,7 @@ Mesh * loadMesh(const Util::FileName & url);
  * @param data Mesh data
  * @return A single mesh
  */
-Mesh * loadMesh(const std::string & extension, const std::string & data);
+RENDERINGAPI Mesh * loadMesh(const std::string & extension, const std::string & data);
 
 /**
  * Write a single mesh to the given address.
@@ -86,7 +86,7 @@ Mesh * loadMesh(const std::string & extension, const std::string & data);
  * @param file Address to the file that shall be written
  * @return @c true if successful, @c false otherwise
  */
-bool saveMesh(Mesh * mesh, const Util::FileName & url);
+RENDERINGAPI bool saveMesh(Mesh * mesh, const Util::FileName & url);
 
 /**
  * Write a single mesh to the given stream.
@@ -97,7 +97,7 @@ bool saveMesh(Mesh * mesh, const Util::FileName & url);
  * @param output Stream to which the data shall be written
  * @return @c true if successful, @c false otherwise
  */
-bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output);
+RENDERINGAPI bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output);
 
 /**
  * Load a single texture from the given address.
@@ -106,7 +106,7 @@ bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output)
  * @param file Address to the file containing the texture data
  * @return A single texture
  */
-Util::Reference<Texture> loadTexture(const Util::FileName & url,  TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1);
+RENDERINGAPI Util::Reference<Texture> loadTexture(const Util::FileName & url,  TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1);
 
 /**
  * Create a single texture from the given data.
@@ -116,7 +116,7 @@ Util::Reference<Texture> loadTexture(const Util::FileName & url,  TextureType tT
  * @param data Texture data
  * @return A single texture
  */
-Util::Reference<Texture> loadTexture(const std::string & extension, const std::string & data, TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1);
+RENDERINGAPI Util::Reference<Texture> loadTexture(const std::string & extension, const std::string & data, TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1);
 
 /**
  * Write a single texture to the given address.
@@ -126,7 +126,7 @@ Util::Reference<Texture> loadTexture(const std::string & extension, const std::s
  * @param file Address to the file that shall be written
  * @return @c true if successful, @c false otherwise
  */
-bool saveTexture(RenderingContext &context,Texture * texture, const Util::FileName & url);
+RENDERINGAPI bool saveTexture(RenderingContext &context,Texture * texture, const Util::FileName & url);
 
 /**
  * Write a single texture to the given stream.
@@ -137,7 +137,7 @@ bool saveTexture(RenderingContext &context,Texture * texture, const Util::FileNa
  * @param output Stream to which the data shall be written
  * @return @c true if successful, @c false otherwise
  */
-bool saveTexture(RenderingContext &context,Texture * texture, const std::string & extension, std::ostream & output);
+RENDERINGAPI bool saveTexture(RenderingContext &context,Texture * texture, const std::string & extension, std::ostream & output);
 
 /**
  * Load mesh descriptions from the given address.
@@ -158,7 +158,7 @@ bool saveTexture(RenderingContext &context,Texture * texture, const std::string 
  ]
 @endverbatim
  */
-Util::GenericAttributeList * loadGeneric(const Util::FileName & url);
+RENDERINGAPI Util::GenericAttributeList * loadGeneric(const Util::FileName & url);
 
 /**
  * Create mesh descriptions from the given data.
@@ -168,14 +168,14 @@ Util::GenericAttributeList * loadGeneric(const Util::FileName & url);
  * @param data Mesh data
  * @return A list of mesh descriptions
  */
-Util::GenericAttributeList * loadGeneric(const std::string & extension, const std::string & data);
+RENDERINGAPI Util::GenericAttributeList * loadGeneric(const std::string & extension, const std::string & data);
 
 /**
  * Helper function which creates a description map for a single mesh.
  *
  * @param mesh The mesh that will be wrapped into the description
  */
-Util::GenericAttributeMap * createMeshDescription(Mesh * m);
+RENDERINGAPI Util::GenericAttributeMap * createMeshDescription(Mesh * m);
 
 }
 

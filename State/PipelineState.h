@@ -202,16 +202,16 @@ public:
 	}
 
 	//! Sets the viewport transform of the viewport given by @p index.
-	ViewportState& setViewport(const Viewport& value, uint32_t index=0);
+	RENDERINGAPI ViewportState& setViewport(const Viewport& value, uint32_t index=0);
 	//! Simultaneously sets all viewports.
-	ViewportState& setViewports(const std::vector<Viewport>& values);
+	RENDERINGAPI ViewportState& setViewports(const std::vector<Viewport>& values);
 	//! Controls if the viewport state is dynamic. If the viewport state is dynamic, all viewports in this state are ignored.
 	ViewportState& setDynamicViewports(bool value) { dynamicViewports = value; return *this; }
 
 	//! Sets the rectangular bounds of the scissor for the corresponding viewport given by @p index.
-	ViewportState& setScissor(const Geometry::Rect_i& value, uint32_t index=0);
+	RENDERINGAPI ViewportState& setScissor(const Geometry::Rect_i& value, uint32_t index=0);
 	//! Simultaneously sets all scissors.
-	ViewportState& setScissors(const std::vector<Geometry::Rect_i>& values);
+	RENDERINGAPI ViewportState& setScissors(const std::vector<Geometry::Rect_i>& values);
 	//! Controls if the scissor state is dynamic. If the scissor state is dynamic, all scissors in this state are ignored.
 	ViewportState& setDynamicScissors(bool value) { dirty |= (dynamicScissors != value); dynamicScissors = value; return *this; }
 
@@ -707,8 +707,8 @@ struct AttachmentFormat {
 class FramebufferFormat {
 HAS_DIRTY_FLAG
 public:
-	FramebufferFormat() {}
-	FramebufferFormat(const FBORef& fbo);
+	RENDERINGAPI FramebufferFormat() {}
+	RENDERINGAPI FramebufferFormat(const FBORef& fbo);
 	FramebufferFormat(const FramebufferFormat& o) : colorAttachments(o.colorAttachments), depthAttachment(o.depthAttachment), dirty(true) {}
 	FramebufferFormat& operator=(const FramebufferFormat& o) {
 		dirty |= (*this != o);
@@ -758,14 +758,14 @@ enum class PipelineType {
 
 class PipelineState : public Util::ReferenceCounter<PipelineState> {
 public:
-	PipelineState();
-	~PipelineState();
-	PipelineState(PipelineState&& o);
-	PipelineState(const PipelineState& o);
-	PipelineState& operator=(PipelineState&& o);
-	PipelineState& operator=(const PipelineState& o);
+	RENDERINGAPI PipelineState();
+	RENDERINGAPI ~PipelineState();
+	RENDERINGAPI PipelineState(PipelineState&& o);
+	RENDERINGAPI PipelineState(const PipelineState& o);
+	RENDERINGAPI PipelineState& operator=(PipelineState&& o);
+	RENDERINGAPI PipelineState& operator=(const PipelineState& o);
 
-	PipelineState& reset();
+	RENDERINGAPI PipelineState& reset();
 	
 	inline PipelineState& setType(PipelineType value) { if(type != value) markDirty(); type = value; return *this; }
 	inline PipelineState& setVertexInputState(const VertexInputState& state) { vertexInput = state; return *this; }
@@ -778,7 +778,7 @@ public:
 	inline PipelineState& setFramebufferFormat(const FramebufferFormat& state) { attachments = state; return *this; }
 	inline PipelineState& setFramebufferFormat(const FBORef& fbo) { attachments = fbo; return *this; }
 	inline PipelineState& setEntryPoint(const std::string& value) { if(entrypoint != value) markDirty(); entrypoint = value; return *this; }
-	PipelineState& setShader(const ShaderRef& value);
+	RENDERINGAPI PipelineState& setShader(const ShaderRef& value);
 
 	PipelineType getType() const { return type; }
 	

@@ -20,11 +20,12 @@
 #include <Util/StringUtils.h>
 #include <Util/Factory/ObjectCache.h>
 
-#define VMA_IMPLEMENTATION
-#include <vk_mem_alloc.h>
-
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
+
+#define VMA_IMPLEMENTATION
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#include <vk_mem_alloc.h>
 
 #include <map>
 #include <iostream>
@@ -160,7 +161,6 @@ bool Device::InternalData::createInstance(const Device::Ref& device, std::vector
 	std::vector<const char*> layerNames;
 	std::vector<const char*> requiredExtensions = window->getAPIExtensions();
 	if(config.debug) {
-		layerNames.emplace_back("VK_LAYER_LUNARG_standard_validation");
 		for(auto& layer : validationLayers)
 			layerNames.emplace_back(layer.c_str());
 		requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -234,7 +234,7 @@ bool Device::InternalData::createInstance(const Device::Ref& device, std::vector
 	if(config.debug) {
 		debugMessenger = vkInstance.createDebugUtilsMessengerEXT({ {},
 			//vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
-			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+			//vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning,
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
@@ -265,6 +265,7 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device) {
 		return getDeviceScore(d1) > getDeviceScore(d2);
 	});
 	physicalDevice = physicalDevices.front();
+
 	if(!physicalDevice)
 		return false;
 
@@ -358,7 +359,7 @@ bool Device::InternalData::createLogicalDevice(const Device::Ref& device) {
 		return false;
 	
 	// Create handle
-	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkInstance, vkDevice);
+	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkDevice);
 	apiHandle = DeviceHandle::create(vkDevice, physicalDevice);
 
 	// Create command queues & pools

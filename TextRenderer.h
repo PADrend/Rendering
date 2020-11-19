@@ -54,17 +54,17 @@ class TextRenderer {
 		 * @see Util::BitmapFont
 		 */
 		[[deprecated]]
-		TextRenderer(const Util::Bitmap & glyphBitmap, const Util::FontInfo & fontInfo);
+		RENDERINGAPI TextRenderer(const Util::Bitmap & glyphBitmap, const Util::FontInfo & fontInfo);
 		TextRenderer(const Util::Reference<Util::Bitmap> & glyphBitmap, const Util::FontInfo & fontInfo) : TextRenderer(*glyphBitmap.get(), fontInfo) {}
 
 		//! Free resources
-		~TextRenderer();
+		RENDERINGAPI ~TextRenderer();
 
 		//! Default copy constructor
-		TextRenderer(const TextRenderer & other);
+		RENDERINGAPI TextRenderer(const TextRenderer & other);
 
 		//! Default move constructor
-		TextRenderer(TextRenderer && other);
+		RENDERINGAPI TextRenderer(TextRenderer && other);
 
 		/**
 		 * Draw the given text to the screen.
@@ -77,7 +77,7 @@ class TextRenderer {
 		 * @param textColor Color that is used to draw the text
 		 * @note the 2D-rendering mode must be enabled ( @see Draw::enable2DMode(...) )
 		 */
-		void draw(RenderingContext & context, const std::u32string & text, const Geometry::Vec2i & textPosition, const Util::Color4f & textColor) const;
+		RENDERINGAPI void draw(RenderingContext & context, const std::u32string & text, const Geometry::Vec2i & textPosition, const Util::Color4f & textColor) const;
 
 		/**
 		 * Calculate the size that would be needed by the text when it was
@@ -85,7 +85,7 @@ class TextRenderer {
 		 * 
 		 * @return Rectangle of the text on the screen in pixels
 		 */
-		Geometry::Rect_i getTextSize(const std::u32string & text) const;
+		RENDERINGAPI Geometry::Rect_i getTextSize(const std::u32string & text) const;
 
 		/**
 		 * Return the height of the lower-case character 'x'.
@@ -94,7 +94,7 @@ class TextRenderer {
 		 * @return Height of 'x' in pixels, or zero if 'x' is not in the glyph
 		 * map
 		 */
-		int getHeightOfX() const;
+		RENDERINGAPI int getHeightOfX() const;
 
 		/**
 		 * Return the width of the upper-case character 'M'.
@@ -103,7 +103,7 @@ class TextRenderer {
 		 * @return Width of 'M' in pixels, or zero if 'M' is not in the glyph
 		 * map
 		 */
-		int getWidthOfM() const;
+		RENDERINGAPI int getWidthOfM() const;
 };
 
 }

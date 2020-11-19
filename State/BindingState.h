@@ -29,18 +29,18 @@ class Binding {
 HAS_DIRTY_FLAG
 public:
 	Binding() = default;
-	~Binding();
-	Binding(Binding&& o);
-	Binding(const Binding& o);
-	Binding& operator=(Binding&& o);
-	Binding& operator=(const Binding& o);
+	RENDERINGAPI ~Binding();
+	RENDERINGAPI Binding(Binding&& o);
+	RENDERINGAPI Binding(const Binding& o);
+	RENDERINGAPI Binding& operator=(Binding&& o);
+	RENDERINGAPI Binding& operator=(const Binding& o);
 	
 	bool operator==(const Binding& o) const { return buffer == o.buffer && texture == o.texture; }
 	bool operator!=(const Binding& o) const { return !(*this == o); }
 	operator bool() const { return texture || buffer; }
 
-	bool bind(const BufferObjectRef& obj);
-	bool bind(const TextureRef& obj);
+	RENDERINGAPI bool bind(const BufferObjectRef& obj);
+	RENDERINGAPI bool bind(const TextureRef& obj);
 
 	const BufferObjectRef& getBuffer() const { return buffer; }
 	const TextureRef& getTexture() const { return texture; }
@@ -56,19 +56,19 @@ class BindingSet {
 public:
 	using BindingMap = std::map<uint32_t, std::vector<Binding>>;
 	BindingSet() = default;
-	~BindingSet();
-	BindingSet(BindingSet&& o);
-	BindingSet(const BindingSet& o);
-	BindingSet& operator=(BindingSet&& o);
-	BindingSet& operator=(const BindingSet& o);
+	RENDERINGAPI ~BindingSet();
+	RENDERINGAPI BindingSet(BindingSet&& o);
+	RENDERINGAPI BindingSet(const BindingSet& o);
+	RENDERINGAPI BindingSet& operator=(BindingSet&& o);
+	RENDERINGAPI BindingSet& operator=(const BindingSet& o);
 
 	bool operator==(const BindingSet& o) const { return bindings == o.bindings; }
 	bool operator!=(const BindingSet& o) const { return !(*this == o); }
 
-	bool bind(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
-	bool bind(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
-	void setArraySize(uint32_t binding, uint32_t arraySize);
-	void merge(const BindingSet& other, bool overwriteExisting=true);
+	RENDERINGAPI bool bind(const BufferObjectRef& buffer, uint32_t binding=0, uint32_t arrayElement=0);
+	RENDERINGAPI bool bind(const TextureRef& texture, uint32_t binding=0, uint32_t arrayElement=0);
+	RENDERINGAPI void setArraySize(uint32_t binding, uint32_t arraySize);
+	RENDERINGAPI void merge(const BindingSet& other, bool overwriteExisting=true);
 
 	const BindingMap& getBindings() const { return bindings; }
 	const Binding& getBinding(uint32_t binding, uint32_t arrayElement=0) const;
@@ -79,8 +79,8 @@ private:
 	bool dirty = true;
 public:
 	void markDirty() { dirty = true; }
-	void clearDirty();
-	bool isDirty() const;
+	RENDERINGAPI void clearDirty();
+	RENDERINGAPI bool isDirty() const;
 };
 
 //------------------
@@ -89,21 +89,21 @@ class BindingState {
 public:
 	using BindingSetMap = std::map<uint32_t, BindingSet>;
 	BindingState() = default;
-	~BindingState();
-	BindingState(BindingState&& o);
-	BindingState(const BindingState& o);
-	BindingState& operator=(BindingState&& o);
-	BindingState& operator=(const BindingState& o);
+	RENDERINGAPI ~BindingState();
+	RENDERINGAPI BindingState(BindingState&& o);
+	RENDERINGAPI BindingState(const BindingState& o);
+	RENDERINGAPI BindingState& operator=(BindingState&& o);
+	RENDERINGAPI BindingState& operator=(const BindingState& o);
 
 	bool operator==(const BindingState& o) const { return bindingSets == o.bindingSets; }
 	bool operator!=(const BindingState& o) const { return !(*this == o); }
 
-	bool bind(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	bool bind(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
-	void merge(const BindingState& other, bool overwriteExisting=true);
+	RENDERINGAPI bool bind(const BufferObjectRef& buffer, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	RENDERINGAPI bool bind(const TextureRef& texture, uint32_t set=0, uint32_t binding=0, uint32_t arrayElement=0);
+	RENDERINGAPI void merge(const BindingState& other, bool overwriteExisting=true);
 
-	const Binding& getBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;
-	bool hasBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;
+	RENDERINGAPI const Binding& getBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;
+	RENDERINGAPI bool hasBinding(uint32_t set, uint32_t binding, uint32_t arrayElement=0) const;
 
 	const BindingSetMap& getBindingSets() { return bindingSets; }
 	const BindingSet& getBindingSet(uint32_t set) { return bindingSets.at(set); }
@@ -118,8 +118,8 @@ private:
 	bool dirty = true;
 public:
 	void markDirty() { dirty = true; }
-	void clearDirty();
-	bool isDirty() const;
+	RENDERINGAPI void clearDirty();
+	RENDERINGAPI bool isDirty() const;
 };
 
 //------------------

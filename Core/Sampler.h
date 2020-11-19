@@ -36,7 +36,7 @@ public:
 		ComparisonFunc compareOp = ComparisonFunc::Disabled; //! value specifying the comparison function to apply to fetched data before filtering.
 	};
 
-	static Ref create(const DeviceRef& device, const Configuration& config);
+	RENDERINGAPI static Ref create(const DeviceRef& device, const Configuration& config);
 	~Sampler() = default;
 	Sampler(Sampler&& o) = default;
 	Sampler(const Sampler& o) = delete;

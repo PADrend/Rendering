@@ -62,19 +62,19 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		static const flag_t USE_GL = 1 << 0;
 		static const flag_t USE_UNIFORMS = 1 << 1;
 
-		~Shader();
+		RENDERINGAPI ~Shader();
 
 		//! (internal) called by RenderingContext
 		[[deprecated]]
-		bool _enable();
+		RENDERINGAPI bool _enable();
 
 		/*! Sets the active shader at the renderingContext. If the shader
 			has not been linked, it is linked.
 			\return returns true if the status of the shader is LINKED */
 		[[deprecated]]
-		bool enable(RenderingContext & rc);
+		RENDERINGAPI bool enable(RenderingContext & rc);
 		[[deprecated]]
-		bool isActive(RenderingContext & rc); // (???) !=enabled
+		RENDERINGAPI bool isActive(RenderingContext & rc); // (???) !=enabled
 
 		[[deprecated]]
 		bool usesClassicOpenGL() const { return false; }
@@ -87,7 +87,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	private:
 		DeviceRef device;
 
-		Shader(const DeviceRef& device);
+		RENDERINGAPI Shader(const DeviceRef& device);
 	// @}
 
 	// ------------------------
@@ -95,24 +95,24 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	/*! @name (static) Factories */
 	// @{
 	public:
-		static Ref loadShader(const DeviceRef& device, const Util::FileName & vsFile, const Util::FileName & fsFile);
-		static Ref loadShader(const DeviceRef& device, const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile);
-		static Ref loadComputeShader(const DeviceRef& device, const Util::FileName & csFile);
-		static Ref createShader(const DeviceRef& device);
-		static Ref createShader(const DeviceRef& device, const std::string & vsa, const std::string & fsa);
-		static Ref createShader(const DeviceRef& device, const std::string & vsa, const std::string & gsa, const std::string & fsa);
-		static Ref createComputeShader(const DeviceRef& device, const std::string & csa);
+		RENDERINGAPI static Ref loadShader(const DeviceRef& device, const Util::FileName & vsFile, const Util::FileName & fsFile);
+		RENDERINGAPI static Ref loadShader(const DeviceRef& device, const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile);
+		RENDERINGAPI static Ref loadComputeShader(const DeviceRef& device, const Util::FileName & csFile);
+		RENDERINGAPI static Ref createShader(const DeviceRef& device);
+		RENDERINGAPI static Ref createShader(const DeviceRef& device, const std::string & vsa, const std::string & fsa);
+		RENDERINGAPI static Ref createShader(const DeviceRef& device, const std::string & vsa, const std::string & gsa, const std::string & fsa);
+		RENDERINGAPI static Ref createComputeShader(const DeviceRef& device, const std::string & csa);
 
 		[[deprecated]]
-		static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & fsFile, flag_t usage = USE_GL|USE_UNIFORMS);
+		RENDERINGAPI static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & fsFile, flag_t usage = USE_GL|USE_UNIFORMS);
 		[[deprecated]]
-		static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile, flag_t usage = USE_GL|USE_UNIFORMS);
+		RENDERINGAPI static Shader * loadShader(const Util::FileName & vsFile, const Util::FileName & gsFile, const Util::FileName & fsFile, flag_t usage = USE_GL|USE_UNIFORMS);
 		[[deprecated]]
-		static Shader * createShader(flag_t usage = USE_GL|USE_UNIFORMS);
+		RENDERINGAPI static Shader * createShader(flag_t usage = USE_GL|USE_UNIFORMS);
 		[[deprecated]]
-		static Shader * createShader(const std::string & vsa, const std::string & fsa, flag_t usage = USE_GL|USE_UNIFORMS);
+		RENDERINGAPI static Shader * createShader(const std::string & vsa, const std::string & fsa, flag_t usage = USE_GL|USE_UNIFORMS);
 		[[deprecated]]
-		static Shader * createShader(const std::string & vsa, const std::string & gsa, const std::string & fsa, flag_t usage = USE_GL|USE_UNIFORMS);
+		RENDERINGAPI static Shader * createShader(const std::string & vsa, const std::string & gsa, const std::string & fsa, flag_t usage = USE_GL|USE_UNIFORMS);
 	// @}
 
 	// ------------------------
@@ -132,7 +132,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		uint32_t getShaderProg() const { return 0; }
 
 		//! Try to transfer the shader into LINKED-state. Returns true on success.
-		bool init();
+		RENDERINGAPI bool init();
 
 	private:
 		status_t status = UNKNOWN;
@@ -140,12 +140,12 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		/*! (internal) Compile all objects and create the shader program.
 			If everything works fine, status is set to COMPILED and true is returned.
 			Otherwise, status is set to INVALID and false is returned. */
-		bool compileProgram();
+		RENDERINGAPI bool compileProgram();
 
 		/*! (internal) Link the program (which must already exist).
 			If everything works fine, status is set to LINKED and true is returned.
 			Otherwise, status is set to INVALID and false is returned. */
-		bool linkProgram();
+		RENDERINGAPI bool linkProgram();
 	// @}
 
 	// ------------------------
@@ -155,7 +155,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	public:
 		const ShaderLayout& getLayout() const { return layout; }
 		const PipelineLayoutHandle& getLayoutHandle() const { return layoutHandle; }
-		const ShaderResource& getResource(const Util::StringIdentifier& nameId) const;
+		RENDERINGAPI const ShaderResource& getResource(const Util::StringIdentifier& nameId) const;
 		const std::unordered_map<Util::StringIdentifier, ShaderResource>& getResources() const { return resources; }
 	private:
 		ShaderLayout layout;
@@ -173,9 +173,9 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		std::vector<ShaderObjectInfo> shaderObjects;
 		std::map<ShaderStage, ShaderModuleHandle> shaderModules;
 	public:
-		void attachShaderObject(ShaderObjectInfo && obj);
+		RENDERINGAPI void attachShaderObject(ShaderObjectInfo && obj);
 		const std::map<ShaderStage, ShaderModuleHandle>& getShaderModules() const { return shaderModules; }
-		void addDefine(const std::string& key, const std::string& value="");
+		RENDERINGAPI void addDefine(const std::string& key, const std::string& value="");
 	// @}
 
 	// ------------------------
@@ -191,7 +191,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 
 		/*! (internal) Make sure that all uniforms declared in the shader are registered to the registry
 			with their current value. Called when a shader is linked successfully */
-		void initUniformRegistry();
+		RENDERINGAPI void initUniformRegistry();
 
 	public:
 		//! (internal) should only be used by renderingContext
@@ -200,23 +200,23 @@ class Shader : public Util::ReferenceCounter<Shader> {
 		/*! Apply those uniforms stored in the internal uniformRegistry to the shader, that have been changed since
 			the last call to this function (or all, if forced is true).
 			\note The Shader needs not to be active. */
-		void applyUniforms(bool forced=false);
+		RENDERINGAPI void applyUniforms(bool forced=false);
 
-		bool isUniform(const Util::StringIdentifier name);
+		RENDERINGAPI bool isUniform(const Util::StringIdentifier name);
 
 		/*! Get the values of all uniforms defined in the shader's program.
 			\note The Shader needs not to be active. */
-		void getActiveUniforms(std::vector<Uniform> & uniforms);
+		RENDERINGAPI void getActiveUniforms(std::vector<Uniform> & uniforms);
 
 		/*! Get the value of the uniform with the given name.
 			If the name is not defined in the shader's program, the resulting Uniform is null (uniform.isNull()==true).
 			\note The Shader needs not to be active. */
-		const Uniform & getUniform(const Util::StringIdentifier name);
+		RENDERINGAPI const Uniform & getUniform(const Util::StringIdentifier name);
 
 		/*! Set an Uniform. The uniform is applied when the shader is active and the renderingContext's changes are applied.
 			\note The uniform is stored at the Shader's internal uniformRegistry.
 			\note The Shader needs not to be active.*/
-		void setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused=true, bool forced=false);
+		RENDERINGAPI void setUniform(RenderingContext & rc,const Uniform & uniform, bool warnIfUnused=true, bool forced=false);
 
 		const UniformBufferMap_t& getUniformBuffers() const { return uniformBuffers; }
 	// @}
@@ -230,7 +230,7 @@ class Shader : public Util::ReferenceCounter<Shader> {
 	public:
 		[[deprecated]]
 		void defineVertexAttribute(const std::string & attrName, uint32_t index) {}
-		int32_t getVertexAttributeLocation(const Util::StringIdentifier& attrName);
+		RENDERINGAPI int32_t getVertexAttributeLocation(const Util::StringIdentifier& attrName);
 		const std::unordered_map<Util::StringIdentifier, int32_t>& getVertexAttributeLocations() const { return vertexAttributeLocations; }
 	// @}
 

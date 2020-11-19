@@ -208,10 +208,15 @@ void MeshBuilder::position(const Geometry::Vec4 & v, const Util::StringIdentifie
 }
 
 void MeshBuilder::normal(const Geometry::Vec3f & n, const Util::StringIdentifier& attr) {
-	acc->setNormal(0, transMat ? ((*transMat)*Geometry::Vec4(n,0.0)).xyz() : n, attr);
+	acc->setNormal(0, transMat ? transMat->transformDirection(n) : n, attr);
 }
+
 void MeshBuilder::normal(const Geometry::Vec3b & n, const Util::StringIdentifier& attr) {
 	normal( Geometry::Vec3f(n) );
+}
+
+void MeshBuilder::normal(const Geometry::Vec4f & n, const Util::StringIdentifier& attr) {
+	acc->setVec4(0, transMat ? (*transMat) * n : n, attr);
 }
 
 void MeshBuilder::color(const Util::Color4f & c, const Util::StringIdentifier& attr) {

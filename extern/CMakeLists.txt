@@ -41,7 +41,7 @@ endif()
 FetchContent_Declare(
   vulkan-headers
   GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git
-  GIT_TAG        v1.1.130
+  GIT_TAG        v1.2.161
 )
 
 FetchContent_GetProperties(vulkan-headers)
@@ -50,16 +50,17 @@ if(NOT vulkan-headers_POPULATED)
   FetchContent_Populate(vulkan-headers)
 endif()
 set(Vulkan_INCLUDE_DIR ${vulkan-headers_SOURCE_DIR}/include CACHE STRING "" FORCE)
+target_include_directories(RenderingExtern INTERFACE ${Vulkan_INCLUDE_DIR})
 
 # ------------------------------------------------------------------------------
 # Vulkan
 
 
-find_package(Vulkan)
-if(Vulkan_FOUND)
-  target_include_directories(RenderingExtern INTERFACE ${Vulkan_INCLUDE_DIRS})
-  target_link_libraries(RenderingExtern INTERFACE ${Vulkan_LIBRARIES})
-endif()
+#find_package(Vulkan)
+#if(Vulkan_FOUND)
+#target_include_directories(RenderingExtern INTERFACE ${Vulkan_INCLUDE_DIRS})
+#target_link_libraries(RenderingExtern INTERFACE ${Vulkan_LIBRARIES})
+#endif()
 
 # ------------------------------------------------------------------------------
 # spirv-headers (required by shaderc)

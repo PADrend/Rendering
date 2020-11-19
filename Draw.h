@@ -59,75 +59,75 @@ namespace Rendering {
  * @{
  */
 
-void drawAbsBox(RenderingContext & rc, const Geometry::Box & box);
-void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
-void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box);
-void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
-void drawBox(RenderingContext & rc, const Geometry::Box & box);
-void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
-void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box);
-void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
-void drawWireframeSphere(RenderingContext & rc, const Geometry::Sphere & sphere);
-void drawWireframeSphere(RenderingContext & rc, const Geometry::Sphere & sphere, const Util::Color4f & color);
+RENDERINGAPI void drawAbsBox(RenderingContext & rc, const Geometry::Box & box);
+RENDERINGAPI void drawAbsBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
+RENDERINGAPI void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box);
+RENDERINGAPI void drawAbsWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
+RENDERINGAPI void drawBox(RenderingContext & rc, const Geometry::Box & box);
+RENDERINGAPI void drawBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
+RENDERINGAPI void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box);
+RENDERINGAPI void drawWireframeBox(RenderingContext & rc, const Geometry::Box & box, const Util::Color4f & color);
+RENDERINGAPI void drawWireframeSphere(RenderingContext & rc, const Geometry::Sphere & sphere);
+RENDERINGAPI void drawWireframeSphere(RenderingContext & rc, const Geometry::Sphere & sphere, const Util::Color4f & color);
 
 /**
  * @note Because OpenGL immediate mode is used inside this function,
  * the caller has to make sure that RenderingContext::applyChanges() is called before.
  */
-void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & box);
+RENDERINGAPI void drawFastAbsBox(RenderingContext & rc, const Geometry::Box & box);
 
 
-void drawFullScreenRect(RenderingContext & rc);
+RENDERINGAPI void drawFullScreenRect(RenderingContext & rc);
 /**
  * Draw a quadrilateral in three-dimensional space.
  * The quadrilateral is given by four points.
  * Positions, normals and texture coordinates are generated for the vertices.
  */
-void drawQuad(RenderingContext & rc, const Geometry::Vec3f & lowerLeft, const Geometry::Vec3f & lowerRight, const Geometry::Vec3f & upperRight,
+RENDERINGAPI void drawQuad(RenderingContext & rc, const Geometry::Vec3f & lowerLeft, const Geometry::Vec3f & lowerRight, const Geometry::Vec3f & upperRight,
 				const Geometry::Vec3f & upperLeft);
 /**
  * Set the current color and draw a quadrilateral in three-dimensional space.
  * @see drawQuad
  */
-void drawQuad(RenderingContext & rc, const Geometry::Vec3f & lowerLeft, const Geometry::Vec3f & lowerRight, const Geometry::Vec3f & upperRight,
+RENDERINGAPI void drawQuad(RenderingContext & rc, const Geometry::Vec3f & lowerLeft, const Geometry::Vec3f & lowerRight, const Geometry::Vec3f & upperRight,
 				const Geometry::Vec3f & upperLeft, const Util::Color4f & color);
-void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect);
-void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color);
+RENDERINGAPI void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect);
+RENDERINGAPI void drawWireframeRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color);
 
-void drawRect(RenderingContext & rc, const Geometry::Rect & rect);
-void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color);
+RENDERINGAPI void drawRect(RenderingContext & rc, const Geometry::Rect & rect);
+RENDERINGAPI void drawRect(RenderingContext & rc, const Geometry::Rect & rect, const Util::Color4f & color);
 
-void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius);
-void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius, const Util::Color4f & color);
+RENDERINGAPI void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius);
+RENDERINGAPI void drawWireframeCircle(RenderingContext & rc, const Geometry::Vec2f & center, float radius, const Util::Color4f & color);
 
 /**
  * Draw a triangle in three-dimensional space.
  * The triangle is given by three points.
  * Positions are generated for the vertices only.
  */
-void drawTriangle(RenderingContext & rc, const Geometry::Vec3f & vertexA, const Geometry::Vec3f & vertexB, const Geometry::Vec3f & vertexC);
+RENDERINGAPI void drawTriangle(RenderingContext & rc, const Geometry::Vec3f & vertexA, const Geometry::Vec3f & vertexB, const Geometry::Vec3f & vertexC);
 
-void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to);
-void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color);
-void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color1, const Util::Color4f & color2);
+RENDERINGAPI void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to);
+RENDERINGAPI void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color);
+RENDERINGAPI void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geometry::Vec3f & to, const Util::Color4f & color1, const Util::Color4f & color2);
 
 /**
  * Set the projection and modelview matrices to enable drawing in screen space.
  * 
  * @note The state before the call is saved. Call disable2DMode() to restore it.
  */
-void enable2DMode(RenderingContext & rc);
-void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect);
+RENDERINGAPI void enable2DMode(RenderingContext & rc);
+RENDERINGAPI void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect);
 
 //! Reset the projection and modelview matrices to the state before the last call to enable2DMode().
-void disable2DMode(RenderingContext & rc);
+RENDERINGAPI void disable2DMode(RenderingContext & rc);
 
 [[deprecated]]
-void enableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements);
+RENDERINGAPI void enableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements);
 [[deprecated]]
-void disableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements);
+RENDERINGAPI void disableInstanceBuffer(RenderingContext & rc, BufferObject & instanceBuffer, int32_t location, uint32_t elements);
 [[deprecated]]
-void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32_t elementCount, uint32_t instanceCount);
+RENDERINGAPI void drawInstances(RenderingContext & rc, Mesh* m, uint32_t firstElement, uint32_t elementCount, uint32_t instanceCount);
 
 //! @}
 }

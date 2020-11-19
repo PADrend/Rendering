@@ -69,30 +69,30 @@ class RenderingContext;
 class FBO : public Util::ReferenceCounter<FBO> {
 public:
 	using Ref = Util::Reference<FBO>;
-	static Ref create();
+	RENDERINGAPI static Ref create();
 
-	FBO();
-	~FBO();
+	RENDERINGAPI FBO();
+	RENDERINGAPI ~FBO();
 
-	void attachColorTexture(const TextureRef& texture, uint32_t index = 0);
-	void attachColorTexture(const ImageViewRef& view, uint32_t index = 0);
-	void attachColorTexture(const ImageStorageRef& image, uint32_t index = 0, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1);
-	void detachColorTexture(uint32_t index = 0);
+	RENDERINGAPI void attachColorTexture(const TextureRef& texture, uint32_t index = 0);
+	RENDERINGAPI void attachColorTexture(const ImageViewRef& view, uint32_t index = 0);
+	RENDERINGAPI void attachColorTexture(const ImageStorageRef& image, uint32_t index = 0, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1);
+	RENDERINGAPI void detachColorTexture(uint32_t index = 0);
 
-	void attachDepthStencilTexture(const TextureRef& texture);
-	void attachDepthStencilTexture(const ImageViewRef& view);
-	void attachDepthStencilTexture(const ImageStorageRef& image, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1);
-	void detachDepthStencilTexture();
+	RENDERINGAPI void attachDepthStencilTexture(const TextureRef& texture);
+	RENDERINGAPI void attachDepthStencilTexture(const ImageViewRef& view);
+	RENDERINGAPI void attachDepthStencilTexture(const ImageStorageRef& image, uint32_t mipLevel=0, uint32_t baseLayer=0, uint32_t layerCount=1);
+	RENDERINGAPI void detachDepthStencilTexture();
 	
-	TextureRef getColorAttachment(uint32_t index = 0) const;
+	RENDERINGAPI TextureRef getColorAttachment(uint32_t index = 0) const;
 	const std::vector<TextureRef>& getColorAttachments() const { return colorAttachments; }
-	TextureRef getDepthStencilAttachment() const;
+	RENDERINGAPI TextureRef getDepthStencilAttachment() const;
 	
 	uint32_t getWidth() const { return width; }
 	uint32_t getHeight() const { return height; }
 	uint32_t getColorAttachmentCount() const { return colorAttachments.size(); }
 	
-	bool isValid() const;
+	RENDERINGAPI bool isValid() const;
 	
 private:
 	
@@ -117,34 +117,34 @@ public:
 	const char * getStatusMessage(RenderingContext & context) { return ""; }
 
 	[[deprecated]]
-	void attachTexture(RenderingContext & context, uint32_t attachmentPoint, Texture * t, uint32_t level, int32_t layer=-1);
+	RENDERINGAPI void attachTexture(RenderingContext & context, uint32_t attachmentPoint, Texture * t, uint32_t level, int32_t layer=-1);
 
 	[[deprecated]]
-	void detachTexture(RenderingContext & context, uint32_t attachmentPoint);
+	RENDERINGAPI void detachTexture(RenderingContext & context, uint32_t attachmentPoint);
 	
 	[[deprecated]]
-	void attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId = 0, uint32_t level=0, int32_t layer=-1);
+	RENDERINGAPI void attachColorTexture(RenderingContext & context, Texture * t, uint32_t colorBufferId = 0, uint32_t level=0, int32_t layer=-1);
 	
 	[[deprecated]]
-	void detachColorTexture(RenderingContext & context, uint32_t colorBufferId = 0);
+	RENDERINGAPI void detachColorTexture(RenderingContext & context, uint32_t colorBufferId = 0);
 	
 	[[deprecated]]
-	void attachDepthStencilTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
+	RENDERINGAPI void attachDepthStencilTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
 	
 	[[deprecated]]
-	void detachDepthStencilTexture(RenderingContext & context);
+	RENDERINGAPI void detachDepthStencilTexture(RenderingContext & context);
 	
 	[[deprecated]]
-	void attachDepthTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
+	RENDERINGAPI void attachDepthTexture(RenderingContext & context, Texture * t, uint32_t level=0, int32_t layer=-1);
 	
 	[[deprecated]]
-	void detachDepthTexture(RenderingContext & context);
+	RENDERINGAPI void detachDepthTexture(RenderingContext & context);
 
 	[[deprecated]]
-	void setDrawBuffers(RenderingContext & context, uint32_t number);
+	RENDERINGAPI void setDrawBuffers(RenderingContext & context, uint32_t number);
 
 	[[deprecated]]
-	void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect);
+	RENDERINGAPI void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect);
 
 	//! @}		
 };

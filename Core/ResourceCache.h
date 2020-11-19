@@ -28,19 +28,19 @@ using FBORef = Util::Reference<FBO>;
 class ResourceCache : public Util::ReferenceCounter<ResourceCache> {
 public:
 	using Ref = Util::Reference<ResourceCache>;
-	static Ref create(const DeviceRef& device);
-	~ResourceCache();
+	RENDERINGAPI static Ref create(const DeviceRef& device);
+	RENDERINGAPI ~ResourceCache();
 	ResourceCache(ResourceCache&& o) = default;
 	ResourceCache(const ResourceCache& o) = delete;
 	ResourceCache& operator=(ResourceCache&& o) = default;
 	ResourceCache& operator=(const ResourceCache& o) = default;
 
-	PipelineHandle createPipeline(const PipelineState& state, const PipelineHandle& parent);
-	DescriptorSetLayoutHandle createDescriptorSetLayout(const ShaderResourceLayoutSet& layout);
-	PipelineLayoutHandle createPipelineLayout(const ShaderLayout& layout);
-	RenderPassHandle createRenderPass(const FramebufferFormat& attachments);
-	RenderPassHandle createRenderPass(const FBORef& fbo, const std::vector<ResourceUsage>& lastColorUsages, ResourceUsage lastDepthUsage, bool clearColor=false, bool clearDepth=false, bool clearStencil=false);
-	FramebufferHandle createFramebuffer(const FBORef& fbo, const RenderPassHandle& renderPass);
+	RENDERINGAPI PipelineHandle createPipeline(const PipelineState& state, const PipelineHandle& parent);
+	RENDERINGAPI DescriptorSetLayoutHandle createDescriptorSetLayout(const ShaderResourceLayoutSet& layout);
+	RENDERINGAPI PipelineLayoutHandle createPipelineLayout(const ShaderLayout& layout);
+	RENDERINGAPI RenderPassHandle createRenderPass(const FramebufferFormat& attachments);
+	RENDERINGAPI RenderPassHandle createRenderPass(const FBORef& fbo, const std::vector<ResourceUsage>& lastColorUsages, ResourceUsage lastDepthUsage, bool clearColor=false, bool clearDepth=false, bool clearStencil=false);
+	RENDERINGAPI FramebufferHandle createFramebuffer(const FBORef& fbo, const RenderPassHandle& renderPass);
 private:
 	ResourceCache(const DeviceRef& device);
 	Util::WeakPointer<Device> device;

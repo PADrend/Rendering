@@ -40,7 +40,7 @@ public:
 	using Ref = Util::Reference<BufferStorage>;
 	BufferStorage(const BufferStorage&) = delete;
 	BufferStorage(BufferStorage&&) = default;
-	~BufferStorage();
+	RENDERINGAPI ~BufferStorage();
 
 	/**
 	 * @brief Creates and allocates a new buffer storage.
@@ -48,23 +48,23 @@ public:
 	 * @param config The configuration parameters of the buffer
 	 * @return Smart reference to the buffer storage
 	 */
-	static Ref create(const DeviceRef& device, const Configuration& config);
+	RENDERINGAPI static Ref create(const DeviceRef& device, const Configuration& config);
 
 	/**
 	 * @brief Flushes memory if it is HOST_VISIBLE and not HOST_COHERENT
 	 */
-	void flush() const;
+	RENDERINGAPI void flush() const;
 
 	/**
 	 * @brief Maps memory if it isn't already mapped to an host visible address
 	 * @return Pointer to host visible memory
 	 */
-	uint8_t* map();
+	RENDERINGAPI uint8_t* map();
 
 	/**
 	 * @brief Unmaps memory from the host visible address
 	 */
-	void unmap();
+	RENDERINGAPI void unmap();
 	
 	/**
 	 * @brief Copies byte data into the buffer
@@ -72,7 +72,7 @@ public:
 	 * @param size The amount of bytes to copy
 	 * @param offset The offset to start the copying into the mapped data
 	 */
-	void upload(const uint8_t* data, size_t size, size_t offset = 0);
+	RENDERINGAPI void upload(const uint8_t* data, size_t size, size_t offset = 0);
 
 	/**
 	 * @brief Copies a vector of bytes into the buffer
@@ -107,7 +107,7 @@ public:
 
 	//! @name Debugging
 	//! @{
-	void setDebugName(const std::string& name);
+	RENDERINGAPI void setDebugName(const std::string& name);
 	//! @}
 private:
 	explicit BufferStorage(const DeviceRef& device, const Configuration& config);

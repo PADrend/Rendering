@@ -43,21 +43,21 @@ namespace ShaderUtils {
  * Reflects the shader resources from a compiled shader. 
  * @return List of shader resources.
  */
-ShaderResourceList reflect(ShaderStage stage, const std::vector<uint32_t>& code);
+RENDERINGAPI ShaderResourceList reflect(ShaderStage stage, const std::vector<uint32_t>& code);
 
 //! Creates the default fallback shader.
-ShaderRef createDefaultShader(const DeviceRef& device);
+RENDERINGAPI ShaderRef createDefaultShader(const DeviceRef& device);
 
 //! Creates a simple pass-through shader.
-ShaderRef createPassThroughShader(const DeviceRef& device);
+RENDERINGAPI ShaderRef createPassThroughShader(const DeviceRef& device);
 
 //! Create a shader that writes the pixel normal into the color buffer.
-ShaderRef createNormalToColorShader(const DeviceRef& device);
+RENDERINGAPI ShaderRef createNormalToColorShader(const DeviceRef& device);
 [[deprecated]]
-ShaderRef createNormalToColorShader();
+RENDERINGAPI ShaderRef createNormalToColorShader();
 
 //! initialized a binding state filled with dummy values for a given shader layout
-BindingState initBindingState(const ShaderLayout& layout, const BufferObjectRef& bo, const TextureRef& tex);
+RENDERINGAPI BindingState initBindingState(const ShaderLayout& layout, const BufferObjectRef& bo, const TextureRef& tex);
 
 }
 

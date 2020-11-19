@@ -12,11 +12,11 @@
 
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
-#include <Rendering/Context/RenderingContext.h>
-#include <Rendering/Draw.h>
-#include <Rendering/StatisticsQuery.h>
-#include <Rendering/OcclusionQuery.h>
-#include <Rendering/State/PipelineState.h>
+#include "../Context/RenderingContext.h"
+#include "../Draw.h"
+#include "../StatisticsQuery.h"
+#include "../OcclusionQuery.h"
+#include "../State/PipelineState.h"
 
 #include <Util/Graphics/ColorLibrary.h>
 

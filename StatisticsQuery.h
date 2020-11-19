@@ -24,75 +24,75 @@ class RenderingContext;
  */
 class StatisticsQuery : public QueryObject {
 	private:
-		StatisticsQuery(QueryType statisticsType);
+		RENDERINGAPI StatisticsQuery(QueryType statisticsType);
 	public:
-		StatisticsQuery(StatisticsQuery &&) = default;
+		RENDERINGAPI StatisticsQuery(StatisticsQuery &&) = default;
 
 		/**
 		 * Create a statistics query to count the number of vertices transferred to the GL.
 		 */
-		static StatisticsQuery createVerticesSubmittedQuery();
+		RENDERINGAPI static StatisticsQuery createVerticesSubmittedQuery();
 
 		/**
 		 * Create a statistics query to count the number of primitives transferred to the GL.
 		 */
-		static StatisticsQuery createPrimitivesSubmittedQuery();
+		RENDERINGAPI static StatisticsQuery createPrimitivesSubmittedQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the vertex shader has been invoked.
 		 */
-		static StatisticsQuery createVertexShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createVertexShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of patches processed by the tessellation control shader stage.
 		 */
-		static StatisticsQuery createTessControlShaderPatchesQuery();
+		RENDERINGAPI static StatisticsQuery createTessControlShaderPatchesQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the tessellation evaluation shader has been invoked.
 		 */
-		static StatisticsQuery createTessEvaluationShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createTessEvaluationShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the geometry shader has been invoked.
 		 */
-		static StatisticsQuery createGeometryShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createGeometryShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of primitives emitted by the geometry shader.
 		 */
-		static StatisticsQuery createGeometryShaderPrimitivesEmittedQuery();
+		RENDERINGAPI static StatisticsQuery createGeometryShaderPrimitivesEmittedQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the fragment shader has been invoked.
 		 */
-		static StatisticsQuery createFragmentShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createFragmentShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of times the compute shader has been invoked.
 		 */
-		static StatisticsQuery createComputeShaderInvocationsQuery();
+		RENDERINGAPI static StatisticsQuery createComputeShaderInvocationsQuery();
 
 		/**
 		 * Create a statistics query to count the number of primitives that were processed in the primitive clipping stage.
 		 */
-		static StatisticsQuery createClippingInputPrimitivesQuery();
+		RENDERINGAPI static StatisticsQuery createClippingInputPrimitivesQuery();
 
 		/**
 		 * Create a statistics query to count the number of primitives that were output by the primitive clipping stage 
 		 * and are further processed by the rasterization stage.
 		 */
-		static StatisticsQuery createClippingOutputPrimitivesQuery();
+		RENDERINGAPI static StatisticsQuery createClippingOutputPrimitivesQuery();
 
 		/**
 		 * Create a statistics query to measure the time between GPU commands
 		 */
-		static StatisticsQuery createTimeElapsedQuery();
+		RENDERINGAPI static StatisticsQuery createTimeElapsedQuery();
 
 		/**
 		 * Create a statistics query to measure the current time
 		 */
-		static StatisticsQuery createTimestampQuery();
+		RENDERINGAPI static StatisticsQuery createTimestampQuery();
 };
 }
 

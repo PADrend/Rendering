@@ -27,29 +27,28 @@ namespace Rendering {
  * @{
  */
 
-
 /**
  * Triggers a capture of the current GL state in RenderDoc.
  * @note Requires RenderDoc
  */
-void triggerCapture();
+RENDERINGAPI void triggerCapture();
 
 /**
  * Starts capturing of the GL state in RenderDoc.
  * @note Requires RenderDoc
  */
-void startCapture();
+RENDERINGAPI void startCapture();
 
 /**
  * Ends the active capture.
  * @note Requires RenderDoc
  */
-void endCapture();
+RENDERINGAPI void endCapture();
 
 /**
  * Gets the default locator for finding the "data/" directory.
  */
-const Util::FileLocator& getDataLocator();
+RENDERINGAPI const Util::FileLocator& getDataLocator();
 
 
 [[deprecated]]
@@ -62,13 +61,13 @@ static void disableGLErrorChecking() {}
 static void checkGLError(const char * file, int line) {}
 
 [[deprecated]]
-uint32_t getGLTypeSize(uint32_t type);
+RENDERINGAPI uint32_t getGLTypeSize(uint32_t type);
 
 [[deprecated]]
-uint32_t getGLType(Util::TypeConstant type);
+RENDERINGAPI uint32_t getGLType(Util::TypeConstant type);
 
 [[deprecated]]
-Util::TypeConstant getAttributeType(uint32_t glType);
+RENDERINGAPI Util::TypeConstant getAttributeType(uint32_t glType);
 
 [[deprecated]]
 static const char * getGLTypeString(uint32_t type) { return Util::getTypeString(getAttributeType(type)).c_str(); }
@@ -83,7 +82,7 @@ static const char * getGraphicsLanguageVersion() { return ""; }
 static const char * getShadingLanguageVersion() { return ""; }
 
 [[deprecated("Use Device::isExtensionSuported instead.")]]
-bool isExtensionSupported(const char * extension);
+RENDERINGAPI bool isExtensionSupported(const char * extension);
 
 [[deprecated]]
 static float readDepthValue(int32_t x, int32_t y) { return 0; }

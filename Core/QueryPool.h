@@ -54,15 +54,15 @@ struct Query {
 class QueryPool : public Util::ReferenceCounter<QueryPool> {
 public:
 	using Ref = Util::Reference<QueryPool>;
-	static Ref create(const DeviceRef& device, uint32_t batchSize);
-	~QueryPool();
+	RENDERINGAPI static Ref create(const DeviceRef& device, uint32_t batchSize);
+	RENDERINGAPI ~QueryPool();
 	QueryPool(QueryPool&& o) = default;
 	QueryPool(const QueryPool& o) = delete;
 
-	Query request(QueryType type);
-	void free(Query& query);
+	RENDERINGAPI Query request(QueryType type);
+	RENDERINGAPI void free(Query& query);
 
-	QueryPoolHandle getPoolHandle(Query query) const;
+	RENDERINGAPI QueryPoolHandle getPoolHandle(Query query) const;
 
 private:
 	QueryPool(const DeviceRef& device, uint32_t batchSize);

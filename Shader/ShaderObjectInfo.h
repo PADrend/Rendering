@@ -32,12 +32,14 @@ using DeviceRef = Util::Reference<Device>;
  */
 class ShaderObjectInfo {
 	public:
-		static const uint32_t SHADER_STAGE_VERTEX;
-		static const uint32_t SHADER_STAGE_FRAGMENT;
-		static const uint32_t SHADER_STAGE_GEOMETRY;
-		static const uint32_t SHADER_STAGE_TESS_CONTROL;
-		static const uint32_t SHADER_STAGE_TESS_EVALUATION;
-		static const uint32_t SHADER_STAGE_COMPUTE;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_VERTEX;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_FRAGMENT;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_GEOMETRY;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_TESS_CONTROL;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_TESS_EVALUATION;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_COMPUTE;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_TASK;
+		RENDERINGAPI static const uint32_t SHADER_STAGE_MESH;
 	private:
 		using Define = std::pair<std::string, std::string>;
 		const ShaderStage stage;
@@ -71,75 +73,95 @@ class ShaderObjectInfo {
 		 * 
 		 * @return true on success, false otherwise
 		 */
-		bool compile(const DeviceRef& device);
+		RENDERINGAPI bool compile(const DeviceRef& device);
 
 		/**
 		 * Create a VertexShaderObject from the given spir-v code
 		 * 
 		 * @note Inserts "#define SG_VERTEX_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createVertex(const std::vector<uint32_t>& spirv);
+		RENDERINGAPI static ShaderObjectInfo createVertex(const std::vector<uint32_t>& spirv);
 
 		/**
 		 * Create a FragmentShaderObject from the given spir-v code
 		 * 
 		 * @note Inserts "#define SG_FRAGMENT_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createFragment(const std::vector<uint32_t>& spirv);
+		RENDERINGAPI static ShaderObjectInfo createFragment(const std::vector<uint32_t>& spirv);
 
 		/**
 		 * Create a GeometryShaderObject from the given spir-v code
 		 * 
 		 * @note Inserts "#define SG_GEOMETRY_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createGeometry(const std::vector<uint32_t>& spirv);
+		RENDERINGAPI static ShaderObjectInfo createGeometry(const std::vector<uint32_t>& spirv);
 
 		/**
 		 * Create a ComputeShaderObject from the given spir-v code
 		 * 
 		 * @note Inserts "#define SG_COMPUTE_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createCompute(const std::vector<uint32_t>& spirv);
+		RENDERINGAPI static ShaderObjectInfo createCompute(const std::vector<uint32_t>& spirv);
 
 		/**
 		 * Create a VertexShaderObject from the given glsl code
 		 * 
 		 * @note Inserts "#define SG_VERTEX_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createVertex(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createVertex(const std::string & code);
 
 		/**
 		 * Create a FragmentShaderObject from the given glsl code
 		 * 
 		 * @note Inserts "#define SG_FRAGMENT_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createFragment(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createFragment(const std::string & code);
 
 		/**
 		 * Create a GeometryShaderObject from the given glsl code
 		 * 
 		 * @note Inserts "#define SG_GEOMETRY_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createGeometry(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createGeometry(const std::string & code);
 
 		/**
 		 * Create a ComputeShaderObject from the given glsl code
 		 * 
 		 * @note Inserts "#define SG_COMPUTE_SHADER" before the first line.
 		 */
-		static ShaderObjectInfo createCompute(const std::string & code);
+		RENDERINGAPI static ShaderObjectInfo createCompute(const std::string & code);
+
+		/**
+		 * Create a MeshShaderObject from the given code
+		 * 
+		 * @note Inserts "#define SG_MESH_SHADER" before the first line.
+		 */
+		RENDERINGAPI static ShaderObjectInfo createMesh(const std::string & code);
+
+		/**
+		 * Create a TaskShaderObject from the given code
+		 * 
+		 * @note Inserts "#define SG_TASK_SHADER" before the first line.
+		 */
+		RENDERINGAPI static ShaderObjectInfo createTask(const std::string & code);
 
 		//! Load a VertexShaderObject from the given file.
-		static ShaderObjectInfo loadVertex(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadVertex(const Util::FileName & file);
 
 		//! Load a FragmentShaderObject from the given file.
-		static ShaderObjectInfo loadFragment(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadFragment(const Util::FileName & file);
 
 		//! Load a GeometryShaderObject from the given file.
-		static ShaderObjectInfo loadGeometry(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadGeometry(const Util::FileName & file);
 
 		//! Load a ComputeShaderObject from the given file.
-		static ShaderObjectInfo loadCompute(const Util::FileName & file);
+		RENDERINGAPI static ShaderObjectInfo loadCompute(const Util::FileName & file);
+
+		//! Load a MeshShaderObject from the given file.
+		RENDERINGAPI static ShaderObjectInfo loadMesh(const Util::FileName & file);
+
+		//! Load a TaskShaderObject from the given file.
+		RENDERINGAPI static ShaderObjectInfo loadTask(const Util::FileName & file);
 	
 		const Util::FileName & getFileName() const { return filename; }
 	private:

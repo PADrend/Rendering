@@ -17,6 +17,7 @@
 #include <memory>
 #include <functional>
 #include <vector>
+#include <string>
 
 namespace Geometry {
 template<typename _T> class _Matrix4x4;
@@ -93,9 +94,9 @@ private:
 
 public:
 
-	RenderingContext();
-	RenderingContext(const DeviceRef& device);
-	~RenderingContext();
+	RENDERINGAPI RenderingContext();
+	RENDERINGAPI RenderingContext(const DeviceRef& device);
+	RENDERINGAPI ~RenderingContext();
 
 	//! has to return true iff normal display of mesh shall be executed
 	typedef std::function<void (RenderingContext& rc,Mesh * mesh,uint32_t firstElement,uint32_t elementCount)> DisplayMeshFn;
@@ -103,10 +104,10 @@ private:
 	DisplayMeshFn displayMeshFn;
 public:
 	void setDisplayMeshFn(DisplayMeshFn fn){ displayMeshFn = fn; };
-	void resetDisplayMeshFn();
+	RENDERINGAPI void resetDisplayMeshFn();
 
 	void displayMesh(Mesh * mesh,uint32_t firstElement,uint32_t elementCount){ displayMeshFn(*this, mesh,firstElement,elementCount); }
-	void displayMesh(Mesh * mesh);
+	RENDERINGAPI void displayMesh(Mesh * mesh);
 
 	void displayMesh(const MeshRef& mesh,uint32_t firstElement,uint32_t elementCount){ displayMeshFn(*this, mesh.get(),firstElement,elementCount); }
 	void displayMesh(const MeshRef& mesh) { displayMesh(mesh.get()); }
@@ -118,12 +119,12 @@ public:
 	[[deprecated]]
 	static bool getCompabilityMode() { return false; }
 
-	void applyChanges(bool forced = false);
+	RENDERINGAPI void applyChanges(bool forced = false);
 
-	const DeviceRef& getDevice() const;
-	CommandBufferRef getCommandBuffer() const;
-	const PipelineState& getPipelineState() const;
-	const RenderingState& getRenderingState() const;
+	RENDERINGAPI const DeviceRef& getDevice() const;
+	RENDERINGAPI CommandBufferRef getCommandBuffer() const;
+	RENDERINGAPI const PipelineState& getPipelineState() const;
+	RENDERINGAPI const RenderingState& getRenderingState() const;
 	//	@}
 
 	// -----------------------------------
@@ -141,7 +142,7 @@ public:
 	 * Flush the GL commands buffer.
 	 * @see glFlush
 	 */
-	void flush(bool wait=false);
+	RENDERINGAPI void flush(bool wait=false);
 
 	/**
 	 * Block until all GL commands are complete.
@@ -150,23 +151,23 @@ public:
 	void finish() { flush(true); }
 
 	//! Renders to screen& swaps buffers
-	void present();
+	RENDERINGAPI void present();
 	
 	/**
 	 * Defines a barrier ordering memory transactions.
 	 * @see glMemoryBarrier
 	 */
-	void barrier(uint32_t flags=0);
+	RENDERINGAPI void barrier(uint32_t flags=0);
 	
 	// @}
 
 	/*!	@name Clear */
 	//	@{
-	void clearColor(const Util::Color4f& color);
-	void clearDepth(float clearValue);
-	void clearStencil(uint32_t clearValue);
-	void clearScreen(const Util::Color4f& color);
-	void clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool clearDepth=true, bool clearStencil=true);
+	RENDERINGAPI void clearColor(const Util::Color4f& color);
+	RENDERINGAPI void clearDepth(float clearValue);
+	RENDERINGAPI void clearStencil(uint32_t clearValue);
+	RENDERINGAPI void clearScreen(const Util::Color4f& color);
+	RENDERINGAPI void clearScreenRect(const Geometry::Rect_i& rect, const Util::Color4f& color, bool clearDepth=true, bool clearStencil=true);
 	// @}
 	// --------------------------------------------------------------------
 	// --------------------------------------------------------------------
@@ -175,15 +176,15 @@ public:
 	//! @name AlphaTest (deprecated)
 	//	@{
 	[[deprecated]]
-	const AlphaTestParameters getAlphaTestParameters() const;
+	RENDERINGAPI const AlphaTestParameters getAlphaTestParameters() const;
 	[[deprecated]]
-	void popAlphaTest();
+	RENDERINGAPI void popAlphaTest();
 	[[deprecated]]
-	void pushAlphaTest();
+	RENDERINGAPI void pushAlphaTest();
 	[[deprecated]]
-	void pushAndSetAlphaTest(const AlphaTestParameters& alphaTestParameter);
+	RENDERINGAPI void pushAndSetAlphaTest(const AlphaTestParameters& alphaTestParameter);
 	[[deprecated]]
-	void setAlphaTest(const AlphaTestParameters& alphaTestParameter);
+	RENDERINGAPI void setAlphaTest(const AlphaTestParameters& alphaTestParameter);
 	// @}
 	
 	// ------
@@ -211,18 +212,18 @@ public:
 
 	//! @name Blending
 	//	@{
-	const ColorBlendState& getBlending() const;
-	void popBlending();
-	void pushBlending();
-	void pushAndSetBlending(const ColorBlendState& state);
-	void setBlending(const ColorBlendState& state);
+	RENDERINGAPI const ColorBlendState& getBlending() const;
+	RENDERINGAPI void popBlending();
+	RENDERINGAPI void pushBlending();
+	RENDERINGAPI void pushAndSetBlending(const ColorBlendState& state);
+	RENDERINGAPI void setBlending(const ColorBlendState& state);
 
 	[[deprecated]]
-	const BlendingParameters getBlendingParameters() const;
+	RENDERINGAPI const BlendingParameters getBlendingParameters() const;
 	[[deprecated]]
-	void pushAndSetBlending(const BlendingParameters& blendingParameter);
+	RENDERINGAPI void pushAndSetBlending(const BlendingParameters& blendingParameter);
 	[[deprecated]]
-	void setBlending(const BlendingParameters& blendingParameter);
+	RENDERINGAPI void setBlending(const BlendingParameters& blendingParameter);
 	// @}
 	
 	// ------
@@ -230,7 +231,7 @@ public:
 	//! @name Clip plane
 	//	@{
 	[[deprecated]]
-	const ClipPlaneParameters getClipPlane(uint8_t index) const;
+	RENDERINGAPI const ClipPlaneParameters getClipPlane(uint8_t index) const;
 	[[deprecated]]
 	void popClipPlane(uint8_t index) {}
 	[[deprecated]]
@@ -246,53 +247,53 @@ public:
 	//! @name ColorBuffer
 	//	@{
 	[[deprecated]]
-	const ColorBufferParameters getColorBufferParameters() const;
+	RENDERINGAPI const ColorBufferParameters getColorBufferParameters() const;
 	[[deprecated]]
-	void popColorBuffer();
+	RENDERINGAPI void popColorBuffer();
 	[[deprecated]]
-	void pushColorBuffer();
+	RENDERINGAPI void pushColorBuffer();
 	[[deprecated]]
-	void pushAndSetColorBuffer(const ColorBufferParameters& colorBufferParameter);
+	RENDERINGAPI void pushAndSetColorBuffer(const ColorBufferParameters& colorBufferParameter);
 	[[deprecated]]
-	void setColorBuffer(const ColorBufferParameters& colorBufferParameter);
+	RENDERINGAPI void setColorBuffer(const ColorBufferParameters& colorBufferParameter);
 
 	// @}
 	// ------
 	
 	//! @name Compute
 	//	@{
-	void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
-	void dispatchComputeIndirect(size_t offset=0);
+	RENDERINGAPI void dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY=1, uint32_t numGroupsZ=1);
+	RENDERINGAPI void dispatchComputeIndirect(size_t offset=0);
 	[[deprecated]]
-	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices);
+	RENDERINGAPI void loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices);
 	[[deprecated]]
-	void loadUniformSubroutines(uint32_t shaderStage, const std::vector<std::string>& names);
+	RENDERINGAPI void loadUniformSubroutines(uint32_t shaderStage, const std::vector<std::string>& names);
 	// @}
 
 
 	//! @name CullFace
 	//	@{
 	[[deprecated]]
-	const CullFaceParameters getCullFaceParameters() const;
+	RENDERINGAPI const CullFaceParameters getCullFaceParameters() const;
 	[[deprecated]]
-	void popCullFace();
+	RENDERINGAPI void popCullFace();
 	[[deprecated]]
-	void pushCullFace();
+	RENDERINGAPI void pushCullFace();
 	[[deprecated]]
-	void pushAndSetCullFace(const CullFaceParameters& cullFaceParameters);
+	RENDERINGAPI void pushAndSetCullFace(const CullFaceParameters& cullFaceParameters);
 	[[deprecated]]
-	void setCullFace(const CullFaceParameters& cullFaceParameters);
+	RENDERINGAPI void setCullFace(const CullFaceParameters& cullFaceParameters);
 	// @}
 	
 	// ------
 
 	//! @name DepthStencil
 	//	@{
-	const DepthStencilState& getDepthStencil() const;
-	void popDepthStencil();
-	void pushDepthStencil();
-	void pushAndSetDepthStencil(const DepthStencilState& state);
-	void setDepthStencil(const DepthStencilState& state);
+	RENDERINGAPI const DepthStencilState& getDepthStencil() const;
+	RENDERINGAPI void popDepthStencil();
+	RENDERINGAPI void pushDepthStencil();
+	RENDERINGAPI void pushAndSetDepthStencil(const DepthStencilState& state);
+	RENDERINGAPI void setDepthStencil(const DepthStencilState& state);
 	// @}
 
 	// ------
@@ -300,15 +301,15 @@ public:
 	//! @name DepthBuffer
 	//	@{
 	[[deprecated]]
-	const DepthBufferParameters getDepthBufferParameters() const;
+	RENDERINGAPI const DepthBufferParameters getDepthBufferParameters() const;
 	[[deprecated]]
-	void popDepthBuffer();
+	RENDERINGAPI void popDepthBuffer();
 	[[deprecated]]
-	void pushDepthBuffer();
+	RENDERINGAPI void pushDepthBuffer();
 	[[deprecated]]
-	void pushAndSetDepthBuffer(const DepthBufferParameters& depthBufferParameter);
+	RENDERINGAPI void pushAndSetDepthBuffer(const DepthBufferParameters& depthBufferParameter);
 	[[deprecated]]
-	void setDepthBuffer(const DepthBufferParameters& depthBufferParameter);
+	RENDERINGAPI void setDepthBuffer(const DepthBufferParameters& depthBufferParameter);
 
 	// @}
 
@@ -316,13 +317,13 @@ public:
 
 	//! @name Drawing
 	//	@{
-	void bindVertexBuffer(const BufferObjectRef& buffer, const VertexDescription& vd);
-	void bindVertexBuffers(const std::vector<BufferObjectRef>& buffers, const std::vector<VertexDescription>& vds, const std::vector<uint32_t> rates={});
-	void bindIndexBuffer(const BufferObjectRef& buffer);
-	void draw(uint32_t vertexCount, uint32_t firstVertex=0, uint32_t instanceCount=1, uint32_t firstInstance=0);
-	void drawIndexed(uint32_t indexCount, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t instanceCount=1, uint32_t firstInstance=0);
-	void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride);
-	void setPrimitiveTopology(PrimitiveTopology topology);
+	RENDERINGAPI void bindVertexBuffer(const BufferObjectRef& buffer, const VertexDescription& vd);
+	RENDERINGAPI void bindVertexBuffers(const std::vector<BufferObjectRef>& buffers, const std::vector<VertexDescription>& vds, const std::vector<uint32_t> rates={});
+	RENDERINGAPI void bindIndexBuffer(const BufferObjectRef& buffer);
+	RENDERINGAPI void draw(uint32_t vertexCount, uint32_t firstVertex=0, uint32_t instanceCount=1, uint32_t firstInstance=0);
+	RENDERINGAPI void drawIndexed(uint32_t indexCount, uint32_t firstIndex=0, uint32_t vertexOffset=0, uint32_t instanceCount=1, uint32_t firstInstance=0);
+	RENDERINGAPI void drawIndirect(const BufferObjectRef& buffer, uint32_t drawCount, uint32_t stride);
+	RENDERINGAPI void setPrimitiveTopology(PrimitiveTopology topology);
 	// @}
 
 	// ------
@@ -330,20 +331,20 @@ public:
 	//! @name FBO
 	//	@{
 	[[deprecated]]
-	FBO * getActiveFBO() const;
-	FBORef getFBO() const;
-	void popFBO();
-	void pushFBO();
-	void pushAndSetFBO(const FBORef& fbo);
-	void setFBO(const FBORef& fbo);
+	RENDERINGAPI FBO * getActiveFBO() const;
+	RENDERINGAPI FBORef getFBO() const;
+	RENDERINGAPI void popFBO();
+	RENDERINGAPI void pushFBO();
+	RENDERINGAPI void pushAndSetFBO(const FBORef& fbo);
+	RENDERINGAPI void setFBO(const FBORef& fbo);
 	// @}
 
 	// ------
 
 	//! @name Global Uniforms
 	//	@{
-	void setGlobalUniform(const Uniform& u);
-	const Uniform& getGlobalUniform(const Util::StringIdentifier& uniformName);
+	RENDERINGAPI void setGlobalUniform(const Uniform& u);
+	RENDERINGAPI const Uniform& getGlobalUniform(const Util::StringIdentifier& uniformName);
 	// @}
 
 	// ------
@@ -351,12 +352,12 @@ public:
 	//! @name Image Binding (Image load and store)
 	//	@{
 	static bool isImageBindingSupported() { return true; }
-	ImageBindParameters getBoundImage(uint8_t unit, uint8_t set=0) const;
-	void pushBoundImage(uint8_t unit, uint8_t set=0);
-	void pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam, uint8_t set=0); 
-	void popBoundImage(uint8_t unit, uint8_t set=0);
+	RENDERINGAPI ImageBindParameters getBoundImage(uint8_t unit, uint8_t set=0) const;
+	RENDERINGAPI void pushBoundImage(uint8_t unit, uint8_t set=0);
+	RENDERINGAPI void pushAndSetBoundImage(uint8_t unit, const ImageBindParameters& iParam, uint8_t set=0); 
+	RENDERINGAPI void popBoundImage(uint8_t unit, uint8_t set=0);
 	//! \note the texture in iParam may be null to unbind
-	void setBoundImage(uint8_t unit, const ImageBindParameters& iParam, uint8_t set=0);
+	RENDERINGAPI void setBoundImage(uint8_t unit, const ImageBindParameters& iParam, uint8_t set=0);
 	// @}
 
 	// ------
@@ -364,7 +365,7 @@ public:
 	//! @name Lighting
 	//	@{
 	[[deprecated]]
-	const LightingParameters getLightingParameters() const;
+	RENDERINGAPI const LightingParameters getLightingParameters() const;
 	[[deprecated]]
 	void popLighting() {}
 	[[deprecated]]
@@ -384,16 +385,16 @@ public:
 	 * @param light Parameters of a light source.
 	 * @return Light number that was used for this light. This number has to be used to deactivate the light.
 	 */
-	size_t enableLight(const LightData& light);
+	RENDERINGAPI size_t enableLight(const LightData& light);
 	[[deprecated]]
-	size_t enableLight(const LightParameters& light);
+	RENDERINGAPI size_t enableLight(const LightParameters& light);
 
 	/**
 	 * Deactivate a previuosly activated light.
 	 *
 	 * @param lightNumber Light number that was returned by @a enableLight.
 	 */
-	void disableLight(size_t lightNumber);
+	RENDERINGAPI void disableLight(size_t lightNumber);
 	// @}
 
 	// ------
@@ -401,15 +402,15 @@ public:
 	//! @name Line
 	//	@{
 	[[deprecated]]
-	const LineParameters getLineParameters() const;
+	RENDERINGAPI const LineParameters getLineParameters() const;
 	[[deprecated]]
-	void popLine();
+	RENDERINGAPI void popLine();
 	[[deprecated]]
-	void pushLine();
+	RENDERINGAPI void pushLine();
 	[[deprecated]]
-	void pushAndSetLine(const LineParameters& lineParameters);
+	RENDERINGAPI void pushAndSetLine(const LineParameters& lineParameters);
 	[[deprecated]]
-	void setLine(const LineParameters& lineParameters);
+	RENDERINGAPI void setLine(const LineParameters& lineParameters);
 	// @}
 
 	// ------
@@ -417,23 +418,23 @@ public:
 	//! @name Material
 	//	@{
 	//! Return the active material.
-	const MaterialData& getActiveMaterial() const;
+	RENDERINGAPI const MaterialData& getActiveMaterial() const;
 	[[deprecated]]
-	const MaterialParameters getMaterial() const;
+	RENDERINGAPI const MaterialParameters getMaterial() const;
 	//! Pop a material from the top of the stack and activate it. Deactivate material usage if stack is empty.
-	void popMaterial();
+	RENDERINGAPI void popMaterial();
 	//! Push the given material onto the material stack.
-	void pushMaterial();
+	RENDERINGAPI void pushMaterial();
 	//! Push the given material onto the material stack and activate it.
-	void pushAndSetMaterial(const MaterialData& material);
+	RENDERINGAPI void pushAndSetMaterial(const MaterialData& material);
 	[[deprecated]]
-	void pushAndSetMaterial(const MaterialParameters& material);
+	RENDERINGAPI void pushAndSetMaterial(const MaterialParameters& material);
 	//! Convert the given color to a material, and call @a pushAndSetMaterial
-	void pushAndSetColorMaterial(const Util::Color4f& color);
+	RENDERINGAPI void pushAndSetColorMaterial(const Util::Color4f& color);
 	//! Activate the given material.
-	void setMaterial(const MaterialData& material);
+	RENDERINGAPI void setMaterial(const MaterialData& material);
 	[[deprecated]]
-	void setMaterial(const MaterialParameters& material);
+	RENDERINGAPI void setMaterial(const MaterialParameters& material);
 
 	// @}
 	// ------
@@ -441,9 +442,9 @@ public:
 	/*! @name Matrix CameraToWorld / WorldToCamera
 	 camera matrix == inverse world matrix of camera node == default model view matrix	*/
 	//	@{
-	void setMatrix_cameraToWorld(const Geometry::Matrix4x4& matrix);	//!< formerly known as setInverseCameraMatrix
-	const Geometry::Matrix4x4& getMatrix_worldToCamera() const;		//!< formerly known as getCameraMatrix
-	const Geometry::Matrix4x4& getMatrix_cameraToWorld() const;		//!< formerly known as getInverseCameraMatrix
+	RENDERINGAPI void setMatrix_cameraToWorld(const Geometry::Matrix4x4& matrix);	//!< formerly known as setInverseCameraMatrix
+	RENDERINGAPI const Geometry::Matrix4x4& getMatrix_worldToCamera() const;		//!< formerly known as getCameraMatrix
+	RENDERINGAPI const Geometry::Matrix4x4& getMatrix_cameraToWorld() const;		//!< formerly known as getInverseCameraMatrix
 	//	@}
 
 	// ------
@@ -451,24 +452,24 @@ public:
 	//! @name Matrix ModelToCamera (Legacy Model View Matrix)
 	//	@{
 	//! resets the model view matrix to the default (camera matrix)
-	void resetMatrix();  //! \note use renderingContext.setMatrix_modelToCamera( renderingContext.getMatrix_worldToCamera() ) instead!
-	const Geometry::Matrix4x4& getMatrix_modelToCamera() const;		//!< formerly known as getMatrix
-	void multMatrix_modelToCamera(const Geometry::Matrix4x4& matrix);	//!< formerly known as multMatrix
-	void pushMatrix_modelToCamera();									//!< formerly known as pushMatrix
-	void pushAndSetMatrix_modelToCamera(const Geometry::Matrix4x4& matrix);
-	void setMatrix_modelToCamera(const Geometry::Matrix4x4& matrix);	//!< formerly known as setMatrix
-	void popMatrix_modelToCamera();										//!< formerly known as popMatrix
+	RENDERINGAPI void resetMatrix();  //! \note use renderingContext.setMatrix_modelToCamera( renderingContext.getMatrix_worldToCamera() ) instead!
+	RENDERINGAPI const Geometry::Matrix4x4& getMatrix_modelToCamera() const;		//!< formerly known as getMatrix
+	RENDERINGAPI void multMatrix_modelToCamera(const Geometry::Matrix4x4& matrix);	//!< formerly known as multMatrix
+	RENDERINGAPI void pushMatrix_modelToCamera();									//!< formerly known as pushMatrix
+	RENDERINGAPI void pushAndSetMatrix_modelToCamera(const Geometry::Matrix4x4& matrix);
+	RENDERINGAPI void setMatrix_modelToCamera(const Geometry::Matrix4x4& matrix);	//!< formerly known as setMatrix
+	RENDERINGAPI void popMatrix_modelToCamera();										//!< formerly known as popMatrix
 	//	@}
 	
 	// ------
 
 	//! @name Matrix CameraToClipping (Legacy Projection Matrix)
 	//	@{
-	const Geometry::Matrix4x4& getMatrix_cameraToClipping() const;			//! formerly known as getProjectionMatrix
-	void pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4x4& matrix);
-	void pushMatrix_cameraToClipping();										//! formerly known as pushProjectionMatrix
-	void popMatrix_cameraToClipping();										//! formerly known as popProjectionMatrix
-	void setMatrix_cameraToClipping(const Geometry::Matrix4x4& matrix);	//! formerly known as setProjectionMatrix
+	RENDERINGAPI const Geometry::Matrix4x4& getMatrix_cameraToClipping() const;			//! formerly known as getProjectionMatrix
+	RENDERINGAPI void pushAndSetMatrix_cameraToClipping(const Geometry::Matrix4x4& matrix);
+	RENDERINGAPI void pushMatrix_cameraToClipping();										//! formerly known as pushProjectionMatrix
+	RENDERINGAPI void popMatrix_cameraToClipping();										//! formerly known as popProjectionMatrix
+	RENDERINGAPI void setMatrix_cameraToClipping(const Geometry::Matrix4x4& matrix);	//! formerly known as setProjectionMatrix
 	// @}
 	
 	// ------
@@ -476,30 +477,30 @@ public:
 	//! @name Point
 	//	@{
 	[[deprecated]]
-	const PointParameters getPointParameters() const;
+	RENDERINGAPI const PointParameters getPointParameters() const;
 	[[deprecated]]
-	void popPointParameters();
+	RENDERINGAPI void popPointParameters();
 	[[deprecated]]
-	void pushPointParameters();
+	RENDERINGAPI void pushPointParameters();
 	[[deprecated]]
-	void pushAndSetPointParameters(const PointParameters& pointParameters);
+	RENDERINGAPI void pushAndSetPointParameters(const PointParameters& pointParameters);
 	[[deprecated]]
-	void setPointParameters(const PointParameters& pointParameters);
+	RENDERINGAPI void setPointParameters(const PointParameters& pointParameters);
 	// @}
 	// ------
 
 	//! @name PolygonMode
 	//	@{
 	[[deprecated]]
-	const PolygonModeParameters getPolygonModeParameters() const;
+	RENDERINGAPI const PolygonModeParameters getPolygonModeParameters() const;
 	[[deprecated]]
-	void popPolygonMode();
+	RENDERINGAPI void popPolygonMode();
 	[[deprecated]]
-	void pushPolygonMode();
+	RENDERINGAPI void pushPolygonMode();
 	[[deprecated]]
-	void pushAndSetPolygonMode(const PolygonModeParameters& polygonModeParameter);
+	RENDERINGAPI void pushAndSetPolygonMode(const PolygonModeParameters& polygonModeParameter);
 	[[deprecated]]
-	void setPolygonMode(const PolygonModeParameters& polygonModeParameter);
+	RENDERINGAPI void setPolygonMode(const PolygonModeParameters& polygonModeParameter);
 	// @}
 
 	// ------
@@ -507,15 +508,15 @@ public:
 	//! @name PolygonOffset
 	//	@{
 	[[deprecated]]
-	const PolygonOffsetParameters getPolygonOffsetParameters() const;
+	RENDERINGAPI const PolygonOffsetParameters getPolygonOffsetParameters() const;
 	[[deprecated]]
-	void popPolygonOffset();
+	RENDERINGAPI void popPolygonOffset();
 	[[deprecated]]
-	void pushPolygonOffset();
+	RENDERINGAPI void pushPolygonOffset();
 	[[deprecated]]
-	void pushAndSetPolygonOffset(const PolygonOffsetParameters& polygonOffsetParameter);
+	RENDERINGAPI void pushAndSetPolygonOffset(const PolygonOffsetParameters& polygonOffsetParameter);
 	[[deprecated]]
-	void setPolygonOffset(const PolygonOffsetParameters& polygonOffsetParameter);
+	RENDERINGAPI void setPolygonOffset(const PolygonOffsetParameters& polygonOffsetParameter);
 	// @}
 	
 	// ------
@@ -523,26 +524,26 @@ public:
 	//! @name Primitive restart
 	//	@{
 	[[deprecated]]
-	const PrimitiveRestartParameters getPrimitiveRestartParameters() const;
+	RENDERINGAPI const PrimitiveRestartParameters getPrimitiveRestartParameters() const;
 	[[deprecated]]
-	void popPrimitiveRestart();
+	RENDERINGAPI void popPrimitiveRestart();
 	[[deprecated]]
-	void pushPrimitiveRestart();
+	RENDERINGAPI void pushPrimitiveRestart();
 	[[deprecated]]
-	void pushAndSetPrimitiveRestart(const PrimitiveRestartParameters& parameters);
+	RENDERINGAPI void pushAndSetPrimitiveRestart(const PrimitiveRestartParameters& parameters);
 	[[deprecated]]
-	void setPrimitiveRestart(const PrimitiveRestartParameters& parameters);
+	RENDERINGAPI void setPrimitiveRestart(const PrimitiveRestartParameters& parameters);
 	// @}
 	
 	// ------
 
 	//! @name Rasterization
 	//	@{
-	const RasterizationState& getRasterization() const;
-	void popRasterization();
-	void pushRasterization();
-	void pushAndSetRasterization(const RasterizationState& state);
-	void setRasterization(const RasterizationState& state);
+	RENDERINGAPI const RasterizationState& getRasterization() const;
+	RENDERINGAPI void popRasterization();
+	RENDERINGAPI void pushRasterization();
+	RENDERINGAPI void pushAndSetRasterization(const RasterizationState& state);
+	RENDERINGAPI void setRasterization(const RasterizationState& state);
 	// @}
 
 
@@ -550,16 +551,16 @@ public:
 
 	//! @name Shader
 	//	@{
-	void pushAndSetShader(const ShaderRef& shader);
-	void pushShader();
-	void popShader();
-	bool isShaderEnabled(const ShaderRef& shader);
-	const ShaderRef& getActiveShader() const;
-	const ShaderRef& getFallbackShader() const;
-	void setShader(const ShaderRef& shader);
+	RENDERINGAPI void pushAndSetShader(const ShaderRef& shader);
+	RENDERINGAPI void pushShader();
+	RENDERINGAPI void popShader();
+	RENDERINGAPI bool isShaderEnabled(const ShaderRef& shader);
+	RENDERINGAPI const ShaderRef& getActiveShader() const;
+	RENDERINGAPI const ShaderRef& getFallbackShader() const;
+	RENDERINGAPI void setShader(const ShaderRef& shader);
 
 	//! (internal) called by Shader::setUniform(...)
-	void _setUniformOnShader(const ShaderRef& shader, const Uniform& uniform, bool warnIfUnused, bool forced);
+	RENDERINGAPI void _setUniformOnShader(const ShaderRef& shader, const Uniform& uniform, bool warnIfUnused, bool forced);
 
 	// @}
 
@@ -568,15 +569,15 @@ public:
 	//! @name Scissor
 	//	@{
 	[[deprecated]]
-	const ScissorParameters getScissor() const;
+	RENDERINGAPI const ScissorParameters getScissor() const;
 	[[deprecated]]
-	void popScissor();
+	RENDERINGAPI void popScissor();
 	[[deprecated]]
-	void pushScissor();
+	RENDERINGAPI void pushScissor();
 	[[deprecated]]
-	void pushAndSetScissor(const ScissorParameters& scissorParameters);
+	RENDERINGAPI void pushAndSetScissor(const ScissorParameters& scissorParameters);
 	[[deprecated]]
-	void setScissor(const ScissorParameters& scissorParameters);
+	RENDERINGAPI void setScissor(const ScissorParameters& scissorParameters);
 	// @}
 
 // ------
@@ -584,15 +585,15 @@ public:
 	//! @name Stencil
 	//	@{
 	[[deprecated]]
-	const StencilParameters getStencilParamters() const;
+	RENDERINGAPI const StencilParameters getStencilParamters() const;
 	[[deprecated]]
-	void popStencil();
+	RENDERINGAPI void popStencil();
 	[[deprecated]]
-	void pushStencil();
+	RENDERINGAPI void pushStencil();
 	[[deprecated]]
-	void pushAndSetStencil(const StencilParameters& stencilParameter);
+	RENDERINGAPI void pushAndSetStencil(const StencilParameters& stencilParameter);
 	[[deprecated]]
-	void setStencil(const StencilParameters& stencilParameter);
+	RENDERINGAPI void setStencil(const StencilParameters& stencilParameter);
 
 	// @}
 
@@ -602,19 +603,19 @@ public:
 	 \todo Move array of activeTextures to RenderingStatus to allow delayed binding
 	 */
 	//	@{
-	const TextureRef getTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0) const;
+	RENDERINGAPI const TextureRef getTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0) const;
 	[[deprecated]]
-	TexUnitUsageParameter getTextureUsage(uint32_t unit) const;
-	void pushTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0);
-	void pushAndSetTexture(const TextureRef& texture, uint32_t index=0, uint32_t binding=0, uint32_t set=0);
+	RENDERINGAPI TexUnitUsageParameter getTextureUsage(uint32_t unit) const;
+	RENDERINGAPI void pushTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0);
+	RENDERINGAPI void pushAndSetTexture(const TextureRef& texture, uint32_t index=0, uint32_t binding=0, uint32_t set=0);
 	[[deprecated]]
 	void pushAndSetTexture(uint32_t unit, const TextureRef& texture, TexUnitUsageParameter usage) { pushAndSetTexture(texture, unit, 0, 0); }
 	[[deprecated]]
 	void pushAndSetTexture(uint32_t unit, const TextureRef& texture) { pushAndSetTexture(texture, unit, 0, 0); }
-	void popTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0);
+	RENDERINGAPI void popTexture(uint32_t index=0, uint32_t binding=0, uint32_t set=0);
 
 	//! \note texture may be nullptr
-	void setTexture(const TextureRef& texture, uint32_t index=0, uint32_t binding=0, uint32_t set=0);
+	RENDERINGAPI void setTexture(const TextureRef& texture, uint32_t index=0, uint32_t binding=0, uint32_t set=0);
 	[[deprecated]]
 	void setTexture(uint32_t unit, const TextureRef& texture, TexUnitUsageParameter usage) { setTexture(texture, unit, 0, 0); }
 	[[deprecated]]
@@ -695,31 +696,31 @@ public:
 	 * The width and height differs with the size of the window.
 	 * @note This value has to be set manually by calling setWindowClientArea() after creating the RenderingContext
 	 */
-	const Geometry::Rect_i& getWindowClientArea() const;
+	RENDERINGAPI const Geometry::Rect_i& getWindowClientArea() const;
 
 	//! Read the current viewport.
-	const Geometry::Rect_i& getViewport() const;
+	RENDERINGAPI const Geometry::Rect_i& getViewport() const;
 
 	//! Read the current viewport state.
-	const ViewportState& getViewportState() const;
+	RENDERINGAPI const ViewportState& getViewportState() const;
 
 	//! Restore the viewport from the top of the viewport stack.
-	void popViewport();
+	RENDERINGAPI void popViewport();
 
 	//! Save the current viewport onto the viewport stack.
-	void pushViewport();
+	RENDERINGAPI void pushViewport();
 
 	//! Set the current viewport.
-	void setViewport(const Geometry::Rect_i& viewport);
-	void setViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor);
-	void setViewport(const ViewportState& viewport);
+	RENDERINGAPI void setViewport(const Geometry::Rect_i& viewport);
+	RENDERINGAPI void setViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor);
+	RENDERINGAPI void setViewport(const ViewportState& viewport);
 
 	//! Save the current viewport onto the viewport stack and set the current viewport.
-	void pushAndSetViewport(const Geometry::Rect_i& viewport);
-	void pushAndSetViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor);
-	void pushAndSetViewport(const ViewportState& viewport);
+	RENDERINGAPI void pushAndSetViewport(const Geometry::Rect_i& viewport);
+	RENDERINGAPI void pushAndSetViewport(const Geometry::Rect_i& viewport, const Geometry::Rect_i& scissor);
+	RENDERINGAPI void pushAndSetViewport(const ViewportState& viewport);
 
-	void setWindowClientArea(const Geometry::Rect_i& clientArea);
+	RENDERINGAPI void setWindowClientArea(const Geometry::Rect_i& clientArea);
 	// @}
 };
 

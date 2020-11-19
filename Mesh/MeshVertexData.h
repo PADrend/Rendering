@@ -43,18 +43,18 @@ class MeshVertexData {
 	/*! (internal) To save memory, the vertexDescription is stored in a static set
 		so that each MeshVertexData-Object having the same vertex description references the same
 		VertexDescription object. */
-	void setVertexDescription(const VertexDescription & vd);
+	RENDERINGAPI void setVertexDescription(const VertexDescription & vd);
 public:
 
 	// main
-	MeshVertexData();
+	RENDERINGAPI MeshVertexData();
 	/*! Copy all data from @p other.
 		\note If the other data is only available in the graphics card memory, this may
 			only be called from within the gl-thread.	*/
-	MeshVertexData(const MeshVertexData & other);
-	MeshVertexData(MeshVertexData &&);
+	RENDERINGAPI MeshVertexData(const MeshVertexData & other);
+	RENDERINGAPI MeshVertexData(MeshVertexData &&);
 
-	~MeshVertexData();
+	RENDERINGAPI ~MeshVertexData();
 
 	MeshVertexData & operator=(const MeshVertexData &) = delete;
 	MeshVertexData & operator=(MeshVertexData &&) = default;
@@ -62,24 +62,24 @@ public:
 	const VertexDescription & getVertexDescription() const { return *vertexDescription; }
 	uint32_t getVertexCount() const { return vertexCount; }
 	bool empty() const { return vertexCount==0; }
-	void swap(MeshVertexData & other);
+	RENDERINGAPI void swap(MeshVertexData & other);
 
 	// data
 	/*! Set the local vertex data. The old data is freed.
 		\note Sets dataChanged. */
-	void allocate(uint32_t count, const VertexDescription & vd);
-	void releaseLocalData();
+	RENDERINGAPI void allocate(uint32_t count, const VertexDescription & vd);
+	RENDERINGAPI void releaseLocalData();
 	void markAsChanged() { dataChanged=true; }
 	bool hasChanged() const { return dataChanged; }
 	bool hasLocalData() const { return !binaryData.empty(); }
 	const uint8_t * data() const { return binaryData.data(); }
 	uint8_t * data() { return binaryData.data(); }
 	size_t dataSize() const { return binaryData.size(); }
-	const uint8_t * operator[](uint32_t index) const;
-	uint8_t * operator[](uint32_t index);
+	RENDERINGAPI const uint8_t * operator[](uint32_t index) const;
+	RENDERINGAPI uint8_t * operator[](uint32_t index);
 
 	// bounding box
-	void updateBoundingBox();
+	RENDERINGAPI void updateBoundingBox();
 	const Geometry::Box & getBoundingBox() const { return bb; }
 
 	//! @name Internal
@@ -100,17 +100,17 @@ public:
 	//! Call @a upload() with default usage hint.
 	bool upload() { return upload(MemoryUsage::GpuOnly); }
 	//! (internal) Create or update a VBO if hasChanged is set to true. hasChanged is set to false.
-	bool upload(MemoryUsage usage);
+	RENDERINGAPI bool upload(MemoryUsage usage);
 	
-	bool download();
-	void downloadTo(std::vector<uint8_t> & destination) const;
+	RENDERINGAPI bool download();
+	RENDERINGAPI void downloadTo(std::vector<uint8_t> & destination) const;
 
-	void bind(RenderingContext & context);
-	void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfElements);
+	RENDERINGAPI void bind(RenderingContext & context);
+	RENDERINGAPI void draw(RenderingContext & context, uint32_t startIndex, uint32_t numberOfElements);
 	void release() { bufferObject->destroy(); }
 
 	const BufferObject::Ref& getBuffer() { return bufferObject; }
-	void setDebugName(const std::string& name);
+	RENDERINGAPI void setDebugName(const std::string& name);
 	//! @}
 
 	//! @name Deprecated

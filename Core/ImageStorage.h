@@ -35,7 +35,7 @@ public:
 	using Ref = Util::Reference<ImageStorage>;
 	ImageStorage(const ImageStorage&) = delete;
 	ImageStorage(ImageStorage&&) = default;
-	~ImageStorage();
+	RENDERINGAPI ~ImageStorage();
 
 	/**
 	 * @brief Creates and allocates a new image storage.
@@ -43,7 +43,7 @@ public:
 	 * @param config The configuration parameters of the image
 	 * @return Smart reference to the image storage
 	 */
-	static Ref create(const DeviceRef& device, const Configuration& config);
+	RENDERINGAPI static Ref create(const DeviceRef& device, const Configuration& config);
 
 	/**
 	 * @brief Creates a image storage from an existing image handle.
@@ -52,7 +52,7 @@ public:
 	 * @param handle The image handle. The created image storage takes ownership of the handle.
 	 * @return Smart reference to the image storage
 	 */
-	static Ref createFromHandle(const DeviceRef& device, const Configuration& config, ImageHandle&& handle);
+	RENDERINGAPI static Ref createFromHandle(const DeviceRef& device, const Configuration& config, ImageHandle&& handle);
 
 	/**
 	 * @return The data size of the image
@@ -86,7 +86,7 @@ public:
 	
 	//! @name Debugging
 	//! @{	
-	void setDebugName(const std::string& name);
+	RENDERINGAPI void setDebugName(const std::string& name);
 	//! @}
 private:
 	explicit ImageStorage(const DeviceRef& device, const Configuration& config);

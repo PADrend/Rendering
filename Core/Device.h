@@ -47,37 +47,37 @@ class Device : public Util::ReferenceCounter<Device> {
 public:
 	using Ref = Util::Reference<Device>;
 	
-	static Ref create(Util::UI::WindowRef window, std::vector<std::string> validationLayers={}, bool throwOnError=false);
-	static Ref getDefault();
-	~Device();
+	RENDERINGAPI static Ref create(Util::UI::WindowRef window, std::vector<std::string> validationLayers={}, bool throwOnError=false);
+	RENDERINGAPI static Ref getDefault();
+	RENDERINGAPI ~Device();
 	
-	void present();
-	void waitIdle();
+	RENDERINGAPI void present();
+	RENDERINGAPI void waitIdle();
 	
 	//! @name Extensions & limits
 	//! @{
-	bool isExtensionSupported(const std::string& extension) const;
-	uint32_t getMaxFramebufferAttachments() const;
-	uint32_t getMaxPushConstantSize() const;
+	RENDERINGAPI bool isExtensionSupported(const std::string& extension) const;
+	RENDERINGAPI uint32_t getMaxFramebufferAttachments() const;
+	RENDERINGAPI uint32_t getMaxPushConstantSize() const;
 	//! @}
 	
-	const Util::UI::WindowRef& getWindow() const;	
-	const SwapchainRef& getSwapchain() const;
-	const Queue::Ref& getQueue(QueueFamily family, uint32_t index=0) const;
-	const Queue::Ref& getQueue(uint32_t familyIndex, uint32_t index=0) const;
-	std::set<Queue::Ref> getQueues() const;
-	const PipelineCacheHandle& getPipelineCache() const;
-	const ResourceCacheRef& getResourceCache() const;
-	const DescriptorPoolRef& getDescriptorPool() const;
-	const QueryPoolRef& getQueryPool() const;
-	bool isDebugModeEnabled() const;
+	RENDERINGAPI const Util::UI::WindowRef& getWindow() const;	
+	RENDERINGAPI const SwapchainRef& getSwapchain() const;
+	RENDERINGAPI const Queue::Ref& getQueue(QueueFamily family, uint32_t index=0) const;
+	RENDERINGAPI const Queue::Ref& getQueue(uint32_t familyIndex, uint32_t index=0) const;
+	RENDERINGAPI std::set<Queue::Ref> getQueues() const;
+	RENDERINGAPI const PipelineCacheHandle& getPipelineCache() const;
+	RENDERINGAPI const ResourceCacheRef& getResourceCache() const;
+	RENDERINGAPI const DescriptorPoolRef& getDescriptorPool() const;
+	RENDERINGAPI const QueryPoolRef& getQueryPool() const;
+	RENDERINGAPI bool isDebugModeEnabled() const;
 	
 	//! @name Internal
 	//! @{	
-	const SurfaceHandle& getSurface() const;
-	const InstanceHandle& getInstance() const;
-	const AllocatorHandle& getAllocator() const;
-	const DeviceHandle& getApiHandle() const;
+	RENDERINGAPI const SurfaceHandle& getSurface() const;
+	RENDERINGAPI const InstanceHandle& getInstance() const;
+	RENDERINGAPI const AllocatorHandle& getAllocator() const;
+	RENDERINGAPI const DeviceHandle& getApiHandle() const;
 	//! @}
 private:
 	Device(Util::UI::WindowRef window);

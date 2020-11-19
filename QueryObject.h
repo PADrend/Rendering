@@ -34,15 +34,15 @@ using DeviceRef = Util::Reference<Device>;
 class QueryObject {
 	public:
 		//! Standard constructor
-		explicit QueryObject(QueryType _queryType);
-		explicit QueryObject(const DeviceRef& device, QueryType _queryType);
+		RENDERINGAPI explicit QueryObject(QueryType _queryType);
+		RENDERINGAPI explicit QueryObject(const DeviceRef& device, QueryType _queryType);
 		
 		QueryObject(const QueryObject & other) = delete;
 		
 		QueryObject(QueryObject && other) : query(other.query) { other.query.id = -1; }
 
 		//! Destructor frees the query identifier.
-		~QueryObject();
+		RENDERINGAPI ~QueryObject();
 
 		QueryObject & operator=(const QueryObject &) = delete;
 		QueryObject & operator=(QueryObject && other) = delete;
@@ -50,43 +50,43 @@ class QueryObject {
 		/*!	Check if the result of the last query is already available.
 		 *	@return @c true if the test is finished, false otherwise.
 		 */
-		bool isResultAvailable() const;
+		RENDERINGAPI bool isResultAvailable() const;
 		[[deprecated("Use isResultAvailable() instead")]]
 		bool isResultAvailable(RenderingContext& rc) const { return isResultAvailable(); }
 
 		/*!	Return the result of the query.
 		 *	@return result value (e.g. sample count)
 		 */
-		uint32_t getResult() const;
+		RENDERINGAPI uint32_t getResult() const;
 		/*! Return the result of the query.
 		 * @note Will flush the rendering context
 		 * @return result value (e.g. sample count)
 		 */
-		uint32_t getResult(RenderingContext& rc) const;
+		RENDERINGAPI uint32_t getResult(RenderingContext& rc) const;
 		
 		/*! Returns the result as 64bit value. */
-		uint64_t getResult64() const;
+		RENDERINGAPI uint64_t getResult64() const;
 		/*! Return the result as 64bit value.
 		 * @note Will flush the rendering context
 		 * @return result value (e.g. sample count)
 		 */
-		uint64_t getResult64(RenderingContext& rc) const;
+		RENDERINGAPI uint64_t getResult64(RenderingContext& rc) const;
 
 		//!	Start the query. @a end() has to be called after the rendering was done.
-		void begin(RenderingContext& rc) const;
-		void begin(const CommandBufferRef& cmd) const;
+		RENDERINGAPI void begin(RenderingContext& rc) const;
+		RENDERINGAPI void begin(const CommandBufferRef& cmd) const;
 
 		//!	Stop the query.
-		void end(RenderingContext& rc) const;
-		void end(const CommandBufferRef& cmd) const;
+		RENDERINGAPI void end(RenderingContext& rc) const;
+		RENDERINGAPI void end(const CommandBufferRef& cmd) const;
 
 		//! Resets the query. Has to be called before every begin(), if the query is used multiple times.
-		void reset(RenderingContext& rc) const;
-		void reset(const CommandBufferRef& cmd) const;
+		RENDERINGAPI void reset(RenderingContext& rc) const;
+		RENDERINGAPI void reset(const CommandBufferRef& cmd) const;
 		
 		//! Record the time; only used with Timestamp
-		void timestamp(RenderingContext& rc) const;
-		void timestamp(const CommandBufferRef& cmd) const;
+		RENDERINGAPI void timestamp(RenderingContext& rc) const;
+		RENDERINGAPI void timestamp(const CommandBufferRef& cmd) const;
 		[[deprecated("Use timestamp(RenderingContext&) instead")]]
 		void queryCounter(RenderingContext& rc) const { timestamp(rc); }
 

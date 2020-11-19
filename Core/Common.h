@@ -42,7 +42,7 @@ enum class MemoryUsage {
 	CpuToGpu, //! Memory that is both mappable on host and preferably fast to access by GPU.
 	GpuToCpu //! Memory mappable on host and cached.
 };
-std::string toString(MemoryUsage usage);
+RENDERINGAPI std::string toString(MemoryUsage usage);
 
 //---------------------------
 
@@ -145,7 +145,7 @@ enum class InternalFormat : std::uint8_t {
 	BC7UnormSrgb,
 	ETC2RGB8Unorm,
 };
-std::string toString(InternalFormat format);
+RENDERINGAPI std::string toString(InternalFormat format);
 
 //---------------------------
 
@@ -180,7 +180,7 @@ enum class ResourceUsage {
 	VertexBuffer,
 	IndirectBuffer,
 };
-std::string toString(ResourceUsage usage);
+RENDERINGAPI std::string toString(ResourceUsage usage);
 
 //---------------------------
 
@@ -213,17 +213,17 @@ struct ImageFormat {
 	bool operator!=(const ImageFormat& o) const { return !(*this == o); }
 
 };
-std::string toString(const ImageFormat& format);
+RENDERINGAPI std::string toString(const ImageFormat& format);
 
 //---------------------------
 
-InternalFormat toInternalFormat(const Util::AttributeFormat& attr);
-Util::AttributeFormat toAttributeFormat(InternalFormat format);
+RENDERINGAPI InternalFormat toInternalFormat(const Util::AttributeFormat& attr);
+RENDERINGAPI Util::AttributeFormat toAttributeFormat(InternalFormat format);
 
-uint8_t getDataSize(InternalFormat format);
-size_t getDataSize(const ImageFormat& format);
+RENDERINGAPI uint8_t getDataSize(InternalFormat format);
+RENDERINGAPI size_t getDataSize(const ImageFormat& format);
 
-bool isDepthStencilFormat(InternalFormat format);
+RENDERINGAPI bool isDepthStencilFormat(InternalFormat format);
 inline bool isDepthStencilFormat(const ImageFormat& format) {
 	return isDepthStencilFormat(format.pixelFormat);
 }
