@@ -182,6 +182,9 @@ class BufferObject {
 		 * Unmaps a previously mapped buffer.
 		 */
 		RENDERINGAPI void unmap();
+
+		//! (internal) sets the glId of the buffer. Used for creating buffers from existing gl buffers. 
+		RENDERINGAPI void _setGLId(uint32_t glId);
 };
 
 typedef Util::CountedObjectWrapper<BufferObject> CountedBufferObject;

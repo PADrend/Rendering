@@ -13,6 +13,7 @@
 #include "Helper.h"
 
 #include <Util/Macros.h>
+#include <Util/StringUtils.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -193,6 +194,15 @@ void BufferObject::unmap() {
 	bind(TARGET_COPY_WRITE_BUFFER);
 	glUnmapBuffer(TARGET_COPY_WRITE_BUFFER);
 	unbind(TARGET_COPY_WRITE_BUFFER);
+}
+
+void BufferObject::_setGLId(uint32_t glId) {
+	if(!glIsBuffer(glId)) {
+		WARN("BufferObject::_setGLId: The given id is not a valid buffer " + Util::StringUtils::toString(glId));
+	} else {
+		destroy();
+		bufferId = glId;
+	}
 }
 
 // Instantiate the template functions
