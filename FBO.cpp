@@ -250,16 +250,18 @@ void FBO::setDrawBuffers(RenderingContext & context, uint32_t number) {
 
 void FBO::blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect) {
 #ifdef LIB_GL
-	context.pushFBO();
-	context.applyChanges();
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, glId);
-	glDrawBuffer(GL_BACK);
-	glBlitFramebuffer(	srcRect.getX(), srcRect.getY(), srcRect.getWidth(), srcRect.getHeight(), 
+	//context.pushFBO();
+	//context.applyChanges();
+	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	//glBindFramebuffer(GL_READ_FRAMEBUFFER, glId);
+	//glDrawBuffer(GL_BACK);
+	uint32_t writeBuffer = context.getActiveFBO() ? context.getActiveFBO()->getHandle() : 0;
+	
+	glBlitNamedFramebuffer(glId, writeBuffer, srcRect.getX(), srcRect.getY(), srcRect.getWidth(), srcRect.getHeight(), 
 											tgtRect.getX(), tgtRect.getY(), tgtRect.getWidth(), tgtRect.getHeight(), 
 											GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	GET_GL_ERROR();
-	context.popFBO();
+	//context.popFBO();
 #endif /* LIB_GL */
 }
 

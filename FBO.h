@@ -94,6 +94,8 @@ class FBO : public Util::ReferenceCounter<FBO> {
 
 		//! copy a block of pixels from this framebuffer to the screen
 		RENDERINGAPI void blitToScreen(RenderingContext & context, const Geometry::Rect_i& srcRect, const Geometry::Rect_i& tgtRect);
+
+		uint32_t getHandle() const { return glId; }
 	private:
 		uint32_t glId;
 };
