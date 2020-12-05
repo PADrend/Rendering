@@ -82,6 +82,7 @@ void apply(CoreRenderingStatus & target, const CoreRenderingStatus & actual, boo
 		}
 		target.updateBlendingParameters(actual);
 	}
+	GET_GL_ERROR();
 
 	// ColorBuffer
 	if(forced || target.colorBufferParametersChanged(actual)) {

@@ -19,6 +19,8 @@ struct PixelFormatGL{
 	bool compressed;
 	
 	PixelFormatGL() : glLocalDataFormat(0),glLocalDataType(0),glInternalFormat(0),compressed(false){}
+	PixelFormatGL(uint32_t glLocalDataFormat, uint32_t glLocalDataType, uint32_t glInternalFormat) :
+		glLocalDataFormat(glLocalDataFormat),glLocalDataType(glLocalDataType),glInternalFormat(glInternalFormat),compressed(false){}
 	
 	bool isValid()const{	return glInternalFormat!=0;	}
 };

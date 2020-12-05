@@ -740,6 +740,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	rc.popLighting();
 
 	rc.popDepthBuffer();
+	GET_GL_ERROR()
 #endif
 }
 

@@ -492,7 +492,11 @@ void Texture::_setGLId(uint32_t _glId) {
 	if(!isGLTextureValid()) {
 		WARN("Texture::_setGLId: The given id is not a valid texture " + Util::StringUtils::toString(_glId));
 		glId = 0;
-	}	
+	} else {
+		// remove local data
+		localBitmap = nullptr;
+		dataHasChanged = false;
+	}
 }
 
 
