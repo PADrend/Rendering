@@ -120,23 +120,18 @@ void BufferObject::uploadSubData(uint32_t bufferTarget, const uint8_t* data, siz
 	unbind(bufferTarget);
 }
 
+void BufferObject::downloadData(uint32_t bufferTarget, size_t numBytes, uint8_t* targetPtr, size_t offset) const {
 #if defined(LIB_GL)
-std::vector<uint8_t> BufferObject::downloadData(uint32_t bufferTarget, std::size_t numBytes, size_t offset) const {
-	if(bufferId == 0) {
-		return std::vector<uint8_t>();
+	if(bufferId == 0 || !targetPtr) {
+		return;
 	}
 	bind(bufferTarget);
 	const uint8_t* bufferData = reinterpret_cast<const uint8_t*>(glMapBuffer(bufferTarget, GL_READ_ONLY));
-	const std::vector<uint8_t> result(bufferData + offset, bufferData + offset + numBytes);
+	std::copy(bufferData+offset, bufferData+offset+numBytes, targetPtr);
 	glUnmapBuffer(bufferTarget);
 	unbind(bufferTarget);
-	return result;
-}
-#elif defined(LIB_GLESv2)
-std::vector<uint8_t> BufferObject::downloadData(uint32_t /*bufferTarget*/, std::size_t /*numBytes*/, size_t /*offset*/) const {
-	return std::vector<uint8_t>();
-}
 #endif
+}
 
 void BufferObject::clear(uint32_t bufferTarget, uint32_t internalFormat, uint32_t format, uint32_t type, const uint8_t* data) {
 #if defined(GL_ARB_clear_buffer_object)

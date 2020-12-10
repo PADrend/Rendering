@@ -147,12 +147,13 @@ class BufferObject {
 		 * copy @a numberOfElements times <tt>sizeof(T)</tt> bytes from the buffer object to the vector,
 		 * and unbind the buffer object.
 		 */
+		RENDERINGAPI void downloadData(uint32_t bufferTarget, size_t numBytes, uint8_t* targetPtr, size_t offset=0) const;
 		template<typename T>
 		std::vector<T> downloadData(uint32_t bufferTarget, size_t numberOfElements, size_t offset=0) const {
-			std::vector<uint8_t> v = downloadData(bufferTarget, numberOfElements * sizeof(T), offset);
-			return std::vector<T>(v.begin(), v.end());
+			std::vector<T> result(numberOfElements);
+			downloadData(bufferTarget, numberOfElements * sizeof(T), reinterpret_cast<uint8_t*>(result.data()), offset);
+			return result;
 		}
-		RENDERINGAPI std::vector<uint8_t> downloadData(uint32_t bufferTarget, size_t numBytes, size_t offset=0) const;
 		
 		//! @c true if and only if prepare() was executed at least once without an execution of destroy() afterwards. 
 		bool isValid() const {
