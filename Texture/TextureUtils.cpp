@@ -288,7 +288,7 @@ uint32_t textureTypeToGLTextureType(TextureType type){
 // ----------------------------------------------------------------------------
 // factory functions
 
-static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering,bool clampToEdge=false,uint32_t samples=4){
+static Texture * create( TextureType type,uint32_t sizeX,uint32_t sizeY,uint32_t numLayers,GLenum glPixelFormat,GLenum glPixelDataType,GLenum glInternalFormat, bool filtering,bool clampToEdge=false,uint32_t samples=1){
 	Texture::Format format;
 	format.glTextureType = textureTypeToGLTextureType(type);
 	format.sizeX = sizeX;

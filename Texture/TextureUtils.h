@@ -63,7 +63,7 @@ RENDERINGAPI Util::Reference<Texture> createMultisampleTexture(uint32_t width, u
 	@p dataType == FLOAT || UINT8 || UINT32 || INT32
 	@note If the texture should be used as image(load and store), only 1,2,or 4 components are valid.
 */
-RENDERINGAPI Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge=false,uint32_t samples=4);
+RENDERINGAPI Util::Reference<Texture> createColorTexture(TextureType type,uint32_t sizeX,uint32_t sizeY, uint32_t numLayers, Util::TypeConstant dataType, uint8_t numComponents,bool filtering,bool clampToEdge=false,uint32_t samples=1);
 
 /*! @p numComponents == 1 || 2 || 3|| 4
 	@p dataType == FLOAT || UINT8 || UINT32 || INT32
