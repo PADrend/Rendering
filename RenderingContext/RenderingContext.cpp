@@ -226,6 +226,7 @@ void RenderingContext::initGLState() {
 	
 	if( glewIsSupported("GL_ARB_seamless_cube_map") ) //! \see http://www.opengl.org/wiki/Cubemap_Texture#Seamless_cubemap
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	
 #endif /* LIB_GL */
 #endif /* LIB_GLEW */
 
@@ -1018,6 +1019,12 @@ void RenderingContext::setShader(Shader * shader) {
 				applyChanges(true); // make sure that all uniforms are initially set (e.g. even for disabled lights)
 				internalData->getActiveRenderingStatus()->markInitialized();
 				//				std::cout << " !!!! FORCED !!! \n";
+
+				// set default vertex color to white
+				int32_t colorLocation = shader->getVertexAttributeLocation(VertexAttributeIds::COLOR);
+				if(colorLocation >= 0) {
+					glVertexAttrib4f(colorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
+				}
 			}
 		} else {
 			WARN("RenderingContext::pushShader: can't enable shader, using OpenGL instead");
