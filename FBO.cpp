@@ -68,7 +68,7 @@ void FBO::attachTexture(RenderingContext & context,GLenum attachmentPoint,Textur
 			texture->_uploadGLTexture(context);
 			textureId = texture->getGLId();
 		}
-		if(layer+1 > texture->getNumLayers())
+		if(layer+1 > static_cast<int32_t>(texture->getNumLayers()))
 			throw std::invalid_argument("FBO::attachTexture: invalid texture layer.");
 #if defined(LIB_GL)
 

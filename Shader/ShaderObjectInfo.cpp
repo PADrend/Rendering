@@ -40,7 +40,7 @@ static void printShaderInfoLog(uint32_t obj, const std::string & code, const Uti
 	if (infoLogLength > 1) {
 		GLsizei charsWritten = 0;
 		std::vector<GLchar> infoLog(static_cast<std::size_t>(infoLogLength), '\0');
-		glGetShaderInfoLog(obj, infoLog.size(), &charsWritten, infoLog.data());
+		glGetShaderInfoLog(obj, static_cast<GLsizei>(infoLog.size()), &charsWritten, infoLog.data());
 		std::string s(infoLog.data(), static_cast<std::size_t>(charsWritten));
 		// Skip "Everything ok" messages from AMD-drivers.
 		if(s.find("successfully") == std::string::npos && 
@@ -163,7 +163,7 @@ ShaderObjectInfo ShaderObjectInfo::createFragment(const std::string & code) {
 }
 
 ShaderObjectInfo ShaderObjectInfo::createGeometry(const std::string & code) {
-#if defined (LIB_GL) and defined (GL_ARB_geometry_shader4)
+#if defined (LIB_GL) && defined (GL_ARB_geometry_shader4)
 	return ShaderObjectInfo(GL_GEOMETRY_SHADER_ARB, code);
 #else /* defined(GL_ARB_geometry_shader4) */
 	throw std::logic_error("No support for GL_ARB_geometry_shader4.");
@@ -171,7 +171,7 @@ ShaderObjectInfo ShaderObjectInfo::createGeometry(const std::string & code) {
 }
 
 ShaderObjectInfo ShaderObjectInfo::createCompute(const std::string & code) {
-#if defined (LIB_GL) and defined (GL_ARB_compute_shader)
+#if defined (LIB_GL) && defined (GL_ARB_compute_shader)
 	return ShaderObjectInfo(GL_COMPUTE_SHADER, code);
 #else /* defined(GL_ARB_compute_shader) */
 	throw std::logic_error("No support for GL_ARB_compute_shader.");
@@ -179,7 +179,7 @@ ShaderObjectInfo ShaderObjectInfo::createCompute(const std::string & code) {
 }
 
 ShaderObjectInfo ShaderObjectInfo::createMesh(const std::string & code) {
-#if defined (LIB_GL) and defined (GL_NV_mesh_shader)
+#if defined (LIB_GL) && defined (GL_NV_mesh_shader)
 	return ShaderObjectInfo(SHADER_STAGE_MESH, code);
 #else /* defined(GL_ARB_compute_shader) */
 	throw std::logic_error("No support for GL_NV_mesh_shader.");
@@ -187,7 +187,7 @@ ShaderObjectInfo ShaderObjectInfo::createMesh(const std::string & code) {
 }
 
 ShaderObjectInfo ShaderObjectInfo::createTask(const std::string & code) {
-#if defined (LIB_GL) and defined (GL_NV_mesh_shader)
+#if defined (LIB_GL) && defined (GL_NV_mesh_shader)
 	return ShaderObjectInfo(SHADER_STAGE_TASK, code);
 #else /* defined(GL_ARB_compute_shader) */
 	throw std::logic_error("No support for GL_NV_mesh_shader.");

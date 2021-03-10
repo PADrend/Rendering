@@ -436,7 +436,7 @@ Util::Reference<Texture> createColorPalette(const std::vector<Util::Color4f>& co
 		WARN("createColorPalette: invalid number of colors!");
 		return nullptr;
 	}
-	auto t = create(TextureType::TEXTURE_1D, colors.size(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA, true, true);
+	auto t = create(TextureType::TEXTURE_1D, static_cast<uint32_t>(colors.size()), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA, true, true);
 	t->allocateLocalData();
 	auto acc = Util::PixelAccessor::create(t->getLocalBitmap());
 	for(uint32_t i=0; i<colors.size(); ++i) {
@@ -646,13 +646,13 @@ void drawTextureToScreen(RenderingContext&rc,const Geometry::Rect_i & screenRect
 void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenRect, const std::vector<Texture *> & textures,
 		const std::vector<Geometry::Rect_f> & textureRects) {
 #ifdef LIB_GL
-	uint8_t numTextures = textures.size() < textureRects.size() ? textures.size() : textureRects.size();
+	uint8_t numTextures = static_cast<uint8_t>(textures.size() < textureRects.size() ? textures.size() : textureRects.size());
 	if(numTextures == 0) {
 		return;
 	}
-	if(numTextures > 8) {
+	if(numTextures > MAX_TEXTURES) {
 		WARN("At most eight textures are supported.");
-		numTextures = 8;
+		numTextures = MAX_TEXTURES;
 	}
 
 	rc.pushAndSetDepthBuffer(DepthBufferParameters(false, false, Comparison::LESS));
@@ -663,7 +663,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 		const Geometry::Rect_i & viewport = rc.getViewport();
 
 		rc.pushMatrix_cameraToClipping();
-		rc.setMatrix_cameraToClipping(Geometry::Matrix4x4::orthographicProjection(0, viewport.getWidth(), 0, viewport.getHeight(), -1, 1));
+		rc.setMatrix_cameraToClipping(Geometry::Matrix4x4::orthographicProjection(0, static_cast<float>(viewport.getWidth()), 0.0f, static_cast<float>(viewport.getHeight()), -1.0f, 1.0f));
 	}
 	{
 		Geometry::Matrix4x4 identityMatrix;

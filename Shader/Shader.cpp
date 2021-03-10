@@ -158,7 +158,7 @@ bool Shader::linkProgram() {
 		for(const auto& nameStr : feedbackVaryings)
 			namesBuffer[i++] = nameStr.c_str();
 		
-		glTransformFeedbackVaryingsEXT(prog,feedbackVaryings.size(),namesBuffer,static_cast<GLenum>(glFeedbackVaryingType));
+		glTransformFeedbackVaryingsEXT(prog,static_cast<GLsizei>(feedbackVaryings.size()),namesBuffer,static_cast<GLenum>(glFeedbackVaryingType));
 		delete [] namesBuffer;
 	}
 	#endif // GL_EXT_transform_feedback
@@ -553,7 +553,7 @@ void Shader::setSeparateFeedbackVaryings(const std::vector<std::string>& names){
 // Shader Subroutines
 
 int32_t Shader::getSubroutineIndex(uint32_t stage, const std::string & name) {
-	#if defined(LIB_GL) and defined(GL_ARB_shader_subroutine)
+	#if defined(LIB_GL) && defined(GL_ARB_shader_subroutine)
 	return glGetSubroutineIndex(getShaderProg(), stage, name.c_str());
 	#else
 	return -1;

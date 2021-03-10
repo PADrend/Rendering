@@ -51,7 +51,7 @@ void MeshBuilder::addBox(MeshBuilder & mb, const Geometry::Box & box) {
 }
 
 //! Deprecated \see MeshUtils::createDome(...)
-Mesh * MeshBuilder::createDome(const double radius, const int horiRes, const int vertRes, const double halfSphereFraction, const double imagePercentage) { 
+Mesh * MeshBuilder::createDome(const float radius, const int horiRes, const int vertRes, const float halfSphereFraction, const float imagePercentage) { 
 	VertexDescription vd;
 	vd.appendPosition3D();
 	vd.appendNormalByte();

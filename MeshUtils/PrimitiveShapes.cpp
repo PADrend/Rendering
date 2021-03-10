@@ -70,7 +70,7 @@ Mesh* createBox(const VertexDescription& vd, const Geometry::Box& box) {
 
 // ---------------------------------------------------------
 
-void addDome(MeshBuilder& mb, const double radius, const int horiRes, const int vertRes, const double halfSphereFraction, const double imagePercentage) {
+void addDome(MeshBuilder& mb, const float radius, const int horiRes, const int vertRes, const float halfSphereFraction, const float imagePercentage) {
 	const double azimuth_step = 2.0 * M_PI / static_cast<double> (horiRes);
 	const double elevation_step = halfSphereFraction * M_PI_2 / static_cast<double> (vertRes);
 	//const uint32_t numVertices = (horiRes + 1) * (vertRes + 1);
@@ -81,7 +81,7 @@ void addDome(MeshBuilder& mb, const double radius, const int horiRes, const int 
 	for (int k = 0; k <= horiRes; ++k) {
 		double elevation = M_PI_2;
 		for (int j = 0; j <= vertRes; ++j) {
-      Vec3f v(cos(elevation) * sin(azimuth), sin(elevation), cos(elevation) * cos(azimuth));
+      Vec3f v(static_cast<float>(cos(elevation) * sin(azimuth)), static_cast<float>(sin(elevation)), static_cast<float>(cos(elevation) * cos(azimuth)));
       v *= radius;
       Vec2f uv(static_cast<float>(k) / static_cast<float>(horiRes), 1.0f - static_cast<float>(j) / static_cast<float>(vertRes) * imagePercentage);
       mb.position(v);
@@ -113,7 +113,7 @@ void addDome(MeshBuilder& mb, const double radius, const int horiRes, const int 
 	}
 }
 
-Mesh* createDome(const VertexDescription& vd, const double radius, const int horiRes, const int vertRes, const double halfSphereFraction, const double imagePercentage) {
+Mesh* createDome(const VertexDescription& vd, const float radius, const int horiRes, const int vertRes, const float halfSphereFraction, const float imagePercentage) {
   MeshBuilder mb(vd);
   addDome(mb, radius, horiRes, vertRes, halfSphereFraction, imagePercentage);
   return mb.buildMesh();
@@ -131,7 +131,7 @@ void addSphere(MeshBuilder& mb, const Sphere_f & sphere, uint32_t inclinationSeg
 	mb.position(sphere.getCenter() + Vec3f(0.0f, sphere.getRadius(), 0.0f));
 	mb.normal(Vec3f(0.0f, 1.0f, 0.0f));
 	for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
-		const double u = 1.0 - ((static_cast<double>(azimuth) + 0.5) / static_cast<double>(azimuthSegments));
+		const float u = static_cast<float>(1.0 - ((static_cast<double>(azimuth) + 0.5) / static_cast<double>(azimuthSegments)));
 		mb.texCoord0(Vec2f(u, 1.0f));
 		mb.addVertex();
 	}
@@ -140,7 +140,7 @@ void addSphere(MeshBuilder& mb, const Sphere_f & sphere, uint32_t inclinationSeg
 	mb.position(sphere.getCenter() + Vec3f(0.0f, -sphere.getRadius(), 0.0f));
 	mb.normal(Vec3f(0.0f, -1.0f, 0.0f));
 	for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
-		const double u = 1.0 - (static_cast<double>(azimuth) / static_cast<double>(azimuthSegments));
+		const float u = static_cast<float>(1.0 - (static_cast<double>(azimuth) / static_cast<double>(azimuthSegments)));
 		mb.texCoord0(Vec2f(u, 0.0f));
 		mb.addVertex();
 	}
@@ -150,12 +150,12 @@ void addSphere(MeshBuilder& mb, const Sphere_f & sphere, uint32_t inclinationSeg
 		for(uint_fast32_t azimuth = 0; azimuth <= azimuthSegments; ++azimuth) {
 			const double inclinationAngle = inclinationIncrement * static_cast<double>(inclination);
 			const double azimuthAngle = azimuthIncrement * static_cast<double>(azimuth);
-			const Vec3f position = Sphere_f::calcCartesianCoordinateUnitSphere(inclinationAngle, azimuthAngle);
+			const Vec3f position = Sphere_f::calcCartesianCoordinateUnitSphere(static_cast<float>(inclinationAngle), static_cast<float>(azimuthAngle));
 			mb.position(sphere.getCenter() + position*sphere.getRadius());
 			mb.normal(position);
 			mb.texCoord0(Vec2f(
-				1.0 - (static_cast<double>(azimuth) / static_cast<double>(azimuthSegments)),
-				1.0 - (static_cast<double>(inclination) / static_cast<double>(inclinationSegments))));
+				static_cast<float>(1.0 - (static_cast<double>(azimuth) / static_cast<double>(azimuthSegments))),
+				static_cast<float>(1.0 - (static_cast<double>(inclination) / static_cast<double>(inclinationSegments)))));
 			mb.addVertex();
 		}
 	}
@@ -426,7 +426,7 @@ void addHexGrid(MeshBuilder& mb, float width, float height, uint32_t rows, uint3
 
 	for(uint32_t y=0; y<=rows; ++y) {
 		for(uint32_t x=0; x<=columns; ++x) {
-      Vec3 pos(x, 0, y);
+      Vec3 pos(static_cast<float>(x), 0.0f, static_cast<float>(y));
       if(x%2==0 && y>0) pos += {0,0,-0.5};
       pos.setValue(pos.x() * xScale, pos.y(), pos.z() * yScale);      
 			mb.position(pos);
@@ -447,7 +447,7 @@ void addHexGrid(MeshBuilder& mb, float width, float height, uint32_t rows, uint3
 	}
   idx = mb.getNextIndex();
   for(uint32_t x=0; x<=columns; x+=2) {
-    Vec3 pos(x, 0, rows);
+    Vec3 pos(static_cast<float>(x), 0.0f, static_cast<float>(rows));
     pos.setValue(pos.x() * xScale, pos.y(), pos.z() * yScale);
     mb.position(pos);
     mb.texCoord0({pos.x()/width,1.0f-pos.z()/height});
@@ -479,12 +479,12 @@ void addVoxelMesh(MeshBuilder& mb, const Util::PixelAccessor& colorAcc, uint32_t
 		return;
 	}
 	
-	Vec3i res(colorAcc.getWidth(), colorAcc.getHeight()/depth, depth);
+	Vec3ui res(colorAcc.getWidth(), colorAcc.getHeight()/depth, depth);
 	
 	const auto createQuad = [&](uint32_t x, uint32_t y, uint32_t z, uint8_t xMod, uint8_t yMod, uint8_t zMod, const Vec3& normal){
     uint32_t idx = mb.getNextIndex();
     mb.normal(normal);
-    Vec3 pos(x,y,z);
+    Vec3 pos(static_cast<float>(x),static_cast<float>(y),static_cast<float>(z));
     mb.position(Vec3{pos.x() + ((xMod&1)>0?1.0f:0.0f),pos.y() + ((yMod&1)>0?1.0f:0.0f),pos.z() + ((zMod&1)>0?1.0f:0.0f)}); mb.addVertex();
     mb.position(Vec3{pos.x() + ((xMod&2)>0?1.0f:0.0f),pos.y() + ((yMod&2)>0?1.0f:0.0f),pos.z() + ((zMod&2)>0?1.0f:0.0f)}); mb.addVertex();
     mb.position(Vec3{pos.x() + ((xMod&4)>0?1.0f:0.0f),pos.y() + ((yMod&4)>0?1.0f:0.0f),pos.z() + ((zMod&4)>0?1.0f:0.0f)}); mb.addVertex();
@@ -533,13 +533,13 @@ void addTorus(MeshBuilder& mb, float innerRadius, float outerRadius, uint32_t ma
 		WARN("addTorus: innerRadius is greater than outerRadius.");
 		return;
 	}
-	float minorRadius = (outerRadius - innerRadius) * 0.5;
+	float minorRadius = (outerRadius - innerRadius) * 0.5f;
 	float majorRadius = innerRadius + minorRadius;
 	for(uint32_t major=0; major<majorSegments; ++major) {
-		float u = major * 2.0 * M_PI / majorSegments;
+		float u = major * 2.0f * static_cast<float>(M_PI) / majorSegments;
 		Vec3 center(std::cos(u) * majorRadius, 0, std::sin(u) * majorRadius);
 		for(uint32_t minor=0; minor<minorSegments; ++minor) {
-			float v = minor * 2.0 * M_PI / minorSegments;
+			float v = minor * 2.0f * static_cast<float>(M_PI) / minorSegments;
 			Vec3 n = (center.getNormalized() * std::cos(v) + Vec3(0, std::sin(v), 0)).getNormalized();
 			Vec3 p = center + n * minorRadius;
 			mb.position(p);
@@ -577,8 +577,8 @@ void addMeshFromBitmaps(MeshBuilder& mb, Util::Reference<Util::PixelAccessor> de
 		WARN("createMeshFromBitmaps: unsupported color texture format");
 		return;
 	}
-	const float xScale=2.0 / width;
-	const float yScale=2.0 / height;
+	const float xScale=2.0f / width;
+	const float yScale=2.0f / height;
 	const float cut=1;
 
 	for(uint32_t y=0; y<height; ++y){
@@ -651,7 +651,40 @@ void addMeshFromBitmaps(MeshBuilder& mb, Util::Reference<Util::PixelAccessor> de
 	}
 }
 
+//! Adds a mesh from bitmap to the given meshBuilder. \see createMeshFromBitmaps(...)
+void addMeshFromBitmaps(MeshBuilder& mb, Util::Reference<Util::Bitmap> depth, Util::Reference<Util::Bitmap> color, Util::Reference<Util::Bitmap> normals) {
+	
+	Util::Reference<Util::PixelAccessor> depthAcc = Util::PixelAccessor::create(std::move(depth));
+	if( depth.isNull() || depth->getPixelFormat()!=Util::PixelFormat::MONO_FLOAT ){
+		WARN("addMeshFromBitmaps: unsupported depth texture format");
+		return;
+	}
+	Util::Reference<Util::PixelAccessor> colorReader;
+	if(color.isNotNull()) {
+		colorReader = Util::PixelAccessor::create(std::move(color));
+		if(colorReader.isNull() || (colorReader->getPixelFormat() != Util::PixelFormat::RGBA && colorReader->getPixelFormat() != Util::PixelFormat::RGB)) {
+			WARN("addMeshFromBitmaps: unsupported color texture format");
+			return;
+		}
+	}
+	Util::Reference<Util::PixelAccessor> normalReader;
+	if(normals.isNotNull()) {
+		normalReader = Util::PixelAccessor::create(std::move(normals));
+		if(normalReader.isNull()){
+			WARN("addMeshFromBitmaps: unsupported normal texture format");
+			return;
+		}
+	}
+	addMeshFromBitmaps(mb, depthAcc, colorReader, normalReader);
+}
+
 Mesh* createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::PixelAccessor> depth, Util::Reference<Util::PixelAccessor> color, Util::Reference<Util::PixelAccessor> normals) {
+  MeshBuilder mb(vd);
+  addMeshFromBitmaps(mb, depth, color, normals);
+  return mb.buildMesh();
+}
+
+Mesh* createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::Bitmap> depth, Util::Reference<Util::Bitmap> color, Util::Reference<Util::Bitmap> normals) {
   MeshBuilder mb(vd);
   addMeshFromBitmaps(mb, depth, color, normals);
   return mb.buildMesh();

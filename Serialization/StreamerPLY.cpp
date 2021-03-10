@@ -91,7 +91,7 @@ class PLY_Element {
 				uint8_t dataType;
 				uint8_t countType;
 				std::vector<uint8_t> currentData;
-				uint8_t currentDataCount;
+				uint16_t currentDataCount;
 
 				Property(uint8_t _dataType, uint8_t _countType = TYPE_UNDEFINED):
 						dataType(_dataType), countType(_countType), currentData(), currentDataCount(0) {
@@ -184,7 +184,7 @@ class PLY_Element {
 		void addList(const std::string & _countTypeName,const std::string & _typeName,const std::string & _name=""){
 			entries.emplace_back(getTypeId(_typeName), getTypeId(_countTypeName));
 			if(!_name.empty()) {
-				names[_name]=entries.size()-1;
+				names[_name]=static_cast<int16_t>(entries.size())-1;
 			}
 		}
 
@@ -196,7 +196,7 @@ class PLY_Element {
 			const auto undef = TYPE_UNDEFINED;
 			entries.emplace_back(_typeId, undef);
 			if(!_name.empty()) {
-				names[_name]=entries.size()-1;
+				names[_name]=static_cast<int16_t>(entries.size())-1;
 			}
 		}
 
@@ -246,12 +246,12 @@ class PLY_Element {
 					if(elem.isList()) {
 						num = strtoul(buffer, &buffer, 10);
 					}
-					elem.initCurrentData(num);
+					elem.initCurrentData(static_cast<uint16_t>(num));
 					for(unsigned long i = 0; i < num; ++i) {
-						elem.setCurrentValue<float> (i, strtof(buffer, &buffer));
+						elem.setCurrentValue<float> (static_cast<int16_t>(i), strtof(buffer, &buffer));
 					}
 				}
-				bytesConsumed = buffer - start;
+				bytesConsumed = static_cast<int>(buffer - start);
 			} else {
 				bool flipBytes=false; //FORMAT_BINARY_LITLLE_ENDIAN
 				if(sourceFormat==BINARY_BIG_ENDIAN)
@@ -505,11 +505,11 @@ Mesh * StreamerPLY::loadMesh(std::istream & input) {
 				colorAttr = vFormat.appendColorRGBAByte();
 			}
 //#endif
-			int vertexSize=vFormat.getVertexSize();
-			const int posOffset=posAttr.getOffset();
-			const int normalsOffset=normalAttr.getOffset();
-			const int colorOffset=colorAttr.getOffset();
-			const int tex0Offset=tex0Attr.getOffset();
+			const uint64_t vertexSize=vFormat.getVertexSize();
+			const uint64_t posOffset=posAttr.getOffset();
+			const uint64_t normalsOffset=normalAttr.getOffset();
+			const uint64_t colorOffset=colorAttr.getOffset();
+			const uint64_t tex0Offset=tex0Attr.getOffset();
 			MeshVertexData & vertices=mesh->openVertexData();
 			vertices.allocate(numVertices,vFormat);
 
@@ -678,7 +678,7 @@ bool StreamerPLY::saveMesh(Mesh * mesh, std::ostream & output) {
 
 	for(const auto & attr : vd.getAttributes()){
 		
-		if(attr.empty())
+		if(!attr.isValid())
 			continue;
 
 		// TODO what is the meaning of this variable? it is never read...
@@ -687,50 +687,50 @@ bool StreamerPLY::saveMesh(Mesh * mesh, std::ostream & output) {
 		std::string prefix=std::string("property ")+getGLTypeString(getGLType(attr.getDataType()))+' ';
 
 		if(attr.getNameId()==VertexAttributeIds::POSITION){
-			if(attr.getNumValues()>0)
+			if(attr.getComponentCount()>0)
 				output << prefix << "x" << std::endl;
-			if(attr.getNumValues()>1)
+			if(attr.getComponentCount()>1)
 				output << prefix << "y" << std::endl;
-			if(attr.getNumValues()>2)
+			if(attr.getComponentCount()>2)
 				output << prefix << "z" << std::endl;
-			if(attr.getNumValues()>3)
+			if(attr.getComponentCount()>3)
 				output << prefix << "w" << std::endl;
-			//if(attr.getNumValues()>4)
+			//if(attr.getComponentCount()>4)
 				//failure=true;
 		}else if(attr.getNameId()==VertexAttributeIds::NORMAL){
-			if(attr.getNumValues()>0)
+			if(attr.getComponentCount()>0)
 				output << prefix << "nx" << std::endl;
-			if(attr.getNumValues()>1)
+			if(attr.getComponentCount()>1)
 				output << prefix << "ny" << std::endl;
-			if(attr.getNumValues()>2)
+			if(attr.getComponentCount()>2)
 				output << prefix << "nz" << std::endl;
-			if(attr.getNumValues()>3)
+			if(attr.getComponentCount()>3)
 				output << prefix << "nw" << std::endl;
-			//if(attr.getNumValues()>4)
+			//if(attr.getComponentCount()>4)
 				//failure=true;
 		}else if(attr.getNameId()==VertexAttributeIds::COLOR){
-			if(attr.getNumValues()>0)
+			if(attr.getComponentCount()>0)
 				output << prefix << "red" << std::endl;
-			if(attr.getNumValues()>1)
+			if(attr.getComponentCount()>1)
 				output << prefix << "green" << std::endl;
-			if(attr.getNumValues()>2)
+			if(attr.getComponentCount()>2)
 				output << prefix << "blue" << std::endl;
-			if(attr.getNumValues()>3)
+			if(attr.getComponentCount()>3)
 				output << prefix << "alpha" << std::endl;
-			//if(attr.getNumValues()>4)
+			//if(attr.getComponentCount()>4)
 				//failure=true;
 		}else if(attr.getNameId()==VertexAttributeIds::TEXCOORD0){
-			if(attr.getNumValues()>0)
+			if(attr.getComponentCount()>0)
 				output << prefix << "s" << std::endl;
-			if(attr.getNumValues()>1)
+			if(attr.getComponentCount()>1)
 				output << prefix << "t" << std::endl;
-			if(attr.getNumValues()>2)
+			if(attr.getComponentCount()>2)
 				output << prefix << "u" << std::endl;
-			//if(attr.getNumValues()>4)
+			//if(attr.getComponentCount()>4)
 				//failure=true;
 		}else {
 			// export custom attributes
-			for(int i=0;i<attr.getNumValues();++i){
+			for(uint32_t i=0;i<attr.getComponentCount();++i){
 				output << prefix << attr.getName() << i << std::endl;
 			}
 		}

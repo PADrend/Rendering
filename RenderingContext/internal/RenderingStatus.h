@@ -103,7 +103,7 @@ class RenderingStatus {
 	public:
 		//! Return the number of lights that are currently enabled.
 		uint8_t getNumEnabledLights() const {
-			return lightsEnabled.count();
+			return static_cast<uint8_t>(lightsEnabled.count());
 		}
 		//! Of the lights that are enabled, return the one with the given index.
 		const LightParameters & getEnabledLight(uint8_t index) const {

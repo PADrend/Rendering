@@ -102,7 +102,7 @@ void MeshVertexData::updateBoundingBox() {
 	auto acc = FloatAttributeAccessor::create(*this, VertexAttributeIds::POSITION);
 	
 	const VertexAttribute & attr = vd.getAttribute(VertexAttributeIds::POSITION);
-	const uint8_t vertexNum = attr.getNumValues();
+	const uint8_t vertexNum = attr.getComponentCount();
 	if (vertexNum < 1) {
 		WARN(std::string("Vertex component count is zero."));
 		return;
@@ -191,60 +191,60 @@ void MeshVertexData::bind(RenderingContext & context, bool useVBO) {
 	}
 
 	Shader * shader = context.getActiveShader();
-	const GLsizei vSize=vd.getVertexSize();
+	const GLsizei vSize=static_cast<GLsizei>(vd.getVertexSize());
 #ifdef LIB_GL
 	if (RenderingContext::getCompabilityMode() && (shader == nullptr || shader->usesClassicOpenGL())) {
 
 		for(const auto & attr : vd.getAttributes()) {
-			if(attr.empty())
+			if(!attr.isValid())
 				continue;
 			const Util::StringIdentifier nameId=attr.getNameId();
 			const GLenum dataType = getGLType(attr.getDataType());
 
 			if(nameId==VertexAttributeIds::POSITION) {
 				context.enableClientState(GL_VERTEX_ARRAY);
-				glVertexPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glVertexPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::NORMAL) {
 				context.enableClientState(GL_NORMAL_ARRAY);
 				glNormalPointer(dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::COLOR) {
 				context.enableClientState(GL_COLOR_ARRAY);
-				glColorPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glColorPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD0) {
 				context.enableTextureClientState(GL_TEXTURE0);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD1) {
 				context.enableTextureClientState(GL_TEXTURE1);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD2) {
 				context.enableTextureClientState(GL_TEXTURE2);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD3) {
 				context.enableTextureClientState(GL_TEXTURE3);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD4) {
 				context.enableTextureClientState(GL_TEXTURE4);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD5) {
 				context.enableTextureClientState(GL_TEXTURE5);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD6) {
 				context.enableTextureClientState(GL_TEXTURE6);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(nameId==VertexAttributeIds::TEXCOORD7) {
 				context.enableTextureClientState(GL_TEXTURE7);
-				glTexCoordPointer(attr.getNumValues(), dataType, vSize, vertexPosition + attr.getOffset());
+				glTexCoordPointer(attr.getComponentCount(), dataType, vSize, vertexPosition + attr.getOffset());
 			} else if(shader != nullptr) { // ????????does this work?????
 				context.enableVertexAttribArray(attr, vertexPosition, vSize);
 			}
 		}
 	}else if( shader != nullptr && context.useAMDAttrBugWorkaround() ){
 		for(const auto & attr : vd.getAttributes()) {
-			if(attr.empty())
+			if(!attr.isValid())
 				continue;
 			if(attr.getNameId()==VertexAttributeIds::POSITION) {
 				context.enableClientState(GL_VERTEX_ARRAY);
-				glVertexPointer(attr.getNumValues(), getGLType(attr.getDataType()), vSize, vertexPosition + attr.getOffset());
+				glVertexPointer(attr.getComponentCount(), getGLType(attr.getDataType()), vSize, vertexPosition + attr.getOffset());
 				break;
 			}
 		}
@@ -252,7 +252,7 @@ void MeshVertexData::bind(RenderingContext & context, bool useVBO) {
 #endif /* LIB_GL */
 	if (shader != nullptr && shader->usesSGUniforms()) {
 		for(const auto & attr : vd.getAttributes()) {
-			if(!attr.empty()) {
+			if(attr.isValid()) {
 				context.enableVertexAttribArray(attr, vertexPosition, vSize);
 			}
 		}

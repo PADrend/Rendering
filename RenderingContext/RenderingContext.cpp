@@ -1075,7 +1075,7 @@ const Shader * RenderingContext::getActiveShader() const {
 }
 
 void RenderingContext::dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) {	
-	#if defined(LIB_GL) and defined(GL_ARB_compute_shader)
+	#if defined(LIB_GL) && defined(GL_ARB_compute_shader)
 		if(!getActiveShader()) {
 			WARN("dispatchCompute: There is no active compute shader.");
 		} else {
@@ -1089,7 +1089,7 @@ void RenderingContext::dispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY,
 }
 
 void RenderingContext::dispatchComputeIndirect(size_t offset) {	
-	#if defined(LIB_GL) and defined(GL_ARB_compute_shader)
+	#if defined(LIB_GL) && defined(GL_ARB_compute_shader)
 		if(!getActiveShader()) {
 			WARN("glDispatchComputeIndirect: There is no active compute shader.");
 		} else {
@@ -1103,12 +1103,12 @@ void RenderingContext::dispatchComputeIndirect(size_t offset) {
 }
 
 void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::vector<uint32_t>& indices) {
-	#if defined(LIB_GL) and defined(GL_ARB_shader_subroutine)
+	#if defined(LIB_GL) && defined(GL_ARB_shader_subroutine)
 		if(!getActiveShader()) {
 			WARN("loadUniformSubroutines: There is no active shader.");
 		} else {
 			applyChanges();
-			glUniformSubroutinesuiv(shaderStage, indices.size(), static_cast<const GLuint*>(indices.data()));
+			glUniformSubroutinesuiv(shaderStage, static_cast<GLsizei>(indices.size()), static_cast<const GLuint*>(indices.data()));
 			GET_GL_ERROR();
 		}
 	#else
@@ -1130,7 +1130,7 @@ void RenderingContext::loadUniformSubroutines(uint32_t shaderStage, const std::v
 
 void RenderingContext::drawMeshTask(uint32_t count, uint32_t first) {
 	static const bool support = isExtensionSupported("GL_NV_mesh_shader");
-	#if defined(LIB_GL) and defined(GL_NV_mesh_shader)
+	#if defined(LIB_GL) && defined(GL_NV_mesh_shader)
 		if(!getActiveShader()) {
 			WARN("drawMeshTask: There is no active shader.");
 		} else if(support) {
@@ -1245,7 +1245,7 @@ void RenderingContext::pushTransformFeedbackBufferStatus(){
 }
 void RenderingContext::setTransformFeedbackBuffer(CountedBufferObject * buffer){
 	if(requestTransformFeedbackSupport()){
-		#if defined(LIB_GL) and defined(GL_EXT_transform_feedback)
+		#if defined(LIB_GL) && defined(GL_EXT_transform_feedback)
 		if(buffer!=nullptr){
 			(*buffer)->bind(GL_TRANSFORM_FEEDBACK_BUFFER_EXT);
 		}else{
@@ -1258,7 +1258,7 @@ void RenderingContext::setTransformFeedbackBuffer(CountedBufferObject * buffer){
 }
 void RenderingContext::_startTransformFeedback(uint32_t primitiveMode){
 	if(requestTransformFeedbackSupport()){
-		#if defined(LIB_GL) and defined(GL_EXT_transform_feedback)
+		#if defined(LIB_GL) && defined(GL_EXT_transform_feedback)
 		if(primitiveMode==0){
 			glEndTransformFeedbackEXT();
 		}else{
@@ -1517,9 +1517,9 @@ void RenderingContext::enableVertexAttribArray(const VertexAttribute & attr, con
 		GLuint attribLocation = static_cast<GLuint> (location);
 		internalData->activeVertexAttributeBindings.emplace(attribLocation);
 		if( attr.isNormalized() || attr.getDataType() == Util::TypeConstant::FLOAT || attr.getDataType() == Util::TypeConstant::DOUBLE || attr.getDataType() == Util::TypeConstant::HALF ){
-			glVertexAttribPointer(attribLocation, attr.getNumValues(), getGLType(attr.getDataType()), attr.isNormalized() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
+			glVertexAttribPointer(attribLocation, attr.getComponentCount(), getGLType(attr.getDataType()), attr.isNormalized() ? GL_TRUE : GL_FALSE, stride, data + attr.getOffset());
 		} else {
-			glVertexAttribIPointer(attribLocation, attr.getNumValues(), getGLType(attr.getDataType()), stride, data + attr.getOffset());
+			glVertexAttribIPointer(attribLocation, attr.getComponentCount(), getGLType(attr.getDataType()), stride, data + attr.getOffset());
 		}
 		glEnableVertexAttribArray(attribLocation);
 	}

@@ -49,14 +49,14 @@ Mesh * StreamerXYZ::loadMesh(std::istream & input, std::size_t numPoints) {
 	uint16_t r, g, b;
 	while(input.good()) {
 		input >> x >> y >> z >> r >> g >> b;
-		points.emplace_back(x, y, z, r, g, b);
+		points.emplace_back(x, y, z, static_cast<uint8_t>(r), static_cast<uint8_t>(g), static_cast<uint8_t>(b));
 		
 		if(numPoints != 0 && points.size() >= numPoints) {
 			break;
 		}
 	}
 
-	auto mesh = new Mesh(vertexDesc, points.size(), 0);
+	auto mesh = new Mesh(vertexDesc, static_cast<uint32_t>(points.size()), 0);
 
 	MeshVertexData & vd = mesh->openVertexData();
 	std::copy(points.data(), points.data() + points.size(), reinterpret_cast<Point *>(vd.data()));
@@ -180,9 +180,9 @@ void StreamerXYZ::clusterPoints( std::istream & input, std::vector<std::ostream*
 		bb.invalidate();
 		for(const auto & p:allSamples)
 			bb.include(p);
-		bb.resizeRel(1.01);
+		bb.resizeRel(1.01f);
 		
-		Geometry::PointOctree<Point> octree(bb,bb.getExtentMax()*0.1,5);
+		Geometry::PointOctree<Point> octree(bb,bb.getExtentMax()*0.1f,5);
 		
 		for(size_t i=0;i<numClusters && !allSamples.empty();++i ){
 			if(clusterCenters.empty()){

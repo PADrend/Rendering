@@ -202,7 +202,7 @@ void Texture::createMipmaps(RenderingContext & context) {
 
 		if(format.pixelFormat.glLocalDataType == GL_UNSIGNED_INT || format.pixelFormat.glLocalDataType == GL_INT) {
 			// for integer textures glGenerateMipmap is prohibited, therefore just allocate the storage
-			int maxLevel = std::log2(std::max(getWidth(), getHeight()));
+			int maxLevel = static_cast<int>(std::log2(std::max(getWidth(), getHeight())));
 			for(int level=1; level<=maxLevel; ++level)
 				_uploadGLTexture(context, level);
 		} else {
@@ -401,7 +401,7 @@ void Texture::clearGLData(const Util::Color4f& color) {
 	if(!isGLTextureValid())
 		return;
 	
-	int maxLevel = hasMipmaps ? std::log2(std::max(getWidth(), getHeight())) : 0;
+	int maxLevel = static_cast<int>(hasMipmaps ? std::log2(std::max(getWidth(), getHeight())) : 0);
 	std::vector<uint8_t> data;
 	
 	if(format.pixelFormat.glLocalDataType == GL_FLOAT) {

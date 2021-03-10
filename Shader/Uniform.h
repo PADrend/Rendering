@@ -61,7 +61,7 @@ namespace Rendering {
  */
 class Uniform {
 		//! dataType_t ---> bytes per value
-		RENDERINGAPI static const size_t dataSizeIndex[];
+		RENDERINGAPI static const uint32_t dataSizeIndex[];
 
 	public:
 		//! \note if something is changed here, make sure that the dataSize-index is also updated.
@@ -73,7 +73,7 @@ class Uniform {
 		};
 
 		//! returns the size in bytes of a value of the given type
-		RENDERINGAPI static size_t getValueSize(const dataType_t t){		return dataSizeIndex[t];	}
+		RENDERINGAPI static uint32_t getValueSize(const dataType_t t){		return dataSizeIndex[t];	}
 
 
 		class UniformName{
@@ -91,8 +91,8 @@ class Uniform {
 		RENDERINGAPI static const Uniform nullUniform;
 
 		RENDERINGAPI Uniform();
-		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, size_t arraySize);
-		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, size_t arraySize,std::vector<uint8_t> data);
+		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, uint32_t arraySize);
+		RENDERINGAPI Uniform(UniformName _name, dataType_t _type, uint32_t arraySize,std::vector<uint8_t> data);
 
 		/*! Generic bool-constructor (use another contructor whenever possible)
 			\throw may throw an invalid_argument-exception	*/
@@ -159,9 +159,9 @@ class Uniform {
 		Util::StringIdentifier getNameId() const 			{	return name.getStringId();	}
 		dataType_t getType() const 					{	return type;	}
 		const uint8_t * getData() const 			{	return data.data();	}
-		size_t getDataSize() const 					{	return data.size();		}
+		uint32_t getDataSize() const 					{	return static_cast<uint32_t>(data.size());		}
 
-		size_t getNumValues() const 				{	return numValues;	}
+		uint32_t getNumValues() const 				{	return numValues;	}
 		bool operator==(const Uniform & other) const{
 			return (isNull() && other.isNull()) ||
 				(other.name == name && other.numValues == numValues && other.type == type && other.data==data);
@@ -172,7 +172,7 @@ class Uniform {
 	private:
 		UniformName name;
 		dataType_t type;
-		size_t numValues;
+		uint32_t numValues;
 		std::vector<uint8_t> data;
 };
 }

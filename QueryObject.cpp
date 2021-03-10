@@ -37,7 +37,7 @@ uint32_t QueryObject::getResult() const {
 #endif
 }
 
-#if defined(LIB_GL) and defined(LIB_GLEW)
+#if defined(LIB_GL) && defined(LIB_GLEW)
 static bool is64BitQueryResultSupported(){
 	if(!isExtensionSupported("GL_ARB_timer_query")) {
 		WARN("QueryObject::getResult64(): GL_ARB_timer_query is not supported; using QueryObject::getResult() instead.");
@@ -48,7 +48,7 @@ static bool is64BitQueryResultSupported(){
 #endif
 
 uint64_t QueryObject::getResult64() const {
-#if defined(LIB_GLEW) and defined(LIB_GL) and defined(GL_ARB_timer_query)
+#if defined(LIB_GLEW) && defined(LIB_GL) && defined(GL_ARB_timer_query)
 	static const bool supported = is64BitQueryResultSupported();
 	if(supported){
 		uint64_t result = 0;

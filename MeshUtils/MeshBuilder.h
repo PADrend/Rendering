@@ -73,7 +73,7 @@ class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
 		//! Deprecated \see MeshUtils::addBox(...)
 		RENDERINGAPI RENDERING_DEPRECATED static void addBox(MeshBuilder & mb, const Geometry::Box & box);		
 		//! Deprecated \see MeshUtils::createDome(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createDome(const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0);			 
+		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createDome(const float radius = 100.0, const int horiRes = 40, const int vertRes = 40, const float halfSphereFraction = 1.0, const float imagePercentage = 1.0);			 
 	 	//! Deprecated \see MeshUtils::createSphere(...)
 		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createSphere(const VertexDescription & vd, uint32_t inclinationSegments, uint32_t azimuthSegments);		
 		//! Deprecated \see MeshUtils::addSphere(...)
