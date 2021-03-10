@@ -123,7 +123,7 @@ class BufferObject {
 		 */
 		template<typename T>
 		void uploadData(uint32_t bufferTarget, const std::vector<T> & data, uint32_t usageHint) {
-			uploadData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),static_cast<GLsizeiptr>(data.size() * sizeof(T)),usageHint);
+			uploadData(bufferTarget, reinterpret_cast<const uint8_t*>(data.data()),data.size() * sizeof(T),usageHint);
 		}
 		RENDERINGAPI void uploadData(uint32_t bufferTarget, const uint8_t* data, size_t numBytes, uint32_t usageHint);
 		
