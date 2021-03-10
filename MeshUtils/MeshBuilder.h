@@ -67,40 +67,6 @@ namespace MeshUtils {
 * @ingroup mesh_builder
 */
 class MeshBuilder : public Util::ReferenceCounter<MeshBuilder> {
-	public:
-		//! Deprecated \see MeshUtils::createBox(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createBox(const VertexDescription & vd, const Geometry::Box & box);		
-		//! Deprecated \see MeshUtils::addBox(...)
-		RENDERINGAPI RENDERING_DEPRECATED static void addBox(MeshBuilder & mb, const Geometry::Box & box);		
-		//! Deprecated \see MeshUtils::createDome(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createDome(const float radius = 100.0, const int horiRes = 40, const int vertRes = 40, const float halfSphereFraction = 1.0, const float imagePercentage = 1.0);			 
-	 	//! Deprecated \see MeshUtils::createSphere(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createSphere(const VertexDescription & vd, uint32_t inclinationSegments, uint32_t azimuthSegments);		
-		//! Deprecated \see MeshUtils::addSphere(...)
-		RENDERINGAPI RENDERING_DEPRECATED static void addSphere(MeshBuilder & mb, const Geometry::Sphere_f & sphere, uint32_t inclinationSegments, uint32_t azimuthSegments);		
-		//! Deprecated \see MeshUtils::createDiscSector(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createDiscSector(float radius, uint8_t numSegments, float angle = 360.0f);		
-		//! Deprecated \see MeshUtils::createRingSector(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createRingSector(float innerRadius, float outerRadius, uint8_t numSegments, float angle = 360.0f);		
-		//! Deprecated \see MeshUtils::createCone(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createCone(float radius, float height, uint8_t numSegments);		
-		//! Deprecated \see MeshUtils::createConicalFrustum(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createConicalFrustum(float radiusBottom, float radiusTop, float height, uint8_t numSegments);		
-		//! Deprecated \see MeshUtils::createArrow(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createArrow(float radius, float length);		
-		//! Deprecated \see MeshUtils::createRectangle(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createRectangle(const VertexDescription & vd,float width, float height);		
-		//! Deprecated \see MeshUtils::createMeshFromBitmaps(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::Bitmap> depth, Util::Reference<Util::Bitmap> color = nullptr, Util::Reference<Util::Bitmap> normals = nullptr );								
-		//! Deprecated \see MeshUtils::createHexGrid(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createHexGrid(const VertexDescription & vd, float width, float height, uint32_t rows, uint32_t columns);		
-		//! Deprecated \see MeshUtils::createVoxelMesh(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createVoxelMesh(const VertexDescription & vd, const Util::PixelAccessor& colorAcc, uint32_t depth);		
-		//! Deprecated \see MeshUtils::createTorus(...)
-		RENDERINGAPI RENDERING_DEPRECATED static Mesh * createTorus(const VertexDescription & vd, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);		
-		//! Deprecated \see MeshUtils::addTorus(...)
-		RENDERINGAPI RENDERING_DEPRECATED static void addTorus(MeshBuilder & mb, float innerRadius, float outerRadius, uint32_t majorSegments, uint32_t minorSegments);
-
 public:
 	RENDERINGAPI MeshBuilder();
 	RENDERINGAPI explicit MeshBuilder(VertexDescription description);
@@ -131,11 +97,6 @@ public:
 	/*! Add a vertex with the current data (set by position(...),normal(...) etc.).
 		The index of the new vertex is returned.*/
 	RENDERINGAPI uint32_t addVertex();
-
-	/*! Add a vertex to the internal buffer. The index of the new vertex is returned.  deprecated!!!!!	*/
-	RENDERINGAPI RENDERING_DEPRECATED uint32_t addVertex(const Geometry::Vec3& pos, const Geometry::Vec3& n,
-						float r, float g, float b, float a,
-						float u, float v);
 
 	/*! Add a index to the interal buffer	*/
 	RENDERINGAPI void addIndex(uint32_t idx);
