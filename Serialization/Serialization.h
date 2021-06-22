@@ -106,7 +106,7 @@ RENDERINGAPI bool saveMesh(Mesh * mesh, const std::string & extension, std::ostr
  * @param file Address to the file containing the texture data
  * @return A single texture
  */
-RENDERINGAPI Util::Reference<Texture> loadTexture(const Util::FileName & url,  TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1);
+RENDERINGAPI Util::Reference<Texture> loadTexture(const Util::FileName & url,  TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1,uint32_t desiredChannels=0);
 
 /**
  * Create a single texture from the given data.
@@ -116,7 +116,7 @@ RENDERINGAPI Util::Reference<Texture> loadTexture(const Util::FileName & url,  T
  * @param data Texture data
  * @return A single texture
  */
-RENDERINGAPI Util::Reference<Texture> loadTexture(const std::string & extension, const std::string & data, TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1);
+RENDERINGAPI Util::Reference<Texture> loadTexture(const std::string & extension, const std::string & data, TextureType tType  = TextureType::TEXTURE_2D, uint32_t numLayers=1,uint32_t desiredChannels=0);
 
 /**
  * Write a single texture to the given address.
