@@ -1078,7 +1078,7 @@ enum class TexUnitUsageParameter : uint8_t {
 	DISABLED
 };
 
-constexpr static const uint8_t MAX_TEXTURES = 8;
+constexpr static const uint8_t MAX_TEXTURES = 32;
 
 //! @}
 }
