@@ -1,18 +1,14 @@
 #
 # This file is part of the Rendering library.
 # Copyright (C) 2009-2013 Benjamin Eikel <benjamin@eikel.org>
-# Copyright (C) 2014-2019 Sascha Brandt <sascha@brandt.graphics>
+# Copyright (C) 2014-2021 Sascha Brandt <sascha@brandt.graphics>
 #
 # This library is subject to the terms of the Mozilla Public License, v. 2.0.
 # You should have received a copy of the MPL along with this library; see the 
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
 cmake_minimum_required(VERSION 3.1.0)
-project(Rendering VERSION 0.3.0)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+project(Rendering VERSION 0.4.0)
 
 # Set up install directories
 include(GNUInstallDirs)
@@ -73,6 +69,9 @@ add_library(Rendering SHARED
 	TextRenderer.cpp
 )
 
+#set c++ standard to c++17
+target_compile_features(Rendering PUBLIC cxx_std_17)
+
 if(MSVC)
 	target_compile_definitions(Rendering PRIVATE "RENDERINGAPI=__declspec(dllexport)")
 	target_compile_definitions(Rendering INTERFACE "RENDERINGAPI=__declspec(dllimport)")
@@ -92,7 +91,7 @@ target_link_libraries(Rendering LINK_PUBLIC Geometry)
 
 # Dependency to Util
 if(NOT TARGET Util)
-	find_package(Util 0.3.0 REQUIRED NO_MODULE)
+	find_package(Util 0.4.0 REQUIRED NO_MODULE)
 endif()
 target_link_libraries(Rendering LINK_PUBLIC Util)
 
