@@ -17,6 +17,24 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
+# DDS/KTX Reader
+
+FetchContent_Declare(
+  ddsktx
+  GIT_REPOSITORY https://github.com/septag/dds-ktx.git
+  GIT_TAG        v1.1
+)
+
+FetchContent_GetProperties(ddsktx)
+if(NOT ddsktx_POPULATED)
+  message(STATUS "Fetching dds-ktx...")
+  FetchContent_Populate(ddsktx)
+endif()
+target_compile_definitions(RenderingExtern INTERFACE RENDERING_HAVE_LIB_DDS)
+target_include_directories(RenderingExtern INTERFACE ${ddsktx_SOURCE_DIR})
+
+
+# ------------------------------------------------------------------------------
 # OpenGL & glew
 
 option(RENDERING_BACKEND_GLES "Defines wether GLESv2 is used as rendering backend." OFF)

@@ -39,6 +39,7 @@ Texture::Format::Format():
 
 uint32_t Texture::Format::getPixelSize()const{
 	uint32_t pixelSize = getGLTypeSize(pixelFormat.glLocalDataType);
+	
 	switch(pixelFormat.glLocalDataFormat){
 #ifdef LIB_GL
 		case GL_RG:
@@ -81,8 +82,7 @@ uint32_t Texture::Format::getPixelSize()const{
 
 //! [ctor]
 Texture::Texture(Format _format):
-		glId(0),format(std::move(_format)),dataHasChanged(true),hasMipmaps(false),mipmapCreationIsPlanned(false),
-		_pixelDataSize(format.getPixelSize()) {
+		glId(0),format(std::move(_format)),dataHasChanged(true),hasMipmaps(false),mipmapCreationIsPlanned(false) {
 	switch(format.glTextureType){
 #if defined(LIB_GL)
 		case GL_TEXTURE_1D:

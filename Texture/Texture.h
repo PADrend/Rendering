@@ -182,8 +182,6 @@ class Texture: public Util::ReferenceCounter<Texture>	{
 		bool dataHasChanged;
 		bool hasMipmaps;
 		bool mipmapCreationIsPlanned;
-		const uint32_t _pixelDataSize; // initialized automatically
-
 		Util::Reference<Util::Bitmap> localBitmap;
 };
 

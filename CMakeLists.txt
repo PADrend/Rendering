@@ -41,6 +41,7 @@ add_library(Rendering SHARED
 	RenderingContext/RenderingParameters.cpp
 	Serialization/GenericAttributeSerialization.cpp
 	Serialization/Serialization.cpp
+	Serialization/StreamerDDS.cpp
 	Serialization/StreamerMD2.cpp
 	Serialization/StreamerMMF.cpp
 	Serialization/StreamerMTL.cpp

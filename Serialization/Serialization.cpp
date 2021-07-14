@@ -18,6 +18,7 @@
 #include "StreamerPKM.h"
 #include "StreamerPLY.h"
 #include "StreamerXYZ.h"
+#include "StreamerDDS.h"
 #include "../Mesh/Mesh.h"
 #include "../Texture/Texture.h"
 #include "../Texture/TextureUtils.h"
@@ -73,6 +74,10 @@ static AbstractRenderingStreamer * createStreamer(const std::string & extension,
 		return new StreamerPLY;
 	} else if(StreamerXYZ::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerXYZ;
+#ifdef RENDERING_HAVE_LIB_DDS
+	} else if(StreamerDDS::queryCapabilities(lowerExtension) & capability) {
+		return new StreamerDDS;
+#endif // RENDERING_HAVE_LIB_DDS
 	} else {
 		return nullptr;
 	}
