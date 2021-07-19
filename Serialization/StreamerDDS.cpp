@@ -17,6 +17,7 @@
 #include "../GLHeader.h"
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 
 #define DDSKTX_IMPLEMENT
 #include <dds-ktx.h>
