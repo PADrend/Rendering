@@ -39,6 +39,10 @@ target_include_directories(RenderingExtern INTERFACE ${ddsktx_SOURCE_DIR})
 
 option(RENDERING_BACKEND_GLES "Defines wether GLESv2 is used as rendering backend." OFF)
 
+if(POLICY CMP0072)
+  cmake_policy(SET CMP0072 NEW) # prefer GLVND over legacy GL libraries
+endif()
+
 if(RENDERING_BACKEND_GLES)
   find_package(GLESv2 REQUIRED)
   target_compile_definitions(RenderingExtern INTERFACE "LIB_GLESv2")
