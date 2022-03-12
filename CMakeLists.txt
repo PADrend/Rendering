@@ -1,14 +1,14 @@
 #
 # This file is part of the Rendering library.
 # Copyright (C) 2009-2013 Benjamin Eikel <benjamin@eikel.org>
-# Copyright (C) 2014-2021 Sascha Brandt <sascha@brandt.graphics>
+# Copyright (C) 2014-2022 Sascha Brandt <sascha@brandt.graphics>
 #
 # This library is subject to the terms of the Mozilla Public License, v. 2.0.
 # You should have received a copy of the MPL along with this library; see the 
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
-cmake_minimum_required(VERSION 3.1.0)
-project(Rendering VERSION 0.4.0)
+cmake_minimum_required(VERSION 3.13.0)
+project(Rendering VERSION 1.2.0)
 
 # Set up install directories
 include(GNUInstallDirs)
@@ -66,9 +66,12 @@ add_library(Rendering SHARED
 	OcclusionQuery.cpp
 	PBO.cpp
 	QueryObject.cpp
+	RenderDevice.cpp
 	StatisticsQuery.cpp
 	TextRenderer.cpp
 )
+
+add_subdirectory(Backend)
 
 #set c++ standard to c++17
 target_compile_features(Rendering PUBLIC cxx_std_17)
@@ -92,17 +95,11 @@ target_link_libraries(Rendering LINK_PUBLIC Geometry)
 
 # Dependency to Util
 if(NOT TARGET Util)
-	find_package(Util 0.4.0 REQUIRED NO_MODULE)
+	find_package(Util 1.2.0 REQUIRED NO_MODULE)
 endif()
 target_link_libraries(Rendering LINK_PUBLIC Util)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-# Dependency to an OpenGL implementation
-#find_package(GLImplementation REQUIRED)
-#target_compile_definitions(Rendering PRIVATE "${GLIMPLEMENTATION_DEFINITIONS}")
-#target_include_directories(Rendering PRIVATE ${GLIMPLEMENTATION_INCLUDE_DIRS})
-#target_link_libraries(Rendering LINK_PRIVATE ${GLIMPLEMENTATION_LIBRARIES})
 
 # Extern libraries
 add_subdirectory(extern)
