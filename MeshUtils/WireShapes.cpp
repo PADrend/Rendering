@@ -149,7 +149,7 @@ namespace WireShapes {
 		std::vector<uint32_t> indices;
 		for (uint_fast8_t segment = 0; segment < numSegments; ++segment) {
 			const double segmentAngle = static_cast<double>(segment) * step;
-			mb.position(Vec3(std::sin(segmentAngle), std::cos(segmentAngle), 0) * radius);
+			mb.position(Vec3(static_cast<float>(std::sin(segmentAngle)), static_cast<float>(std::cos(segmentAngle)), 0.0f) * radius);
 			mb.addVertex();
 			indices.emplace_back(segment);
 		}

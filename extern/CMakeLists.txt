@@ -9,12 +9,7 @@
 
 add_library(RenderingExtern INTERFACE)
 
-if(${CMAKE_VERSION} VERSION_LESS "3.11.0") 
-  message("Please consider to switch to CMake 3.11.0")
-  include(FetchContentFallback)
-else()
-  include(FetchContent)
-endif()
+include(FetchContent)
 
 if(POLICY CMP0048)
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
@@ -34,6 +29,24 @@ find_package(Threads)
 if(TARGET Threads::Threads)
 	target_link_libraries(RenderingExtern INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 endif()
+
+# ------------------------------------------------------------------------------
+# DDS/KTX Reader
+
+FetchContent_Declare(
+  ddsktx
+  GIT_REPOSITORY https://github.com/septag/dds-ktx.git
+  GIT_TAG        v1.1
+)
+
+FetchContent_GetProperties(ddsktx)
+if(NOT ddsktx_POPULATED)
+  message(STATUS "Fetching dds-ktx...")
+  FetchContent_Populate(ddsktx)
+endif()
+target_compile_definitions(RenderingExtern INTERFACE RENDERING_HAVE_LIB_DDS)
+target_include_directories(RenderingExtern INTERFACE ${ddsktx_SOURCE_DIR})
+
 
 # ------------------------------------------------------------------------------
 # Vulkan-Headers

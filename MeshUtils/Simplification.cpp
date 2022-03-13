@@ -538,14 +538,14 @@ static float getOptimalPosition(const vertex_t & vertexA, const vertex_t & verte
 			}
 		}
 
-		if(Util::Numeric::invertMatrix(mInvert, dataSize)){
+		if(Util::Numeric::invertMatrix(mInvert, static_cast<uint16_t>(dataSize))){
 			optPosSuccess = true;
 			// matrix inversion successful
 			// calculate & store optimal position
 			// Optimal position vBar = - A^-1 b
 			optPos.resize(dataSize);
 			for (uint_fast8_t row = 0; row < dataSize; ++row) {
-				const uint_fast8_t rowOffset = row * rowSize + dataSize;
+				const uint_fast8_t rowOffset = static_cast<uint_fast8_t>(row * rowSize + dataSize);
 
 				float sum = 0.0f;
 				for(uint_fast8_t col = 0; col < dataSize; ++col) {
@@ -558,7 +558,7 @@ static float getOptimalPosition(const vertex_t & vertexA, const vertex_t & verte
 			for(uint_fast8_t col = 0; col < dataSize; ++col) {
 				float sum = 0.0f;
 				for (uint_fast8_t row = 0; row < dataSize; ++row) {
-					const uint_fast8_t rowOffset = row * rowSize + dataSize;
+					const uint_fast8_t rowOffset = static_cast<uint_fast8_t>(row * rowSize + dataSize);
 					sum += (vertexA.q.b[row] + vertexB.q.b[row]) * mInvert[rowOffset + col];
 				}
 				cost -= sum * (vertexA.q.b[col] + vertexB.q.b[col]);
@@ -984,7 +984,7 @@ Mesh * simplifyMesh(Mesh * mesh, uint32_t newNumberOfTriangles, float threshold,
 	// copy indices to newMesh deleting/skipping indexTrash
 	MeshIndexData indexData;
 	{
-		uint32_t newIndexCount = mesh->getIndexCount() - indexTrash.size() * 3;
+		uint32_t newIndexCount = mesh->getIndexCount() - static_cast<uint32_t>(indexTrash.size()) * 3;
 		indexData.allocate(newIndexCount);
 
 		uint32_t * indexPointer = indexData.data();

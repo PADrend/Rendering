@@ -40,6 +40,7 @@ namespace Util {
 class Color4f;
 class Color4ub;
 class PixelAccessor;
+class Bitmap;
 }
 
 namespace Rendering {
@@ -66,10 +67,10 @@ RENDERINGAPI void addBox(MeshBuilder& mb, const Geometry::Box& box);
 
 /*! Creates a mesh for a sky dome with texture coordinates.
   \note adapted from [alc] http://irrlicht.sourceforge.net/phpBB2/viewtopic.php?t=13887&sid=25788d2b93c73294fd7abe76db6fab1e */
-RENDERINGAPI Mesh* createDome(const VertexDescription& vd, const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0);
+RENDERINGAPI Mesh* createDome(const VertexDescription& vd, const float radius = 100.0f, const int horiRes = 40, const int vertRes = 40, const float halfSphereFraction = 1.0f, const float imagePercentage = 1.0f);
 
 //! Adds a dome to the given meshBuilder. \see createDome(...)
-RENDERINGAPI void addDome(MeshBuilder& mb, const double radius = 100.0, const int horiRes = 40, const int vertRes = 40, const double halfSphereFraction = 1.0, const double imagePercentage = 1.0);
+RENDERINGAPI void addDome(MeshBuilder& mb, const float radius = 100.0f, const int horiRes = 40, const int vertRes = 40, const float halfSphereFraction = 1.0f, const float imagePercentage = 1.0f);
 
  
 /**
@@ -278,9 +279,23 @@ RENDERINGAPI void addTorus(MeshBuilder& mb, float innerRadius, float outerRadius
 * @return The mesh
 */
 RENDERINGAPI Mesh* createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::PixelAccessor> depth, Util::Reference<Util::PixelAccessor> color = nullptr, Util::Reference<Util::PixelAccessor> normals = nullptr);
+
+/**
+* Creates a mesh from the input bitmap.
+*
+* @param vd Vertex description specifying the vertex information to generate
+* @param depth Bitmap with depth values. Translates to the y-values of the mesh.
+* @param color Bitmap with colors.
+* @param normals Bitmap with normals.
+* @return The mesh
+*/
+RENDERINGAPI Mesh* createMeshFromBitmaps(const VertexDescription& vd, Util::Reference<Util::Bitmap> depth, Util::Reference<Util::Bitmap> color = nullptr, Util::Reference<Util::Bitmap> normals = nullptr);
   
 //! Adds a mesh from bitmap to the given meshBuilder. \see createMeshFromBitmaps(...)
 RENDERINGAPI void addMeshFromBitmaps(MeshBuilder& mb, Util::Reference<Util::PixelAccessor> depth, Util::Reference<Util::PixelAccessor> color = nullptr, Util::Reference<Util::PixelAccessor> normals = nullptr);
+  
+//! Adds a mesh from bitmap to the given meshBuilder. \see createMeshFromBitmaps(...)
+RENDERINGAPI void addMeshFromBitmaps(MeshBuilder& mb, Util::Reference<Util::Bitmap> depth, Util::Reference<Util::Bitmap> color = nullptr, Util::Reference<Util::Bitmap> normals = nullptr);
 
 //! @}
 }

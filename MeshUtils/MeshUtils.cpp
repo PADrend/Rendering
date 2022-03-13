@@ -206,9 +206,9 @@ RawVertex RawVertex::midPoint(const RawVertex & rwa, const RawVertex & rwb, cons
 	auto data = new uint8_t[rwa.getSize()];
 	RawVertex ret(newIndex, data, rwa.getSize());
 	for(const auto & attr : vd.getAttributes()) {
-		if (attr.empty())
+		if (!attr.isValid())
 			continue;
-		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
+		for (unsigned j = 0; j < attr.getComponentCount(); ++j) {
 			switch (attr.getDataType()) {
 			case Util::TypeConstant::FLOAT: {
 				float f = (reinterpret_cast<const float *> (rwa.getData() + attr.getOffset()))[j];
@@ -285,9 +285,9 @@ RawVertex RawVertex::interpolate(const RawVertex & rwa, const RawVertex & rwb, f
 	RawVertex ret(newIndex, data, rwa.getSize());
 	float a_inv = 1.0f - a;
 	for(const auto & attr : vd.getAttributes()) {
-		if (attr.empty())
+		if (!attr.isValid())
 			continue;
-		for (unsigned j = 0; j < attr.getNumValues(); ++j) {
+		for (unsigned j = 0; j < attr.getComponentCount(); ++j) {
 			switch (attr.getDataType()) {
 			case Util::TypeConstant::FLOAT:
 				interpolateValue<float>(data, rwa, rwb, attr, j, a, a_inv);
@@ -487,7 +487,7 @@ void setColor(Mesh * mesh, const Util::Color4f & _color) {
 	MeshVertexData & vData = mesh->openVertexData();
 
 	VertexAttribute colorAttr(vDesc.getAttribute(VertexAttributeIds::COLOR));
-	if (colorAttr.empty()) { // no color available -> add color
+	if (!colorAttr.isValid()) { // no color available -> add color
 		colorAttr = vDesc.appendColorRGBAByte();
 		std::unique_ptr<MeshVertexData> vDataNew(convertVertices(vData, vDesc));
 		vData.swap(*vDataNew);
@@ -534,7 +534,7 @@ void splitLargeTriangles(Mesh * m, float maxSideLength) {
 		RawVertex a = t.getRawVertex(t.longestSideIndex + 0);
 		RawVertex b = t.getRawVertex(t.longestSideIndex + 1);
 		RawVertex c = t.getRawVertex(t.longestSideIndex + 2);
-		RawVertex d = RawVertex::midPoint(a, b, vertexArray.size(), vd);
+		RawVertex d = RawVertex::midPoint(a, b, static_cast<uint32_t>(vertexArray.size()), vd);
 		vertexArray.push_back(d);
 		triangles.push(SplitTriangle(a, d, c));
 		triangles.push(SplitTriangle(d, b, c));
@@ -542,7 +542,7 @@ void splitLargeTriangles(Mesh * m, float maxSideLength) {
 
 	// resemble mesh
 	// - indices
-	uint32_t iCount = triangles.size() * 3;
+	uint32_t iCount = static_cast<uint32_t>(triangles.size() * 3);
 	indices.allocate(iCount);
 	for (uint32_t i = 0; i < iCount; i += 3) {
 		SplitTriangle t = triangles.top();
@@ -554,8 +554,8 @@ void splitLargeTriangles(Mesh * m, float maxSideLength) {
 	indices.updateIndexRange();
 
 	// - vertices
-	vertices.allocate(vertexArray.size(), vd);
-	for (size_t i = 0; i < vertexArray.size(); i++) {
+	vertices.allocate(static_cast<uint32_t>(vertexArray.size()), vd);
+	for (uint32_t i = 0; i < static_cast<uint32_t>(vertexArray.size()); i++) {
 		std::copy(vertexArray.at(i).getData(), vertexArray.at(i).getData() + vertexSize, vertices[i]);
 	}
 	vertices.updateBoundingBox();
@@ -579,19 +579,19 @@ void shrinkMesh(Mesh * m, bool shrinkPosition) {
 	bool convertPosition = false;
 	for(const auto & attr : vdOld.getAttributes()) {
 		// can shrink normals?
-		if (attr.getNameId() == VertexAttributeIds::NORMAL && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getNumValues() >= 3) {
+		if (attr.getNameId() == VertexAttributeIds::NORMAL && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getComponentCount() >= 3) {
 			vdNew.appendNormalByte();
 			convertNormals = true;
 		} // can shrink colors?
-		else if (attr.getNameId() == VertexAttributeIds::COLOR && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getNumValues() >= 3) {
+		else if (attr.getNameId() == VertexAttributeIds::COLOR && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getComponentCount() >= 3) {
 			vdNew.appendColorRGBAByte();
 			convertColors = true;
 		} // can shrink position?
-		else if (shrinkPosition && attr.getNameId() == VertexAttributeIds::POSITION && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getNumValues() >= 3) {
+		else if (shrinkPosition && attr.getNameId() == VertexAttributeIds::POSITION && attr.getDataType() == Util::TypeConstant::FLOAT && attr.getComponentCount() >= 3) {
 			vdNew.appendPosition4DHalf();
 			convertPosition = true;
 		} else { // just copy
-			vdNew.appendAttribute(attr.getNameId(), attr.getDataType(), attr.getNumValues(), attr.isNormalized());
+			vdNew.appendAttribute(attr.getNameId(), attr.getDataType(), attr.getComponentCount(), attr.isNormalized());
 		}
 	}
 
@@ -702,7 +702,7 @@ MeshVertexData * convertVertices(const MeshVertexData & oldVertices, const Verte
 	for(const auto & oldAttr : oldVertexDescription.getAttributes()) {
 		const VertexAttribute & newAttr = newVertexDescription.getAttribute(oldAttr.getNameId());
 
-		if (oldAttr.empty() || newAttr.empty()) {
+		if (!oldAttr.isValid() || !newAttr.isValid()) {
 			continue;
 		}
 		if(oldAttr.getDataType() == newAttr.getDataType()) {					
@@ -734,14 +734,14 @@ VertexDescription uniteVertexDescriptions(const std::deque<VertexDescription> & 
 		const auto & attributes = desc.getAttributes();
 		for(const auto & attr : attributes) {
 			const VertexAttribute & resultAttr = result.getAttribute(attr.getNameId());
-			if (resultAttr.empty()) {
-				result.appendAttribute(attr.getNameId(), attr.getDataType(), attr.getNumValues(), attr.isNormalized());
+			if (!resultAttr.isValid()) {
+				result.appendAttribute(attr.getNameId(), attr.getDataType(), attr.getComponentCount(), attr.isNormalized());
 			} else if (!(attr == resultAttr)) {
 				uint8_t attrTypeSize = Util::getNumBytes(attr.getDataType());
 				uint8_t resultAttrTypeSize = Util::getNumBytes(resultAttr.getDataType());
 				result.updateAttribute(
 						VertexAttribute(attr.getNameId(), attrTypeSize > resultAttrTypeSize ? attr.getDataType() : resultAttr.getDataType(), 
-							std::max(attr.getNumValues(), resultAttr.getNumValues()), attr.isNormalized()&&resultAttr.isNormalized() ));
+							std::max(attr.getComponentCount(), resultAttr.getComponentCount()), attr.isNormalized()&&resultAttr.isNormalized() ));
 			}
 		}
 	}
@@ -920,8 +920,8 @@ std::deque<MeshVertexData> splitVertexData(Mesh * mesh, uint32_t chunkSize){
 		MeshVertexData currentVertices;
 		currentVertices.allocate(currentChunkSize, desc);
 
-		uint32_t chunkFront = vertexPointer * desc.getVertexSize();
-		uint32_t chunkEnd = chunkFront + currentChunkSize * desc.getVertexSize();
+		uint64_t chunkFront = vertexPointer * desc.getVertexSize();
+		uint64_t chunkEnd = chunkFront + currentChunkSize * desc.getVertexSize();
 
 
 		std::copy(meshVertices.data() + chunkFront, meshVertices.data() + chunkEnd, currentVertices.data());
@@ -952,8 +952,8 @@ MeshVertexData * extractVertexData(Mesh * mesh, uint32_t begin, uint32_t length)
 	auto result = new MeshVertexData;
 	result->allocate(length, desc);
 
-	uint32_t front = begin*desc.getVertexSize();
-	uint32_t end = front + length*desc.getVertexSize();
+	const auto front = begin*desc.getVertexSize();
+	const auto end = front + length*desc.getVertexSize();
 
 	std::copy(meshVertices.data() + front, meshVertices.data() + end, result->data());
 
@@ -996,7 +996,7 @@ void eliminateDuplicateVertices(Mesh * mesh) {
 	result->setDataStrategy(mesh->getDataStrategy());
 
 	MeshVertexData & vertices = result->openVertexData();
-	vertices.allocate(rawVertices.size(), desc);
+	vertices.allocate(static_cast<uint32_t>(rawVertices.size()), desc);
 
 	MeshIndexData & indices = result->openIndexData();
 	indices.allocate(indexCount);
@@ -1052,7 +1052,7 @@ Mesh * eliminateUnusedVertices(Mesh * mesh) {
 		auto it = oldToNewIndices.find(oldIndex);		
 		uint32_t newIndex = NONE;
 		if (it == oldToNewIndices.end()) {
-			newIndex = usedOldVertices.size();
+			newIndex = static_cast<uint32_t>(usedOldVertices.size());
 			usedOldVertices.push_back(oldIndex);
 			oldToNewIndices[oldIndex] = newIndex;
 		} else {
@@ -1061,7 +1061,7 @@ Mesh * eliminateUnusedVertices(Mesh * mesh) {
 		newIndices.push_back(newIndex);
 	}
 
-	auto newMesh = new Mesh(desc, usedOldVertices.size(), newIndices.size());
+	auto newMesh = new Mesh(desc, static_cast<uint32_t>(usedOldVertices.size()), static_cast<uint32_t>(newIndices.size()));
 	MeshIndexData & newIndexData = newMesh->openIndexData();
 	std::copy(newIndices.begin(), newIndices.end(), newIndexData.data());
 	newIndexData.updateIndexRange();
@@ -1112,7 +1112,7 @@ Mesh * eliminateLongTriangles(Mesh * mesh, float ratio) {
 		newIndices.push_back(originalIndices[counter + 2]);
 	}
 	MeshIndexData newIndexData;
-	newIndexData.allocate(newIndices.size());
+	newIndexData.allocate(static_cast<uint32_t>(newIndices.size()));
 	std::copy(newIndices.begin(), newIndices.end(), newIndexData.data());
 	Util::Reference<Mesh> newMesh = new Mesh(newIndexData, vertexData);
 	return eliminateUnusedVertices(newMesh.get());
@@ -1153,7 +1153,7 @@ Mesh * eliminateTrianglesBehindPlane(Mesh * mesh, const Geometry::Plane & plane)
 		newIndices.push_back(indexC);
 	}
 	MeshIndexData newIndexData;
-	newIndexData.allocate(newIndices.size());
+	newIndexData.allocate(static_cast<uint32_t>(newIndices.size()));
 	std::copy(newIndices.begin(), newIndices.end(), newIndexData.data());
 	newIndexData.updateIndexRange();
 	return new Mesh(newIndexData, vertexData);
@@ -1184,7 +1184,7 @@ Mesh * eliminateZeroAreaTriangles(Mesh * mesh) {
 		}
 	}
 	MeshIndexData newIndexData;
-	newIndexData.allocate(newIndices.size());
+	newIndexData.allocate(static_cast<uint32_t>(newIndices.size()));
 	std::copy(newIndices.begin(), newIndices.end(), newIndexData.data());
 	newIndexData.updateIndexRange();
 	return new Mesh(newIndexData, vertexData);
@@ -1279,7 +1279,7 @@ Mesh * removeSkinsWithHoleCovering(Mesh * mesh, float maxNormalZ, float covering
 		newIndices.push_back(originalIndices[counter + 2]);
 	}
 	MeshIndexData newIndexData;
-	newIndexData.allocate(newIndices.size());
+	newIndexData.allocate(static_cast<uint32_t>(newIndices.size()));
 	std::copy(newIndices.begin(), newIndices.end(), newIndexData.data());
 	newIndexData.updateIndexRange();
 	newVertexData.updateBoundingBox();
@@ -1505,14 +1505,14 @@ void reverseWinding(Mesh * mesh) {
 void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringIdentifier to) {
 	MeshVertexData & vertices = mesh->openVertexData();
 
-	if (vertices.getVertexDescription().getAttribute(from).empty()) {
+	if (!vertices.getVertexDescription().getAttribute(from).isValid()) {
 		WARN("Source data not available.");
 		return;
 	}
 	{
 		VertexDescription vdCopy(vertices.getVertexDescription());
 		const VertexAttribute & vaFrom = vdCopy.getAttribute(from);
-		VertexAttribute vaTo(to, vaFrom.getDataType(), vaFrom.getNumValues(), vaFrom.isNormalized());
+		VertexAttribute vaTo(to, vaFrom.getDataType(), vaFrom.getComponentCount(), vaFrom.isNormalized());
 		vdCopy.updateAttribute(vaTo);
 
 		std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, vdCopy));
@@ -1524,10 +1524,10 @@ void copyVertexAttribute(Mesh * mesh, Util::StringIdentifier from, Util::StringI
 	const VertexAttribute & vaTo = vd.getAttribute(to);
 
 	uint8_t * data = vertices.data();
-	const size_t stride = vd.getVertexSize();
-	const uint16_t offsetFrom = vaFrom.getOffset();
-	const uint16_t offsetTo = vaTo.getOffset();
-	const size_t attrSize = vaFrom.getDataSize();
+	const auto stride = vd.getVertexSize();
+	const auto offsetFrom = vaFrom.getOffset();
+	const auto offsetTo = vaTo.getOffset();
+	const auto attrSize = vaFrom.getDataSize();
 
 	for (uint_fast32_t v = 0; v < vertices.getVertexCount(); ++v) {
 		std::copy(data + offsetFrom , data + offsetFrom + attrSize, data + offsetTo);
@@ -1578,22 +1578,22 @@ void calculateTangentVectors(Mesh * mesh, const Util::StringIdentifier uvName, c
 		if (vertices.getVertexDescription().getAttribute(VertexAttributeIds::POSITION).getDataType() != Util::TypeConstant::FLOAT)
 			INVALID_ARGUMENT_EXCEPTION("addTangentVectors: No float positions.");
 
-		if (vertices.getVertexDescription().getAttribute(VertexAttributeIds::NORMAL).empty())
+		if (!vertices.getVertexDescription().getAttribute(VertexAttributeIds::NORMAL).isValid())
 			INVALID_ARGUMENT_EXCEPTION("addTangentVectors: No normals.");
 
 		if (vertices.getVertexDescription().getAttribute(uvName).getDataType() != Util::TypeConstant::FLOAT
-				|| vertices.getVertexDescription().getAttribute(uvName).getNumValues() < 2)
+				|| vertices.getVertexDescription().getAttribute(uvName).getComponentCount() < 2)
 			INVALID_ARGUMENT_EXCEPTION("addTangentVectors: No or wrong texture coordinates.");
 
 		// add slot for 4 byte tangent vector
-		if (vertices.getVertexDescription().getAttribute(tangentVecName).empty()) {
+		if (!vertices.getVertexDescription().getAttribute(tangentVecName).isValid()) {
 			VertexDescription newVd = vertices.getVertexDescription();
 			newVd.appendAttribute(tangentVecName, Util::TypeConstant::INT8, 4, true);
 			std::unique_ptr<MeshVertexData> newVertices(convertVertices(vertices, newVd));
 			vertices.swap(*newVertices.get());
 		}
 		if (vertices.getVertexDescription().getAttribute(tangentVecName).getDataType() != Util::TypeConstant::INT8 || vertices.getVertexDescription().getAttribute(
-				tangentVecName).getNumValues() != 4)
+				tangentVecName).getComponentCount() != 4)
 			INVALID_ARGUMENT_EXCEPTION("createTextureCoordinates_boxProjection: Wrong tangent format.");
 
 	}
@@ -1703,7 +1703,7 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIn
 	MeshIndexData & indices = m->openIndexData();
 
 	// extract triangles
-	size_t vertexSize = vd.getVertexSize();
+	uint64_t vertexSize = vd.getVertexSize();
 	for (uint32_t i = 0; i < vertices.getVertexCount(); ++i) {
 		auto tmpData = new uint8_t[vertexSize];
 		std::copy(vertices[i], vertices[i] + vertexSize, tmpData);
@@ -1746,7 +1746,7 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIn
 			}
 
 			float blend = std::abs(pb)/(std::abs(pb) + std::abs(pc));
-			RawVertex d = RawVertex::interpolate(b, c, blend, vertexArray.size(), vd);
+			RawVertex d = RawVertex::interpolate(b, c, blend, static_cast<uint32_t>(vertexArray.size()), vd);
 			vertexArray.push_back(d);
 			trianglesOut.push_back(SplitTriangle(a, b, d));
 			trianglesNew.push_back(SplitTriangle(a, d, c));
@@ -1764,9 +1764,9 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIn
 
 			float blend_ab = std::abs(pa)/(std::abs(pa) + std::abs(pb));
 			float blend_ac = std::abs(pa)/(std::abs(pa) + std::abs(pc));
-			RawVertex d_ab = RawVertex::interpolate(a, b, blend_ab, vertexArray.size(), vd);
+			RawVertex d_ab = RawVertex::interpolate(a, b, blend_ab, static_cast<uint32_t>(vertexArray.size()), vd);
 			vertexArray.push_back(d_ab);
-			RawVertex d_ac = RawVertex::interpolate(a, c, blend_ac, vertexArray.size(), vd);
+			RawVertex d_ac = RawVertex::interpolate(a, c, blend_ac, static_cast<uint32_t>(vertexArray.size()), vd);
 			vertexArray.push_back(d_ac);
 
 			trianglesOut.push_back(SplitTriangle(a, d_ab, d_ac));
@@ -1781,7 +1781,7 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIn
 
 	// reassemble mesh
 	// - indices
-	uint32_t iCount = trianglesOut.size() * 3;
+	uint32_t iCount = static_cast<uint32_t>(trianglesOut.size() * 3);
 	indices.allocate(iCount);
 	for (uint32_t i = 0; i < iCount; i += 3) {
 		SplitTriangle t = trianglesOut.front();
@@ -1793,8 +1793,8 @@ void cutMesh(Mesh* m, const Geometry::Plane& plane, const std::set<uint32_t> tIn
 	indices.updateIndexRange();
 
 	// - vertices
-	vertices.allocate(vertexArray.size(), vd);
-	for (size_t i = 0; i < vertexArray.size(); i++) {
+	vertices.allocate(static_cast<uint32_t>(vertexArray.size()), vd);
+	for (uint32_t i = 0; i < static_cast<uint32_t>(vertexArray.size()); i++) {
 		std::copy(vertexArray.at(i).getData(), vertexArray.at(i).getData() + vertexSize, vertices[i]);
 	}
 	vertices.updateBoundingBox();
@@ -1890,11 +1890,11 @@ void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_
 		RawVertex b = triangles[ti].b;
 		RawVertex c = triangles[ti].c;
 
-		RawVertex an = RawVertex::move(a, dir, vertexArray.size(), vd);
+		RawVertex an = RawVertex::move(a, dir, static_cast<uint32_t>(vertexArray.size()), vd);
 		vertexArray.push_back(an);
-		RawVertex bn = RawVertex::move(b, dir, vertexArray.size(), vd);
+		RawVertex bn = RawVertex::move(b, dir, static_cast<uint32_t>(vertexArray.size()), vd);
 		vertexArray.push_back(bn);
-		RawVertex cn = RawVertex::move(c, dir, vertexArray.size(), vd);
+		RawVertex cn = RawVertex::move(c, dir, static_cast<uint32_t>(vertexArray.size()), vd);
 		vertexArray.push_back(cn);
 		triangles[ti].a = an;
 		triangles[ti].b = bn;
@@ -1922,7 +1922,7 @@ void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_
 	// reassemble mesh
 	// - indices
 	{
-		indices.allocate(triangles.size() * 3);
+		indices.allocate(static_cast<uint32_t>(triangles.size()) * 3);
 		uint32_t i=0;
 		for (auto t : triangles) {
 			indices[i++] = t.a.getIndex();
@@ -1933,8 +1933,8 @@ void extrudeTriangles(Mesh* m, const Geometry::Vec3& dir, const std::set<uint32_
 	}
 
 	// - vertices
-	vertices.allocate(vertexArray.size(), vd);
-	for (size_t i = 0; i < vertexArray.size(); i++) {
+	vertices.allocate(static_cast<uint32_t>(vertexArray.size()), vd);
+	for (uint32_t i = 0; i < static_cast<uint32_t>(vertexArray.size()); i++) {
 		std::copy(vertexArray.at(i).getData(), vertexArray.at(i).getData() + vertexSize, vertices[i]);
 	}
 	vertices.updateBoundingBox();
@@ -2029,7 +2029,7 @@ uint32_t mergeCloseVertices(Mesh * mesh, float tolerance) {
 	result->setDrawMode(mesh->getDrawMode());
 
 	MeshVertexData & vertices = result->openVertexData();
-	vertices.allocate(rawVertices.size(), desc);
+	vertices.allocate(static_cast<uint32_t>(rawVertices.size()), desc);
 
 	MeshIndexData & indices = result->openIndexData();
 	indices.allocate(indexCount);
@@ -2169,7 +2169,7 @@ std::deque<Mesh*> splitIntoConnectedComponents(Mesh* mesh, float relDistance/*=0
 	for(const auto& cc : components) {
 		if(cc->triangles.size() > 0) {
 			MeshIndexData indexData;
-			indexData.allocate(cc->triangles.size()*3);
+			indexData.allocate(static_cast<uint32_t>(cc->triangles.size()*3));
 			uint32_t i=0;
 			for(auto t : cc->triangles) {
 				auto triIdx = triAcc->getIndices(t->idx);
@@ -2208,8 +2208,8 @@ void applyDisplacementMap(Mesh* mesh, Util::PixelAccessor* displaceAcc, float sc
 		auto pos = pAcc->getPosition(i);
 		auto tc = tcAcc->getCoordinate(i);
 		auto n = nAcc->getNormal(i);
-		uint32_t px = clampToEdge ? std::max(0, std::min<int32_t>(width-1, tc.x()*width)) : ((tc.x() - std::floor(tc.x())) * width);
-		uint32_t py = clampToEdge ? std::max(0, std::min<int32_t>(height-1, tc.y()*height)) : ((tc.y() - std::floor(tc.y())) * height);
+		uint32_t px = clampToEdge ? std::max<uint32_t>(0, std::min<int32_t>(width-1, static_cast<int32_t>(tc.x()*width))) : static_cast<uint32_t>((tc.x() - std::floor(tc.x())) * width);
+		uint32_t py = clampToEdge ? std::max<uint32_t>(0, std::min<int32_t>(height-1, static_cast<int32_t>(tc.y()*height))) : static_cast<uint32_t>((tc.y() - std::floor(tc.y())) * height);
 		auto value = displaceAcc->readSingleValueFloat(px, py) * scale;
 		pAcc->setPosition(i, pos + n * value);
 	}
@@ -2285,12 +2285,12 @@ MeshVertexData* extractVertices(Mesh* mesh, const std::vector<uint32_t>& indices
     return nullptr;
 
   auto result = new MeshVertexData;
-  result->allocate(indices.size(), desc);
+  result->allocate(static_cast<uint32_t>(indices.size()), desc);
   
   uint32_t i=0;
   for(const auto& index : indices) {
-    uint32_t start = index * desc.getVertexSize();
-    uint32_t end = start + desc.getVertexSize();
+    auto start = index * desc.getVertexSize();
+    auto end = start + desc.getVertexSize();
     std::copy(meshVertices.data() + start, meshVertices.data() + end, result->data() + desc.getVertexSize()*i++);
   }
 
@@ -2317,16 +2317,16 @@ void copyVertices(Rendering::Mesh* source, Rendering::Mesh* target, uint32_t sou
 	auto& srcVertices = source->_getVertexData();
 	auto& tgtVertices = target->_getVertexData();
 	
-	uint32_t srcStart = sourceOffset*vd.getVertexSize();
-	uint32_t tgtStart = targetOffset*vd.getVertexSize();
-	uint32_t srcEnd = (sourceOffset + count)*vd.getVertexSize();
+	const uint32_t srcStart = static_cast<uint32_t>(sourceOffset*vd.getVertexSize());
+	const uint32_t tgtStart = static_cast<uint32_t>(targetOffset*vd.getVertexSize());
+	const uint32_t srcEnd = static_cast<uint32_t>((sourceOffset + count)*vd.getVertexSize());
 		
 	if(srcVertices.isUploaded() && tgtVertices.isUploaded()) {
 		BufferObject srcBO;
 		BufferObject tgtBO;
 		srcVertices._swapBufferObject(srcBO);
 		tgtVertices._swapBufferObject(tgtBO);
-		tgtBO.copy(srcBO, srcStart, tgtStart, count*vd.getVertexSize());
+		tgtBO.copy(srcBO, srcStart, tgtStart, static_cast<uint32_t>(count*vd.getVertexSize()));
 		srcVertices._swapBufferObject(srcBO);
 		tgtVertices._swapBufferObject(tgtBO);
 		tgtVertices.releaseLocalData();

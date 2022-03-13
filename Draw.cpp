@@ -439,7 +439,7 @@ void drawVector(RenderingContext & rc, const Geometry::Vec3f & from, const Geome
 
 void enable2DMode(RenderingContext & rc,const Geometry::Rect_i & screenRect){
 	rc.pushMatrix_cameraToClipping();
-	rc.setMatrix_cameraToClipping(Geometry::Matrix4x4f::orthographicProjection(screenRect.getMinX(), screenRect.getMaxX(),screenRect.getMaxY(),screenRect.getMinY(), -1, 1));
+	rc.setMatrix_cameraToClipping(Geometry::Matrix4x4f::orthographicProjection(static_cast<float>(screenRect.getMinX()), static_cast<float>(screenRect.getMaxX()),static_cast<float>(screenRect.getMaxY()),static_cast<float>(screenRect.getMinY()), -1, 1));
 
 	rc.pushMatrix_modelToCamera();
 	rc.setMatrix_modelToCamera(Geometry::Matrix4x4f());

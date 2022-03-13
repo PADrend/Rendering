@@ -127,7 +127,7 @@ void MeshVertexData::updateBoundingBox() {
 	auto acc = FloatAttributeAccessor::create(*this, VertexAttributeIds::POSITION);
 	
 	const VertexAttribute & attr = vd.getAttribute(VertexAttributeIds::POSITION);
-	const uint8_t vertexNum = attr.getNumValues();
+	const uint8_t vertexNum = attr.getComponentCount();
 	if (vertexNum < 1) {
 		WARN(std::string("Vertex component count is zero."));
 		return;

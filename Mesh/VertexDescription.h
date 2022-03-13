@@ -36,12 +36,12 @@ class VertexDescription : public Util::ResourceFormat {
 	public:
 
 		//! Add an attribute with the given name and the given number of float values.
-		const VertexAttribute & appendFloatAttribute(const Util::StringIdentifier & nameId, uint8_t numValues) { 
+		const VertexAttribute & appendFloatAttribute(const Util::StringIdentifier & nameId, uint32_t numValues) { 
 			return appendFloat(nameId, numValues);
 		}
 
 		//! Add an attribute with the given name and the given number of unsigned int values.
-		const VertexAttribute & appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint8_t numValues, bool convertToFloat=false) {
+		const VertexAttribute & appendUnsignedIntAttribute(const Util::StringIdentifier & nameId, uint32_t numValues, bool convertToFloat=false) {
 			return appendUInt(nameId, numValues);
 		}
 
@@ -95,7 +95,7 @@ class VertexDescription : public Util::ResourceFormat {
 			return appendAttribute(VertexAttributeIds::getTextureCoordinateIdentifier(textureUnit), Util::TypeConstant::FLOAT, 2, false);
 		}
 
-		size_t getVertexSize() const { return getSize(); }
+		uint64_t getVertexSize() const { return getSize(); }
 };
 // ----------------------------------
 }

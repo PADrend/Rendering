@@ -115,7 +115,7 @@ static Mesh * createMesh(VertexDescription * vertexDesc, const std::list<uint32_
 
 
 	// Create index data.
-	std::size_t indexCount = faces.size();
+	uint32_t indexCount = static_cast<uint32_t>(faces.size());
 
 	MeshIndexData & indices = mesh->openIndexData();
 	indices.allocate(indexCount);
@@ -139,11 +139,11 @@ static Mesh * createMesh(VertexDescription * vertexDesc, const std::list<uint32_
 
 	// Create vertex data.
 	MeshVertexData & vertices = mesh->openVertexData();
-	vertices.allocate(indexMap.size(), *vertexDesc);
+	vertices.allocate(static_cast<uint32_t>(indexMap.size()), *vertexDesc);
 
-	const uint16_t posOffset = vertexDesc->getAttribute(VertexAttributeIds::POSITION).getOffset();
-	const uint16_t texOffset = vertexDesc->getAttribute(VertexAttributeIds::TEXCOORD0).getOffset();
-	const uint16_t norOffset = vertexDesc->getAttribute(VertexAttributeIds::NORMAL).getOffset();
+	const uint64_t posOffset = vertexDesc->getAttribute(VertexAttributeIds::POSITION).getOffset();
+	const uint64_t texOffset = vertexDesc->getAttribute(VertexAttributeIds::TEXCOORD0).getOffset();
+	const uint64_t norOffset = vertexDesc->getAttribute(VertexAttributeIds::NORMAL).getOffset();
 
 	uint8_t * data = vertices.data();
 	for(const auto & vertex : vertexSet) {
@@ -254,11 +254,11 @@ Util::GenericAttributeList * StreamerOBJ::loadGeneric(std::istream & input) {
 				float * tex = nullptr;
 				float * nor = nullptr;
 				if(v < 0)
-					v = positions.size()/3 + v;
+					v += static_cast<int32_t>(positions.size()/3);
 				if(vt < 0)
-					vt = texcoords.size()/2 + vt;
+					vt += static_cast<int32_t>(texcoords.size()/2);
 				if(vn < 0)
-					vn = normals.size()/3 + vn;
+					vn += static_cast<int32_t>(normals.size()/3);
 				
 				if (vt != 0) {
 					tex = &texcoords[2 * vt];
@@ -272,7 +272,7 @@ Util::GenericAttributeList * StreamerOBJ::loadGeneric(std::istream & input) {
 				if (iter != vertices.end() && !(vertices.key_comp()(vertex, *iter))) {
 					index = iter->index;
 				} else {
-					vertex.index = vertices.size();
+					vertex.index = static_cast<uint32_t>(vertices.size());
 					vertices.insert(iter, vertex);
 					index = vertex.index;
 				}

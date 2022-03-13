@@ -361,9 +361,9 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 	if(numTextures == 0) {
 		return;
 	}
-	if(numTextures > 8) {
+	if(numTextures > MAX_TEXTURES) {
 		WARN("At most eight textures are supported.");
-		numTextures = 8;
+		numTextures = MAX_TEXTURES;
 	}
 	auto depthState = rc.getDepthStencil();
 	depthState.setDepthTestEnabled(false);
@@ -375,7 +375,7 @@ void drawTextureToScreen(RenderingContext & rc, const Geometry::Rect_i & screenR
 		const Geometry::Rect_i & viewport = rc.getViewport();
 
 		rc.pushMatrix_cameraToClipping();
-		rc.setMatrix_cameraToClipping(Geometry::Matrix4x4::orthographicProjection(0, viewport.getWidth(), 0, viewport.getHeight(), -1, 1));
+		rc.setMatrix_cameraToClipping(Geometry::Matrix4x4::orthographicProjection(0, static_cast<float>(viewport.getWidth()), 0.0f, static_cast<float>(viewport.getHeight()), -1.0f, 1.0f));
 	}
 	{
 		Geometry::Matrix4x4 identityMatrix;

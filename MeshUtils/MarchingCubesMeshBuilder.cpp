@@ -408,42 +408,45 @@ Mesh * MarchingCubesMeshBuilder::createMesh(DataSet & data) {
 				const float o_xYZ = *(oPtr + data.resolutionX + data.layerXYSize) ;
 
 				/* Find the vertices where the surface intersects the cube */
+				const float xf = static_cast<float>(x);
+				const float yf = static_cast<float>(y);
+				const float zf = static_cast<float>(z);
 				if(edgeTable[cubeindex] & 1)
 					vertexList[0] = interpolateVertices(isolevel,
-								Geometry::Vec4(x, y, z, o_xyz),			Geometry::Vec4(x+1, y, z, o_Xyz),		density_xyz, density_Xyz);
+								Geometry::Vec4(xf, yf, zf, o_xyz),			Geometry::Vec4(xf+1, yf, zf, o_Xyz),		density_xyz, density_Xyz);
 				if(edgeTable[cubeindex] & 2)
 					vertexList[1] = interpolateVertices(isolevel,
-								Geometry::Vec4(x+1, y, z, o_Xyz),		Geometry::Vec4(x+1, y, z+1, o_XyZ),		density_Xyz, density_XyZ);
+								Geometry::Vec4(xf+1, yf, zf, o_Xyz),		Geometry::Vec4(xf+1, yf, zf+1, o_XyZ),		density_Xyz, density_XyZ);
 				if(edgeTable[cubeindex] & 4)
 					vertexList[2] = interpolateVertices(isolevel,
-								Geometry::Vec4(x+1, y, z+1, o_XyZ),		Geometry::Vec4(x, y, z+1, o_xyZ),		density_XyZ, density_xyZ);
+								Geometry::Vec4(xf+1, yf, zf+1, o_XyZ),		Geometry::Vec4(xf, yf, zf+1, o_xyZ),		density_XyZ, density_xyZ);
 				if(edgeTable[cubeindex] & 8)
 					vertexList[3] = interpolateVertices(isolevel,
-								Geometry::Vec4(x, y, z+1, o_xyZ),		Geometry::Vec4(x, y, z, o_xyz),			density_xyZ, density_xyz);
+								Geometry::Vec4(xf, yf, zf+1, o_xyZ),		Geometry::Vec4(xf, yf, zf, o_xyz),			density_xyZ, density_xyz);
 				if(edgeTable[cubeindex] & 16)
 					vertexList[4] = interpolateVertices(isolevel,
-								Geometry::Vec4(x, y+1 , z, o_xYz),		Geometry::Vec4(x+1 , y+1 , z, o_XYz),	density_xYz, density_XYz);
+								Geometry::Vec4(xf, yf+1 , zf, o_xYz),		Geometry::Vec4(xf+1 , yf+1 , zf, o_XYz),	density_xYz, density_XYz);
 				if(edgeTable[cubeindex] & 32)
 					vertexList[5] = interpolateVertices(isolevel,
-								Geometry::Vec4(x+1 , y+1 , z, o_XYz),	Geometry::Vec4(x+1 , y+1 , z+1, o_XYZ),	density_XYz, density_XYZ);
+								Geometry::Vec4(xf+1 , yf+1 , zf, o_XYz),	Geometry::Vec4(xf+1 , yf+1 , zf+1, o_XYZ),	density_XYz, density_XYZ);
 				if(edgeTable[cubeindex] & 64)
 					vertexList[6] = interpolateVertices(isolevel,
-								Geometry::Vec4(x+1 , y+1 , z+1, o_XYZ),	Geometry::Vec4(x, y+1 , z+1, o_xYZ),	density_XYZ, density_xYZ);
+								Geometry::Vec4(xf+1 , yf+1 , zf+1, o_XYZ),	Geometry::Vec4(xf, yf+1 , zf+1, o_xYZ),	density_XYZ, density_xYZ);
 				if(edgeTable[cubeindex] & 128)
 					vertexList[7] = interpolateVertices(isolevel,
-								Geometry::Vec4(x, y+1 , z+1, o_xYZ),	Geometry::Vec4(x, y+1 , z, o_xYz),		density_xYZ, density_xYz);
+								Geometry::Vec4(xf, yf+1 , zf+1, o_xYZ),	Geometry::Vec4(xf, yf+1 , zf, o_xYz),		density_xYZ, density_xYz);
 				if(edgeTable[cubeindex] & 256)
 					vertexList[8] = interpolateVertices(isolevel,
-								Geometry::Vec4(x, y, z, o_xyz),			Geometry::Vec4(x, y+1 , z, o_xYz),		density_xyz, density_xYz);
+								Geometry::Vec4(xf, yf, zf, o_xyz),			Geometry::Vec4(xf, yf+1 , zf, o_xYz),		density_xyz, density_xYz);
 				if(edgeTable[cubeindex] & 512)
 					vertexList[9] = interpolateVertices(isolevel,
-								Geometry::Vec4(x+1, y, z, o_Xyz),		Geometry::Vec4(x+1 , y+1 , z, o_XYz),	density_Xyz, density_XYz);
+								Geometry::Vec4(xf+1, yf, zf, o_Xyz),		Geometry::Vec4(xf+1 , yf+1 , zf, o_XYz),	density_Xyz, density_XYz);
 				if(edgeTable[cubeindex] & 1024)
 					vertexList[10] = interpolateVertices(isolevel,
-								Geometry::Vec4(x+1, y, z+1, o_XyZ),		Geometry::Vec4(x+1 , y+1 , z+1, o_XYZ),	density_XyZ, density_XYZ);
+								Geometry::Vec4(xf+1, yf, zf+1, o_XyZ),		Geometry::Vec4(xf+1 , yf+1 , zf+1, o_XYZ),	density_XyZ, density_XYZ);
 				if(edgeTable[cubeindex] & 2048)
 					vertexList[11] = interpolateVertices(isolevel,
-								Geometry::Vec4(x, y, z+1, o_xyZ),		Geometry::Vec4(x, y+1 , z+1, o_xYZ),	density_xyZ, density_xYZ);
+								Geometry::Vec4(xf, yf, zf+1, o_xyZ),		Geometry::Vec4(xf, yf+1 , zf+1, o_xYZ),	density_xyZ, density_xYZ);
 
 				for (uint8_t i = 0; triTable[cubeindex][i] != -1; i += 3) {
 

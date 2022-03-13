@@ -26,7 +26,7 @@ void VertexAttributeAccessor::throwRangeError(uint32_t index)const {
 
 //! (internal)
 void VertexAttributeAccessor::assertNumValues(uint32_t index, uint32_t count) const {
-	uint32_t num = this->getAttribute().getNumValues();
+	uint32_t num = this->getAttribute().getComponentCount();
 	if( num != count ) {
 		std::ostringstream s;
 		s << "Trying to access " << count << " number of values of vertex " << index << " of overall " << num << " values.";
@@ -42,7 +42,7 @@ static const std::string unimplementedFormatMsg("Attribute format not implemente
 //! (helper)
 static const VertexAttribute & assertAttribute(MeshVertexData & _vData, const Util::StringIdentifier name) {
 	const VertexAttribute & attr = _vData.getVertexDescription().getAttribute(name);
-	if(attr.empty())
+	if(!attr.isValid())
 		throw std::invalid_argument(noAttrErrorMsg + name.toString() + '\'');
 	return attr;
 }
@@ -156,11 +156,11 @@ class ColorAttributeAccessor4ub : public ColorAttributeAccessor {
 //! (static) Factory
 Util::Reference<ColorAttributeAccessor> ColorAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getNumValues() >= 4 && attr.getDataType() == Util::TypeConstant::FLOAT) {
+	if(attr.getComponentCount() >= 4 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new ColorAttributeAccessor4f(_vData, attr);
-	} else if(attr.getNumValues() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
+	} else if(attr.getComponentCount() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new ColorAttributeAccessor3f(_vData, attr);
-	} else if(attr.getNumValues() >= 4 && attr.getDataType() == Util::TypeConstant::UINT8) {
+	} else if(attr.getComponentCount() >= 4 && attr.getDataType() == Util::TypeConstant::UINT8) {
 		return new ColorAttributeAccessor4ub(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -222,9 +222,9 @@ class NormalAttributeAccessor3f : public NormalAttributeAccessor {
 //! (static)
 Util::Reference<NormalAttributeAccessor> NormalAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getNumValues() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
+	if(attr.getComponentCount() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new NormalAttributeAccessor3f(_vData, attr);
-	} else if(attr.getNumValues() >= 4 && attr.getDataType() == Util::TypeConstant::INT8) {
+	} else if(attr.getComponentCount() >= 4 && attr.getDataType() == Util::TypeConstant::INT8) {
 		return new NormalAttributeAccessor4b(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -287,9 +287,9 @@ class PositionAttributeAccessorHF : public PositionAttributeAccessor {
 //! (static)
 Util::Reference<PositionAttributeAccessor> PositionAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getNumValues() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
+	if(attr.getComponentCount() >= 3 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new PositionAttributeAccessorF(_vData, attr);
-	} else if(attr.getNumValues() >= 3 && attr.getDataType() == Util::TypeConstant::HALF) {
+	} else if(attr.getComponentCount() >= 3 && attr.getDataType() == Util::TypeConstant::HALF) {
 		return new PositionAttributeAccessorHF(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -302,7 +302,7 @@ Util::Reference<PositionAttributeAccessor> PositionAttributeAccessor::create(Mes
 //! (static)
 Util::Reference<TexCoordAttributeAccessor> TexCoordAttributeAccessor::create(MeshVertexData & _vData, Util::StringIdentifier name) {
 	const VertexAttribute & attr = assertAttribute(_vData, name);
-	if(attr.getNumValues() == 2 && attr.getDataType() == Util::TypeConstant::FLOAT) {
+	if(attr.getComponentCount() == 2 && attr.getDataType() == Util::TypeConstant::FLOAT) {
 		return new TexCoordAttributeAccessor(_vData, attr);
 	} else {
 		throw std::invalid_argument(unimplementedFormatMsg + name.toString() + '\'');
@@ -337,7 +337,7 @@ class FloatAttributeAccessorub : public FloatAttributeAccessor {
 		const std::vector<float> getValues(uint32_t index) const override {
 			assertRange(index);
 			const uint8_t * v = _ptr<const uint8_t>(index);
-			std::vector<float> out(getAttribute().getNumValues());
+			std::vector<float> out(getAttribute().getComponentCount());
 			for(uint32_t i=0; i<out.size(); ++i)
 				out[i] = Geometry::Convert::fromUnsignedTo<float>(v[i]);
 			return out;
@@ -346,7 +346,7 @@ class FloatAttributeAccessorub : public FloatAttributeAccessor {
 		//! ---|> FloatAttributeAccessor
 		void setValues(uint32_t index, const float* values, uint32_t count) override {
 			assertRange(index);
-			count = std::min<uint32_t>(count, getAttribute().getNumValues());
+			count = std::min<uint32_t>(count, getAttribute().getComponentCount());
 			uint8_t * v = _ptr<uint8_t>(index);
 			for(uint32_t i=0; i<count; ++i)
 				v[i] = Geometry::Convert::toUnsigned<uint8_t>(values[i]);
@@ -378,7 +378,7 @@ class FloatAttributeAccessorb : public FloatAttributeAccessor {
 		const std::vector<float> getValues(uint32_t index) const override {
 			assertRange(index);
 			const int8_t * v = _ptr<const int8_t>(index);
-			std::vector<float> out(getAttribute().getNumValues());
+			std::vector<float> out(getAttribute().getComponentCount());
 			for(uint32_t i=0; i<out.size(); ++i)
 				out[i] = Geometry::Convert::fromSignedTo<float>(v[i]);
 			return out;
@@ -387,7 +387,7 @@ class FloatAttributeAccessorb : public FloatAttributeAccessor {
 		//! ---|> FloatAttributeAccessor
 		void setValues(uint32_t index, const float* values, uint32_t count) override {
 			assertRange(index);
-			count = std::min<uint32_t>(count, getAttribute().getNumValues());
+			count = std::min<uint32_t>(count, getAttribute().getComponentCount());
 			int8_t * v = _ptr<int8_t>(index);
 			for(uint32_t i=0; i<count; ++i)
 				v[i] = Geometry::Convert::toSigned<int8_t>(values[i]);
@@ -419,7 +419,7 @@ class FloatAttributeAccessorHF : public FloatAttributeAccessor {
 		const std::vector<float> getValues(uint32_t index) const override {
 			assertRange(index);
 			const uint16_t * v = _ptr<const uint16_t>(index);
-			std::vector<float> out(getAttribute().getNumValues());
+			std::vector<float> out(getAttribute().getComponentCount());
 			for(uint32_t i=0; i<out.size(); ++i)
 				out[i] = Geometry::Convert::halfToFloat(v[i]);
 			return out;
@@ -428,8 +428,8 @@ class FloatAttributeAccessorHF : public FloatAttributeAccessor {
 		//! ---|> FloatAttributeAccessor
 		void setValues(uint32_t index, const float* values, uint32_t count) override {
 			assertRange(index);
-			count = std::min<uint32_t>(count, getAttribute().getNumValues());
-			uint8_t * v = _ptr<uint8_t>(index);
+			count = std::min<uint32_t>(count, getAttribute().getComponentCount());
+			uint16_t * v = _ptr<uint16_t>(index);
 			for(uint32_t i=0; i<count; ++i)
 				v[i] = Geometry::Convert::floatToHalf(values[i]);
 		}
@@ -460,13 +460,13 @@ class FloatAttributeAccessorf : public FloatAttributeAccessor {
 		const std::vector<float> getValues(uint32_t index) const override {
 			assertRange(index);
 			const float * v=_ptr<const float>(index);
-			return std::vector<float>(v, v + getAttribute().getNumValues());
+			return std::vector<float>(v, v + getAttribute().getComponentCount());
 		}
 		
 		//! ---|> FloatAttributeAccessor
 		void setValues(uint32_t index, const float* values, uint32_t count) override {
 			assertRange(index);
-			count = std::min<uint32_t>(count, getAttribute().getNumValues());
+			count = std::min<uint32_t>(count, getAttribute().getComponentCount());
 			float * v=_ptr<float>(index);
 			std::copy(values, values + count, v);
 		}
@@ -512,12 +512,12 @@ public:
 	const std::vector<uint32_t> getValues(uint32_t index) const override {
 		assertRange(index);
 		const uint32_t * v=_ptr<const uint32_t>(index);
-		return std::vector<uint32_t>(v, v + getAttribute().getNumValues());
+		return std::vector<uint32_t>(v, v + getAttribute().getComponentCount());
 	}
 
 	void setValues(uint32_t index, const uint32_t* values, uint32_t count) override {
 		assertRange(index);
-		count = std::min<uint32_t>(count, getAttribute().getNumValues());
+		count = std::min<uint32_t>(count, getAttribute().getComponentCount());
 		uint32_t * v=_ptr<uint32_t>(index);
 		std::copy(values, values + count, v);
 	}

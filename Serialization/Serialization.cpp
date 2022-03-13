@@ -18,10 +18,12 @@
 #include "StreamerPKM.h"
 #include "StreamerPLY.h"
 #include "StreamerXYZ.h"
+#include "StreamerDDS.h"
 #include "../Mesh/Mesh.h"
 #include "../Texture/Texture.h"
 #include "../Texture/TextureUtils.h"
 #include <Util/Graphics/Bitmap.h>
+#include <Util/Graphics/BitmapUtils.h>
 #include <Util/IO/FileName.h>
 #include <Util/IO/FileUtils.h>
 #include <Util/Serialization/Serialization.h>
@@ -72,6 +74,10 @@ static AbstractRenderingStreamer * createStreamer(const std::string & extension,
 		return new StreamerPLY;
 	} else if(StreamerXYZ::queryCapabilities(lowerExtension) & capability) {
 		return new StreamerXYZ;
+#ifdef RENDERING_HAVE_LIB_DDS
+	} else if(StreamerDDS::queryCapabilities(lowerExtension) & capability) {
+		return new StreamerDDS;
+#endif // RENDERING_HAVE_LIB_DDS
 	} else {
 		return nullptr;
 	}
@@ -136,7 +142,7 @@ bool saveMesh(Mesh * mesh, const std::string & extension, std::ostream & output)
 	return true;
 }
 
-Util::Reference<Texture> loadTexture(const Util::FileName & url, TextureType tType, uint32_t numLayers) {
+Util::Reference<Texture> loadTexture(const Util::FileName & url, TextureType tType, uint32_t numLayers,uint32_t desiredChannels) {
 	Util::Reference<Texture> texture;
 	
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(url.getEnding(), AbstractRenderingStreamer::CAP_LOAD_TEXTURE));
@@ -148,6 +154,8 @@ Util::Reference<Texture> loadTexture(const Util::FileName & url, TextureType tTy
 			WARN("loadTexture: Error opening stream for reading. Path: " + url.toString());
 	} else {	// Try Util::Serialization
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(url);
+		if(desiredChannels > 0 && bitmap && bitmap->getPixelFormat().getComponentCount() != desiredChannels)
+			bitmap = Util::BitmapUtils::expandChannels(*bitmap.get(), desiredChannels);
 		if(bitmap)
 			texture = TextureUtils::createTextureFromBitmap(*bitmap.get(), tType, numLayers);
 	}
@@ -156,7 +164,7 @@ Util::Reference<Texture> loadTexture(const Util::FileName & url, TextureType tTy
 	return texture;
 }
 
-Util::Reference<Texture> loadTexture(const std::string & extension, const std::string & data, TextureType tType, uint32_t numLayers) {
+Util::Reference<Texture> loadTexture(const std::string & extension, const std::string & data, TextureType tType, uint32_t numLayers,uint32_t desiredChannels) {
 	std::unique_ptr<AbstractRenderingStreamer> loader(createStreamer(extension, AbstractRenderingStreamer::CAP_LOAD_TEXTURE));
 	// Rendering streamer found?
 	if(loader.get() != nullptr) {
@@ -165,6 +173,8 @@ Util::Reference<Texture> loadTexture(const std::string & extension, const std::s
 	} else {
 		// Try Util::Serialization.
 		Util::Reference<Util::Bitmap> bitmap = Util::Serialization::loadBitmap(extension, data);
+		if(desiredChannels > 0 && bitmap && bitmap->getPixelFormat().getComponentCount() != desiredChannels)
+			bitmap = Util::BitmapUtils::expandChannels(*bitmap.get(), desiredChannels);
 		if(bitmap) 
 			return TextureUtils::createTextureFromBitmap(*bitmap.get(), tType, numLayers);
 		WARN("Unsupported file extension \"" + extension + "\".");

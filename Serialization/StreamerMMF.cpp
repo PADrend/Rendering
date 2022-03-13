@@ -218,7 +218,7 @@ bool StreamerMMF::saveMesh(Mesh * mesh, std::ostream & output) {
 	// prepare header
 	std::ostringstream headerOut;
 	for(const auto & attr : vd.getAttributes()) {
-		if(attr.empty())
+		if(!attr.isValid())
 			continue;
 		uint32_t attrId = MMF_CUSTOM_ATTR_ID;
 		if(attr.getNameId() == VertexAttributeIds::POSITION){
@@ -233,16 +233,16 @@ bool StreamerMMF::saveMesh(Mesh * mesh, std::ostream & output) {
 			attrId=0x07;
 		}
 		write(headerOut,attrId);				// attrId
-		write(headerOut,attr.getNumValues());	// numValues
+		write(headerOut,attr.getComponentCount());	// numValues
 		write(headerOut,getGLType(attr.getDataType()));	// dataType
 		if(attrId==MMF_CUSTOM_ATTR_ID){
 			std::string name(attr.getName());
 			while(name.length()%4!=0)// fill name up with \0 until 32bit alignment is reached
 				name+='\0';
 
-			write(headerOut,name.length()+8);	// extLength = String + 4 (extType) + 4 (stringLength)
+			write(headerOut,static_cast<uint32_t>(name.length()+8));	// extLength = String + 4 (extType) + 4 (stringLength)
 			write(headerOut,MMF_VERTEX_ATTR_EXT_NAME); // extType
-			write(headerOut,name.length());		// stringLength
+			write(headerOut,static_cast<uint32_t>(name.length()));		// stringLength
 			headerOut.write(name.c_str(),name.length()); // String
 		}else{
 			write(headerOut,0); 				// extLength = 0
@@ -254,14 +254,14 @@ bool StreamerMMF::saveMesh(Mesh * mesh, std::ostream & output) {
 
 	// write data
 	write(output, MMF_VERTEX_DATA);
-	write(output,vertices.dataSize()+header.length()); // dataSize
+	write(output,static_cast<uint32_t>(vertices.dataSize()+header.length())); // dataSize
 	output.write(header.c_str(),header.length());		// header
 	output.write(reinterpret_cast<char *> (vertices.data()), vertices.dataSize()); // data
 
 	/// IndexData Header
 	MeshIndexData & indices = mesh->openIndexData();
 	write(output, MMF_INDEX_DATA);
-	write(output, indices.dataSize()+sizeof(uint32_t)+sizeof(uint32_t)); // indexData length +indexCount +triangleMode
+	write(output, static_cast<uint32_t>(indices.dataSize()+sizeof(uint32_t)+sizeof(uint32_t))); // indexData length +indexCount +triangleMode
 	write(output, indices.getIndexCount());
 	write(output, mesh->getGLDrawMode());
 	output.write(reinterpret_cast<char *> (indices.data()), indices.dataSize());

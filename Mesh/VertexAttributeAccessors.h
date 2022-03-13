@@ -185,7 +185,7 @@ class FloatAttributeAccessor : public VertexAttributeAccessor{
 
 		virtual void setValues(uint32_t index, const float* values, uint32_t count) = 0;
 		inline void setValues(uint32_t index, const std::vector<float>& values) {
-			setValues(index, values.data(), values.size());
+			setValues(index, values.data(), static_cast<uint32_t>(values.size()));
 		}
 };
 
@@ -213,7 +213,7 @@ class UIntAttributeAccessor : public VertexAttributeAccessor{
 		
 		virtual void setValues(uint32_t index, const uint32_t* values, uint32_t count) = 0;
 		inline void setValues(uint32_t index, const std::vector<uint32_t>& values) {
-			setValues(index, values.data(), values.size());
+			setValues(index, values.data(), static_cast<uint32_t>(values.size()));
 		}
 };
 
