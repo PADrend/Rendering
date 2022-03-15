@@ -164,7 +164,7 @@ bool ImageStorage::init() {
 
 	VmaAllocation vmaAllocation = nullptr;
 	VmaAllocationInfo allocationInfo{};
-	VkImageCreateInfo vkImageCreateInfo = imageCreateInfo;
+	VkImageCreateInfo vkImageCreateInfo(imageCreateInfo);
 	if(vmaCreateImage(device->getAllocator(), &vkImageCreateInfo, &allocCreateInfo, &vkImage, &vmaAllocation, &allocationInfo) != VK_SUCCESS)
 		return false;
 	

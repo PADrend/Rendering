@@ -8,13 +8,13 @@
 #
 
 target_sources(Rendering PRIVATE
-	Mesh/Mesh.cpp
-	Mesh/MeshDataStrategy.cpp
-	Mesh/MeshIndexData.cpp
-	Mesh/MeshVertexData.cpp
-	Mesh/VertexAccessor.cpp
-	Mesh/VertexAttributeAccessors.cpp
-	Mesh/VertexAttributeIds.cpp
+	Mesh.cpp
+	MeshDataStrategy.cpp
+	MeshIndexData.cpp
+	MeshVertexData.cpp
+	VertexAccessor.cpp
+	VertexAttributeAccessors.cpp
+	VertexAttributeIds.cpp
 )
 
 # Install the header files

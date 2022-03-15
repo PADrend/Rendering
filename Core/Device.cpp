@@ -159,7 +159,7 @@ bool Device::InternalData::createInstance(const Device::Ref& device, std::vector
 	);
 
 	std::vector<const char*> layerNames;
-	std::vector<const char*> requiredExtensions = window->getAPIExtensions();
+	std::vector<const char*> requiredExtensions = window->getRequiredApiExtensions();
 	if(config.debug) {
 		for(auto& layer : validationLayers)
 			layerNames.emplace_back(layer.c_str());
@@ -290,7 +290,7 @@ bool Device::InternalData::initPhysicalDevice(const Device::Ref& device) {
 	// get supported extensions
 	auto extensionProperties = physicalDevice.enumerateDeviceExtensionProperties();
 	for(auto& property : extensionProperties) {
-		extensions.emplace_back(property.extensionName);
+		extensions.emplace_back(property.extensionName.data());
 	}
 	
 	return true;

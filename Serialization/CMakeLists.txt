@@ -8,17 +8,18 @@
 #
 
 target_sources(Rendering PRIVATE
-	Serialization/GenericAttributeSerialization.cpp
-	Serialization/Serialization.cpp
-	Serialization/StreamerMD2.cpp
-	Serialization/StreamerMMF.cpp
-	Serialization/StreamerMTL.cpp
-	Serialization/StreamerMVBO.cpp
-	Serialization/StreamerNGC.cpp
-	Serialization/StreamerOBJ.cpp
-	Serialization/StreamerPKM.cpp
-	Serialization/StreamerPLY.cpp
-	Serialization/StreamerXYZ.cpp
+	GenericAttributeSerialization.cpp
+	Serialization.cpp
+	StreamerDDS.cpp
+	StreamerMD2.cpp
+	StreamerMMF.cpp
+	StreamerMTL.cpp
+	StreamerMVBO.cpp
+	StreamerNGC.cpp
+	StreamerOBJ.cpp
+	StreamerPKM.cpp
+	StreamerPLY.cpp
+	StreamerXYZ.cpp
 )
 
 # Install the header files

@@ -8,8 +8,8 @@
 #
 
 target_sources(Rendering PRIVATE
-	Buffer/BufferObject.cpp
-	Buffer/BufferPool.cpp
+	BufferObject.cpp
+	BufferPool.cpp
 )
 
 # Install the header files

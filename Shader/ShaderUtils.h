@@ -47,6 +47,7 @@ RENDERINGAPI ShaderResourceList reflect(ShaderStage stage, const std::vector<uin
 
 //! Creates the default fallback shader.
 RENDERINGAPI ShaderRef createDefaultShader(const DeviceRef& device);
+RENDERINGAPI ShaderRef createDefaultShader();
 
 //! Creates a simple pass-through shader.
 RENDERINGAPI ShaderRef createPassThroughShader(const DeviceRef& device);

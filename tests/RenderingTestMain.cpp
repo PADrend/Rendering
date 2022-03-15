@@ -31,6 +31,9 @@ int main( int argc, char* argv[] ) {
 	properties.title = "Rendering Test";
 	properties.compatibilityProfile = true;
 	properties.debug = true;
+	properties.renderingAPI = Util::UI::Window::Properties::VULKAN;
+	properties.contextVersionMajor = 1;
+	properties.contextVersionMinor = 2;
 	TestUtils::window = Util::UI::createWindow(properties);
 	TestUtils::device = Rendering::Device::create(TestUtils::window.get(), {
 		//"VK_LAYER_LUNARG_api_dump"

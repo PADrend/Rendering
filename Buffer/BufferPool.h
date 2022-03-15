@@ -13,7 +13,6 @@
 #include "../Core/Common.h"
 
 #include <Util/ReferenceCounter.h>
-#include <Util/Resources/ResourceAllocator.h>
 
 #include <vector>
 #include <mutex>

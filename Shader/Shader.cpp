@@ -23,6 +23,8 @@
 #include <vulkan/vulkan.hpp>
 //#include <spirv-tools/linker.hpp>
 
+#include <SPIRV/GlslangToSpv.h>
+
 #include <Util/Macros.h>
 #include <Util/StringIdentifier.h>
 #include <Util/StringUtils.h>
@@ -178,6 +180,7 @@ bool Shader::init() {
 bool Shader::compileProgram() {
 	shaderModules.clear();
 	vk::Device vkDevice(device->getApiHandle());
+	glslang::InitializeProcess();
 	for(auto& shaderObject : shaderObjects) {
 		if(!shaderObject.compile(device))
 			return false;
@@ -189,6 +192,7 @@ bool Shader::compileProgram() {
 		}
 		shaderModules.emplace(shaderObject.getType(), module);
 	}
+	glslang::FinalizeProcess();
 	return true;
 }
 

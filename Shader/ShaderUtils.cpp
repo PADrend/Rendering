@@ -227,6 +227,12 @@ ShaderRef createDefaultShader(const DeviceRef& device) {
 
 //-------------
 
+ShaderRef createDefaultShader() {
+	return createDefaultShader(Device::getDefault());
+}
+
+//-------------
+
 ShaderRef createPassThroughShader(const DeviceRef& device) {
 	const auto& locator = getDataLocator();
 	auto result = locator.locateFile(Util::FileName("./shader/PassThroughShader.glsl"));

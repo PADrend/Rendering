@@ -33,8 +33,6 @@
 #include <cstdint>
 #include <iostream>
 
-#include <shaderc/shaderc.hpp>
-#include <spirv_cross.hpp>
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 

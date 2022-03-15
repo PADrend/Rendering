@@ -16,15 +16,18 @@
 #include <Util/IO/FileLocator.h>
 #include <Util/Macros.h>
 #include <Util/StringUtils.h>
+
 #include <cstddef>
 #include <vector>
 #include <memory>
+#include <regex>
+#include <sstream>
+#include <iostream>
 
-#include <shaderc/shaderc.hpp>
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
-#include <iostream>
+#include <SPIRV/GlslangToSpv.h>
 
 namespace Rendering {
 using namespace ShaderUtils;
@@ -37,6 +40,128 @@ const uint32_t ShaderObjectInfo::SHADER_STAGE_TESS_EVALUATION = static_cast<uint
 const uint32_t ShaderObjectInfo::SHADER_STAGE_COMPUTE = static_cast<uint32_t>(ShaderStage::Compute);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_TASK = static_cast<uint32_t>(ShaderStage::Undefined);
 const uint32_t ShaderObjectInfo::SHADER_STAGE_MESH = static_cast<uint32_t>(ShaderStage::Undefined);
+
+//-------------
+
+static void initResources(TBuiltInResource &Resources) {
+	Resources.maxLights = 32;
+	Resources.maxClipPlanes = 6;
+	Resources.maxTextureUnits = 32;
+	Resources.maxTextureCoords = 32;
+	Resources.maxVertexAttribs = 64;
+	Resources.maxVertexUniformComponents = 4096;
+	Resources.maxVaryingFloats = 64;
+	Resources.maxVertexTextureImageUnits = 32;
+	Resources.maxCombinedTextureImageUnits = 80;
+	Resources.maxTextureImageUnits = 32;
+	Resources.maxFragmentUniformComponents = 4096;
+	Resources.maxDrawBuffers = 32;
+	Resources.maxVertexUniformVectors = 128;
+	Resources.maxVaryingVectors = 8;
+	Resources.maxFragmentUniformVectors = 16;
+	Resources.maxVertexOutputVectors = 16;
+	Resources.maxFragmentInputVectors = 15;
+	Resources.minProgramTexelOffset = -8;
+	Resources.maxProgramTexelOffset = 7;
+	Resources.maxClipDistances = 8;
+	Resources.maxComputeWorkGroupCountX = 65535;
+	Resources.maxComputeWorkGroupCountY = 65535;
+	Resources.maxComputeWorkGroupCountZ = 65535;
+	Resources.maxComputeWorkGroupSizeX = 1024;
+	Resources.maxComputeWorkGroupSizeY = 1024;
+	Resources.maxComputeWorkGroupSizeZ = 64;
+	Resources.maxComputeUniformComponents = 1024;
+	Resources.maxComputeTextureImageUnits = 16;
+	Resources.maxComputeImageUniforms = 8;
+	Resources.maxComputeAtomicCounters = 8;
+	Resources.maxComputeAtomicCounterBuffers = 1;
+	Resources.maxVaryingComponents = 60;
+	Resources.maxVertexOutputComponents = 64;
+	Resources.maxGeometryInputComponents = 64;
+	Resources.maxGeometryOutputComponents = 128;
+	Resources.maxFragmentInputComponents = 128;
+	Resources.maxImageUnits = 8;
+	Resources.maxCombinedImageUnitsAndFragmentOutputs = 8;
+	Resources.maxCombinedShaderOutputResources = 8;
+	Resources.maxImageSamples = 0;
+	Resources.maxVertexImageUniforms = 0;
+	Resources.maxTessControlImageUniforms = 0;
+	Resources.maxTessEvaluationImageUniforms = 0;
+	Resources.maxGeometryImageUniforms = 0;
+	Resources.maxFragmentImageUniforms = 8;
+	Resources.maxCombinedImageUniforms = 8;
+	Resources.maxGeometryTextureImageUnits = 16;
+	Resources.maxGeometryOutputVertices = 256;
+	Resources.maxGeometryTotalOutputComponents = 1024;
+	Resources.maxGeometryUniformComponents = 1024;
+	Resources.maxGeometryVaryingComponents = 64;
+	Resources.maxTessControlInputComponents = 128;
+	Resources.maxTessControlOutputComponents = 128;
+	Resources.maxTessControlTextureImageUnits = 16;
+	Resources.maxTessControlUniformComponents = 1024;
+	Resources.maxTessControlTotalOutputComponents = 4096;
+	Resources.maxTessEvaluationInputComponents = 128;
+	Resources.maxTessEvaluationOutputComponents = 128;
+	Resources.maxTessEvaluationTextureImageUnits = 16;
+	Resources.maxTessEvaluationUniformComponents = 1024;
+	Resources.maxTessPatchComponents = 120;
+	Resources.maxPatchVertices = 32;
+	Resources.maxTessGenLevel = 64;
+	Resources.maxViewports = 16;
+	Resources.maxVertexAtomicCounters = 0;
+	Resources.maxTessControlAtomicCounters = 0;
+	Resources.maxTessEvaluationAtomicCounters = 0;
+	Resources.maxGeometryAtomicCounters = 0;
+	Resources.maxFragmentAtomicCounters = 8;
+	Resources.maxCombinedAtomicCounters = 8;
+	Resources.maxAtomicCounterBindings = 1;
+	Resources.maxVertexAtomicCounterBuffers = 0;
+	Resources.maxTessControlAtomicCounterBuffers = 0;
+	Resources.maxTessEvaluationAtomicCounterBuffers = 0;
+	Resources.maxGeometryAtomicCounterBuffers = 0;
+	Resources.maxFragmentAtomicCounterBuffers = 1;
+	Resources.maxCombinedAtomicCounterBuffers = 1;
+	Resources.maxAtomicCounterBufferSize = 16384;
+	Resources.maxTransformFeedbackBuffers = 4;
+	Resources.maxTransformFeedbackInterleavedComponents = 64;
+	Resources.maxCullDistances = 8;
+	Resources.maxCombinedClipAndCullDistances = 8;
+	Resources.maxSamples = 4;
+	Resources.maxMeshOutputVerticesNV = 256;
+	Resources.maxMeshOutputPrimitivesNV = 512;
+	Resources.maxMeshWorkGroupSizeX_NV = 32;
+	Resources.maxMeshWorkGroupSizeY_NV = 1;
+	Resources.maxMeshWorkGroupSizeZ_NV = 1;
+	Resources.maxTaskWorkGroupSizeX_NV = 32;
+	Resources.maxTaskWorkGroupSizeY_NV = 1;
+	Resources.maxTaskWorkGroupSizeZ_NV = 1;
+	Resources.maxMeshViewCountNV = 4;
+	Resources.limits.nonInductiveForLoops = 1;
+	Resources.limits.whileLoops = 1;
+	Resources.limits.doWhileLoops = 1;
+	Resources.limits.generalUniformIndexing = 1;
+	Resources.limits.generalAttributeMatrixVectorIndexing = 1;
+	Resources.limits.generalVaryingIndexing = 1;
+	Resources.limits.generalSamplerIndexing = 1;
+	Resources.limits.generalVariableIndexing = 1;
+	Resources.limits.generalConstantMatrixVectorIndexing = 1;
+}
+
+//-------------
+
+static EShLanguage getShaderLang(const ShaderStage& stage) {
+	switch(stage) {
+		case ShaderStage::Vertex: return EShLanguage::EShLangVertex;
+		case ShaderStage::TessellationControl: return EShLanguage::EShLangTessControl;
+		case ShaderStage::TessellationEvaluation: return EShLanguage::EShLangTessEvaluation;
+		case ShaderStage::Geometry: return EShLanguage::EShLangGeometry;
+		case ShaderStage::Fragment: return EShLanguage::EShLangFragment;
+		case ShaderStage::Compute: return EShLanguage::EShLangCompute;
+		default:
+			WARN("ShaderObjectInfo: Invalid shader stage '" + toString(stage) + "'");
+			return EShLanguage::EShLangCount;
+	}
+}
 
 //-------------
 
@@ -101,51 +226,50 @@ static std::string printErrorLines(const std::string& error, const std::string& 
 
 //-------------
 
-class ShaderIncluder : public shaderc::CompileOptions::IncluderInterface {
+class ShaderIncluder : public glslang::TShader::Includer {
 public:
-	using Ptr = std::unique_ptr<shaderc::CompileOptions::IncluderInterface>;
-	struct IncludeResult {
-		explicit IncludeResult(const std::string& source, const std::string& name) : source(source), name(name) {}
-		std::string source;
-		std::string name;
-	};
+	using Ptr = std::unique_ptr<glslang::TShader::Includer>;
 
 	ShaderIncluder(const Util::FileName& file) : locator(getDataLocator()) {
 		locator.addSearchPath(file.getDir());
 	}
 
-	// Handles shaderc_include_resolver_fn callbacks.
-	virtual shaderc_include_result* GetInclude(const char* requested_source,
-																							shaderc_include_type type,
-																							const char* requesting_source,
-																							size_t include_depth);
-
-	// Handles shaderc_include_result_release_fn callbacks.
-	virtual void ReleaseInclude(shaderc_include_result* data) {
-		if(data) {
-			delete reinterpret_cast<IncludeResult*>(data->user_data);
-			delete data;
-		}
+	// For the "system" or <>-style includes; search the "system" paths.
+	IncludeResult* includeSystem(const char* headerName, const char* includerName, size_t inclusionDepth) override {
+		return nullptr;
 	}
 
+	// For the "local"-only aspect of a "" include.
+	IncludeResult* includeLocal(const char* headerName, const char* includerName, size_t inclusionDepth) override;
+
+	// Signals that the parser will no longer use the contents of the specified IncludeResult.
+	void releaseInclude(IncludeResult* result) override {
+		if(result) {
+			delete [] static_cast<ShaderSourceData*>(result->userData);
+			delete result;
+		}
+	};
+
+	using ShaderSourceData = char;
 	Util::FileLocator locator;
 };
 
 //-------------
 
-shaderc_include_result* ShaderIncluder::GetInclude(const char* requested_source, shaderc_include_type type, const char* requesting_source, size_t include_depth) {
-	auto includeFile = locator.locateFile(Util::FileName(requested_source));
-	IncludeResult* userData = nullptr;
-	if(includeFile.first)
-		userData = new IncludeResult(Util::FileUtils::getFileContents(includeFile.second), requested_source);
-	
-	auto* result = new shaderc_include_result;
-	result->user_data = userData;
-	result->content = userData ? userData->source.c_str() : nullptr;
-	result->content_length = userData ? userData->source.length() : 0;
-	result->source_name = userData ? userData->name.c_str() : nullptr;
-	result->source_name_length = userData ? userData->name.length() : 0;
-	return result; 
+ShaderIncluder::IncludeResult* ShaderIncluder::includeLocal(const char* headerName, const char* includerName, size_t inclusionDepth) {
+	auto includeFile = locator.locateFile(Util::FileName(headerName));
+	if(includeFile.first) {
+		auto file = Util::FileUtils::openForReading(includeFile.second);
+		if(file) {
+			file->seekg(0, std::ios::end);
+			size_t length = file->tellg();
+			file->seekg(0, std::ios::beg);
+			ShaderSourceData* content = new ShaderSourceData[length];
+			file->read(content, length);
+			return new IncludeResult(includeFile.second.getPath(), content, length, content);
+		}
+	}
+	return nullptr;
 }
 
 //-------------
@@ -159,6 +283,8 @@ ShaderObjectInfo::ShaderObjectInfo(ShaderStage stage, std::vector<uint32_t> code
 //-------------
 
 bool ShaderObjectInfo::compile(const DeviceRef& device) {
+	using namespace glslang;
+
 	if(source.empty()) {
 		WARN("ShaderObjectInfo: There is no source code to be compiled.");
 		return false;
@@ -166,65 +292,77 @@ bool ShaderObjectInfo::compile(const DeviceRef& device) {
 	code.clear();
 
 	vk::Device vkDevice(device->getApiHandle());
-	
-	shaderc::Compiler compiler;
-	shaderc::CompileOptions options;
-	options.SetGenerateDebugInfo();
-	options.SetOptimizationLevel(shaderc_optimization_level_performance);
-	options.SetAutoMapLocations(true);
-	options.SetAutoBindUniforms(true);
-	
-	ShaderIncluder::Ptr includer(new ShaderIncluder(filename));
-	options.SetIncluder(std::move(includer));
 
-	shaderc_shader_kind kind;
+	EShLanguage kind = getShaderLang(stage);
+	std::string name = toString(stage);
+	WARN_AND_RETURN_IF(kind == EShLangCount, "ShaderObjectInfo: Invalid shader stage '" + name + "'", false);
+
+	EShMessages messages = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules);
+	TBuiltInResource resources{};
+	initResources(resources);
+	ShaderIncluder includer(filename);
+	
+	std::stringstream ssHeader;
 	switch(stage) {
 		case ShaderStage::Vertex:
-			options.AddMacroDefinition("SG_VERTEX_SHADER");
-			kind = shaderc_glsl_vertex_shader;
+			ssHeader << "#define SG_VERTEX_SHADER" << std::endl;
 			break;
 		case ShaderStage::TessellationControl:
-			options.AddMacroDefinition("SG_TESSELLATION_CONTROL_SHADER");
-			kind = shaderc_glsl_tess_control_shader;
+			ssHeader << "#define SG_TESSELLATION_CONTROL_SHADER" << std::endl;
 			break;
 		case ShaderStage::TessellationEvaluation:
-			options.AddMacroDefinition("SG_TESSELLATION_EVALUATION_SHADER");
-			kind = shaderc_glsl_tess_evaluation_shader;
+			ssHeader << "#define SG_TESSELLATION_EVALUATION_SHADER" << std::endl;
 			break;
 		case ShaderStage::Geometry:
-			options.AddMacroDefinition("SG_GEOMETRY_SHADER");
-			kind = shaderc_glsl_geometry_shader;
+			ssHeader << "#define SG_GEOMETRY_SHADER" << std::endl;
 			break;
 		case ShaderStage::Fragment:
-			options.AddMacroDefinition("SG_FRAGMENT_SHADER");
-			kind = shaderc_glsl_fragment_shader;
+			ssHeader << "#define SG_FRAGMENT_SHADER" << std::endl;
 			break;
 		case ShaderStage::Compute:
-			options.AddMacroDefinition("SG_COMPUTE_SHADER");
-			kind = shaderc_glsl_compute_shader;
+			ssHeader << "#define SG_COMPUTE_SHADER" << std::endl;
 			break;
-		default:
-			WARN("ShaderObjectInfo: Invalid shader stage '" + toString(stage) + "'");
-			return false;
 	}
-	for(auto& define : defines)
-		options.AddMacroDefinition(define.first, define.second);
+	for(auto& define : defines) {
+			ssHeader << "#define " << define.first << " " << define.second<< std::endl;
+	}
 
-	std::string name = toString(stage);
-	
-	shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, kind, name.c_str(), options);
-	if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
+	std::string header = ssHeader.str();
+	const char* sources[1] = { source.c_str() };
+	const char* files[1] = { filename.getFile().c_str() };
+
+	TShader shader(kind);
+	shader.setEnvInput(EShSourceGlsl, kind, EShClientVulkan, 100);
+	shader.setEnvClient(EShClientVulkan, EShTargetVulkan_1_2);
+	shader.setEnvTarget(EshTargetSpv, EShTargetSpv_1_6);
+	shader.setPreamble(header.c_str());
+	shader.setStringsWithLengthsAndNames(sources, nullptr, files, 1);
+	if(!shader.parse(&resources, 110, true, messages)) {
 		std::stringstream ss;
 		ss << "Shader compile error";
 		if(!filename.empty())
 			ss << " in file '" << filename.toString() << "'";
 		ss << ":" << std::endl;
-		ss << result.GetErrorMessage();
-		ss << printErrorLines(result.GetErrorMessage(), source, name) << std::endl;
-		WARN(ss.str());
-		return false;
+		ss << shader.getInfoLog() << std::endl;
+		ss << shader.getInfoDebugLog();
+		//ss << printErrorLines(result.GetErrorMessage(), source, name) << std::endl;
+		WARN_AND_RETURN(ss.str(), false);
 	}
-	code.insert(code.end(), result.cbegin(), result.cend());
+
+	TProgram program;
+	program.addShader(&shader);
+	if(!program.link(messages)){
+		std::stringstream ss;
+		ss << "Program linker error";
+		if(!filename.empty())
+			ss << " in file '" << filename.toString() << "'";
+		ss << ":" << std::endl;
+		ss << program.getInfoLog() << std::endl;
+		ss << program.getInfoDebugLog();
+		WARN_AND_RETURN(ss.str(), false);
+	}
+
+	GlslangToSpv(*program.getIntermediate(kind), code);
 
 	return true;
 }

@@ -8,10 +8,10 @@
 #
 
 target_sources(Rendering PRIVATE
-	State/BindingState.cpp
-	State/PipelineState.cpp
-	State/RenderingState.cpp
-	State/ShaderLayout.cpp
+	BindingState.cpp
+	PipelineState.cpp
+	RenderingState.cpp
+	ShaderLayout.cpp
 )
 
 # Install the header files

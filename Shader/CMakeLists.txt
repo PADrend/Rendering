@@ -8,12 +8,12 @@
 #
 
 target_sources(Rendering PRIVATE
-	Shader/Shader.cpp
-	Shader/ShaderObjectInfo.cpp
-	Shader/ShaderUtils.cpp
-	Shader/Uniform.cpp
-	Shader/UniformBuffer.cpp
-	Shader/UniformRegistry.cpp
+	Shader.cpp
+	ShaderObjectInfo.cpp
+	ShaderUtils.cpp
+	Uniform.cpp
+	UniformBuffer.cpp
+	UniformRegistry.cpp
 )
 
 # Install the header files

@@ -14,7 +14,7 @@
 #include "StreamerDDS.h"
 #include "../Texture/Texture.h"
 #include "../Texture/TextureUtils.h"
-#include "../GLHeader.h"
+#include "../Core/Common.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -25,53 +25,53 @@
 namespace Rendering {
 namespace Serialization {
 
-inline PixelFormatGL ktxToGLFormat(ddsktx_format format) {
+inline InternalFormat ktxToGLFormat(ddsktx_format format) {
 	switch(format) {
-		case DDSKTX_FORMAT_BC1: return { 0, 0, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT };
-		case DDSKTX_FORMAT_BC2: return { 0, 0, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT };
-		case DDSKTX_FORMAT_BC3: return { 0, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT };
-		case DDSKTX_FORMAT_BC4: return { 0, 0, GL_COMPRESSED_RED_RGTC1 };
-		case DDSKTX_FORMAT_BC5: return { 0, 0, GL_COMPRESSED_RG_RGTC2 };
-		case DDSKTX_FORMAT_BC6H:  return { 0, 0, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT };
-		case DDSKTX_FORMAT_BC7:  return { 0, 0, GL_COMPRESSED_RGBA_BPTC_UNORM };
-		case DDSKTX_FORMAT_ETC1:  return { 0, 0, GL_ETC1_RGB8_OES };
-		case DDSKTX_FORMAT_ETC2:  return { 0, 0, GL_COMPRESSED_RGB8_ETC2 };
-		case DDSKTX_FORMAT_ETC2A:  return { 0, 0, GL_COMPRESSED_RGBA8_ETC2_EAC };
-		case DDSKTX_FORMAT_ETC2A1:  return { 0, 0, GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2 };
-		case DDSKTX_FORMAT_PTC12:  return { 0, 0, GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG };
-		case DDSKTX_FORMAT_PTC14:  return { 0, 0, GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG };
-		case DDSKTX_FORMAT_PTC12A:  return { 0, 0, GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG };
-		case DDSKTX_FORMAT_PTC14A:  return { 0, 0, GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG };
-		case DDSKTX_FORMAT_PTC22:  return { 0, 0, GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG };
-		case DDSKTX_FORMAT_PTC24:  return { 0, 0, GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG };
-		case DDSKTX_FORMAT_ATC:  return { 0, 0, GL_ATC_RGB_AMD };
-		case DDSKTX_FORMAT_ATCE:  return { 0, 0, GL_ATC_RGBA_EXPLICIT_ALPHA_AMD };
-		case DDSKTX_FORMAT_ATCI:  return { 0, 0, GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD };
-		case DDSKTX_FORMAT_ASTC4x4:  return { 0, 0, GL_COMPRESSED_RGBA_ASTC_4x4_KHR };
-		case DDSKTX_FORMAT_ASTC5x5:  return { 0, 0, GL_COMPRESSED_RGBA_ASTC_5x5_KHR };
-		case DDSKTX_FORMAT_ASTC6x6:  return { 0, 0, GL_COMPRESSED_RGBA_ASTC_6x6_KHR };
-		case DDSKTX_FORMAT_ASTC8x5:  return { 0, 0, GL_COMPRESSED_RGBA_ASTC_8x5_KHR };
-		case DDSKTX_FORMAT_ASTC8x6:  return { 0, 0, GL_COMPRESSED_RGBA_ASTC_8x6_KHR };
-		case DDSKTX_FORMAT_ASTC10x5:  return { 0, 0, GL_COMPRESSED_RGBA_ASTC_10x5_KHR };
-		case DDSKTX_FORMAT_A8:  return { GL_ALPHA, GL_UNSIGNED_BYTE, GL_ALPHA8 };
-		case DDSKTX_FORMAT_R8:  return { GL_RED, GL_UNSIGNED_BYTE, GL_R8 };
-		case DDSKTX_FORMAT_RGBA8:  return { GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8 };
-		case DDSKTX_FORMAT_RGBA8S:  return { GL_RGBA, GL_BYTE, GL_RGBA8_SNORM };
-		case DDSKTX_FORMAT_RG16:  return { GL_RG, GL_UNSIGNED_SHORT, GL_RG16 };
-		case DDSKTX_FORMAT_RGB8:  return { GL_RGB, GL_UNSIGNED_BYTE, GL_RGB8 };
-		case DDSKTX_FORMAT_R16:  return { GL_RED, GL_UNSIGNED_SHORT, GL_R16 };
-		case DDSKTX_FORMAT_R32F:  return { GL_RED, GL_FLOAT, GL_R32F };
-		case DDSKTX_FORMAT_R16F:  return { GL_RED, GL_HALF_FLOAT, GL_R16F };
-		case DDSKTX_FORMAT_RG16F:  return { GL_RG, GL_HALF_FLOAT, GL_RG16F };
-		case DDSKTX_FORMAT_RG16S:  return { GL_RG, GL_SHORT, GL_RG16_SNORM };
-		case DDSKTX_FORMAT_RGBA16F:  return { GL_RGBA, GL_HALF_FLOAT, GL_RGBA16F };
-		case DDSKTX_FORMAT_RGBA16:  return { GL_RGBA, GL_UNSIGNED_SHORT, GL_RGBA16 };
-		case DDSKTX_FORMAT_BGRA8:  return { GL_BGRA, GL_UNSIGNED_BYTE, GL_BGRA8_EXT };
-		case DDSKTX_FORMAT_RGB10A2:  return { GL_RGBA, GL_UNSIGNED_INT_10_10_10_2, GL_RGB10_A2 };
-		case DDSKTX_FORMAT_RG11B10F:  return { GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV, GL_R11F_G11F_B10F };
-		case DDSKTX_FORMAT_RG8:  return { GL_RG, GL_UNSIGNED_BYTE, GL_RG8 };
-		case DDSKTX_FORMAT_RG8S:  return { GL_RG, GL_BYTE, GL_RG8_SNORM };
-		default: return {};
+		case DDSKTX_FORMAT_BC1: return InternalFormat::BC1Unorm;
+		case DDSKTX_FORMAT_BC2: return InternalFormat::BC2Unorm;
+		case DDSKTX_FORMAT_BC3: return InternalFormat::BC3Unorm;
+		case DDSKTX_FORMAT_BC4: return InternalFormat::BC4Snorm;
+		case DDSKTX_FORMAT_BC5: return InternalFormat::BC5Snorm;
+		case DDSKTX_FORMAT_BC6H:  return InternalFormat::BC6HS16;
+		case DDSKTX_FORMAT_BC7:  return InternalFormat::BC7Unorm;
+		//case DDSKTX_FORMAT_ETC1:  return InternalFormat::ETC1;
+		case DDSKTX_FORMAT_ETC2:  return InternalFormat::ETC2RGB8Unorm;
+		//case DDSKTX_FORMAT_ETC2A:  return InternalFormat::ETC2A;
+		//case DDSKTX_FORMAT_ETC2A1:  return InternalFormat::ETC2A1;
+		//case DDSKTX_FORMAT_PTC12:  return InternalFormat::PTC12;
+		//case DDSKTX_FORMAT_PTC14:  return InternalFormat::PTC14;
+		//case DDSKTX_FORMAT_PTC12A:  return InternalFormat::PTC12A;
+		//case DDSKTX_FORMAT_PTC14A:  return InternalFormat::PTC14A;
+		//case DDSKTX_FORMAT_PTC22:  return InternalFormat::PTC22;
+		//case DDSKTX_FORMAT_PTC24:  return InternalFormat::PTC24;
+		//case DDSKTX_FORMAT_ATC:  return InternalFormat::ATC;
+		//case DDSKTX_FORMAT_ATCE:  return InternalFormat::ATCE;
+		//case DDSKTX_FORMAT_ATCI:  return InternalFormat::ATCI;
+		//case DDSKTX_FORMAT_ASTC4x4:  return InternalFormat::ASTC4x4;
+		//case DDSKTX_FORMAT_ASTC5x5:  return InternalFormat::ASTC5x5;
+		//case DDSKTX_FORMAT_ASTC6x6:  return InternalFormat::ASTC6x6;
+		//case DDSKTX_FORMAT_ASTC8x5:  return InternalFormat::ASTC8x5;
+		//case DDSKTX_FORMAT_ASTC8x6:  return InternalFormat::ASTC8x6;
+		//case DDSKTX_FORMAT_ASTC10x5:  return InternalFormat::ASTC10x5;
+		//case DDSKTX_FORMAT_A8:  return InternalFormat::A8;
+		//case DDSKTX_FORMAT_R8:  return InternalFormat::R8;
+		case DDSKTX_FORMAT_RGBA8:  return InternalFormat::RGBA8Unorm;
+		case DDSKTX_FORMAT_RGBA8S:  return InternalFormat::RGBA8Snorm;
+		case DDSKTX_FORMAT_RG16:  return InternalFormat::RG16Uint;
+		//case DDSKTX_FORMAT_RGB8:  return InternalFormat::RGB8;
+		case DDSKTX_FORMAT_R16:  return InternalFormat::R16Int;
+		case DDSKTX_FORMAT_R32F:  return InternalFormat::R32Float;
+		case DDSKTX_FORMAT_R16F:  return InternalFormat::R16Float;
+		case DDSKTX_FORMAT_RG16F:  return InternalFormat::RG16Float;
+		case DDSKTX_FORMAT_RG16S:  return InternalFormat::RG16Snorm;
+		case DDSKTX_FORMAT_RGBA16F:  return InternalFormat::RGBA16Float;
+		case DDSKTX_FORMAT_RGBA16:  return InternalFormat::RGBA16Int;
+		case DDSKTX_FORMAT_BGRA8:  return InternalFormat::BGRA8Unorm;
+		case DDSKTX_FORMAT_RGB10A2:  return InternalFormat::RGB10A2Uint;
+		case DDSKTX_FORMAT_RG11B10F:  return InternalFormat::R11G11B10Float;
+		case DDSKTX_FORMAT_RG8:  return InternalFormat::RG8Int;
+		case DDSKTX_FORMAT_RG8S:  return InternalFormat::RG8Snorm;
+		default: return InternalFormat::Unknown;
 	}
 }
 
@@ -101,13 +101,11 @@ Util::Reference<Texture> StreamerDDS::loadTexture(std::istream & input, TextureT
 	ddsktx_get_sub(&info, &sub_data, reinterpret_cast<char *>(data.data()), static_cast<int>(size), 0, 0, 0);
 
 	Texture::Format format;
-	format.sizeX = info.width;
-	format.sizeY = info.height;
-	format.numLayers = info.num_layers;
-	format.glTextureType = TextureUtils::textureTypeToGLTextureType(type);
+	format.extent.setValue(info.width, info.height, info.depth);
+	format.layers = info.num_layers;
+	format.mipLevels = info.num_mips;
 	format.pixelFormat = ktxToGLFormat(info.format);
-	format.pixelFormat.compressed = true;
-	format.compressedImageSize = format.pixelFormat.compressed ? sub_data.size_bytes : 0;
+	format.samples = 1;
 
 	Util::Reference<Texture> texture = new Texture(format);
 	texture->allocateLocalData();

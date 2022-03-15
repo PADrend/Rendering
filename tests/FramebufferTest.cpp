@@ -30,9 +30,6 @@
 #include <cstdint>
 #include <iostream>
 
-#include <shaderc/shaderc.hpp>
-#include <spirv_cross.hpp>
-
 const std::string shaderSrc = R"vs(
 	#version 450
 	#ifdef SG_VERTEX_SHADER

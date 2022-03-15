@@ -8,9 +8,9 @@
 #
 
 target_sources(Rendering PRIVATE
-	Texture/Texture.cpp
-	Texture/TextureType.cpp
-	Texture/TextureUtils.cpp
+	Texture.cpp
+	TextureType.cpp
+	TextureUtils.cpp
 )
 
 # Install the header files

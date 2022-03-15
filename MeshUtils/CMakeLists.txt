@@ -8,18 +8,18 @@
 #
 
 target_sources(Rendering PRIVATE
-	MeshUtils/ConnectivityAccessor.cpp
-	MeshUtils/LocalMeshDataHolder.cpp
-	MeshUtils/MarchingCubesMeshBuilder.cpp
-	MeshUtils/MeshBuilder.cpp
-	MeshUtils/MeshUtils.cpp
-	MeshUtils/PlatonicSolids.cpp
-	MeshUtils/PrimitiveShapes.cpp
-	MeshUtils/QuadtreeMeshBuilder.cpp
-	MeshUtils/QuadtreeMeshBuilderDebug.cpp
-	MeshUtils/Simplification.cpp
-	MeshUtils/TriangleAccessor.cpp
-	MeshUtils/WireShapes.cpp
+	ConnectivityAccessor.cpp
+	LocalMeshDataHolder.cpp
+	MarchingCubesMeshBuilder.cpp
+	MeshBuilder.cpp
+	MeshUtils.cpp
+	PlatonicSolids.cpp
+	PrimitiveShapes.cpp
+	QuadtreeMeshBuilder.cpp
+	QuadtreeMeshBuilderDebug.cpp
+	Simplification.cpp
+	TriangleAccessor.cpp
+	WireShapes.cpp
 )
 
 # Install the header files

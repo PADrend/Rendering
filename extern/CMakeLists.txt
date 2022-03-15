@@ -54,7 +54,7 @@ target_include_directories(RenderingExtern INTERFACE ${ddsktx_SOURCE_DIR})
 FetchContent_Declare(
   vulkan-headers
   GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git
-  GIT_TAG        v1.2.161
+  GIT_TAG        v1.3.207
 )
 
 FetchContent_GetProperties(vulkan-headers)
@@ -81,38 +81,42 @@ target_include_directories(RenderingExtern INTERFACE ${Vulkan_INCLUDE_DIR})
 FetchContent_Declare(
   spirv-headers
   GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
-  GIT_TAG        f8bf11a0253a32375c32cad92c841237b96696c0
+  GIT_TAG        1.5.4 
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-headers"
 )
 
 FetchContent_GetProperties(spirv-headers)
 if(NOT spirv-headers_POPULATED)
   message(STATUS "Fetching spirv-headers...")
+  set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
+  set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
   FetchContent_Populate(spirv-headers)
-  set(SPIRV-Headers_SOURCE_DIR "${spirv-headers_SOURCE_DIR}" CACHE STRING "" FORCE)
-  set(SHADERC_SPIRV_HEADERS_DIR "${spirv-headers_SOURCE_DIR}" CACHE STRING "" FORCE)
+  #set(SPIRV-Headers_SOURCE_DIR "${spirv-headers_SOURCE_DIR}" CACHE STRING "" FORCE)
+  #set(SHADERC_SPIRV_HEADERS_DIR "${spirv-headers_SOURCE_DIR}" CACHE STRING "" FORCE)
+  add_subdirectory(${spirv-headers_SOURCE_DIR} ${spirv-headers_BINARY_DIR})
 endif()
+target_link_libraries(RenderingExtern INTERFACE SPIRV-Headers)
 
 # ------------------------------------------------------------------------------
 # spirv-tools (required by shaderc)
 
-FetchContent_Declare(
-  spirv-tools
-  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
-  GIT_TAG        e95fbfb1f509ad7a7fdfb72ac35fe412d72fc4a4
-  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-tools"
-)
-
-FetchContent_GetProperties(spirv-tools)
-if(NOT spirv-tools_POPULATED)
-  message(STATUS "Fetching spirv-tools...")
-  FetchContent_Populate(spirv-tools)
-  set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
-  set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
-  set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
-  set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "" FORCE)  
-  #add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
-endif()
+#FetchContent_Declare(
+#  spirv-tools
+#  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
+#  GIT_TAG        v2022.1
+#  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-tools"
+#)
+#
+#FetchContent_GetProperties(spirv-tools)
+#if(NOT spirv-tools_POPULATED)
+#  message(STATUS "Fetching spirv-tools...")
+#  FetchContent_Populate(spirv-tools)
+#  set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
+#  set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
+#  set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
+#  set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "" FORCE)
+#  add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
+#endif()
 #target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
 #set_target_properties(SPIRV-Tools-link PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
@@ -122,7 +126,7 @@ endif()
 FetchContent_Declare(
   glslang
   GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
-  GIT_TAG        b5757b95005bbf6b0287096c5b708c5e25645311
+  GIT_TAG        11.8.0
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/glslang"
 )
 
@@ -130,7 +134,13 @@ FetchContent_GetProperties(glslang)
 if(NOT glslang_POPULATED)
   message(STATUS "Fetching glslang...")
   FetchContent_Populate(glslang)
+  set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "" FORCE)
+  set(ENABLE_SPVREMAPPER ON CACHE BOOL "" FORCE)
+  set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
+  set(ENABLE_GLSLANG_JS OFF CACHE BOOL "" FORCE)
+  add_subdirectory(${glslang_SOURCE_DIR} ${glslang_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
+target_link_libraries(RenderingExtern INTERFACE SPIRV)
 
 # ------------------------------------------------------------------------------
 # spirv_cross
@@ -138,7 +148,7 @@ endif()
 FetchContent_Declare(
   spirv-cross
   GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Cross.git
-  GIT_TAG        2020-01-16
+  GIT_TAG        2021-01-15
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-cross"
 )
 
@@ -161,23 +171,24 @@ set_target_properties(spirv-cross-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # ------------------------------------------------------------------------------
 # shaderc (glsl compiler required by vulkan)
 
-FetchContent_Declare(
-  shaderc
-  GIT_REPOSITORY https://github.com/google/shaderc.git
-  GIT_TAG        v2020.0
-)
-
-FetchContent_GetProperties(shaderc)
-if(NOT shaderc_POPULATED)
-  message(STATUS "Fetching shaderc...")
-  FetchContent_Populate(shaderc)
-  set(SHADERC_ENABLE_SPVC OFF CACHE BOOL "" FORCE)
-  set(SHADERC_SKIP_INSTALL ON CACHE BOOL "" FORCE)
-  set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
-  set(SHADERC_THIRD_PARTY_ROOT_DIR "${FETCHCONTENT_BASE_DIR}" CACHE STRING "" FORCE)
-  add_subdirectory(${shaderc_SOURCE_DIR} ${shaderc_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-target_link_libraries(RenderingExtern INTERFACE shaderc_shared)
+#FetchContent_Declare(
+#  shaderc
+#  GIT_REPOSITORY https://github.com/google/shaderc.git
+#  GIT_TAG        v2022.1
+#)
+#
+#FetchContent_GetProperties(shaderc)
+#if(NOT shaderc_POPULATED)
+#  message(STATUS "Fetching shaderc...")
+#  FetchContent_Populate(shaderc)
+#  set(SHADERC_ENABLE_SPVC OFF CACHE BOOL "" FORCE)
+#  set(SHADERC_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+#  set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
+#  set(SHADERC_THIRD_PARTY_ROOT_DIR "${FETCHCONTENT_BASE_DIR}" CACHE STRING "" FORCE)
+#  add_subdirectory(${shaderc_SOURCE_DIR} ${shaderc_BINARY_DIR} EXCLUDE_FROM_ALL)
+#endif()
+#target_link_libraries(RenderingExtern INTERFACE shaderc)
+#target_include_directories(RenderingExtern INTERFACE ${shaderc_SOURCE_DIR}/libshaderc/include)
 #target_link_libraries(RenderingExtern INTERFACE shaderc_spvc)
 #set_target_properties(shaderc PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

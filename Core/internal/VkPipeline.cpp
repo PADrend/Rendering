@@ -258,7 +258,7 @@ ApiBaseHandle::Ref createComputePipelineHandle(Device* device, const PipelineSta
 	info.basePipelineHandle = parent;
 		
 	// Create pipeline
-	return PipelineHandle::create(vkDevice.createComputePipeline(vkCache, info), vkDevice).get();
+	return PipelineHandle::create(vkDevice.createComputePipeline(vkCache, info).value, vkDevice).get();
 }
 
 //---------------
@@ -380,7 +380,7 @@ ApiBaseHandle::Ref createGraphicsPipelineHandle(Device* device, const PipelineSt
 	info.basePipelineHandle = parent;
 
 	// Create pipeline
-	return PipelineHandle::create(vkDevice.createGraphicsPipeline(vkCache, info), vkDevice).get();
+	return PipelineHandle::create(vkDevice.createGraphicsPipeline(vkCache, info).value, vkDevice).get();
 }
 
 //---------------
