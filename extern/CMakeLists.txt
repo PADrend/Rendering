@@ -66,22 +66,12 @@ set(Vulkan_INCLUDE_DIR ${vulkan-headers_SOURCE_DIR}/include CACHE STRING "" FORC
 target_include_directories(RenderingExtern INTERFACE ${Vulkan_INCLUDE_DIR})
 
 # ------------------------------------------------------------------------------
-# Vulkan
-
-
-#find_package(Vulkan)
-#if(Vulkan_FOUND)
-#target_include_directories(RenderingExtern INTERFACE ${Vulkan_INCLUDE_DIRS})
-#target_link_libraries(RenderingExtern INTERFACE ${Vulkan_LIBRARIES})
-#endif()
-
-# ------------------------------------------------------------------------------
-# spirv-headers (required by shaderc)
+# spirv-headers (required by spirv-tools)
 
 FetchContent_Declare(
   spirv-headers
   GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
-  GIT_TAG        1.5.4 
+  GIT_TAG        6a55fade62dec6a406a5a721148f88a2211cbefa # revision used by spirv-tools
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-headers"
 )
 
@@ -92,36 +82,35 @@ if(NOT spirv-headers_POPULATED)
   set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
   FetchContent_Populate(spirv-headers)
   #set(SPIRV-Headers_SOURCE_DIR "${spirv-headers_SOURCE_DIR}" CACHE STRING "" FORCE)
-  #set(SHADERC_SPIRV_HEADERS_DIR "${spirv-headers_SOURCE_DIR}" CACHE STRING "" FORCE)
   add_subdirectory(${spirv-headers_SOURCE_DIR} ${spirv-headers_BINARY_DIR})
 endif()
 target_link_libraries(RenderingExtern INTERFACE SPIRV-Headers)
 
 # ------------------------------------------------------------------------------
-# spirv-tools (required by shaderc)
+# spirv-tools (used for optimizing spir-v shaders)
 
-#FetchContent_Declare(
-#  spirv-tools
-#  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
-#  GIT_TAG        v2022.1
-#  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-tools"
-#)
-#
-#FetchContent_GetProperties(spirv-tools)
-#if(NOT spirv-tools_POPULATED)
-#  message(STATUS "Fetching spirv-tools...")
-#  FetchContent_Populate(spirv-tools)
-#  set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
-#  set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
-#  set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
-#  set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "" FORCE)
-#  add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
-#endif()
-#target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
-#set_target_properties(SPIRV-Tools-link PROPERTIES POSITION_INDEPENDENT_CODE ON)
+FetchContent_Declare(
+  spirv-tools
+  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
+  GIT_TAG        v2022.1
+  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-tools"
+)
+
+FetchContent_GetProperties(spirv-tools)
+if(NOT spirv-tools_POPULATED)
+  message(STATUS "Fetching spirv-tools...")
+  FetchContent_Populate(spirv-tools)
+  set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
+  set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
+  set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
+  set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "" FORCE)
+  add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
+endif()
+target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
+set_target_properties(SPIRV-Tools-link PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
-# glslang (required by shaderc)
+# glslang (for compiling shaders to spir-v)
 
 FetchContent_Declare(
   glslang
@@ -143,7 +132,7 @@ endif()
 target_link_libraries(RenderingExtern INTERFACE SPIRV)
 
 # ------------------------------------------------------------------------------
-# spirv_cross
+# spirv_cross (for shader reflection)
 
 FetchContent_Declare(
   spirv-cross
@@ -166,31 +155,6 @@ if(NOT spirv-cross_POPULATED)
 endif()
 target_link_libraries(RenderingExtern INTERFACE spirv-cross-core)
 set_target_properties(spirv-cross-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-
-# ------------------------------------------------------------------------------
-# shaderc (glsl compiler required by vulkan)
-
-#FetchContent_Declare(
-#  shaderc
-#  GIT_REPOSITORY https://github.com/google/shaderc.git
-#  GIT_TAG        v2022.1
-#)
-#
-#FetchContent_GetProperties(shaderc)
-#if(NOT shaderc_POPULATED)
-#  message(STATUS "Fetching shaderc...")
-#  FetchContent_Populate(shaderc)
-#  set(SHADERC_ENABLE_SPVC OFF CACHE BOOL "" FORCE)
-#  set(SHADERC_SKIP_INSTALL ON CACHE BOOL "" FORCE)
-#  set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
-#  set(SHADERC_THIRD_PARTY_ROOT_DIR "${FETCHCONTENT_BASE_DIR}" CACHE STRING "" FORCE)
-#  add_subdirectory(${shaderc_SOURCE_DIR} ${shaderc_BINARY_DIR} EXCLUDE_FROM_ALL)
-#endif()
-#target_link_libraries(RenderingExtern INTERFACE shaderc)
-#target_include_directories(RenderingExtern INTERFACE ${shaderc_SOURCE_DIR}/libshaderc/include)
-#target_link_libraries(RenderingExtern INTERFACE shaderc_spvc)
-#set_target_properties(shaderc PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
 # Vulkan memory allocator
