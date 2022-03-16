@@ -7,7 +7,7 @@
 # You should have received a copy of the MPL along with this library; see the 
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.13.0)
 project(RenderingTest)
 
 option(RENDERING_BUILD_TESTS "Defines if CppUnit tests for the Rendering library are built.")
@@ -18,6 +18,7 @@ if(RENDERING_BUILD_TESTS)
 		DrawTest.cpp
 		FramebufferTest.cpp
 		RenderingContextTest.cpp
+		RenderDeviceTest.cpp
 		RenderingTestMain.cpp
 		ShaderTest.cpp
 		StateTest.cpp
@@ -33,16 +34,12 @@ if(RENDERING_BUILD_TESTS)
 	
 	# ------------------------------------------------------------------------------
 	# Catch2
-	if(${CMAKE_VERSION} VERSION_LESS "3.11.0") 
-		include(FetchContentFallback)
-	else()
-		include(FetchContent)
-	endif()
+	include(FetchContent)
 	
 	FetchContent_Declare(
 		catch2
 		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG        v2.9.1
+		GIT_TAG        v2.13.8
 	)
 
 	FetchContent_GetProperties(catch2)
@@ -71,6 +68,7 @@ if(RENDERING_BUILD_TESTS)
 	)
 
 	enable_testing()
+	add_test(NAME RenderDeviceTest COMMAND RenderingTest [RenderDeviceTest])
 	add_test(NAME BufferObjectTest COMMAND RenderingTest [BufferObjectTest])
 	add_test(NAME DrawTest COMMAND RenderingTest [DrawTest])
 	add_test(NAME StatisticsQueryTest COMMAND RenderingTest [StatisticsQueryTest])

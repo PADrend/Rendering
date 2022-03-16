@@ -24,6 +24,7 @@ target_sources(Rendering PRIVATE
 	Helper.cpp
 	OcclusionQuery.cpp
 	QueryObject.cpp
+	RenderDevice.cpp
 	StatisticsQuery.cpp
 	TextRenderer.cpp
 )
@@ -37,6 +38,7 @@ add_subdirectory(Serialization)
 add_subdirectory(Shader)
 add_subdirectory(State)
 add_subdirectory(Texture)
+add_subdirectory(Backend)
 
 #set c++ standard to c++17
 target_compile_features(Rendering PUBLIC cxx_std_17)
