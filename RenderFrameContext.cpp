@@ -10,11 +10,14 @@
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
-#ifndef RENDERING_BACKEND_VULKANDEVICE_H_
-#define RENDERING_BACKEND_VULKANDEVICE_H_
+#include "RenderFrameContext.h"
+
+#include <Util/UI/Window.h>
 
 namespace Rendering {
 
-} // Rendering
+RenderFrameContext::RenderFrameContext(const Util::Reference<Util::UI::Window>& window) : window(window) {}
 
-#endif // RENDERING_BACKEND_VULKANDEVICE_H_
+RenderFrameContext::~RenderFrameContext() = default;
+
+} // Rendering

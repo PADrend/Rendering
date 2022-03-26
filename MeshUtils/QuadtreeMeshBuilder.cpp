@@ -509,10 +509,10 @@ static void buildFaceTypeF(MeshBuilder & builder, const vector<uint32_t> & indic
 }
 
 Mesh * QuadtreeMeshBuilder::createMesh(const VertexDescription& vd,
-										Util::WeakPointer<PixelAccessor> depthReader,
-										Util::WeakPointer<PixelAccessor> colorReader,
-										Util::WeakPointer<PixelAccessor> normalReader,
-										Util::WeakPointer<PixelAccessor> stencilReader,
+										Util::Reference<PixelAccessor> depthReader,
+										Util::Reference<PixelAccessor> colorReader,
+										Util::Reference<PixelAccessor> normalReader,
+										Util::Reference<PixelAccessor> stencilReader,
 										QuadtreeMeshBuilder::split_function_t function) {
 	// 0A: create the pixel-accessors for the textures
 	if( depthReader.isNull()){

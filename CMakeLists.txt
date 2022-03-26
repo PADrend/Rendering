@@ -8,7 +8,7 @@
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
 cmake_minimum_required(VERSION 3.14.0)
-project(Rendering VERSION 1.2.0)
+project(Rendering VERSION 2.0.0)
 
 # Set up install directories
 include(GNUInstallDirs)
@@ -17,28 +17,25 @@ set(CMAKE_INSTALL_CMAKECONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Rendering)
 add_library(Rendering SHARED "")
 
 target_sources(Rendering PRIVATE
-	RenderingContext/RenderingParameters.cpp
-	Draw.cpp
-	DrawCompound.cpp
-	FBO.cpp
-	Helper.cpp
-	OcclusionQuery.cpp
-	QueryObject.cpp
+	#RenderingContext/RenderingParameters.cpp
+	#Draw.cpp
+	#DrawCompound.cpp
+	#FBO.cpp
+	#Helper.cpp
 	RenderDevice.cpp
-	StatisticsQuery.cpp
-	TextRenderer.cpp
+	RenderFrameContext.cpp
+	#TextRenderer.cpp
 )
 
-add_subdirectory(Buffer)
-add_subdirectory(Context)
-add_subdirectory(Core)
-add_subdirectory(Mesh)
-add_subdirectory(MeshUtils)
-add_subdirectory(Serialization)
-add_subdirectory(Shader)
-add_subdirectory(State)
-add_subdirectory(Texture)
-add_subdirectory(Backend)
+#add_subdirectory(Context)
+#add_subdirectory(Mesh)
+#add_subdirectory(MeshUtils)
+#add_subdirectory(Queries)
+#add_subdirectory(Serialization)
+#add_subdirectory(Shader)
+#add_subdirectory(State)
+#add_subdirectory(Texture)
+add_subdirectory(Vulkan)
 
 #set c++ standard to c++17
 target_compile_features(Rendering PUBLIC cxx_std_17)
@@ -46,12 +43,10 @@ target_compile_features(Rendering PUBLIC cxx_std_17)
 if(MSVC)
 	target_compile_definitions(Rendering PRIVATE "RENDERINGAPI=__declspec(dllexport)")
 	target_compile_definitions(Rendering INTERFACE "RENDERINGAPI=__declspec(dllimport)")
-	target_compile_definitions(Rendering PUBLIC "RENDERING_DEPRECATED=__declspec(deprecated)")
 	target_compile_definitions(Rendering PRIVATE NOMINMAX)
 else()
 	target_compile_definitions(Rendering PRIVATE "RENDERINGAPI=")
 	target_compile_definitions(Rendering INTERFACE "RENDERINGAPI=")
-	target_compile_definitions(Rendering PUBLIC "RENDERING_DEPRECATED=__attribute__((deprecated))")
 endif()
 
 # Dependency to Geometry
@@ -62,7 +57,7 @@ target_link_libraries(Rendering LINK_PUBLIC Geometry)
 
 # Dependency to Util
 if(NOT TARGET Util)
-	find_package(Util 1.2.0 REQUIRED NO_MODULE)
+	find_package(Util 2.0.0 REQUIRED NO_MODULE)
 endif()
 target_link_libraries(Rendering LINK_PUBLIC Util)
 

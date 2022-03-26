@@ -272,10 +272,10 @@ public:
 	 * @return created mesh
 	 */
 	RENDERINGAPI static Mesh * createMesh(const VertexDescription & vd,
-							 Util::WeakPointer<Util::PixelAccessor> depthTexture,
-							 Util::WeakPointer<Util::PixelAccessor> colorTexture,
-							 Util::WeakPointer<Util::PixelAccessor> normalTexture,
-							 Util::WeakPointer<Util::PixelAccessor> stencilTexture,
+							 Util::Reference<Util::PixelAccessor> depthTexture,
+							 Util::Reference<Util::PixelAccessor> colorTexture,
+							 Util::Reference<Util::PixelAccessor> normalTexture,
+							 Util::Reference<Util::PixelAccessor> stencilTexture,
 							 split_function_t function);
 
 private:

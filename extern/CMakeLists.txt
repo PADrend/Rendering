@@ -50,126 +50,110 @@ target_include_directories(RenderingExtern INTERFACE ${ddsktx_SOURCE_DIR})
 # ------------------------------------------------------------------------------
 # Vulkan-Headers
 
-FetchContent_Declare(
-  vulkan-headers
-  GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git
-  GIT_TAG        v1.3.207
-)
-
-FetchContent_GetProperties(vulkan-headers)
-if(NOT vulkan-headers_POPULATED)
-  message(STATUS "Fetching vulkan-headers...")
-  FetchContent_Populate(vulkan-headers)
-endif()
-set(Vulkan_INCLUDE_DIR ${vulkan-headers_SOURCE_DIR}/include CACHE STRING "" FORCE)
-target_include_directories(RenderingExtern INTERFACE ${Vulkan_INCLUDE_DIR})
+#FetchContent_Declare(
+#  vulkan-headers
+#  GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers.git
+#  GIT_TAG        v1.3.207
+#)
+#
+#FetchContent_GetProperties(vulkan-headers)
+#if(NOT vulkan-headers_POPULATED)
+#  message(STATUS "Fetching vulkan-headers...")
+#  FetchContent_Populate(vulkan-headers)
+#endif()
+#set(Vulkan_INCLUDE_DIR ${vulkan-headers_SOURCE_DIR}/include CACHE STRING "" FORCE)
+#target_include_directories(RenderingExtern INTERFACE ${Vulkan_INCLUDE_DIR})
 
 # ------------------------------------------------------------------------------
 # spirv-headers (required by spirv-tools)
 
-FetchContent_Declare(
-  spirv-headers
-  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
-  GIT_TAG        6a55fade62dec6a406a5a721148f88a2211cbefa # revision used by spirv-tools
-  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-headers"
-)
-
-FetchContent_GetProperties(spirv-headers)
-if(NOT spirv-headers_POPULATED)
-  message(STATUS "Fetching spirv-headers...")
-  set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
-  set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
-  FetchContent_Populate(spirv-headers)
-  #set(SPIRV-Headers_SOURCE_DIR "${spirv-headers_SOURCE_DIR}" CACHE STRING "" FORCE)
-  add_subdirectory(${spirv-headers_SOURCE_DIR} ${spirv-headers_BINARY_DIR})
-endif()
-target_link_libraries(RenderingExtern INTERFACE SPIRV-Headers)
+#FetchContent_Declare(
+#  spirv-headers
+#  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
+#  GIT_TAG        6a55fade62dec6a406a5a721148f88a2211cbefa # revision used by spirv-tools
+#  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-headers"
+#)
+#
+#FetchContent_GetProperties(spirv-headers)
+#if(NOT spirv-headers_POPULATED)
+#  message(STATUS "Fetching spirv-headers...")
+#  set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
+#  set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+#  FetchContent_Populate(spirv-headers)
+#  #set(SPIRV-Headers_SOURCE_DIR "${spirv-headers_SOURCE_DIR}" CACHE STRING "" FORCE)
+#  add_subdirectory(${spirv-headers_SOURCE_DIR} ${spirv-headers_BINARY_DIR})
+#endif()
+#target_link_libraries(RenderingExtern INTERFACE SPIRV-Headers)
 
 # ------------------------------------------------------------------------------
 # spirv-tools (used for optimizing spir-v shaders)
 
-FetchContent_Declare(
-  spirv-tools
-  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
-  GIT_TAG        v2022.1
-  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-tools"
-)
-
-FetchContent_GetProperties(spirv-tools)
-if(NOT spirv-tools_POPULATED)
-  message(STATUS "Fetching spirv-tools...")
-  FetchContent_Populate(spirv-tools)
-  set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
-  set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
-  set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
-  set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "" FORCE)
-  add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
-endif()
-target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
-set_target_properties(SPIRV-Tools-link PROPERTIES POSITION_INDEPENDENT_CODE ON)
+#FetchContent_Declare(
+#  spirv-tools
+#  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
+#  GIT_TAG        v2022.1
+#  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-tools"
+#)
+#
+#FetchContent_GetProperties(spirv-tools)
+#if(NOT spirv-tools_POPULATED)
+#  message(STATUS "Fetching spirv-tools...")
+#  FetchContent_Populate(spirv-tools)
+#  set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
+#  set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
+#  set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
+#  set(SPIRV_CHECK_CONTEXT OFF CACHE BOOL "" FORCE)
+#  add_subdirectory(${spirv-tools_SOURCE_DIR} ${spirv-tools_BINARY_DIR})
+#endif()
+#target_link_libraries(RenderingExtern INTERFACE SPIRV-Tools-link)
+#set_target_properties(SPIRV-Tools-link PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
 # glslang (for compiling shaders to spir-v)
 
-FetchContent_Declare(
-  glslang
-  GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
-  GIT_TAG        11.8.0
-  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/glslang"
-)
-
-FetchContent_GetProperties(glslang)
-if(NOT glslang_POPULATED)
-  message(STATUS "Fetching glslang...")
-  FetchContent_Populate(glslang)
-  set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "" FORCE)
-  set(ENABLE_SPVREMAPPER ON CACHE BOOL "" FORCE)
-  set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
-  set(ENABLE_GLSLANG_JS OFF CACHE BOOL "" FORCE)
-  add_subdirectory(${glslang_SOURCE_DIR} ${glslang_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-target_link_libraries(RenderingExtern INTERFACE SPIRV)
+#FetchContent_Declare(
+#  glslang
+#  GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
+#  GIT_TAG        11.8.0
+#  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/glslang"
+#)
+#
+#FetchContent_GetProperties(glslang)
+#if(NOT glslang_POPULATED)
+#  message(STATUS "Fetching glslang...")
+#  FetchContent_Populate(glslang)
+#  set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "" FORCE)
+#  set(ENABLE_SPVREMAPPER ON CACHE BOOL "" FORCE)
+#  set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
+#  set(ENABLE_GLSLANG_JS OFF CACHE BOOL "" FORCE)
+#  add_subdirectory(${glslang_SOURCE_DIR} ${glslang_BINARY_DIR} EXCLUDE_FROM_ALL)
+#endif()
+#target_link_libraries(RenderingExtern INTERFACE SPIRV)
 
 # ------------------------------------------------------------------------------
 # spirv_cross (for shader reflection)
 
-FetchContent_Declare(
-  spirv-cross
-  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Cross.git
-  GIT_TAG        2021-01-15
-  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-cross"
-)
-
-FetchContent_GetProperties(spirv-cross)
-if(NOT spirv-cross_POPULATED)
-  message(STATUS "Fetching spirv-cross...")
-  FetchContent_Populate(spirv-cross)
-  set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
-  set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-  set(SPIRV_CROSS_FORCE_STL_TYPES OFF CACHE BOOL "" FORCE)
-  set(SPIRV_CROSS_SHARED OFF CACHE BOOL "" FORCE)
-  set(SPIRV_CROSS_STATIC ON CACHE BOOL "" FORCE)
-  set(SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
-  add_subdirectory(${spirv-cross_SOURCE_DIR} ${spirv-cross_BINARY_DIR})
-endif()
-target_link_libraries(RenderingExtern INTERFACE spirv-cross-core)
-set_target_properties(spirv-cross-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-# ------------------------------------------------------------------------------
-# Vulkan memory allocator
-
-FetchContent_Declare(
-  vma
-  GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-  GIT_TAG        v2.3.0
-)
-
-FetchContent_GetProperties(vma)
-if(NOT vma_POPULATED)
-  message(STATUS "Fetching vma...")
-  FetchContent_Populate(vma)
-endif()
-target_include_directories(RenderingExtern INTERFACE ${vma_SOURCE_DIR}/src)
+#FetchContent_Declare(
+#  spirv-cross
+#  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Cross.git
+#  GIT_TAG        2021-01-15
+#  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-cross"
+#)
+#
+#FetchContent_GetProperties(spirv-cross)
+#if(NOT spirv-cross_POPULATED)
+#  message(STATUS "Fetching spirv-cross...")
+#  FetchContent_Populate(spirv-cross)
+#  set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
+#  set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+#  set(SPIRV_CROSS_FORCE_STL_TYPES OFF CACHE BOOL "" FORCE)
+#  set(SPIRV_CROSS_SHARED OFF CACHE BOOL "" FORCE)
+#  set(SPIRV_CROSS_STATIC ON CACHE BOOL "" FORCE)
+#  set(SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+#  add_subdirectory(${spirv-cross_SOURCE_DIR} ${spirv-cross_BINARY_DIR})
+#endif()
+#target_link_libraries(RenderingExtern INTERFACE spirv-cross-core)
+#set_target_properties(spirv-cross-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
 # nvrhi (NVIDIA Rendering Hardware Interface)
@@ -184,9 +168,13 @@ FetchContent_GetProperties(nvrhi)
 if(NOT nvrhi_POPULATED)
   message(STATUS "Fetching nvrhi...")
   FetchContent_Populate(nvrhi)
+  set(NVRHI_INSTALL OFF CACHE BOOL "" FORCE)
+  set(NVRHI_WITH_SHADER_COMPILER OFF CACHE BOOL "" FORCE)
+  set(NVRHI_WITH_VULKAN ON CACHE BOOL "" FORCE)
+  set(NVRHI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
   add_subdirectory(${nvrhi_SOURCE_DIR} ${nvrhi_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
-target_link_libraries(RenderingExtern INTERFACE nvrhi)
+target_link_libraries(RenderingExtern INTERFACE nvrhi_vk nvrhi)
 
 # ------------------------------------------------------------------------------
 

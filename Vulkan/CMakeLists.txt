@@ -8,5 +8,15 @@
 #
 target_sources(Rendering PRIVATE
 	VulkanDevice.cpp
+	VulkanFrameContext.cpp
+	VulkanInstance.cpp
+)
+
+# Install the header files
+install(FILES
 	VulkanDevice.h
+	VulkanFrameContext.h
+	VulkanInstance.h
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Rendering/Backend/Vulkan
+	COMPONENT headers
 )

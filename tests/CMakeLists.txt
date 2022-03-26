@@ -7,23 +7,22 @@
 # You should have received a copy of the MPL along with this library; see the 
 # file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 #
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.14.0)
 project(RenderingTest)
 
 option(RENDERING_BUILD_TESTS "Defines if CppUnit tests for the Rendering library are built.")
 if(RENDERING_BUILD_TESTS)
 	add_executable(RenderingTest 
-		BufferObjectTest.cpp
+		#BufferObjectTest.cpp
 		DeviceTest.cpp
-		DrawTest.cpp
-		FramebufferTest.cpp
-		RenderingContextTest.cpp
-		RenderDeviceTest.cpp
+		#DrawTest.cpp
+		#FramebufferTest.cpp
+		#RenderingContextTest.cpp
+		#ShaderTest.cpp
+		#StateTest.cpp
+		#StatisticsQueryTest.cpp
+		#VertexAccessorTest.cpp
 		RenderingTestMain.cpp
-		ShaderTest.cpp
-		StateTest.cpp
-		StatisticsQueryTest.cpp
-		VertexAccessorTest.cpp
 	)
 
 	target_link_libraries(RenderingTest LINK_PRIVATE Rendering)
@@ -31,7 +30,11 @@ if(RENDERING_BUILD_TESTS)
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake)
 	
 	target_link_libraries(RenderingTest PRIVATE RenderingExtern)
-	
+		
+	if(MSVC)
+		target_compile_definitions(RenderingTest PRIVATE NOMINMAX)
+	endif()
+
 	# ------------------------------------------------------------------------------
 	# Catch2
 	include(FetchContent)
