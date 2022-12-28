@@ -11,6 +11,7 @@
 #ifndef RENDERING_HELPER_H
 #define RENDERING_HELPER_H
 
+#include <Util/Macros.h>
 #include <Util/TypeConstant.h>
 #include <Util/IO/FileLocator.h>
 
@@ -70,7 +71,12 @@ RENDERINGAPI uint32_t getGLType(Util::TypeConstant type);
 RENDERINGAPI Util::TypeConstant getAttributeType(uint32_t glType);
 
 [[deprecated]]
-static const char * getGLTypeString(uint32_t type) { return Util::getTypeString(getAttributeType(type)).c_str(); }
+static const char * getGLTypeString(uint32_t type) {
+	COMPILER_WARN_PUSH
+	COMPILER_WARN_OFF_DEPRECATED
+	return Util::getTypeString(getAttributeType(type)).c_str();
+	COMPILER_WARN_POP
+}
 
 [[deprecated]]
 static void outputGLInformation(std::ostream & output) {}
@@ -82,7 +88,7 @@ static const char * getGraphicsLanguageVersion() { return ""; }
 static const char * getShadingLanguageVersion() { return ""; }
 
 [[deprecated("Use Device::isExtensionSuported instead.")]]
-RENDERINGAPI bool isExtensionSupported(const char * extension);
+static bool isExtensionSupported(const char * extension) { return false; }
 
 [[deprecated]]
 static float readDepthValue(int32_t x, int32_t y) { return 0; }

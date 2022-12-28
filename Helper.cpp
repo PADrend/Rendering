@@ -8,6 +8,9 @@
 	You should have received a copy of the MPL along with this library; see the 
 	file LICENSE. If not, you can obtain one at http://mozilla.org/MPL/2.0/.
 */
+
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "Helper.h"
 #include "Core/Device.h"
 
@@ -26,6 +29,8 @@
 #include <dlfcn.h>
 #endif
 
+#include <cstdlib>
+
 #include "extern/renderdoc_app.h"
 
 #include <Util/Macros.h>
@@ -33,10 +38,6 @@
 #include <Util/Resources/ResourceFormat.h>
 
 namespace Rendering {
-
-bool isExtensionSupported(const char * extension) {
-	return Device::getDefault()->isExtensionSupported(extension);
-}
 
 static RENDERDOC_API_1_4_0* getAPI() {
   static RENDERDOC_API_1_4_0* rdoc_api = nullptr;

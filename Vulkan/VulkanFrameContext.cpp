@@ -24,6 +24,7 @@
 #include <vector>
 #include <queue>
 #include <unordered_set>
+#include <iostream>
 
 namespace Rendering {
 using namespace Util;

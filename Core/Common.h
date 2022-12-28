@@ -24,7 +24,7 @@ public: \
 	bool isDirty() const { return dirty; }
 
 namespace Util {
-class AttributeFormat;
+struct AttributeFormat;
 } /* Util */
 
 namespace Geometry {

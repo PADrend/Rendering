@@ -92,16 +92,16 @@ public:
 	// @{
 	
 	/// ---|> [Device]
-	RENDERINGAPI void allocateBuffer(Util::BufferHandle buffer, const uint8_t* data=nullptr) override;
+	//RENDERINGAPI void allocateBuffer(Util::BufferHandle buffer, const uint8_t* data=nullptr) override;
 
 	/// ---|> [Device]
-	RENDERINGAPI void allocateImage(Util::ImageHandle image) override;
+	//RENDERINGAPI void allocateImage(Util::ImageHandle image) override;
 
 protected:
 	struct InternalBufferResource;
 	struct InternalImageResource;
 	
-	RENDERINGAPI void releaseResource(InternalResource* resource) override;
+	//RENDERINGAPI void releaseResource(InternalResource* resource) override;
 public:
 	// @}
 
@@ -119,6 +119,8 @@ public:
 	const vk::Queue& _getVkQueue(QueueFamily queueFamily) const;
 	
 	int32_t _getVkQueueFamilyIndex(QueueFamily queueFamily) const;
+	
+	nvrhi::DeviceHandle _getInternalDevice() const override;
 
 	// @}
 private:

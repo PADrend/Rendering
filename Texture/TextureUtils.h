@@ -29,7 +29,7 @@ namespace Util {
 class Bitmap;
 class FileName;
 class PixelAccessor;
-class AttributeFormat;
+struct AttributeFormat;
 }
 
 namespace Rendering {

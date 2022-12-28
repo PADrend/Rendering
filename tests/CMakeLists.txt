@@ -29,7 +29,7 @@ if(RENDERING_BUILD_TESTS)
 	set_target_properties(RenderingTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake)
 	
-	target_link_libraries(RenderingTest PRIVATE RenderingExtern)
+	#target_link_libraries(RenderingTest PRIVATE RenderingExtern)
 		
 	if(MSVC)
 		target_compile_definitions(RenderingTest PRIVATE NOMINMAX)

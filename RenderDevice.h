@@ -15,10 +15,17 @@
 
 #include "RenderFrameContext.h"
 
-#include <Util/Devices/Device.h>
-#include <Util/Resources/Buffer.h>
-#include <Util/Resources/Image.h>
+#include <Util/Graphics/PixelFormat.h>
 #include <Util/Macros.h>
+
+#include <nvrhi/nvrhi.h>
+
+namespace nvrhi {
+template <typename T>
+class RefCountPtr;
+class IDevice;
+using DeviceHandle = RefCountPtr<IDevice>;
+} // nvrhi
 
 namespace Rendering {
 
@@ -47,16 +54,23 @@ DEFINE_BIT_OPERATORS(QueueFamily)
 //! Returns a string representation of QueueFamily.
 RENDERINGAPI std::string toString( QueueFamily value );
 
+//! Returns a string representation of ShaderType.
+RENDERINGAPI std::string toString( const nvrhi::ShaderType& value );
+
 /**
  * @brief Represents a rendering device (GPU)
  * Manages resources & command submission to the the GPU.
  */
-class RenderDevice : public Util::Device {
+class RenderDevice : public Util::ReferenceCounter<RenderDevice> {
 	PROVIDES_TYPE_NAME(RenderDevice)
 public:
-	/// ---|> [Device]
-	//RENDERINGAPI void shutdown() override;
+	virtual ~RenderDevice() = default;
 
+	/// ---|> [Device]
+	virtual void shutdown() = 0;
+
+	/// ---|> [Device]
+	virtual void waitIdle() {}
 	
 	//! @name Window rendering
 	// @{
@@ -75,13 +89,20 @@ public:
 	// @{
 	
 	//! allocates memory for the given buffer and optionally initializes it with data.
-	virtual void allocateBuffer(Util::BufferHandle buffer, const uint8_t* data=nullptr) = 0;
+	//virtual void allocateBuffer(Util::BufferHandle buffer, const uint8_t* data=nullptr) = 0;
 
 	//! Allocates memory for the given image.
-	virtual void allocateImage(Util::ImageHandle image) = 0;
+	//virtual void allocateImage(Util::ImageHandle image) = 0;
 
 	// @}
 
+
+	//! @name Internal
+	// @{
+
+	virtual nvrhi::DeviceHandle _getInternalDevice() const = 0;
+
+	// @}
 };
 
 using RenderDeviceHandle = Util::Reference<RenderDevice>;

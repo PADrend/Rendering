@@ -21,7 +21,8 @@ target_sources(Rendering PRIVATE
 	#Draw.cpp
 	#DrawCompound.cpp
 	#FBO.cpp
-	#Helper.cpp
+	Helper.cpp
+	PipelineBuilder.cpp
 	RenderDevice.cpp
 	RenderFrameContext.cpp
 	#TextRenderer.cpp
@@ -32,7 +33,7 @@ target_sources(Rendering PRIVATE
 #add_subdirectory(MeshUtils)
 #add_subdirectory(Queries)
 #add_subdirectory(Serialization)
-#add_subdirectory(Shader)
+add_subdirectory(Shader)
 #add_subdirectory(State)
 #add_subdirectory(Texture)
 add_subdirectory(Vulkan)
@@ -89,7 +90,7 @@ install(DIRECTORY data/
 )
 
 # Install the library
-install(TARGETS Rendering EXPORT LibraryExport
+install(TARGETS Rendering nvrhi EXPORT LibraryExport
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtimelibraries
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT runtimelibraries
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT developmentlibraries

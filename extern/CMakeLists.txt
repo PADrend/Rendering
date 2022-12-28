@@ -111,24 +111,24 @@ target_include_directories(RenderingExtern INTERFACE ${ddsktx_SOURCE_DIR})
 # ------------------------------------------------------------------------------
 # glslang (for compiling shaders to spir-v)
 
-#FetchContent_Declare(
-#  glslang
-#  GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
-#  GIT_TAG        11.8.0
-#  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/glslang"
-#)
-#
-#FetchContent_GetProperties(glslang)
-#if(NOT glslang_POPULATED)
-#  message(STATUS "Fetching glslang...")
-#  FetchContent_Populate(glslang)
-#  set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "" FORCE)
-#  set(ENABLE_SPVREMAPPER ON CACHE BOOL "" FORCE)
-#  set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
-#  set(ENABLE_GLSLANG_JS OFF CACHE BOOL "" FORCE)
-#  add_subdirectory(${glslang_SOURCE_DIR} ${glslang_BINARY_DIR} EXCLUDE_FROM_ALL)
-#endif()
-#target_link_libraries(RenderingExtern INTERFACE SPIRV)
+FetchContent_Declare(
+  glslang
+  GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
+  GIT_TAG        11.8.0
+  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/glslang"
+)
+
+FetchContent_GetProperties(glslang)
+if(NOT glslang_POPULATED)
+  message(STATUS "Fetching glslang...")
+  FetchContent_Populate(glslang)
+  set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "" FORCE)
+  set(ENABLE_SPVREMAPPER ON CACHE BOOL "" FORCE)
+  set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
+  set(ENABLE_GLSLANG_JS OFF CACHE BOOL "" FORCE)
+  add_subdirectory(${glslang_SOURCE_DIR} ${glslang_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+target_link_libraries(RenderingExtern INTERFACE SPIRV)
 
 # ------------------------------------------------------------------------------
 # spirv_cross (for shader reflection)
@@ -161,20 +161,21 @@ target_include_directories(RenderingExtern INTERFACE ${ddsktx_SOURCE_DIR})
 FetchContent_Declare(
   nvrhi
   GIT_REPOSITORY https://github.com/NVIDIAGameWorks/nvrhi.git
-  GIT_TAG        12f3e12eb29b681e99a53af7347c60c0733a6ef9
+  GIT_TAG        198b2d082963e916f0a00fb3350b44a46a1d2bfa
 )
 
 FetchContent_GetProperties(nvrhi)
 if(NOT nvrhi_POPULATED)
   message(STATUS "Fetching nvrhi...")
   FetchContent_Populate(nvrhi)
-  set(NVRHI_INSTALL OFF CACHE BOOL "" FORCE)
+  set(NVRHI_INSTALL ON CACHE BOOL "" FORCE)
   set(NVRHI_WITH_SHADER_COMPILER OFF CACHE BOOL "" FORCE)
   set(NVRHI_WITH_VULKAN ON CACHE BOOL "" FORCE)
   set(NVRHI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
   add_subdirectory(${nvrhi_SOURCE_DIR} ${nvrhi_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
-target_link_libraries(RenderingExtern INTERFACE nvrhi_vk nvrhi)
+target_link_libraries(RenderingExtern INTERFACE nvrhi_vk)
+target_link_libraries(Rendering PUBLIC nvrhi) # want to make nvrhi publicly available
 
 # ------------------------------------------------------------------------------
 

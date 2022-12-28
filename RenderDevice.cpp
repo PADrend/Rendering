@@ -19,6 +19,8 @@
 namespace Rendering {
 using namespace Util;
 
+//----------------------
+
 std::string toString(DeviceType value) {
 	switch (value) {
 		case DeviceType::Other: return "Other";
@@ -30,6 +32,8 @@ std::string toString(DeviceType value) {
 	}
 }
 
+//----------------------
+
 std::string toString(QueueFamily value) {
 	std::stringstream ss;
 	if (isFlagSet(value, QueueFamily::Graphics)) ss << "Graphics | ";
@@ -39,6 +43,46 @@ std::string toString(QueueFamily value) {
 	std::string str = ss.str();
 	return !str.empty() ? str.substr(0, str.size() - 3) : "";
 }
+
+//----------------------
+
+std::string toString( const nvrhi::ShaderType& value ) {
+	if (value == nvrhi::ShaderType::None) {
+		return "None";
+	} else if((value & nvrhi::ShaderType::All) == nvrhi::ShaderType::All) {
+		return "All";
+	}
+	
+	std::stringstream ss;
+	if ((value & nvrhi::ShaderType::AllGraphics) == nvrhi::ShaderType::AllGraphics) {
+		ss << "AllGraphics | ";
+	} else {
+		if ((value & nvrhi::ShaderType::Compute) == nvrhi::ShaderType::Compute) ss << "Compute | ";
+		if ((value & nvrhi::ShaderType::Vertex) == nvrhi::ShaderType::Vertex) ss << "Vertex | ";
+		if ((value & nvrhi::ShaderType::Hull) == nvrhi::ShaderType::Hull) ss << "Hull | ";
+		if ((value & nvrhi::ShaderType::Domain) == nvrhi::ShaderType::Domain) ss << "Domain | ";
+		if ((value & nvrhi::ShaderType::Geometry) == nvrhi::ShaderType::Geometry) ss << "Geometry | ";
+		if ((value & nvrhi::ShaderType::Pixel) == nvrhi::ShaderType::Pixel) ss << "Pixel | ";
+		if ((value & nvrhi::ShaderType::Amplification) == nvrhi::ShaderType::Amplification) ss << "Amplification | ";
+		if ((value & nvrhi::ShaderType::Mesh) == nvrhi::ShaderType::Mesh) ss << "Mesh | ";
+	}
+	
+	if ((value & nvrhi::ShaderType::AllRayTracing) == nvrhi::ShaderType::AllRayTracing) {
+		ss << "AllRayTracing | ";
+	} else {
+		if ((value & nvrhi::ShaderType::RayGeneration) == nvrhi::ShaderType::RayGeneration) ss << "RayGeneration | ";
+		if ((value & nvrhi::ShaderType::AnyHit) == nvrhi::ShaderType::AnyHit) ss << "AnyHit | ";
+		if ((value & nvrhi::ShaderType::ClosestHit) == nvrhi::ShaderType::ClosestHit) ss << "ClosestHit | ";
+		if ((value & nvrhi::ShaderType::Miss) == nvrhi::ShaderType::Miss) ss << "Miss | ";
+		if ((value & nvrhi::ShaderType::Intersection) == nvrhi::ShaderType::Intersection) ss << "Intersection | ";
+		if ((value & nvrhi::ShaderType::Callable) == nvrhi::ShaderType::Callable) ss << "Callable | ";
+	}
+
+	std::string str = ss.str();
+	return !str.empty() ? str.substr(0, str.size() - 3) : "";
+}
+
+//----------------------
 
 nvrhi::Format convertFormat(Util::PixelFormat format) {
 	switch (format) {
@@ -101,5 +145,7 @@ nvrhi::Format convertFormat(Util::PixelFormat format) {
 		default: return nvrhi::Format::UNKNOWN;
 	}
 }
+
+//----------------------
 
 } // namespace Rendering

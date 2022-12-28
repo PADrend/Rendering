@@ -28,7 +28,7 @@ typedef _Rect<int> Rect_i;
 namespace Util {
 class Color4f;
 class StringIdentifier;
-class AttributeFormat;
+struct AttributeFormat;
 }
 namespace Rendering {
 class AlphaTestParameters;

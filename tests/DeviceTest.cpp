@@ -14,6 +14,7 @@
 #include <Util/Utils.h>
 #include <cstdint>
 #include <iostream>
+#include <nvrhi/nvrhi.h>
 
 #undef WARN
 #undef INFO
@@ -25,14 +26,10 @@ TEST_CASE("DeviceTest_test", "[DeviceTest]") {
 	using namespace Rendering;
 	std::cout << std::endl;
 	
-	/*
 	auto device = TestUtils::device;
 	REQUIRE(device);
-	REQUIRE(device->getApiHandle());
-	std::cout << "Max. push constant size: " << device->getMaxPushConstantSize() << std::endl;
-	REQUIRE(device->getMaxPushConstantSize() >= 128);
-	std::cout << "Max. framebuffer attachments: " << device->getMaxFramebufferAttachments() << std::endl;
-	REQUIRE(device->getMaxFramebufferAttachments() >= 1);
-	device->waitIdle();
-	*/
+
+	auto nvDevice = device->_getInternalDevice();
+	nvDevice->waitForIdle();
+
 }

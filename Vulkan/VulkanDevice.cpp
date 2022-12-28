@@ -114,7 +114,7 @@ VulkanDevice::VulkanDevice(const VulkanDeviceConfig& config) :
 //-------------------------
 
 VulkanDevice::~VulkanDevice() {
-	shutdown();
+	shutdown(); // might be dangerous because of virtual function
 }
 
 //-------------------------
@@ -304,7 +304,6 @@ VulkanDeviceHandle VulkanDevice::create(const VulkanDeviceConfig& config) {
 //-------------------------
 
 void VulkanDevice::shutdown() {
-	Device::shutdown();
 	data->nvDevice = nullptr;
 
 	if (data->vkDevice) {
@@ -336,6 +335,7 @@ bool VulkanDevice::isWindowRenderingSupported() const {
 
 //-------------------------
 
+/*
 void VulkanDevice::allocateBuffer(Util::BufferHandle buffer, const uint8_t* data) {
 }
 
@@ -348,6 +348,7 @@ void VulkanDevice::allocateImage(Util::ImageHandle image) {
 
 void VulkanDevice::releaseResource(InternalResource* resource) {
 }
+*/
 
 //-------------------------
 
@@ -370,6 +371,12 @@ const vk::Device& VulkanDevice::_getVkDevice() const {
 //-------------------------
 
 nvrhi::vulkan::DeviceHandle VulkanDevice::_getNvDevice() const {
+	return data->nvDevice;
+}
+
+//-------------------------
+
+nvrhi::DeviceHandle VulkanDevice::_getInternalDevice() const {
 	return data->nvDevice;
 }
 
