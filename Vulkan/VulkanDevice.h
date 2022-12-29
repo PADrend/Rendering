@@ -74,6 +74,9 @@ public:
 	/// ---|> [Device]
 	RENDERINGAPI void waitIdle() override;
 
+	/// ---|> [Device]
+	RENDERINGAPI void update() override;
+
 	const VulkanDeviceConfig& getConfig() const { return config; }
 	// @}
 	

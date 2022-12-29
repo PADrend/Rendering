@@ -71,6 +71,12 @@ public:
 
 	/// ---|> [Device]
 	virtual void waitIdle() {}
+
+	/**
+	 * @brief Needs to be called at least once per frame.
+	 * Handles resource lifetime etc. (automatically called by render frame context if available)
+	 */
+	virtual void update() {}
 	
 	//! @name Window rendering
 	// @{
@@ -82,7 +88,7 @@ public:
 
 	//! Returns if the device can render to a window surface
 	virtual bool isWindowRenderingSupported() const { return false; }
-public:
+	
 	// @}
 
 	//! @name Resources

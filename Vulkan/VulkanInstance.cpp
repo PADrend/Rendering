@@ -169,7 +169,7 @@ bool VulkanInstance::init(const VulkanInstanceConfig& config) {
 										.setApiVersion(VK_MAKE_VERSION(config.apiVersionMajor, config.apiVersionMinor, 0))
 										.setPApplicationName(config.name.c_str())
 										.setPEngineName("PADrend")
-										.setEngineVersion(VK_MAKE_VERSION(1, 3, 0));
+										.setEngineVersion(VK_MAKE_VERSION(2, 0, 0));
 
 		auto instInfo = vk::InstanceCreateInfo()
 											.setPApplicationInfo(&appInfo)

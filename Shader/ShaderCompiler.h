@@ -26,17 +26,19 @@ namespace Rendering {
 class ShaderCompilerGLSL : public Util::ReferenceCounter<ShaderCompilerGLSL> {
 	PROVIDES_TYPE_NAME(ShaderCompilerGLSL)
 public:
-	ShaderCompilerGLSL();
-	~ShaderCompilerGLSL() = default;
+	RENDERINGAPI ShaderCompilerGLSL();
+	RENDERINGAPI ~ShaderCompilerGLSL();
 
-	bool compile(const Util::FileName& file, nvrhi::ShaderType type, std::vector<uint32_t>& outByteCode);
-	bool compile(const std::string& source, nvrhi::ShaderType type, std::vector<uint32_t>& outByteCode);
+	RENDERINGAPI bool compile(const Util::FileName& file, nvrhi::ShaderType type, std::vector<uint32_t>& outByteCode);
+	RENDERINGAPI bool compile(const std::string& source, nvrhi::ShaderType type, std::vector<uint32_t>& outByteCode);
 
-	bool compileLibrary(const Util::FileName& file, std::vector<uint32_t>& outByteCode);
-	bool compileLibrary(const std::string& source, std::vector<uint32_t>& outByteCode);
+	RENDERINGAPI bool compileLibrary(const Util::FileName& file, std::vector<uint32_t>& outByteCode);
+	RENDERINGAPI bool compileLibrary(const std::string& source, std::vector<uint32_t>& outByteCode);
 
-	void addSearchPath(const std::string& path) { locator.addSearchPath(path); }
+	RENDERINGAPI void addSearchPath(const std::string& path) { locator.addSearchPath(path); }
 private:
+	bool compile(const Util::FileName& file, const std::string& source, nvrhi::ShaderType type, std::vector<uint32_t>& outByteCode);
+
 	Util::FileLocator locator;
 };
 

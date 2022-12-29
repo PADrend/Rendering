@@ -319,6 +319,12 @@ void VulkanDevice::waitIdle() {
 		data->nvDevice->waitForIdle();
 }
 
+RENDERINGAPI void VulkanDevice::update() {
+	if(data->nvDevice) {
+		data->nvDevice->runGarbageCollection();
+	}
+}
+
 //-------------------------
 
 RenderFrameContextHandle VulkanDevice::createFrameContext(const WindowHandle& window) {

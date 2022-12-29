@@ -29,7 +29,5 @@ TEST_CASE("DeviceTest_test", "[DeviceTest]") {
 	auto device = TestUtils::device;
 	REQUIRE(device);
 
-	auto nvDevice = device->_getInternalDevice();
-	nvDevice->waitForIdle();
-
+	device->waitIdle();
 }

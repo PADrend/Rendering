@@ -16,6 +16,7 @@
 #include <Util/ReferenceCounter.h>
 #include <Util/TypeNameMacro.h>
 
+#include <nvrhi/nvrhi.h>
 namespace Util {
 namespace UI {
 class Window;
@@ -55,6 +56,15 @@ public:
 	 */
 	virtual void endFrame() = 0;
 
+	/**
+	 * @brief Get the currently active swapchain image.
+	 */
+	virtual nvrhi::TextureHandle getCurrentSwapchainImage() const = 0;
+
+	/**
+	 * @brief Get the currently active framebuffer.
+	 */
+	virtual nvrhi::FramebufferHandle getCurrentFramebuffer() const = 0;
 protected:
 	WindowHandle window;
 };

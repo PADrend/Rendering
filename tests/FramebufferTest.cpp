@@ -12,21 +12,13 @@
 #include <Geometry/Box.h>
 #include <Geometry/Vec3.h>
 #include <Geometry/Angle.h>
-#include "../Context/RenderingContext.h"
-#include "../State/PipelineState.h"
-#include "../Core/ApiHandles.h"
-#include "../Core/CommandBuffer.h"
-#include "../Core/Device.h"
-#include "../Core/Queue.h"
-#include "../Core/Swapchain.h"
-#include "../Core/ImageStorage.h"
-#include "../Core/ImageView.h"
-#include "../FBO.h"
-#include "../Texture/Texture.h"
-#include "../Shader/Shader.h"
-#include "../BufferObject.h"
+#include "../RenderDevice.h"
+#include "../Shader/ShaderCompiler.h"
 #include <Util/Timer.h>
 #include <Util/Utils.h>
+
+#include <nvrhi/utils.h>
+
 #include <cstdint>
 #include <iostream>
 
@@ -60,37 +52,68 @@ TEST_CASE("FramebufferTest_testDraw", "[FramebufferTest]") {
 	
 	auto device = TestUtils::device;
 	REQUIRE(device);
-	
-	auto graphicsQueue = device->getQueue(QueueFamily::Graphics);
-	REQUIRE(graphicsQueue->supports(QueueFamily::Present));
-	auto swapchain = device->getSwapchain();
+	auto frameContext = TestUtils::frameContext;
+	REQUIRE(frameContext);
+	auto nvDevice = device->_getInternalDevice();
 
 	// --------------------------------------------
 	// create graphics pipeline
 	
+	ShaderCompilerGLSL compiler;
+	
 	// compile shaders
-	auto shader = Shader::createShader(device, shaderSrc, shaderSrc);
-	REQUIRE(shader->init());
+	std::vector<uint32_t> vsSpirv, fsSpirv;
+	REQUIRE(compiler.compile(shaderSrc, nvrhi::ShaderType::Vertex, vsSpirv));
+	auto vertexShader = nvDevice->createShader({nvrhi::ShaderType::Vertex}, vsSpirv.data(), vsSpirv.size() * sizeof(uint32_t));
+	REQUIRE(vertexShader);
 
-	PipelineState state{};
-	Geometry::Rect_i windowRect{0, 0, static_cast<int32_t>(TestUtils::window->getWidth()), static_cast<int32_t>(TestUtils::window->getHeight())};
-	state.setViewportState({windowRect, windowRect});
-	state.setShader(shader);
-	state.setFramebufferFormat(swapchain->getCurrentFBO());
+	REQUIRE(compiler.compile(shaderSrc, nvrhi::ShaderType::Pixel, fsSpirv));
+	auto pixelShader = nvDevice->createShader({nvrhi::ShaderType::Pixel}, fsSpirv.data(), fsSpirv.size() * sizeof(uint32_t));
+	REQUIRE(pixelShader);
+
+	// create framebuffer
+	auto framebuffer = frameContext->getCurrentFramebuffer();
+	REQUIRE(framebuffer);
+
+	// create pipeline
+	auto pipelineDesc = nvrhi::GraphicsPipelineDesc()
+		.setVertexShader(vertexShader)
+		.setPixelShader(pixelShader);
+
+	auto graphicsPipeline = nvDevice->createGraphicsPipeline(pipelineDesc, framebuffer);
+	REQUIRE(graphicsPipeline);
+	
+	nvrhi::Viewport viewport((float)TestUtils::window->getWidth(),	(float)TestUtils::window->getHeight());
 
 	// --------------------------------------------
 	// draw
 
+	nvrhi::CommandListHandle commandList = nvDevice->createCommandList();
 	for(uint_fast32_t round = 0; round < 100; ++round) {
-		auto cmdBuffer = CommandBuffer::create(graphicsQueue, true);
-		cmdBuffer->setPipeline(state);
+		frameContext->beginFrame();
+		auto currentFramebuffer = frameContext->getCurrentFramebuffer();
 
-		cmdBuffer->beginRenderPass();
-		cmdBuffer->draw(3);
-		cmdBuffer->endRenderPass();
-		cmdBuffer->prepareForPresent();
-		graphicsQueue->submit(cmdBuffer);
-		graphicsQueue->present();
+		commandList->open();
+
+		// Clear the primary render target
+		nvrhi::utils::ClearColorAttachment(commandList, currentFramebuffer, 0, nvrhi::Color(0.f));
+
+		// Set the graphics state: pipeline, framebuffer, viewport, bindings.
+		auto graphicsState = nvrhi::GraphicsState()
+				.setPipeline(graphicsPipeline)
+				.setFramebuffer(currentFramebuffer)
+				.setViewport(nvrhi::ViewportState().addViewportAndScissorRect(viewport));
+		commandList->setGraphicsState(graphicsState);
+
+		// Draw our geometry
+		auto drawArguments = nvrhi::DrawArguments()
+				.setVertexCount(3);
+		commandList->draw(drawArguments);
+
+		// Close and execute the command list
+		commandList->close();
+		nvDevice->executeCommandList(commandList);
+		frameContext->endFrame();
 	}
 	device->waitIdle();
 }

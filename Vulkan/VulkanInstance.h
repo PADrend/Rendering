@@ -31,7 +31,7 @@ struct VulkanInstanceConfig {
 	//! Requested major API version.
 	uint32_t apiVersionMajor = 1;
 	//! Requested minor API version.
-	uint32_t apiVersionMinor = 2;
+	uint32_t apiVersionMinor = 3;
 	//! Enable debug output (automatically adds necessary validation layers)
 	bool debug = false;
 	//! Enabled validation layers (requires debug=true).

@@ -142,6 +142,21 @@ void VulkanFrameContext::endFrame() {
 		data->framesInFlight.push(query);
 	}
 
+	data->device->update();
+}
+
+//-------------------------
+
+nvrhi::TextureHandle VulkanFrameContext::getCurrentSwapchainImage() const {
+	WARN_AND_RETURN_IF(data->swapChainIndex < 0, "Invalid swapchain. Render frame context might not initialized correctly.", {});
+	return data->swapChainImages[data->swapChainIndex].rhiHandle;
+}
+
+//-------------------------
+
+RENDERINGAPI nvrhi::FramebufferHandle VulkanFrameContext::getCurrentFramebuffer() const {
+	WARN_AND_RETURN_IF(data->swapChainIndex < 0, "Invalid swapchain. Render frame context might not initialized correctly.", {});
+	return data->swapChainImages[data->swapChainIndex].framebuffer;
 }
 
 //-------------------------
@@ -244,6 +259,12 @@ bool VulkanFrameContext::recreateSwapChain() {
 		textureDesc.isRenderTarget	 = true;
 
 		sci.rhiHandle = nvDevice->createHandleForNativeTexture(nvrhi::ObjectTypes::VK_Image, nvrhi::Object(sci.image), textureDesc);
+
+		// create a framebuffer for each swapchain image
+		auto framebufferDesc = nvrhi::FramebufferDesc()
+			.addColorAttachment(sci.rhiHandle);
+		sci.framebuffer = nvDevice->createFramebuffer(framebufferDesc);
+
 		data->swapChainImages.push_back(sci);
 	}
 

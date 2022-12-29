@@ -36,6 +36,12 @@ public:
 
 	/// ---|> [RenderFrameContext]
 	RENDERINGAPI void endFrame() override;
+	
+	/// ---|> [RenderFrameContext]
+	RENDERINGAPI nvrhi::TextureHandle getCurrentSwapchainImage() const override;
+	
+	/// ---|> [RenderFrameContext]
+	RENDERINGAPI nvrhi::FramebufferHandle getCurrentFramebuffer() const override;
 private:
 	friend class VulkanDevice;
 	// Uses pimpl idiom for internal storage.

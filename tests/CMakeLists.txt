@@ -16,7 +16,7 @@ if(RENDERING_BUILD_TESTS)
 		#BufferObjectTest.cpp
 		DeviceTest.cpp
 		#DrawTest.cpp
-		#FramebufferTest.cpp
+		FramebufferTest.cpp
 		#RenderingContextTest.cpp
 		#ShaderTest.cpp
 		#StateTest.cpp
