@@ -114,7 +114,7 @@ target_include_directories(RenderingExtern INTERFACE ${ddsktx_SOURCE_DIR})
 FetchContent_Declare(
   glslang
   GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
-  GIT_TAG        11.8.0
+  GIT_TAG        11.13.0
   SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/glslang"
 )
 
@@ -129,6 +129,31 @@ if(NOT glslang_POPULATED)
   add_subdirectory(${glslang_SOURCE_DIR} ${glslang_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 target_link_libraries(RenderingExtern INTERFACE SPIRV)
+
+# ------------------------------------------------------------------------------
+# SPIRV-Reflect (for shader reflection)
+
+FetchContent_Declare(
+  spirv-reflect
+  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Reflect.git
+  GIT_TAG        sdk-1.3.236.0
+  SOURCE_DIR     "${FETCHCONTENT_BASE_DIR}/spirv-reflect"
+)
+
+FetchContent_GetProperties(spirv-reflect)
+if(NOT spirv-reflect_POPULATED)
+  message(STATUS "Fetching spirv-reflect...")
+  FetchContent_Populate(spirv-reflect)
+  set(SPIRV_REFLECT_EXECUTABLE OFF CACHE BOOL "" FORCE)
+  set(SPIRV_REFLECT_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(SPIRV_REFLECT_STRIPPER OFF CACHE BOOL "" FORCE)
+  set(SPIRV_REFLECT_STATIC_LIB ON CACHE BOOL "" FORCE)
+  set(SPIRV_REFLECT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(SPIRV_REFLECT_ENABLE_ASSERTS OFF CACHE BOOL "" FORCE)
+  add_subdirectory(${spirv-reflect_SOURCE_DIR} ${spirv-reflect_BINARY_DIR})
+endif()
+target_link_libraries(RenderingExtern INTERFACE spirv-reflect-static)
+set_target_properties(spirv-reflect-static PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ------------------------------------------------------------------------------
 # spirv_cross (for shader reflection)

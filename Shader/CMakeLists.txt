@@ -11,6 +11,7 @@ target_sources(Rendering PRIVATE
 	#Shader.cpp
 	ShaderCompiler.cpp
 	#ShaderObjectInfo.cpp
+	ShaderReflection.cpp
 	#ShaderUtils.cpp
 	#Uniform.cpp
 	#UniformBuffer.cpp
